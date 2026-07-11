@@ -1,0 +1,80 @@
+building companion binary…
+✓ companion server is up on :7700
+✓ second companion exits without replacing the first server
+✓ CORS allows exact origin: https://jdeworks.github.io
+✓ CORS allows exact origin: http://localhost:8123
+✓ CORS allows exact origin: http://127.0.0.1:8123
+✓ CORS rejects hostile origin: https://evil.example
+✓ CORS rejects hostile origin: http://localhost.evil.example:8123
+✓ CORS rejects hostile origin: null
+✓ blind cross-site subresource GET is rejected without a scan
+✓ allowed mutation preflight succeeds with exact CORS headers
+✓ hostile mutation preflight is rejected
+✓ hostile actual request cannot mutate config even with a valid token
+✓ missing token cannot mutate file bytes
+✓ wrong token cannot mutate file bytes
+✓ disabled browser mode makes no Companion requests
+✓ Settings shows the disabled Companion state without loopback traffic
+✓ Settings toggle enables and connects the Companion
+✓ Settings exposes a disabled in-flight control while connection testing
+✓ Settings Test connection reports the connected state
+✓ auto-delivered token is current, natively masked, and explicitly click-to-reveal
+✓ session token auto-delivered from /ping (no manual paste)
+✓ getWatchedPaths returns the watched folder
+✓ runtime watched root is added and persisted
+✓ runtime-added root emits real external file events
+✓ runtime watched root is removed and persisted
+✓ removed root stops emitting file paths
+✓ find-file locates note.txt by name+size
+✓ pickFolder degrades to null on the standalone server (404)
+✓ save accepts and persists a payload above the old 2 MiB ceiling
+✓ saveFile writes new bytes to the real file on disk
+✓ opening a watched file reveals the Save-to-disk button
+✓ opening a watched file auto-links it and reveals the Delete button
+✓ Settings reports persistence failure without clearing input or changing roots/config
+✓ Companion Settings discloses the machine-wide loopback trust boundary
+✓ native picker persistence failure is surfaced by the Settings UI
+✓ native picker cancellation remains silent
+✓ editing the opened file marks the editor dirty
+✓ Save button writes the editor content to disk (onSaveClick path)
+✓ editor marked clean after save (markClean) — no false unsaved-changes guard
+✓ external file change reaches the viewer over SSE
+✓ reload banner loads externally changed bytes
+✓ external reload retains Companion Save/Delete controls
+✓ delayed reload blocks competing intake and persists exact bytes/link across root switches
+✓ Companion-linked current file downloads with the exact latest bytes
+✓ topbar confirmation deletes the disposable Companion-linked file
+✓ file deletion emits a real remove SSE event
+✓ Companion-linked CSV exports to a valid JSON download
+✓ Save UI browses a watched root and creates current bytes in a new nested folder
+✓ switching away/back restores exact saved bytes and the standalone Companion link
+✓ saveFile creates a brand-new file in a watched folder (create-flow backend)
+✓ listFiles returns watched-folder entries (folder-browser backend)
+✓ getTree lists files recursively for folder refresh
+✓ getLogs returns timestamped, filtered activity entries (log-viewer backend)
+✓ activity log does not expose the session token
+✓ truncated intake hides Save and cannot issue a write-back request
+✓ declining a dirty folder replacement leaves the active linked root untouched
+✓ root-level folder file Save resolves to the exact watched-root path
+✓ cancelled large cross-root open rolls back bytes, root association, and disk actions
+✓ sidebar confirmation recursively deletes the disposable nested folder
+✓ nested-folder deletion emits a real remove SSE event
+✓ inactive sidebar root exposes no Companion disk action
+✓ switching sidebar roots restores the exact disk root before deletion
+✓ out-of-order folder resolution stays attached to each captured root
+✓ same-basename sidebar roots normalize and save to the exact second disk root
+✓ delayed refresh updates only its captured root without overwriting the active root
+✓ late same-name auto-link result cannot attach to the newer intake
+✓ settled folder navigation retains a live current-file watcher
+✓ closed A watcher cannot surface a reload banner after switching to B
+✓ live folder-file watcher surfaces a real external disk change
+✓ opt-out closes folder/file watchers and cancels all post-await Companion traffic/actions
+✓ in-flight Save blocks competing intake and opt-out invalidates the pre-mutation continuation
+✓ tree UI refuses deletion of the watched root itself
+✓ removing the last linked root clears its watcher, association, and destructive controls
+✓ Settings Test connection and topbar report the disconnected/absent state
+✓ topbar retry exposes the reconnecting state and launch guidance
+✓ reconnecting UI recovers after current-source Companion restart
+✓ network traffic stays on the viewer plus exact Companion origin; retry emits one non-network launch URL
+
+SMOKE PASSED

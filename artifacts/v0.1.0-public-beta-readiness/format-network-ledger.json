@@ -1,0 +1,7158 @@
+{
+  "schemaVersion": 1,
+  "origin": "http://127.0.0.1:41799",
+  "entries": [
+    {
+      "slug": "__boot__",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/",
+      "resourceType": "document",
+      "allowed": true
+    },
+    {
+      "slug": "__boot__",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/boot.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "__boot__",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/assets/app.css",
+      "resourceType": "stylesheet",
+      "allowed": true
+    },
+    {
+      "slug": "__boot__",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/assets/companion.css",
+      "resourceType": "stylesheet",
+      "allowed": true
+    },
+    {
+      "slug": "__boot__",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/assets/examples.css",
+      "resourceType": "stylesheet",
+      "allowed": true
+    },
+    {
+      "slug": "__boot__",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/assets/preview-chrome.css",
+      "resourceType": "stylesheet",
+      "allowed": true
+    },
+    {
+      "slug": "__boot__",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/assets/preview-media.css",
+      "resourceType": "stylesheet",
+      "allowed": true
+    },
+    {
+      "slug": "__boot__",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/intake.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "__boot__",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/app.generated.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "__boot__",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/state.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "__boot__",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/script-loader.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "__boot__",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/monaco-loader.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "__boot__",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/assets/preview.css",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "__boot__",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/games/launcher.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "__boot__",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/sw.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "01-markdown",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/detect-lite.generated.json",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "01-markdown",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/detect-lite.generated.json",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "01-markdown",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/detect.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "01-markdown",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/type-select.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "01-markdown",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/detect.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "01-markdown",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/type-select.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "01-markdown",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-runtime.generated.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "01-markdown",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-runtime.generated.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "01-markdown",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/code/langmap.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "01-markdown",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.0.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "01-markdown",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.1.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "01-markdown",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.2.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "01-markdown",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.3.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "01-markdown",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.4.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "01-markdown",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.5.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "01-markdown",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.6.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "01-markdown",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.7.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "01-markdown",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.8.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "01-markdown",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/code/langmap.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "01-markdown",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.0.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "01-markdown",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.1.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "01-markdown",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.2.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "01-markdown",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.3.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "01-markdown",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.4.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "01-markdown",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.5.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "01-markdown",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.6.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "01-markdown",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.7.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "01-markdown",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.8.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "01-markdown",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/media/medialib.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "01-markdown",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/binary/gamerom/headers.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "01-markdown",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/media/medialib.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "01-markdown",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/binary/gamerom/headers.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "01-markdown",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/known/registry.generated.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "01-markdown",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/known/registry.generated.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "01-markdown",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/settings-defaults.generated.json",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "01-markdown",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/settings-defaults.generated.json",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "01-markdown",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/loader.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "01-markdown",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/loader.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "01-markdown",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/editor/editor.main.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "01-markdown",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/editor/editor.main.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "01-markdown",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/editor/editor.main.css",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "01-markdown",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/editor/editor.main.css",
+      "resourceType": "stylesheet",
+      "allowed": true
+    },
+    {
+      "slug": "01-markdown",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/code/codelens.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "01-markdown",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/basic-languages/markdown/markdown.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "01-markdown",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/code/codelens.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "01-markdown",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/basic-languages/markdown/markdown.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "01-markdown",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/markdown/renderer.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "01-markdown",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/markdown/renderer.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "01-markdown",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/code/metrics.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "01-markdown",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/code/metrics.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "01-markdown",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/markdown-it/markdown-it.min.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "01-markdown",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/dompurify/purify.min.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "01-markdown",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/markdown-it/markdown-it.min.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "01-markdown",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/dompurify/purify.min.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "01-markdown",
+      "kind": "request",
+      "method": "GET",
+      "url": "blob:http://127.0.0.1:41799/38654045-867b-427c-a9e4-b960f4065b97",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "01-markdown",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/base/worker/workerMain.js",
+      "resourceType": "other",
+      "allowed": true
+    },
+    {
+      "slug": "01-markdown",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/base/worker/workerMain.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "07-sqlite",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/sqlite/renderer.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "07-sqlite",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/sqlite/renderer.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "07-sqlite",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/sqlite/sqlitelib.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "07-sqlite",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/sqlite/sqlitelib.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "07-sqlite",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/sql.js/sql-wasm.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "07-sqlite",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/sql.js/sql-wasm.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "07-sqlite",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/sql.js/sql-wasm.wasm",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "07-sqlite",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/sql.js/sql-wasm.wasm",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "13-pdf",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/pdf/renderer.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "13-pdf",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/pdf/renderer.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "13-pdf",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/pdf/pdflib.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "13-pdf",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/pdf/pdfedit.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "13-pdf",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/password-prompt.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "13-pdf",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/pdf/pdflib.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "13-pdf",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/pdf/pdfedit.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "13-pdf",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/password-prompt.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "13-pdf",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/pdfjs/pdf.min.mjs",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "13-pdf",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/pdfjs/pdf.min.mjs",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "13-pdf",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/pdfjs/pdf.worker.min.mjs",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "13-pdf",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/pdfjs/pdf.worker.min.mjs",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "19-archive",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/archivelib.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "19-archive",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/archivelib.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "19-archive",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/libarchive/libarchive.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "19-archive",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/libarchive/libarchive.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "19-archive",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/",
+      "resourceType": "document",
+      "allowed": true
+    },
+    {
+      "slug": "19-archive",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "19-archive",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/boot.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "19-archive",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/boot.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "19-archive",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/assets/app.css",
+      "resourceType": "stylesheet",
+      "allowed": true
+    },
+    {
+      "slug": "19-archive",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/assets/companion.css",
+      "resourceType": "stylesheet",
+      "allowed": true
+    },
+    {
+      "slug": "19-archive",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/assets/examples.css",
+      "resourceType": "stylesheet",
+      "allowed": true
+    },
+    {
+      "slug": "19-archive",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/assets/preview-chrome.css",
+      "resourceType": "stylesheet",
+      "allowed": true
+    },
+    {
+      "slug": "19-archive",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/assets/preview-media.css",
+      "resourceType": "stylesheet",
+      "allowed": true
+    },
+    {
+      "slug": "19-archive",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/assets/app.css",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "19-archive",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/assets/companion.css",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "19-archive",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/intake.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "19-archive",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/assets/examples.css",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "19-archive",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/assets/preview-chrome.css",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "19-archive",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/assets/preview-media.css",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "19-archive",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/intake.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "19-archive",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/app.generated.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "19-archive",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/app.generated.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "19-archive",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/state.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "19-archive",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/script-loader.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "19-archive",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/monaco-loader.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "19-archive",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/state.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "19-archive",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/script-loader.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "19-archive",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/monaco-loader.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "19-archive",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/assets/preview.css",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "19-archive",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/assets/preview.css",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "19-archive",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/games/launcher.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "19-archive",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/games/launcher.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "19-archive",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/detect-lite.generated.json",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "19-archive",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/detect.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "19-archive",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/type-select.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "19-archive",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-runtime.generated.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "19-archive",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/code/langmap.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "19-archive",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.0.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "19-archive",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.1.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "19-archive",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.2.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "19-archive",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.3.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "19-archive",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.4.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "19-archive",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.5.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "19-archive",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.6.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "19-archive",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.7.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "19-archive",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.8.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "19-archive",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/media/medialib.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "19-archive",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/binary/gamerom/headers.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "19-archive",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/known/registry.generated.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "19-archive",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/settings-defaults.generated.json",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "19-archive",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/archive/renderer.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "19-archive",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/archive/renderer.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "19-archive",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/archivelib.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "19-archive",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/template.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "19-archive",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/template.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "19-archive",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/libarchive/libarchive.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "19-archive",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/libarchive/worker-bundle.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "19-archive",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/libarchive/worker-bundle.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "19-archive",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/libarchive/libarchive.wasm",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "19-archive",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/libarchive/libarchive.wasm",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "25-font",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/font/renderer.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "25-font",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/font/renderer.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "25-font",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/font/metadata.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "25-font",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/font/metadata.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "31-dicom",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/binary/dicom/renderer.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "31-dicom",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/binary/dicom/renderer.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "37-exe",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/loader.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "37-exe",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/editor/editor.main.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "37-exe",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/editor/editor.main.css",
+      "resourceType": "stylesheet",
+      "allowed": true
+    },
+    {
+      "slug": "37-exe",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/code/codelens.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "37-exe",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/binary/exe/renderer.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "37-exe",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/binary/exe/renderer.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "37-exe",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/code/metrics.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "37-exe",
+      "kind": "request",
+      "method": "GET",
+      "url": "blob:http://127.0.0.1:41799/dd003b13-5b98-41a0-897c-925eecd68aaa",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "37-exe",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/base/worker/workerMain.js",
+      "resourceType": "other",
+      "allowed": true
+    },
+    {
+      "slug": "43-pem",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/pem/renderer.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "43-pem",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/pem/renderer.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "43-pem",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/pem/asn1.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "43-pem",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/pem/asn1.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "43-pem",
+      "kind": "request",
+      "method": "GET",
+      "url": "blob:http://127.0.0.1:41799/5ef0dd46-45ab-49b9-8883-226f7ba95cff",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "43-pem",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/base/worker/workerMain.js",
+      "resourceType": "other",
+      "allowed": true
+    },
+    {
+      "slug": "__boot__",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/",
+      "resourceType": "document",
+      "allowed": true
+    },
+    {
+      "slug": "__boot__",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/boot.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "__boot__",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/assets/app.css",
+      "resourceType": "stylesheet",
+      "allowed": true
+    },
+    {
+      "slug": "__boot__",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/assets/companion.css",
+      "resourceType": "stylesheet",
+      "allowed": true
+    },
+    {
+      "slug": "__boot__",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/assets/examples.css",
+      "resourceType": "stylesheet",
+      "allowed": true
+    },
+    {
+      "slug": "__boot__",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/assets/preview-chrome.css",
+      "resourceType": "stylesheet",
+      "allowed": true
+    },
+    {
+      "slug": "__boot__",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/assets/preview-media.css",
+      "resourceType": "stylesheet",
+      "allowed": true
+    },
+    {
+      "slug": "__boot__",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/intake.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "__boot__",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/app.generated.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "__boot__",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/state.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "__boot__",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/script-loader.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "__boot__",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/monaco-loader.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "__boot__",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/assets/preview.css",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "__boot__",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/games/launcher.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "__boot__",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/sw.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "02-csv",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/detect-lite.generated.json",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "02-csv",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/detect-lite.generated.json",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "02-csv",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/detect.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "02-csv",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/type-select.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "02-csv",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/detect.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "02-csv",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/type-select.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "02-csv",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-runtime.generated.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "02-csv",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-runtime.generated.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "02-csv",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/code/langmap.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "02-csv",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.0.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "02-csv",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.1.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "02-csv",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.2.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "02-csv",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.3.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "02-csv",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.4.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "02-csv",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.5.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "02-csv",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.6.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "02-csv",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.7.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "02-csv",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.8.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "02-csv",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/code/langmap.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "02-csv",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.0.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "02-csv",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.1.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "02-csv",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.2.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "02-csv",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.3.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "02-csv",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.4.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "02-csv",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.5.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "02-csv",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.6.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "02-csv",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.7.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "02-csv",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.8.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "02-csv",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/media/medialib.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "02-csv",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/media/medialib.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "02-csv",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/binary/gamerom/headers.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "02-csv",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/binary/gamerom/headers.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "02-csv",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/known/registry.generated.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "02-csv",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/known/registry.generated.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "02-csv",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/settings-defaults.generated.json",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "02-csv",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/settings-defaults.generated.json",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "02-csv",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/loader.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "02-csv",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/loader.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "02-csv",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/editor/editor.main.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "02-csv",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/editor/editor.main.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "02-csv",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/editor/editor.main.css",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "02-csv",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/editor/editor.main.css",
+      "resourceType": "stylesheet",
+      "allowed": true
+    },
+    {
+      "slug": "02-csv",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/code/codelens.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "02-csv",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/code/codelens.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "02-csv",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/csv/renderer.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "02-csv",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/csv/renderer.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "02-csv",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/code/metrics.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "02-csv",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/csv/table-editor.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "02-csv",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/code/metrics.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "02-csv",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/csv/table-editor.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "02-csv",
+      "kind": "request",
+      "method": "GET",
+      "url": "blob:http://127.0.0.1:41799/89be91d3-d6c5-4514-b365-d8d3eb6a3d9b",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "02-csv",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/papaparse/papaparse.min.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "02-csv",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/papaparse/papaparse.min.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "02-csv",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/base/worker/workerMain.js",
+      "resourceType": "other",
+      "allowed": true
+    },
+    {
+      "slug": "02-csv",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/base/worker/workerMain.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "08-ipynb",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/language/json/jsonMode.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "08-ipynb",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/language/json/jsonMode.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "08-ipynb",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/ipynb/renderer.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "08-ipynb",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/ipynb/renderer.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "08-ipynb",
+      "kind": "request",
+      "method": "GET",
+      "url": "blob:http://127.0.0.1:41799/cdf09371-77e4-44bc-8752-bd218dea8a8f",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "08-ipynb",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/template.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "08-ipynb",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/template.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "08-ipynb",
+      "kind": "request",
+      "method": "GET",
+      "url": "blob:http://127.0.0.1:41799/30439945-2815-439d-b511-b383ec248b9e",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "08-ipynb",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/base/worker/workerMain.js",
+      "resourceType": "other",
+      "allowed": true
+    },
+    {
+      "slug": "08-ipynb",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/ipynb/error.html",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "08-ipynb",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/ipynb/notebook.html",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "08-ipynb",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/ipynb/cell-md.html",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "08-ipynb",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/ipynb/cell-code.html",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "08-ipynb",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/ipynb/cell-raw.html",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "08-ipynb",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/base/worker/workerMain.js",
+      "resourceType": "other",
+      "allowed": true
+    },
+    {
+      "slug": "08-ipynb",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/ipynb/error.html",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "08-ipynb",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/ipynb/notebook.html",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "08-ipynb",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/ipynb/cell-md.html",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "08-ipynb",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/ipynb/cell-code.html",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "08-ipynb",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/ipynb/cell-raw.html",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "08-ipynb",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/markdown-it/markdown-it.min.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "08-ipynb",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/dompurify/purify.min.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "08-ipynb",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/markdown-it/markdown-it.min.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "08-ipynb",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/dompurify/purify.min.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "08-ipynb",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/language/json/jsonWorker.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "08-ipynb",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/language/json/jsonWorker.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "08-ipynb",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/base/browser/ui/codicons/codicon/codicon.ttf",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "08-ipynb",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/base/browser/ui/codicons/codicon/codicon.ttf",
+      "resourceType": "font",
+      "allowed": true
+    },
+    {
+      "slug": "14-xlsx",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/office/xlsx/renderer.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "14-xlsx",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/office/xlsx/renderer.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "14-xlsx",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/office/xlsx/editor.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "14-xlsx",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/office/xlsx/editor.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "14-xlsx",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/office/xlsx/xlsxlib.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "14-xlsx",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/exports.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "14-xlsx",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/office/xlsx/xlsxlib.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "14-xlsx",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/exports.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "14-xlsx",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/iframe.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "14-xlsx",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/iframe.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "14-xlsx",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/settings-schema.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "14-xlsx",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/settings-schema.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "14-xlsx",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/assets/preview.css",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "14-xlsx",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/assets/preview.css",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "14-xlsx",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/xlsx/xlsx.full.min.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "14-xlsx",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/xlsx/xlsx.full.min.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "20-zip",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/zip/renderer.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "20-zip",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/zip/renderer.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "20-zip",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/zip/ziplib.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "20-zip",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/zip/ziplib.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "20-zip",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/archivelib.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "20-zip",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/archivelib.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "20-zip",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/zip/doc.html",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "20-zip",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/zip/row.html",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "20-zip",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/zip/doc.html",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "20-zip",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/zip/row.html",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "20-zip",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/jszip/jszip.min.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "20-zip",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/jszip/jszip.min.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "26-stl",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/3d/stl/renderer.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "26-stl",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/3d/stl/renderer.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "26-stl",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/3d/stl/stllib.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "26-stl",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/meshview.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "26-stl",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/3d/stl/stllib.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "26-stl",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/meshview.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "26-stl",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/meshview-faces.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "26-stl",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/meshview-faces.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "32-netcdf",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/binary/netcdf/renderer.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "32-netcdf",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/binary/netcdf/renderer.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "32-netcdf",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/binary/netcdf/parser.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "32-netcdf",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/binary/netcdf/parser.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "38-apk",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/binary/apk/renderer.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "38-apk",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/binary/apk/renderer.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "38-apk",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/binary/apk/layout.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "38-apk",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/binary/apk/layout.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "44-patch",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/patch/renderer.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "44-patch",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/patch/renderer.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "44-patch",
+      "kind": "request",
+      "method": "GET",
+      "url": "blob:http://127.0.0.1:41799/e937aed6-64aa-4dbc-85b7-54b81764dbb5",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "44-patch",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/base/worker/workerMain.js",
+      "resourceType": "other",
+      "allowed": true
+    },
+    {
+      "slug": "__boot__",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/",
+      "resourceType": "document",
+      "allowed": true
+    },
+    {
+      "slug": "__boot__",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/boot.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "__boot__",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/assets/app.css",
+      "resourceType": "stylesheet",
+      "allowed": true
+    },
+    {
+      "slug": "__boot__",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/assets/companion.css",
+      "resourceType": "stylesheet",
+      "allowed": true
+    },
+    {
+      "slug": "__boot__",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/assets/examples.css",
+      "resourceType": "stylesheet",
+      "allowed": true
+    },
+    {
+      "slug": "__boot__",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/assets/preview-chrome.css",
+      "resourceType": "stylesheet",
+      "allowed": true
+    },
+    {
+      "slug": "__boot__",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/assets/preview-media.css",
+      "resourceType": "stylesheet",
+      "allowed": true
+    },
+    {
+      "slug": "__boot__",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/intake.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "__boot__",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/app.generated.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "__boot__",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/state.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "__boot__",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/script-loader.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "__boot__",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/monaco-loader.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "__boot__",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/assets/preview.css",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "__boot__",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/games/launcher.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "__boot__",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/sw.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "03-json",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/detect-lite.generated.json",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "03-json",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/detect-lite.generated.json",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "03-json",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/detect.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "03-json",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/type-select.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "03-json",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/detect.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "03-json",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/type-select.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "03-json",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-runtime.generated.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "03-json",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-runtime.generated.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "03-json",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/code/langmap.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "03-json",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.0.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "03-json",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.1.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "03-json",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.2.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "03-json",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.3.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "03-json",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.4.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "03-json",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.5.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "03-json",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.6.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "03-json",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.7.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "03-json",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.8.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "03-json",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/code/langmap.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "03-json",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.0.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "03-json",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.1.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "03-json",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.2.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "03-json",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.3.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "03-json",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.4.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "03-json",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.5.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "03-json",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.6.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "03-json",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.7.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "03-json",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.8.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "03-json",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/media/medialib.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "03-json",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/binary/gamerom/headers.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "03-json",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/media/medialib.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "03-json",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/binary/gamerom/headers.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "03-json",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/known/registry.generated.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "03-json",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/known/registry.generated.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "03-json",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/settings-defaults.generated.json",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "03-json",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/settings-defaults.generated.json",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "03-json",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/loader.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "03-json",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/loader.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "03-json",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/editor/editor.main.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "03-json",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/editor/editor.main.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "03-json",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/editor/editor.main.css",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "03-json",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/editor/editor.main.css",
+      "resourceType": "stylesheet",
+      "allowed": true
+    },
+    {
+      "slug": "03-json",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/code/codelens.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "03-json",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/language/json/jsonMode.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "03-json",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/code/codelens.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "03-json",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/language/json/jsonMode.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "03-json",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/json/renderer.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "03-json",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/json/renderer.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "03-json",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/code/metrics.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "03-json",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/code/metrics.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "03-json",
+      "kind": "request",
+      "method": "GET",
+      "url": "blob:http://127.0.0.1:41799/7d8ad4b1-4769-4e3b-9699-011481d18e0d",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "03-json",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/json/jsonparse.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "03-json",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/query-panel.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "03-json",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/known-ui.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "03-json",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/json/jsonparse.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "03-json",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/query-panel.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "03-json",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/known-ui.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "03-json",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/base/worker/workerMain.js",
+      "resourceType": "other",
+      "allowed": true
+    },
+    {
+      "slug": "03-json",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/template.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "03-json",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/base/worker/workerMain.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "03-json",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/template.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "03-json",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/language/json/jsonWorker.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "03-json",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/language/json/jsonWorker.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "03-json",
+      "kind": "request",
+      "method": "GET",
+      "url": "blob:http://127.0.0.1:41799/dc3f64c4-e155-4f75-8bef-95390f4b7135",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "03-json",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/base/worker/workerMain.js",
+      "resourceType": "other",
+      "allowed": true
+    },
+    {
+      "slug": "09-image",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/image/renderer.generated.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "09-image",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/image/renderer.generated.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "09-image",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/games/metagame/viewer-actions.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "09-image",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/games/metagame/viewer-actions.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "09-image",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/games/metagame/action-flags.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "09-image",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/games/metagame/stages/stage10/echo-token.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "09-image",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/games/metagame/stages/stage10/echo-verbs.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "09-image",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/games/metagame/action-flags.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "09-image",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/games/metagame/stages/stage10/echo-token.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "09-image",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/games/metagame/stages/stage10/echo-verbs.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "09-image",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/image/doc.html",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "09-image",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/image/edit-tools.html",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "09-image",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/image/doc.html",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "09-image",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/image/edit-tools.html",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "09-image",
+      "kind": "request",
+      "method": "GET",
+      "url": "blob:http://127.0.0.1:41799/94758fa3-1503-43e1-84c0-ddf4c3db5e21",
+      "resourceType": "image",
+      "allowed": true
+    },
+    {
+      "slug": "15-docx",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/office/docx/renderer.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "15-docx",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/office/docx/renderer.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "15-docx",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/office/docx/editor.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "15-docx",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/office/docx/editor.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "15-docx",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/exports.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "15-docx",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/exports.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "15-docx",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/iframe.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "15-docx",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/iframe.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "15-docx",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/settings-schema.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "15-docx",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/settings-schema.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "15-docx",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/assets/preview.css",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "15-docx",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/assets/preview.css",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "15-docx",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/mammoth/mammoth.browser.min.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "15-docx",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/dompurify/purify.min.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "15-docx",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/mammoth/mammoth.browser.min.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "15-docx",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/dompurify/purify.min.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "21-epub",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/ebook/epub/renderer.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "21-epub",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/ebook/epub/renderer.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "21-epub",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/ebook/epub/epublib.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "21-epub",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/persistence.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "21-epub",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/image/svg-sanitize.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "21-epub",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/ebook/epub/epublib.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "21-epub",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/persistence.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "21-epub",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/image/svg-sanitize.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "21-epub",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/jszip/jszip.min.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "21-epub",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/jszip/jszip.min.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "21-epub",
+      "kind": "request",
+      "method": "GET",
+      "url": "blob:http://127.0.0.1:41799/8911a5a1-822c-454e-92e5-0831e65f4523",
+      "resourceType": "image",
+      "allowed": true
+    },
+    {
+      "slug": "27-gltf",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/3d/gltf/renderer.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "27-gltf",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/3d/gltf/renderer.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "27-gltf",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/3d/gltf/gltflib.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "27-gltf",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/meshview.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "27-gltf",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/3d/gltf/gltflib.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "27-gltf",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/meshview.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "27-gltf",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/meshview-faces.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "27-gltf",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/meshview-faces.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "33-pdb",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/pdb/renderer.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "33-pdb",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/pdb/renderer.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "33-pdb",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/molview.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "33-pdb",
+      "kind": "request",
+      "method": "GET",
+      "url": "blob:http://127.0.0.1:41799/3484d69e-5803-490a-b431-64440a85bf9a",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "33-pdb",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/molview.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "33-pdb",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/base/worker/workerMain.js",
+      "resourceType": "other",
+      "allowed": true
+    },
+    {
+      "slug": "33-pdb",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/3dmol/3Dmol-min.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "33-pdb",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/3dmol/3Dmol-min.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "39-torrent",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/binary/torrent/renderer.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "39-torrent",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/binary/torrent/renderer.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "39-torrent",
+      "kind": "request",
+      "method": "GET",
+      "url": "blob:http://127.0.0.1:41799/eb6b20cd-cd18-4989-8f5d-827f1bc8556e",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "39-torrent",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/binary/torrent/bencode.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "39-torrent",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/binary/torrent/semantics.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "39-torrent",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/binary/torrent/bencode.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "39-torrent",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/binary/torrent/semantics.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "39-torrent",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/base/worker/workerMain.js",
+      "resourceType": "other",
+      "allowed": true
+    },
+    {
+      "slug": "45-code",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/basic-languages/swift/swift.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "45-code",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/basic-languages/swift/swift.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "45-code",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/known/swift-lang/renderer.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "45-code",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/known/swift-lang/renderer.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "45-code",
+      "kind": "request",
+      "method": "GET",
+      "url": "blob:http://127.0.0.1:41799/485b328b-df3e-4b35-be69-2929ff5a8022",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "45-code",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/base/worker/workerMain.js",
+      "resourceType": "other",
+      "allowed": true
+    },
+    {
+      "slug": "45-code",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/base/browser/ui/codicons/codicon/codicon.ttf",
+      "resourceType": "font",
+      "allowed": true
+    },
+    {
+      "slug": "45-code",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/base/browser/ui/codicons/codicon/codicon.ttf",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "__boot__",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/",
+      "resourceType": "document",
+      "allowed": true
+    },
+    {
+      "slug": "__boot__",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/boot.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "__boot__",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/assets/app.css",
+      "resourceType": "stylesheet",
+      "allowed": true
+    },
+    {
+      "slug": "__boot__",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/assets/companion.css",
+      "resourceType": "stylesheet",
+      "allowed": true
+    },
+    {
+      "slug": "__boot__",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/assets/examples.css",
+      "resourceType": "stylesheet",
+      "allowed": true
+    },
+    {
+      "slug": "__boot__",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/assets/preview-chrome.css",
+      "resourceType": "stylesheet",
+      "allowed": true
+    },
+    {
+      "slug": "__boot__",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/assets/preview-media.css",
+      "resourceType": "stylesheet",
+      "allowed": true
+    },
+    {
+      "slug": "__boot__",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/intake.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "__boot__",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/app.generated.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "__boot__",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/state.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "__boot__",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/script-loader.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "__boot__",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/monaco-loader.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "__boot__",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/assets/preview.css",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "__boot__",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/games/launcher.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "__boot__",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/sw.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "04-yaml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/detect-lite.generated.json",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "04-yaml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/detect-lite.generated.json",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "04-yaml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/detect.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "04-yaml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/type-select.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "04-yaml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/detect.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "04-yaml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/type-select.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "04-yaml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-runtime.generated.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "04-yaml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-runtime.generated.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "04-yaml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/code/langmap.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "04-yaml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.0.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "04-yaml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.1.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "04-yaml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.2.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "04-yaml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.3.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "04-yaml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.4.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "04-yaml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.5.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "04-yaml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.6.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "04-yaml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.7.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "04-yaml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.8.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "04-yaml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/code/langmap.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "04-yaml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.0.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "04-yaml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.1.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "04-yaml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.2.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "04-yaml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.3.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "04-yaml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.4.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "04-yaml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.5.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "04-yaml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.6.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "04-yaml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.7.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "04-yaml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.8.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "04-yaml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/media/medialib.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "04-yaml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/binary/gamerom/headers.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "04-yaml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/media/medialib.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "04-yaml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/binary/gamerom/headers.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "04-yaml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/known/registry.generated.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "04-yaml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/known/registry.generated.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "04-yaml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/settings-defaults.generated.json",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "04-yaml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/settings-defaults.generated.json",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "04-yaml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/loader.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "04-yaml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/loader.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "04-yaml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/editor/editor.main.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "04-yaml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/editor/editor.main.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "04-yaml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/editor/editor.main.css",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "04-yaml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/editor/editor.main.css",
+      "resourceType": "stylesheet",
+      "allowed": true
+    },
+    {
+      "slug": "04-yaml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/code/codelens.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "04-yaml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/basic-languages/yaml/yaml.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "04-yaml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/code/codelens.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "04-yaml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/basic-languages/yaml/yaml.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "04-yaml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/yaml/known/stack-yaml/renderer.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "04-yaml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/yaml/known/stack-yaml/renderer.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "04-yaml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/code/metrics.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "04-yaml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/code/metrics.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "04-yaml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/js-yaml/js-yaml.min.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "04-yaml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/js-yaml/js-yaml.min.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "04-yaml",
+      "kind": "request",
+      "method": "GET",
+      "url": "blob:http://127.0.0.1:41799/4ba1764a-d47a-46b1-b258-1bef6ad7724f",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "04-yaml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/base/worker/workerMain.js",
+      "resourceType": "other",
+      "allowed": true
+    },
+    {
+      "slug": "04-yaml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/base/worker/workerMain.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "04-yaml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/base/browser/ui/codicons/codicon/codicon.ttf",
+      "resourceType": "font",
+      "allowed": true
+    },
+    {
+      "slug": "04-yaml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/base/browser/ui/codicons/codicon/codicon.ttf",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "04-yaml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/yaml/renderer.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "04-yaml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/yaml/renderer.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "04-yaml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/known-ui.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "04-yaml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/query-panel.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "04-yaml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/known-ui.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "04-yaml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/query-panel.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "04-yaml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/template.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "04-yaml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/template.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "10-svg",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/basic-languages/xml/xml.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "10-svg",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/basic-languages/xml/xml.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "10-svg",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/image/svg/renderer.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "10-svg",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/image/svg/renderer.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "10-svg",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/image/svg-sanitize.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "10-svg",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/image/svg-sanitize.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "10-svg",
+      "kind": "request",
+      "method": "GET",
+      "url": "blob:http://127.0.0.1:41799/9fb7219a-4656-4702-9688-793555a39692",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "10-svg",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/base/worker/workerMain.js",
+      "resourceType": "other",
+      "allowed": true
+    },
+    {
+      "slug": "16-pptx",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/office/pptx/renderer.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "16-pptx",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/office/pptx/renderer.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "16-pptx",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/office/pptx/pptxlib.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "16-pptx",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/office/pptx/pptxlib.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "16-pptx",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/jszip/jszip.min.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "16-pptx",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/jszip/jszip.min.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "16-pptx",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/chartjs/chart.umd.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "16-pptx",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/chartjs/chart.umd.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "16-pptx",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/pptxviewjs/PptxViewJS.min.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "16-pptx",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/pptxviewjs/PptxViewJS.min.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "22-comic",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/ebook/comic/renderer.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "22-comic",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/ebook/comic/renderer.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "22-comic",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/ebook/comic/comiclib.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "22-comic",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/ebook/comic/comiclib.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "22-comic",
+      "kind": "request",
+      "method": "GET",
+      "url": "blob:http://127.0.0.1:41799/f4278159-8986-4f3d-a00d-f28f276a7912",
+      "resourceType": "image",
+      "allowed": true
+    },
+    {
+      "slug": "22-comic",
+      "kind": "request",
+      "method": "GET",
+      "url": "blob:http://127.0.0.1:41799/2c8cad3f-d97f-43e6-ac5a-bfa8e1b3edbb",
+      "resourceType": "image",
+      "allowed": true
+    },
+    {
+      "slug": "22-comic",
+      "kind": "request",
+      "method": "GET",
+      "url": "blob:http://127.0.0.1:41799/3e8cf016-5628-42bc-b2ec-3fb2c656ef4b",
+      "resourceType": "image",
+      "allowed": true
+    },
+    {
+      "slug": "28-dxf",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/dxf/renderer.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "28-dxf",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/dxf/renderer.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "28-dxf",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/dxf/geometry.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "28-dxf",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/dxf/geometry.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "28-dxf",
+      "kind": "request",
+      "method": "GET",
+      "url": "blob:http://127.0.0.1:41799/435b6bc7-56b0-4d92-a047-ddcd07fe9be5",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "28-dxf",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/base/worker/workerMain.js",
+      "resourceType": "other",
+      "allowed": true
+    },
+    {
+      "slug": "34-fits",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/fits/renderer.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "34-fits",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/fits/renderer.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "34-fits",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/fits/parser.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "34-fits",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/fits/parser.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "34-fits",
+      "kind": "request",
+      "method": "GET",
+      "url": "blob:http://127.0.0.1:41799/7a7c775c-59d9-48bc-8065-ce2e0a2057c6",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "34-fits",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/base/worker/workerMain.js",
+      "resourceType": "other",
+      "allowed": true
+    },
+    {
+      "slug": "40-dockerfile",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/basic-languages/dockerfile/dockerfile.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "40-dockerfile",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/basic-languages/dockerfile/dockerfile.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "40-dockerfile",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/known/dockerfile/render.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "40-dockerfile",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/known/dockerfile/render.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "40-dockerfile",
+      "kind": "request",
+      "method": "GET",
+      "url": "blob:http://127.0.0.1:41799/2d600768-cdcc-4525-943c-66b06d83c610",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "40-dockerfile",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/base/worker/workerMain.js",
+      "resourceType": "other",
+      "allowed": true
+    },
+    {
+      "slug": "40-dockerfile",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/dockerfile/renderer.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "40-dockerfile",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/dockerfile/renderer.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "__boot__",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/",
+      "resourceType": "document",
+      "allowed": true
+    },
+    {
+      "slug": "__boot__",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/boot.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "__boot__",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/assets/app.css",
+      "resourceType": "stylesheet",
+      "allowed": true
+    },
+    {
+      "slug": "__boot__",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/assets/companion.css",
+      "resourceType": "stylesheet",
+      "allowed": true
+    },
+    {
+      "slug": "__boot__",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/assets/examples.css",
+      "resourceType": "stylesheet",
+      "allowed": true
+    },
+    {
+      "slug": "__boot__",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/assets/preview-chrome.css",
+      "resourceType": "stylesheet",
+      "allowed": true
+    },
+    {
+      "slug": "__boot__",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/assets/preview-media.css",
+      "resourceType": "stylesheet",
+      "allowed": true
+    },
+    {
+      "slug": "__boot__",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/intake.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "__boot__",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/app.generated.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "__boot__",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/state.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "__boot__",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/script-loader.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "__boot__",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/monaco-loader.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "__boot__",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/assets/preview.css",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "__boot__",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/games/launcher.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "__boot__",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/sw.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "05-xml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/detect-lite.generated.json",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "05-xml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/detect-lite.generated.json",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "05-xml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/detect.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "05-xml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/type-select.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "05-xml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/detect.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "05-xml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/type-select.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "05-xml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-runtime.generated.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "05-xml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-runtime.generated.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "05-xml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/code/langmap.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "05-xml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.0.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "05-xml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.1.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "05-xml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.2.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "05-xml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.3.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "05-xml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.4.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "05-xml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.5.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "05-xml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.6.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "05-xml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.7.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "05-xml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.8.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "05-xml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/code/langmap.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "05-xml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.0.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "05-xml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.1.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "05-xml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.2.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "05-xml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.3.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "05-xml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.4.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "05-xml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.5.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "05-xml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.6.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "05-xml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.7.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "05-xml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.8.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "05-xml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/media/medialib.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "05-xml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/binary/gamerom/headers.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "05-xml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/media/medialib.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "05-xml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/binary/gamerom/headers.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "05-xml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/known/registry.generated.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "05-xml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/known/registry.generated.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "05-xml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/settings-defaults.generated.json",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "05-xml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/settings-defaults.generated.json",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "05-xml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/loader.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "05-xml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/loader.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "05-xml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/editor/editor.main.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "05-xml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/editor/editor.main.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "05-xml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/editor/editor.main.css",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "05-xml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/editor/editor.main.css",
+      "resourceType": "stylesheet",
+      "allowed": true
+    },
+    {
+      "slug": "05-xml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/code/codelens.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "05-xml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/basic-languages/xml/xml.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "05-xml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/code/codelens.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "05-xml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/basic-languages/xml/xml.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "05-xml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/xml/known/ant-build/renderer.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "05-xml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/xml/known/ant-build/renderer.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "05-xml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/code/metrics.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "05-xml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/code/metrics.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "05-xml",
+      "kind": "request",
+      "method": "GET",
+      "url": "blob:http://127.0.0.1:41799/4fbfb916-2d4e-4970-afe6-e9417aad71c6",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "05-xml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/base/worker/workerMain.js",
+      "resourceType": "other",
+      "allowed": true
+    },
+    {
+      "slug": "05-xml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/base/worker/workerMain.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "05-xml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/base/browser/ui/codicons/codicon/codicon.ttf",
+      "resourceType": "font",
+      "allowed": true
+    },
+    {
+      "slug": "05-xml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/base/browser/ui/codicons/codicon/codicon.ttf",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "05-xml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/xml/renderer.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "05-xml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/xml/renderer.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "05-xml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/query-panel.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "05-xml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/query-panel.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "11-tiff",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/image/tiff/renderer.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "11-tiff",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/image/tiff/renderer.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "11-tiff",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/image/tiff/metadata.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "11-tiff",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/image/tiff/metadata.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "11-tiff",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/image/tiff/decode-tiff.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "11-tiff",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/image/tiff/decode-tiff.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "11-tiff",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/utif/utif.esm.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "11-tiff",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/utif/utif.esm.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "11-tiff",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/image/renderer.generated.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "11-tiff",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/image/renderer.generated.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "11-tiff",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/template.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "11-tiff",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/games/metagame/viewer-actions.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "11-tiff",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/template.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "11-tiff",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/games/metagame/viewer-actions.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "11-tiff",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/games/metagame/action-flags.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "11-tiff",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/games/metagame/stages/stage10/echo-token.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "11-tiff",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/games/metagame/stages/stage10/echo-verbs.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "11-tiff",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/games/metagame/action-flags.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "11-tiff",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/games/metagame/stages/stage10/echo-token.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "11-tiff",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/games/metagame/stages/stage10/echo-verbs.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "11-tiff",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/image/doc.html",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "11-tiff",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/image/edit-tools.html",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "11-tiff",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/image/doc.html",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "11-tiff",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/image/edit-tools.html",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "11-tiff",
+      "kind": "request",
+      "method": "GET",
+      "url": "blob:http://127.0.0.1:41799/0d87d905-1f02-494c-a4ac-5932dac1fa16",
+      "resourceType": "image",
+      "allowed": true
+    },
+    {
+      "slug": "17-odf",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/office/odf/renderer.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "17-odf",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/office/odf/renderer.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "17-odf",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/office/odf/odflib.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "17-odf",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/office/odf/odflib.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "17-odf",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/jszip/jszip.min.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "17-odf",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/jszip/jszip.min.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "17-odf",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/dompurify/purify.min.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "17-odf",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/dompurify/purify.min.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "23-media",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/media/renderer.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "23-media",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/media/renderer.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "23-media",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/persistence.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "23-media",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/ios-audio.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "23-media",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/media/id3.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "23-media",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/media/chapters.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "23-media",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/media/transcoder.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "23-media",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/media/playback-extras.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "23-media",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/media/renderer-workspace.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "23-media",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/media/renderer-tools.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "23-media",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/media/renderer-mode-panels.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "23-media",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/media/mixer/mixer-audio-listen.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "23-media",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/persistence.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "23-media",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/ios-audio.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "23-media",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/media/id3.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "23-media",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/media/chapters.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "23-media",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/media/transcoder.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "23-media",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/media/playback-extras.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "23-media",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/media/renderer-workspace.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "23-media",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/media/renderer-tools.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "23-media",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/media/renderer-mode-panels.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "23-media",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/media/mixer/mixer-audio-listen.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "23-media",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/media/subtitles.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "23-media",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/media/audio-filters.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "23-media",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/media/transcoder-ops.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "23-media",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/media/ffmpeg-intake.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "23-media",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/media/video-filters.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "23-media",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/exports.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "23-media",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/media/workspace-modes.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "23-media",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/media/panel-toggle.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "23-media",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/media/mixer/mixer-model.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "23-media",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/media/mixer/mixer-import-export.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "23-media",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/media/mixer/mixer-audio-listen-helpers.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "23-media",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/media/mixer/audio-listen-waveform.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "23-media",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/media/subtitles.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "23-media",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/media/audio-filters.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "23-media",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/media/transcoder-ops.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "23-media",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/media/ffmpeg-intake.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "23-media",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/media/video-filters.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "23-media",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/exports.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "23-media",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/media/workspace-modes.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "23-media",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/media/panel-toggle.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "23-media",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/media/mixer/mixer-model.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "23-media",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/media/mixer/mixer-import-export.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "23-media",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/media/mixer/mixer-audio-listen-helpers.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "23-media",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/media/mixer/audio-listen-waveform.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "23-media",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/iframe.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "23-media",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/media/mixer/mixer-config.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "23-media",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/media/mixer/mixer-eq-schema.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "23-media",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/media/mixer/mixer-model-helpers.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "23-media",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/iframe.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "23-media",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/media/waveform-data.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "23-media",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/media/mixer/mixer-config.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "23-media",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/media/mixer/mixer-eq-schema.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "23-media",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/media/mixer/mixer-model-helpers.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "23-media",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/media/waveform-data.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "23-media",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/settings-schema.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "23-media",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/settings-schema.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "23-media",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/assets/preview.css",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "23-media",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/assets/preview.css",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "23-media",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/media/video-studio.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "23-media",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/media/video-studio.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "23-media",
+      "kind": "request",
+      "method": "GET",
+      "url": "blob:http://127.0.0.1:41799/228e04f7-c669-42a8-840a-63b2225f4493",
+      "resourceType": "media",
+      "allowed": true
+    },
+    {
+      "slug": "29-geojson",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/language/json/jsonMode.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "29-geojson",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/language/json/jsonMode.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "29-geojson",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/geojson/renderer.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "29-geojson",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/geojson/renderer.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "29-geojson",
+      "kind": "request",
+      "method": "GET",
+      "url": "blob:http://127.0.0.1:41799/83a49a34-0ea4-44d0-a685-55ddb733aa8e",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "29-geojson",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/base/worker/workerMain.js",
+      "resourceType": "other",
+      "allowed": true
+    },
+    {
+      "slug": "29-geojson",
+      "kind": "request",
+      "method": "GET",
+      "url": "blob:http://127.0.0.1:41799/13d469b2-610a-420b-9b2e-650e7fac4798",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "29-geojson",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/base/worker/workerMain.js",
+      "resourceType": "other",
+      "allowed": true
+    },
+    {
+      "slug": "29-geojson",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/language/json/jsonWorker.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "29-geojson",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/language/json/jsonWorker.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "35-wasm",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/binary/wasm/renderer.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "35-wasm",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/binary/wasm/renderer.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "41-docker-compose",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/basic-languages/yaml/yaml.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "41-docker-compose",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/basic-languages/yaml/yaml.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "41-docker-compose",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/yaml/known/docker-compose/render.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "41-docker-compose",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/yaml/known/docker-compose/render.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "41-docker-compose",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/known-ui.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "41-docker-compose",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/yaml/known/docker-compose/shared.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "41-docker-compose",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/known-ui.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "41-docker-compose",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/yaml/known/docker-compose/shared.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "41-docker-compose",
+      "kind": "request",
+      "method": "GET",
+      "url": "blob:http://127.0.0.1:41799/6355ff10-bc8a-4e31-834d-159258952dbb",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "41-docker-compose",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/base/worker/workerMain.js",
+      "resourceType": "other",
+      "allowed": true
+    },
+    {
+      "slug": "41-docker-compose",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/js-yaml/js-yaml.min.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "41-docker-compose",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/js-yaml/js-yaml.min.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "41-docker-compose",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/docker-compose/renderer.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "41-docker-compose",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/docker-compose/renderer.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "__boot__",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/",
+      "resourceType": "document",
+      "allowed": true
+    },
+    {
+      "slug": "__boot__",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/boot.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "__boot__",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/assets/app.css",
+      "resourceType": "stylesheet",
+      "allowed": true
+    },
+    {
+      "slug": "__boot__",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/assets/companion.css",
+      "resourceType": "stylesheet",
+      "allowed": true
+    },
+    {
+      "slug": "__boot__",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/assets/examples.css",
+      "resourceType": "stylesheet",
+      "allowed": true
+    },
+    {
+      "slug": "__boot__",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/assets/preview-chrome.css",
+      "resourceType": "stylesheet",
+      "allowed": true
+    },
+    {
+      "slug": "__boot__",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/assets/preview-media.css",
+      "resourceType": "stylesheet",
+      "allowed": true
+    },
+    {
+      "slug": "__boot__",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/intake.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "__boot__",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/app.generated.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "__boot__",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/state.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "__boot__",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/script-loader.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "__boot__",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/monaco-loader.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "__boot__",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/assets/preview.css",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "__boot__",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/games/launcher.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "__boot__",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/sw.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "06-jsonl",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/detect-lite.generated.json",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "06-jsonl",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/detect-lite.generated.json",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "06-jsonl",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/detect.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "06-jsonl",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/type-select.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "06-jsonl",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/detect.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "06-jsonl",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/type-select.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "06-jsonl",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-runtime.generated.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "06-jsonl",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-runtime.generated.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "06-jsonl",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/code/langmap.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "06-jsonl",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.0.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "06-jsonl",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.1.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "06-jsonl",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.2.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "06-jsonl",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.3.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "06-jsonl",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.4.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "06-jsonl",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.5.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "06-jsonl",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.6.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "06-jsonl",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.7.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "06-jsonl",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.8.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "06-jsonl",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/code/langmap.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "06-jsonl",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.0.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "06-jsonl",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.1.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "06-jsonl",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.2.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "06-jsonl",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.3.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "06-jsonl",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.4.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "06-jsonl",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.5.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "06-jsonl",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.6.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "06-jsonl",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.7.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "06-jsonl",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/registry-detect.generated.8.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "06-jsonl",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/media/medialib.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "06-jsonl",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/binary/gamerom/headers.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "06-jsonl",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/media/medialib.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "06-jsonl",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/binary/gamerom/headers.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "06-jsonl",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/known/registry.generated.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "06-jsonl",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/known/registry.generated.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "06-jsonl",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/settings-defaults.generated.json",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "06-jsonl",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/settings-defaults.generated.json",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "06-jsonl",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/loader.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "06-jsonl",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/loader.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "06-jsonl",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/editor/editor.main.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "06-jsonl",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/editor/editor.main.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "06-jsonl",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/editor/editor.main.css",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "06-jsonl",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/editor/editor.main.css",
+      "resourceType": "stylesheet",
+      "allowed": true
+    },
+    {
+      "slug": "06-jsonl",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/code/codelens.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "06-jsonl",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/language/json/jsonMode.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "06-jsonl",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/code/codelens.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "06-jsonl",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/language/json/jsonMode.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "06-jsonl",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/jsonl/renderer.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "06-jsonl",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/jsonl/renderer.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "06-jsonl",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/code/metrics.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "06-jsonl",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/code/metrics.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "06-jsonl",
+      "kind": "request",
+      "method": "GET",
+      "url": "blob:http://127.0.0.1:41799/67d6ef95-0aed-42e6-9be1-c4382612f697",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "06-jsonl",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/query-panel.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "06-jsonl",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/core/query-panel.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "06-jsonl",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/base/worker/workerMain.js",
+      "resourceType": "other",
+      "allowed": true
+    },
+    {
+      "slug": "06-jsonl",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/base/worker/workerMain.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "06-jsonl",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/language/json/jsonWorker.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "06-jsonl",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/language/json/jsonWorker.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "06-jsonl",
+      "kind": "request",
+      "method": "GET",
+      "url": "blob:http://127.0.0.1:41799/f14ce9bd-223c-4bd2-b73e-3774e59b19ce",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "06-jsonl",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/base/worker/workerMain.js",
+      "resourceType": "other",
+      "allowed": true
+    },
+    {
+      "slug": "12-layered",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/layered/renderer.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "12-layered",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/layered/renderer.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "12-layered",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/layered/decoders/xcf.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "12-layered",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/layered/decoders/kra.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "12-layered",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/layered/decoders/xcf.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "12-layered",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/layered/decoders/kra.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "12-layered",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/ag-psd/ag-psd.bundle.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "12-layered",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/ag-psd/ag-psd.bundle.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "18-rtf",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/rtf/renderer.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "18-rtf",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/rtf/renderer.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "18-rtf",
+      "kind": "request",
+      "method": "GET",
+      "url": "blob:http://127.0.0.1:41799/3de8d8b5-1b2a-4b57-bfb0-7e320d50ff83",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "18-rtf",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/base/worker/workerMain.js",
+      "resourceType": "other",
+      "allowed": true
+    },
+    {
+      "slug": "24-midi",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/binary/midi/renderer.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "24-midi",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/binary/midi/renderer.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "30-kml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/basic-languages/xml/xml.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "30-kml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/basic-languages/xml/xml.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "30-kml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/kml/renderer.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "30-kml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/kml/renderer.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "30-kml",
+      "kind": "request",
+      "method": "GET",
+      "url": "blob:http://127.0.0.1:41799/6fb4038b-4116-4cf4-80a9-e490fedfa31c",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "30-kml",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/base/worker/workerMain.js",
+      "resourceType": "other",
+      "allowed": true
+    },
+    {
+      "slug": "36-npy",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/binary/npy/renderer.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "36-npy",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/binary/npy/renderer.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "42-sarif",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/sarif/renderer.js",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "42-sarif",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/types/text/sarif/renderer.js",
+      "resourceType": "fetch",
+      "allowed": true
+    },
+    {
+      "slug": "42-sarif",
+      "kind": "request",
+      "method": "GET",
+      "url": "blob:http://127.0.0.1:41799/6f033e49-718d-43a0-8d3f-e3323158ff80",
+      "resourceType": "script",
+      "allowed": true
+    },
+    {
+      "slug": "42-sarif",
+      "kind": "request",
+      "method": "GET",
+      "url": "http://127.0.0.1:41799/vendor/monaco/vs/base/worker/workerMain.js",
+      "resourceType": "other",
+      "allowed": true
+    }
+  ]
+}

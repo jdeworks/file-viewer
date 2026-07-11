@@ -1,0 +1,13 @@
+ new Debian package, version 2.0.
+ size 4275052 bytes: control archive=541 bytes.
+     313 bytes,     9 lines      control
+     472 bytes,     5 lines      md5sums
+ Package: file-viewer-companion
+ Version: 0.1.0
+ Architecture: amd64
+ Installed-Size: 13402
+ Maintainer: jdeworks
+ Priority: optional
+ Depends: libayatana-appindicator3-1, libwebkit2gtk-4.1-0, libgtk-3-0
+ Description: Tray wrapper around the file-viewer companion server (tray + autostart + native folder picker)
+  (none)

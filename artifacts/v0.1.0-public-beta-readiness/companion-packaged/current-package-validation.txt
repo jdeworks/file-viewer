@@ -1,0 +1,2 @@
+desktop_file_validate=pass
+runtime_libraries=all_resolved

@@ -1,0 +1,2779 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-07-11T08:16:50.650Z",
+  "baselineCommit": "10eb98fd90e3b7e7a7cc155d84ded642815f09b8",
+  "registry": {
+    "denominator": 144,
+    "uniqueIds": 144
+  },
+  "candidateCount": 45,
+  "distinctExpectedTypes": 45,
+  "validRichCandidates": 45,
+  "replacements": [
+    {
+      "expectedType": "json",
+      "originalFile": "docs/examples/composer.json",
+      "file": "docs/examples/sample.json",
+      "replacementReason": "composer.json activates the composer-json enhancement; generic sample.json exercises the base JSON renderer"
+    },
+    {
+      "expectedType": "geojson",
+      "originalFile": "docs/examples/sample.geojson",
+      "file": "artifacts/v0.1.0-public-beta-readiness/format-fixtures/representative.topojson",
+      "replacementReason": "sample.geojson intentionally auto-detects as the distinct geo base type; a TopoJSON fixture exercises the registered geojson base type"
+    }
+  ],
+  "failures": [],
+  "rows": [
+    {
+      "index": 1,
+      "family": "Text/data",
+      "expectedType": "markdown",
+      "file": "docs/examples/welcome.md",
+      "originalFile": null,
+      "replacementReason": null,
+      "bytes": 456,
+      "sha256": "1fc68e64e47c649887f40074cad034db5f00abdf6cf845be467a00297312d379",
+      "mimeType": "text/markdown",
+      "isBinary": false,
+      "detectedType": "markdown",
+      "detectorScore": 0.95,
+      "detectorRanking": [
+        {
+          "id": "markdown",
+          "score": 0.95
+        },
+        {
+          "id": "raw",
+          "score": 0.05
+        },
+        {
+          "id": "pdf",
+          "score": 0
+        },
+        {
+          "id": "csv",
+          "score": 0
+        },
+        {
+          "id": "xlsx",
+          "score": 0
+        },
+        {
+          "id": "docx",
+          "score": 0
+        }
+      ],
+      "knownEnhancement": null,
+      "effectiveRenderer": "base:markdown",
+      "baseViewRequired": false,
+      "validity": {
+        "valid": true,
+        "richness": true,
+        "details": {
+          "headings": 2,
+          "bullets": 4,
+          "characters": 456
+        }
+      },
+      "plannedLandmarkTokens": [
+        "Welcome to File Viewer",
+        "mobile-first"
+      ],
+      "assignedConfiguration": "1440x900-light",
+      "status": "candidate-pass"
+    },
+    {
+      "index": 2,
+      "family": "Text/data",
+      "expectedType": "csv",
+      "file": "docs/examples/sample.csv",
+      "originalFile": null,
+      "replacementReason": null,
+      "bytes": 216,
+      "sha256": "2f4aa229118e803c7490a2be46dce7c79401050a9035ac4c2495a644291acb83",
+      "mimeType": "text/csv",
+      "isBinary": false,
+      "detectedType": "csv",
+      "detectorScore": 0.95,
+      "detectorRanking": [
+        {
+          "id": "csv",
+          "score": 0.95
+        },
+        {
+          "id": "raw",
+          "score": 0.05
+        },
+        {
+          "id": "markdown",
+          "score": 0
+        },
+        {
+          "id": "pdf",
+          "score": 0
+        },
+        {
+          "id": "xlsx",
+          "score": 0
+        },
+        {
+          "id": "docx",
+          "score": 0
+        }
+      ],
+      "knownEnhancement": null,
+      "effectiveRenderer": "base:csv",
+      "baseViewRequired": false,
+      "validity": {
+        "valid": true,
+        "richness": true,
+        "details": {
+          "rows": 5,
+          "columns": 4
+        }
+      },
+      "plannedLandmarkTokens": [
+        "Ada Lovelace",
+        "Katherine Johnson"
+      ],
+      "assignedConfiguration": "1280x720-dark",
+      "status": "candidate-pass"
+    },
+    {
+      "index": 3,
+      "family": "Text/data",
+      "expectedType": "json",
+      "file": "docs/examples/sample.json",
+      "originalFile": "docs/examples/composer.json",
+      "replacementReason": "composer.json activates the composer-json enhancement; generic sample.json exercises the base JSON renderer",
+      "bytes": 332,
+      "sha256": "0c5b25569c21ee37520b8196b0cd302854660bd7f62569d105300fcdb1f4c337",
+      "mimeType": "application/json",
+      "isBinary": false,
+      "detectedType": "json",
+      "detectorScore": 0.96,
+      "detectorRanking": [
+        {
+          "id": "json",
+          "score": 0.96
+        },
+        {
+          "id": "dbf",
+          "score": 0.7
+        },
+        {
+          "id": "raw",
+          "score": 0.05
+        },
+        {
+          "id": "markdown",
+          "score": 0
+        },
+        {
+          "id": "pdf",
+          "score": 0
+        },
+        {
+          "id": "csv",
+          "score": 0
+        }
+      ],
+      "knownEnhancement": null,
+      "effectiveRenderer": "base:json",
+      "baseViewRequired": false,
+      "validity": {
+        "valid": true,
+        "richness": true,
+        "details": {
+          "topLevelKeys": [
+            "name",
+            "private",
+            "mobileFirst",
+            "trust",
+            "types",
+            "counts",
+            "tags"
+          ],
+          "characters": 332
+        }
+      },
+      "plannedLandmarkTokens": [
+        "file-viewer",
+        "client-only"
+      ],
+      "assignedConfiguration": "390x844-light",
+      "status": "candidate-pass"
+    },
+    {
+      "index": 4,
+      "family": "Text/data",
+      "expectedType": "yaml",
+      "file": "docs/examples/stack.yaml",
+      "originalFile": null,
+      "replacementReason": null,
+      "bytes": 390,
+      "sha256": "3b979c422ab8ffdfebb395b9e50d90b6bf26da82115de9afcd2327d13694b549",
+      "mimeType": "application/yaml",
+      "isBinary": false,
+      "detectedType": "yaml",
+      "detectorScore": 0.95,
+      "detectorRanking": [
+        {
+          "id": "yaml",
+          "score": 0.95
+        },
+        {
+          "id": "code",
+          "score": 0.8
+        },
+        {
+          "id": "markdown",
+          "score": 0.18
+        },
+        {
+          "id": "raw",
+          "score": 0.05
+        },
+        {
+          "id": "pdf",
+          "score": 0
+        },
+        {
+          "id": "csv",
+          "score": 0
+        }
+      ],
+      "knownEnhancement": {
+        "id": "stack-yaml",
+        "label": "Haskell Stack"
+      },
+      "effectiveRenderer": "known:stack-yaml",
+      "baseViewRequired": true,
+      "validity": {
+        "valid": true,
+        "richness": true,
+        "details": {
+          "topLevelKeys": [
+            "resolver",
+            "packages",
+            "extra-deps",
+            "system-ghc",
+            "install-ghc",
+            "ghc-options"
+          ],
+          "lines": 21
+        }
+      },
+      "plannedLandmarkTokens": [
+        "resolver",
+        "async-pool"
+      ],
+      "assignedConfiguration": "1440x900-dark",
+      "status": "candidate-pass"
+    },
+    {
+      "index": 5,
+      "family": "Text/data",
+      "expectedType": "xml",
+      "file": "docs/examples/build.xml",
+      "originalFile": null,
+      "replacementReason": null,
+      "bytes": 1851,
+      "sha256": "8eabb2c1532a8fd8880ff4e80c10d11e4cf9f8d89571631981aa6732d783a02d",
+      "mimeType": "application/xml",
+      "isBinary": false,
+      "detectedType": "xml",
+      "detectorScore": 0.92,
+      "detectorRanking": [
+        {
+          "id": "xml",
+          "score": 0.92
+        },
+        {
+          "id": "code",
+          "score": 0.8
+        },
+        {
+          "id": "raw",
+          "score": 0.05
+        },
+        {
+          "id": "markdown",
+          "score": 0
+        },
+        {
+          "id": "pdf",
+          "score": 0
+        },
+        {
+          "id": "csv",
+          "score": 0
+        }
+      ],
+      "knownEnhancement": {
+        "id": "ant-build",
+        "label": "Ant Build"
+      },
+      "effectiveRenderer": "known:ant-build",
+      "baseViewRequired": true,
+      "validity": {
+        "valid": true,
+        "richness": true,
+        "details": {
+          "elements": 30,
+          "distinctElements": 17
+        }
+      },
+      "plannedLandmarkTokens": [
+        "MyApp",
+        "compile"
+      ],
+      "assignedConfiguration": "1280x720-light",
+      "status": "candidate-pass"
+    },
+    {
+      "index": 6,
+      "family": "Text/data",
+      "expectedType": "jsonl",
+      "file": "docs/examples/sample.jsonl",
+      "originalFile": null,
+      "replacementReason": null,
+      "bytes": 671,
+      "sha256": "75544e3d9631dec37d5ebf23758fa6de28004738818e0c6870fdd9bc2f134d2e",
+      "mimeType": "application/x-ndjson",
+      "isBinary": false,
+      "detectedType": "jsonl",
+      "detectorScore": 0.92,
+      "detectorRanking": [
+        {
+          "id": "jsonl",
+          "score": 0.92
+        },
+        {
+          "id": "json",
+          "score": 0.9
+        },
+        {
+          "id": "dbf",
+          "score": 0.7
+        },
+        {
+          "id": "raw",
+          "score": 0.05
+        },
+        {
+          "id": "markdown",
+          "score": 0
+        },
+        {
+          "id": "pdf",
+          "score": 0
+        }
+      ],
+      "knownEnhancement": null,
+      "effectiveRenderer": "base:jsonl",
+      "baseViewRequired": false,
+      "validity": {
+        "valid": true,
+        "richness": true,
+        "details": {
+          "records": 5,
+          "levels": [
+            "INFO",
+            "WARN",
+            "ERROR"
+          ]
+        }
+      },
+      "plannedLandmarkTokens": [
+        "Server started",
+        "Slow query detected"
+      ],
+      "assignedConfiguration": "390x844-dark",
+      "status": "candidate-pass"
+    },
+    {
+      "index": 7,
+      "family": "Text/data",
+      "expectedType": "sqlite",
+      "file": "docs/examples/sample.sqlite",
+      "originalFile": null,
+      "replacementReason": null,
+      "bytes": 12288,
+      "sha256": "25636e7261e92cd6083c8e62ac269ab7926d9437c58793692572de8be1d05978",
+      "mimeType": "application/vnd.sqlite3",
+      "isBinary": true,
+      "detectedType": "sqlite",
+      "detectorScore": 0.97,
+      "detectorRanking": [
+        {
+          "id": "sqlite",
+          "score": 0.97
+        },
+        {
+          "id": "mbtiles",
+          "score": 0.45
+        },
+        {
+          "id": "raw",
+          "score": 0.01
+        },
+        {
+          "id": "markdown",
+          "score": 0
+        },
+        {
+          "id": "pdf",
+          "score": 0
+        },
+        {
+          "id": "csv",
+          "score": 0
+        }
+      ],
+      "knownEnhancement": null,
+      "effectiveRenderer": "base:sqlite",
+      "baseViewRequired": false,
+      "validity": {
+        "valid": true,
+        "richness": true,
+        "details": {
+          "bytes": 12288,
+          "pageSize": 4096
+        }
+      },
+      "plannedLandmarkTokens": [
+        "albums",
+        "artists"
+      ],
+      "assignedConfiguration": "1440x900-light",
+      "status": "candidate-pass"
+    },
+    {
+      "index": 8,
+      "family": "Text/data",
+      "expectedType": "ipynb",
+      "file": "docs/examples/sample.ipynb",
+      "originalFile": null,
+      "replacementReason": null,
+      "bytes": 1800,
+      "sha256": "9b918f2c4ae346c4935f02bd5c68ae292119b610ebc76b4f6c8d9c85296579b3",
+      "mimeType": "application/json",
+      "isBinary": false,
+      "detectedType": "ipynb",
+      "detectorScore": 0.98,
+      "detectorRanking": [
+        {
+          "id": "ipynb",
+          "score": 0.98
+        },
+        {
+          "id": "json",
+          "score": 0.9
+        },
+        {
+          "id": "dbf",
+          "score": 0.7
+        },
+        {
+          "id": "markdown",
+          "score": 0.18
+        },
+        {
+          "id": "raw",
+          "score": 0.05
+        },
+        {
+          "id": "pdf",
+          "score": 0
+        }
+      ],
+      "knownEnhancement": null,
+      "effectiveRenderer": "base:ipynb",
+      "baseViewRequired": false,
+      "validity": {
+        "valid": true,
+        "richness": true,
+        "details": {
+          "cells": 4,
+          "kinds": [
+            "markdown",
+            "code"
+          ],
+          "outputs": 3
+        }
+      },
+      "plannedLandmarkTokens": [
+        "Notebook demo",
+        "Hello from a saved notebook output"
+      ],
+      "assignedConfiguration": "1280x720-dark",
+      "status": "candidate-pass"
+    },
+    {
+      "index": 9,
+      "family": "Images",
+      "expectedType": "image",
+      "file": "docs/examples/sample.png",
+      "originalFile": null,
+      "replacementReason": null,
+      "bytes": 19981,
+      "sha256": "4dbf48c4e83f2ccc335aa75f985409c6f44671f6cac50413eb5938406bd270e5",
+      "mimeType": "image/png",
+      "isBinary": true,
+      "detectedType": "image",
+      "detectorScore": 0.99,
+      "detectorRanking": [
+        {
+          "id": "image",
+          "score": 0.99
+        },
+        {
+          "id": "msgpack",
+          "score": 0.45
+        },
+        {
+          "id": "raw",
+          "score": 0.01
+        },
+        {
+          "id": "markdown",
+          "score": 0
+        },
+        {
+          "id": "pdf",
+          "score": 0
+        },
+        {
+          "id": "csv",
+          "score": 0
+        }
+      ],
+      "knownEnhancement": null,
+      "effectiveRenderer": "base:image",
+      "baseViewRequired": false,
+      "validity": {
+        "valid": true,
+        "richness": true,
+        "details": {
+          "width": 313,
+          "height": 313
+        }
+      },
+      "plannedLandmarkTokens": [],
+      "assignedConfiguration": "390x844-light",
+      "status": "candidate-pass"
+    },
+    {
+      "index": 10,
+      "family": "Images",
+      "expectedType": "svg",
+      "file": "docs/examples/example.svg",
+      "originalFile": null,
+      "replacementReason": null,
+      "bytes": 395,
+      "sha256": "767cb4d1d3da4454b956f63b597f373dd62005057259b50a74a7a7048a4a8d0c",
+      "mimeType": "image/svg+xml",
+      "isBinary": false,
+      "detectedType": "svg",
+      "detectorScore": 0.96,
+      "detectorRanking": [
+        {
+          "id": "svg",
+          "score": 0.96
+        },
+        {
+          "id": "image",
+          "score": 0.92
+        },
+        {
+          "id": "xml",
+          "score": 0.85
+        },
+        {
+          "id": "code",
+          "score": 0.8
+        },
+        {
+          "id": "raw",
+          "score": 0.05
+        },
+        {
+          "id": "markdown",
+          "score": 0
+        }
+      ],
+      "knownEnhancement": null,
+      "effectiveRenderer": "base:svg",
+      "baseViewRequired": false,
+      "validity": {
+        "valid": true,
+        "richness": true,
+        "details": {
+          "drawableElements": 4,
+          "characters": 395
+        }
+      },
+      "plannedLandmarkTokens": [
+        "SVG, sanitized"
+      ],
+      "assignedConfiguration": "1440x900-dark",
+      "status": "candidate-pass"
+    },
+    {
+      "index": 11,
+      "family": "Images",
+      "expectedType": "tiff",
+      "file": "docs/examples/sample.tiff",
+      "originalFile": null,
+      "replacementReason": null,
+      "bytes": 18346,
+      "sha256": "97c91604eb12e81fb07ca4cb38d40c8e56c37cc9bf9bd4939571415b95881b37",
+      "mimeType": "image/tiff",
+      "isBinary": true,
+      "detectedType": "tiff",
+      "detectorScore": 0.99,
+      "detectorRanking": [
+        {
+          "id": "tiff",
+          "score": 0.99
+        },
+        {
+          "id": "image",
+          "score": 0.9
+        },
+        {
+          "id": "raw",
+          "score": 0.01
+        },
+        {
+          "id": "markdown",
+          "score": 0
+        },
+        {
+          "id": "pdf",
+          "score": 0
+        },
+        {
+          "id": "csv",
+          "score": 0
+        }
+      ],
+      "knownEnhancement": null,
+      "effectiveRenderer": "base:tiff",
+      "baseViewRequired": false,
+      "validity": {
+        "valid": true,
+        "richness": true,
+        "details": {
+          "bytes": 18346,
+          "byteOrder": "II"
+        }
+      },
+      "plannedLandmarkTokens": [],
+      "assignedConfiguration": "1280x720-light",
+      "status": "candidate-pass"
+    },
+    {
+      "index": 12,
+      "family": "Images",
+      "expectedType": "layered",
+      "file": "docs/examples/sample.psd",
+      "originalFile": null,
+      "replacementReason": null,
+      "bytes": 37746,
+      "sha256": "2d190efddf648408ad0115852f8a029eec44de10bd29f6ff222aaa574cc31bc1",
+      "mimeType": "image/vnd.adobe.photoshop",
+      "isBinary": true,
+      "detectedType": "layered",
+      "detectorScore": 0.97,
+      "detectorRanking": [
+        {
+          "id": "layered",
+          "score": 0.97
+        },
+        {
+          "id": "image",
+          "score": 0.9
+        },
+        {
+          "id": "raw",
+          "score": 0.01
+        },
+        {
+          "id": "markdown",
+          "score": 0
+        },
+        {
+          "id": "pdf",
+          "score": 0
+        },
+        {
+          "id": "csv",
+          "score": 0
+        }
+      ],
+      "knownEnhancement": null,
+      "effectiveRenderer": "base:layered",
+      "baseViewRequired": false,
+      "validity": {
+        "valid": true,
+        "richness": true,
+        "details": {
+          "width": 100,
+          "height": 100,
+          "channels": 3
+        }
+      },
+      "plannedLandmarkTokens": [
+        "Layers"
+      ],
+      "assignedConfiguration": "390x844-dark",
+      "status": "candidate-pass"
+    },
+    {
+      "index": 13,
+      "family": "Office/PDF",
+      "expectedType": "pdf",
+      "file": "docs/examples/sample-pages.pdf",
+      "originalFile": null,
+      "replacementReason": null,
+      "bytes": 1312,
+      "sha256": "49d3c38c3e60e2d098cada59470ada5ad0e9778a47ef1eb8e1537492cb63bfe2",
+      "mimeType": "application/pdf",
+      "isBinary": true,
+      "detectedType": "pdf",
+      "detectorScore": 0.99,
+      "detectorRanking": [
+        {
+          "id": "pdf",
+          "score": 0.99
+        },
+        {
+          "id": "raw",
+          "score": 0.01
+        },
+        {
+          "id": "markdown",
+          "score": 0
+        },
+        {
+          "id": "csv",
+          "score": 0
+        },
+        {
+          "id": "xlsx",
+          "score": 0
+        },
+        {
+          "id": "docx",
+          "score": 0
+        }
+      ],
+      "knownEnhancement": null,
+      "effectiveRenderer": "base:pdf",
+      "baseViewRequired": false,
+      "validity": {
+        "valid": true,
+        "richness": true,
+        "details": {
+          "pages": 3,
+          "textItems": 3
+        }
+      },
+      "plannedLandmarkTokens": [],
+      "assignedConfiguration": "1440x900-light",
+      "status": "candidate-pass"
+    },
+    {
+      "index": 14,
+      "family": "Office/PDF",
+      "expectedType": "xlsx",
+      "file": "docs/examples/sample.xlsx",
+      "originalFile": null,
+      "replacementReason": null,
+      "bytes": 17709,
+      "sha256": "c9373c168b98a5bde8f26eb6758e16f386c727ea19e3dfbd6bddddc8b8fb983f",
+      "mimeType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "isBinary": true,
+      "detectedType": "xlsx",
+      "detectorScore": 0.95,
+      "detectorRanking": [
+        {
+          "id": "xlsx",
+          "score": 0.95
+        },
+        {
+          "id": "zip",
+          "score": 0.45
+        },
+        {
+          "id": "raw",
+          "score": 0.01
+        },
+        {
+          "id": "markdown",
+          "score": 0
+        },
+        {
+          "id": "pdf",
+          "score": 0
+        },
+        {
+          "id": "csv",
+          "score": 0
+        }
+      ],
+      "knownEnhancement": null,
+      "effectiveRenderer": "base:xlsx",
+      "baseViewRequired": false,
+      "validity": {
+        "valid": true,
+        "richness": true,
+        "details": {
+          "sheets": [
+            "People",
+            "Totals"
+          ],
+          "cells": 22
+        }
+      },
+      "plannedLandmarkTokens": [
+        "People",
+        "Totals"
+      ],
+      "assignedConfiguration": "1280x720-dark",
+      "status": "candidate-pass"
+    },
+    {
+      "index": 15,
+      "family": "Office/PDF",
+      "expectedType": "docx",
+      "file": "docs/examples/sample.docx",
+      "originalFile": null,
+      "replacementReason": null,
+      "bytes": 1938,
+      "sha256": "0d9f923905180847865b56fc5b98bb7504987192b78b2c384baa73566e0d4ebb",
+      "mimeType": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "isBinary": true,
+      "detectedType": "docx",
+      "detectorScore": 0.95,
+      "detectorRanking": [
+        {
+          "id": "docx",
+          "score": 0.95
+        },
+        {
+          "id": "zip",
+          "score": 0.45
+        },
+        {
+          "id": "raw",
+          "score": 0.01
+        },
+        {
+          "id": "markdown",
+          "score": 0
+        },
+        {
+          "id": "pdf",
+          "score": 0
+        },
+        {
+          "id": "csv",
+          "score": 0
+        }
+      ],
+      "knownEnhancement": null,
+      "effectiveRenderer": "base:docx",
+      "baseViewRequired": false,
+      "validity": {
+        "valid": true,
+        "richness": true,
+        "details": {
+          "entries": 3,
+          "firstEntries": [
+            "[Content_Types].xml",
+            "_rels/.rels",
+            "word/document.xml"
+          ],
+          "extractedCharacters": 1120,
+          "specialized": null
+        }
+      },
+      "plannedLandmarkTokens": [
+        "Hello, File Viewer",
+        "A subheading"
+      ],
+      "assignedConfiguration": "390x844-light",
+      "status": "candidate-pass"
+    },
+    {
+      "index": 16,
+      "family": "Office/PDF",
+      "expectedType": "pptx",
+      "file": "docs/examples/sample.pptx",
+      "originalFile": null,
+      "replacementReason": null,
+      "bytes": 52092,
+      "sha256": "8ea4b211ebb192f1c5e3685d07f6b43b5562fc91283c2a24a6b57a527c1de206",
+      "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+      "isBinary": true,
+      "detectedType": "pptx",
+      "detectorScore": 0.95,
+      "detectorRanking": [
+        {
+          "id": "pptx",
+          "score": 0.95
+        },
+        {
+          "id": "zip",
+          "score": 0.45
+        },
+        {
+          "id": "raw",
+          "score": 0.01
+        },
+        {
+          "id": "markdown",
+          "score": 0
+        },
+        {
+          "id": "pdf",
+          "score": 0
+        },
+        {
+          "id": "csv",
+          "score": 0
+        }
+      ],
+      "knownEnhancement": null,
+      "effectiveRenderer": "base:pptx",
+      "baseViewRequired": false,
+      "validity": {
+        "valid": true,
+        "richness": true,
+        "details": {
+          "entries": 24,
+          "firstEntries": [
+            "[Content_Types].xml",
+            "_rels/.rels",
+            "docProps/app.xml",
+            "docProps/core.xml",
+            "ppt/_rels/presentation.xml.rels",
+            "ppt/theme/theme1.xml",
+            "ppt/presentation.xml",
+            "ppt/presProps.xml",
+            "ppt/tableStyles.xml",
+            "ppt/viewProps.xml",
+            "ppt/slideLayouts/slideLayout1.xml",
+            "ppt/slideLayouts/_rels/slideLayout1.xml.rels"
+          ],
+          "extractedCharacters": 42063,
+          "specialized": null
+        }
+      },
+      "plannedLandmarkTokens": [],
+      "assignedConfiguration": "1440x900-dark",
+      "status": "candidate-pass"
+    },
+    {
+      "index": 17,
+      "family": "Office/PDF",
+      "expectedType": "odf",
+      "file": "docs/examples/sample.odt",
+      "originalFile": null,
+      "replacementReason": null,
+      "bytes": 851,
+      "sha256": "fe514617226361c813c40a5732b76f590d248cce5775d08983bf4b4d92c8bd3c",
+      "mimeType": "application/vnd.oasis.opendocument.text",
+      "isBinary": true,
+      "detectedType": "odf",
+      "detectorScore": 0.95,
+      "detectorRanking": [
+        {
+          "id": "odf",
+          "score": 0.95
+        },
+        {
+          "id": "zip",
+          "score": 0.45
+        },
+        {
+          "id": "raw",
+          "score": 0.01
+        },
+        {
+          "id": "markdown",
+          "score": 0
+        },
+        {
+          "id": "pdf",
+          "score": 0
+        },
+        {
+          "id": "csv",
+          "score": 0
+        }
+      ],
+      "knownEnhancement": null,
+      "effectiveRenderer": "base:odf",
+      "baseViewRequired": false,
+      "validity": {
+        "valid": true,
+        "richness": true,
+        "details": {
+          "entries": 3,
+          "firstEntries": [
+            "mimetype",
+            "content.xml",
+            "META-INF/manifest.xml"
+          ],
+          "extractedCharacters": 1055,
+          "specialized": null
+        }
+      },
+      "plannedLandmarkTokens": [
+        "OpenDocument Sample",
+        "First item"
+      ],
+      "assignedConfiguration": "1280x720-light",
+      "status": "candidate-pass"
+    },
+    {
+      "index": 18,
+      "family": "Office/PDF",
+      "expectedType": "rtf",
+      "file": "docs/examples/sample.rtf",
+      "originalFile": null,
+      "replacementReason": null,
+      "bytes": 1884,
+      "sha256": "49d461479a4dc64701fbccd6c253d1f11502abbe75b189aaa0e9d906b296bdf5",
+      "mimeType": "application/rtf",
+      "isBinary": false,
+      "detectedType": "rtf",
+      "detectorScore": 0.95,
+      "detectorRanking": [
+        {
+          "id": "rtf",
+          "score": 0.95
+        },
+        {
+          "id": "dbf",
+          "score": 0.7
+        },
+        {
+          "id": "raw",
+          "score": 0.05
+        },
+        {
+          "id": "markdown",
+          "score": 0
+        },
+        {
+          "id": "pdf",
+          "score": 0
+        },
+        {
+          "id": "csv",
+          "score": 0
+        }
+      ],
+      "knownEnhancement": null,
+      "effectiveRenderer": "base:rtf",
+      "baseViewRequired": false,
+      "validity": {
+        "valid": true,
+        "richness": true,
+        "details": {
+          "wordsIncludingControls": 252,
+          "characters": 1884
+        }
+      },
+      "plannedLandmarkTokens": [
+        "Sample RTF Document",
+        "About RTF Parsing"
+      ],
+      "assignedConfiguration": "390x844-dark",
+      "status": "candidate-pass"
+    },
+    {
+      "index": 19,
+      "family": "Archives/e-books",
+      "expectedType": "archive",
+      "file": "docs/examples/Sample.7z",
+      "originalFile": null,
+      "replacementReason": null,
+      "bytes": 453,
+      "sha256": "b7e7841e1d66295b95a349d7231d15e9ec018ad591dd876d46eabc77f1e5aba8",
+      "mimeType": "application/octet-stream",
+      "isBinary": true,
+      "detectedType": "archive",
+      "detectorScore": 0.92,
+      "detectorRanking": [
+        {
+          "id": "archive",
+          "score": 0.92
+        },
+        {
+          "id": "raw",
+          "score": 0.01
+        },
+        {
+          "id": "markdown",
+          "score": 0
+        },
+        {
+          "id": "pdf",
+          "score": 0
+        },
+        {
+          "id": "csv",
+          "score": 0
+        },
+        {
+          "id": "xlsx",
+          "score": 0
+        }
+      ],
+      "knownEnhancement": null,
+      "effectiveRenderer": "base:archive",
+      "baseViewRequired": false,
+      "validity": {
+        "valid": true,
+        "richness": true,
+        "details": {
+          "entries": [
+            "README.md",
+            "docs/guide.txt",
+            "data/people.csv",
+            "src/example.js"
+          ],
+          "extractedReadmeCharacters": 92
+        }
+      },
+      "plannedLandmarkTokens": [
+        "README.md",
+        "data/people.csv"
+      ],
+      "assignedConfiguration": "1440x900-light",
+      "status": "candidate-pass"
+    },
+    {
+      "index": 20,
+      "family": "Archives/e-books",
+      "expectedType": "zip",
+      "file": "docs/examples/sample.zip",
+      "originalFile": null,
+      "replacementReason": null,
+      "bytes": 745,
+      "sha256": "74774350109136d92994b7e3df82dc6750aad657de0110d36ba8b90b5e4ee206",
+      "mimeType": "application/zip",
+      "isBinary": true,
+      "detectedType": "zip",
+      "detectorScore": 0.9,
+      "detectorRanking": [
+        {
+          "id": "zip",
+          "score": 0.9
+        },
+        {
+          "id": "raw",
+          "score": 0.01
+        },
+        {
+          "id": "markdown",
+          "score": 0
+        },
+        {
+          "id": "pdf",
+          "score": 0
+        },
+        {
+          "id": "csv",
+          "score": 0
+        },
+        {
+          "id": "xlsx",
+          "score": 0
+        }
+      ],
+      "knownEnhancement": null,
+      "effectiveRenderer": "base:zip",
+      "baseViewRequired": false,
+      "validity": {
+        "valid": true,
+        "richness": true,
+        "details": {
+          "entries": 4,
+          "firstEntries": [
+            "README.txt",
+            "src/app.js",
+            "src/util.py",
+            "data/rows.csv"
+          ],
+          "extractedCharacters": 517,
+          "specialized": null
+        }
+      },
+      "plannedLandmarkTokens": [
+        "README.txt",
+        "src/app.js"
+      ],
+      "assignedConfiguration": "1280x720-dark",
+      "status": "candidate-pass"
+    },
+    {
+      "index": 21,
+      "family": "Archives/e-books",
+      "expectedType": "epub",
+      "file": "docs/examples/sample.epub",
+      "originalFile": null,
+      "replacementReason": null,
+      "bytes": 69754,
+      "sha256": "74f3cb459646cbf0b1023b3d3d40378d0e837dcdb21901ed7542c049d77ae21e",
+      "mimeType": "application/epub+zip",
+      "isBinary": true,
+      "detectedType": "epub",
+      "detectorScore": 0.96,
+      "detectorRanking": [
+        {
+          "id": "epub",
+          "score": 0.96
+        },
+        {
+          "id": "zip",
+          "score": 0.9
+        },
+        {
+          "id": "raw",
+          "score": 0.01
+        },
+        {
+          "id": "markdown",
+          "score": 0
+        },
+        {
+          "id": "pdf",
+          "score": 0
+        },
+        {
+          "id": "csv",
+          "score": 0
+        }
+      ],
+      "knownEnhancement": null,
+      "effectiveRenderer": "base:epub",
+      "baseViewRequired": false,
+      "validity": {
+        "valid": true,
+        "richness": true,
+        "details": {
+          "entries": 10,
+          "firstEntries": [
+            "mimetype",
+            "META-INF/container.xml",
+            "OEBPS/5830164920110942888_7256-cover.png",
+            "OEBPS/pgepub.css",
+            "OEBPS/0.css",
+            "OEBPS/594943342615218554_7256-h-0.htm.html",
+            "OEBPS/594943342615218554_7256-h-1.htm.html",
+            "OEBPS/toc.ncx",
+            "OEBPS/wrap0000.html",
+            "OEBPS/content.opf"
+          ],
+          "extractedCharacters": 34539,
+          "specialized": null
+        }
+      },
+      "plannedLandmarkTokens": [
+        "The Gift of the Magi",
+        "O. Henry"
+      ],
+      "assignedConfiguration": "390x844-light",
+      "status": "candidate-pass"
+    },
+    {
+      "index": 22,
+      "family": "Archives/e-books",
+      "expectedType": "comic",
+      "file": "docs/examples/sample.cbz",
+      "originalFile": null,
+      "replacementReason": null,
+      "bytes": 442271,
+      "sha256": "b299818f5a30bdf1c002c057a0214d9cfba9f9d3b4b1ce8f9358526fad215b6f",
+      "mimeType": "application/vnd.comicbook+zip",
+      "isBinary": true,
+      "detectedType": "comic",
+      "detectorScore": 0.96,
+      "detectorRanking": [
+        {
+          "id": "comic",
+          "score": 0.96
+        },
+        {
+          "id": "zip",
+          "score": 0.9
+        },
+        {
+          "id": "raw",
+          "score": 0.01
+        },
+        {
+          "id": "markdown",
+          "score": 0
+        },
+        {
+          "id": "pdf",
+          "score": 0
+        },
+        {
+          "id": "csv",
+          "score": 0
+        }
+      ],
+      "knownEnhancement": null,
+      "effectiveRenderer": "base:comic",
+      "baseViewRequired": false,
+      "validity": {
+        "valid": true,
+        "richness": true,
+        "details": {
+          "entries": 3,
+          "firstEntries": [
+            "page-01.png",
+            "page-02.png",
+            "page-10.png"
+          ],
+          "extractedCharacters": 0,
+          "specialized": {
+            "valid": true,
+            "pages": [
+              {
+                "name": "page-01.png",
+                "bytes": 163265,
+                "width": 600,
+                "height": 900,
+                "sha256": "98ce89ec61f22f2f7119ad620bb413b19cbc19b9c56e00769539897c37796af5"
+              },
+              {
+                "name": "page-02.png",
+                "bytes": 181394,
+                "width": 600,
+                "height": 900,
+                "sha256": "e0ab515f49c556df398885ef854b8ea4e8fa54380a1c615df1a4c5b3e20893bc"
+              },
+              {
+                "name": "page-10.png",
+                "bytes": 152002,
+                "width": 600,
+                "height": 900,
+                "sha256": "c19797b936ce08bde9b51f589e34d15d0d3a713c2f81503a97a0f0a0e9844a7a"
+              }
+            ]
+          }
+        }
+      },
+      "plannedLandmarkTokens": [],
+      "assignedConfiguration": "1440x900-dark",
+      "status": "candidate-pass"
+    },
+    {
+      "index": 23,
+      "family": "Media",
+      "expectedType": "media",
+      "file": "docs/examples/sample.mp4",
+      "originalFile": null,
+      "replacementReason": null,
+      "bytes": 47764,
+      "sha256": "96374f8a6755f0fa9eb73781e357fff87139073fac4531ee1cb41aa45c8f4115",
+      "mimeType": "video/mp4",
+      "isBinary": true,
+      "detectedType": "media",
+      "detectorScore": 0.95,
+      "detectorRanking": [
+        {
+          "id": "media",
+          "score": 0.95
+        },
+        {
+          "id": "raw",
+          "score": 0.01
+        },
+        {
+          "id": "markdown",
+          "score": 0
+        },
+        {
+          "id": "pdf",
+          "score": 0
+        },
+        {
+          "id": "csv",
+          "score": 0
+        },
+        {
+          "id": "xlsx",
+          "score": 0
+        }
+      ],
+      "knownEnhancement": null,
+      "effectiveRenderer": "base:media",
+      "baseViewRequired": false,
+      "validity": {
+        "valid": true,
+        "richness": true,
+        "details": {
+          "bytes": 47764,
+          "container": "ISO BMFF",
+          "brand": "isom",
+          "video": {
+            "codec": "avc1",
+            "width": 320,
+            "height": 180
+          }
+        }
+      },
+      "plannedLandmarkTokens": [],
+      "assignedConfiguration": "1280x720-light",
+      "status": "candidate-pass"
+    },
+    {
+      "index": 24,
+      "family": "Media",
+      "expectedType": "midi",
+      "file": "docs/examples/sample.mid",
+      "originalFile": null,
+      "replacementReason": null,
+      "bytes": 614,
+      "sha256": "e9e18c7f79dbeb4e8e36f89c3ea28c1dfa7dff26161658d5ec6410501042e95b",
+      "mimeType": "audio/midi",
+      "isBinary": true,
+      "detectedType": "midi",
+      "detectorScore": 0.99,
+      "detectorRanking": [
+        {
+          "id": "midi",
+          "score": 0.99
+        },
+        {
+          "id": "media",
+          "score": 0.95
+        },
+        {
+          "id": "raw",
+          "score": 0.01
+        },
+        {
+          "id": "markdown",
+          "score": 0
+        },
+        {
+          "id": "pdf",
+          "score": 0
+        },
+        {
+          "id": "csv",
+          "score": 0
+        }
+      ],
+      "knownEnhancement": null,
+      "effectiveRenderer": "base:midi",
+      "baseViewRequired": false,
+      "validity": {
+        "valid": true,
+        "richness": true,
+        "details": {
+          "format": 1,
+          "tracks": 3,
+          "division": 480,
+          "notes": 48,
+          "uniquePitches": 15,
+          "durationSeconds": 8,
+          "musicalPrograms": [
+            0,
+            32
+          ]
+        }
+      },
+      "plannedLandmarkTokens": [
+        "Type 1 Format",
+        "3 Tracks"
+      ],
+      "assignedConfiguration": "390x844-dark",
+      "status": "candidate-pass"
+    },
+    {
+      "index": 25,
+      "family": "Fonts",
+      "expectedType": "font",
+      "file": "docs/examples/sample.ttf",
+      "originalFile": null,
+      "replacementReason": null,
+      "bytes": 205748,
+      "sha256": "b35dd9d2131d5d83a9b87fe9ad22c6288fa3d17688d43302c14da29812417d63",
+      "mimeType": "font/ttf",
+      "isBinary": true,
+      "detectedType": "font",
+      "detectorScore": 0.95,
+      "detectorRanking": [
+        {
+          "id": "font",
+          "score": 0.95
+        },
+        {
+          "id": "raw",
+          "score": 0.01
+        },
+        {
+          "id": "markdown",
+          "score": 0
+        },
+        {
+          "id": "pdf",
+          "score": 0
+        },
+        {
+          "id": "csv",
+          "score": 0
+        },
+        {
+          "id": "xlsx",
+          "score": 0
+        }
+      ],
+      "knownEnhancement": null,
+      "effectiveRenderer": "base:font",
+      "baseViewRequired": false,
+      "validity": {
+        "valid": true,
+        "richness": true,
+        "details": {
+          "tables": 17,
+          "bytes": 205748
+        }
+      },
+      "plannedLandmarkTokens": [
+        "quick brown fox",
+        "SIZE RAMP"
+      ],
+      "assignedConfiguration": "1440x900-light",
+      "status": "candidate-pass"
+    },
+    {
+      "index": 26,
+      "family": "3D/CAD/GIS/science",
+      "expectedType": "stl",
+      "file": "docs/examples/sample.stl",
+      "originalFile": null,
+      "replacementReason": null,
+      "bytes": 484,
+      "sha256": "9920ee185d071d4d3263783d3885799b55d4e1330152dcd0a87c2fd9d03ea020",
+      "mimeType": "model/stl",
+      "isBinary": true,
+      "detectedType": "stl",
+      "detectorScore": 0.95,
+      "detectorRanking": [
+        {
+          "id": "stl",
+          "score": 0.95
+        },
+        {
+          "id": "raw",
+          "score": 0.01
+        },
+        {
+          "id": "markdown",
+          "score": 0
+        },
+        {
+          "id": "pdf",
+          "score": 0
+        },
+        {
+          "id": "csv",
+          "score": 0
+        },
+        {
+          "id": "xlsx",
+          "score": 0
+        }
+      ],
+      "knownEnhancement": null,
+      "effectiveRenderer": "base:stl",
+      "baseViewRequired": false,
+      "validity": {
+        "valid": true,
+        "richness": true,
+        "details": {
+          "triangles": 8
+        }
+      },
+      "plannedLandmarkTokens": [
+        "8 triangles"
+      ],
+      "assignedConfiguration": "1280x720-dark",
+      "status": "candidate-pass"
+    },
+    {
+      "index": 27,
+      "family": "3D/CAD/GIS/science",
+      "expectedType": "gltf",
+      "file": "docs/examples/sample.glb",
+      "originalFile": null,
+      "replacementReason": null,
+      "bytes": 728,
+      "sha256": "7083a014a5d52c1ac0d9ddda2fcc38d97bd1aa97b4459accbcff99802922c7ab",
+      "mimeType": "model/gltf-binary",
+      "isBinary": true,
+      "detectedType": "gltf",
+      "detectorScore": 0.95,
+      "detectorRanking": [
+        {
+          "id": "gltf",
+          "score": 0.95
+        },
+        {
+          "id": "raw",
+          "score": 0.01
+        },
+        {
+          "id": "markdown",
+          "score": 0
+        },
+        {
+          "id": "pdf",
+          "score": 0
+        },
+        {
+          "id": "csv",
+          "score": 0
+        },
+        {
+          "id": "xlsx",
+          "score": 0
+        }
+      ],
+      "knownEnhancement": null,
+      "effectiveRenderer": "base:gltf",
+      "baseViewRequired": false,
+      "validity": {
+        "valid": true,
+        "richness": true,
+        "details": {
+          "version": 2,
+          "declaredLength": 728,
+          "bytes": 728
+        }
+      },
+      "plannedLandmarkTokens": [
+        "12 triangles"
+      ],
+      "assignedConfiguration": "390x844-light",
+      "status": "candidate-pass"
+    },
+    {
+      "index": 28,
+      "family": "3D/CAD/GIS/science",
+      "expectedType": "dxf",
+      "file": "docs/examples/sample.dxf",
+      "originalFile": null,
+      "replacementReason": null,
+      "bytes": 1957,
+      "sha256": "a205e3dd27475e7772661c87ba14fa169491fda6d2a04c1b3bade3f27d6e9154",
+      "mimeType": "image/vnd.dxf",
+      "isBinary": false,
+      "detectedType": "dxf",
+      "detectorScore": 0.95,
+      "detectorRanking": [
+        {
+          "id": "dxf",
+          "score": 0.95
+        },
+        {
+          "id": "image",
+          "score": 0.9
+        },
+        {
+          "id": "pdb",
+          "score": 0.5
+        },
+        {
+          "id": "raw",
+          "score": 0.05
+        },
+        {
+          "id": "markdown",
+          "score": 0
+        },
+        {
+          "id": "pdf",
+          "score": 0
+        }
+      ],
+      "knownEnhancement": null,
+      "effectiveRenderer": "base:dxf",
+      "baseViewRequired": false,
+      "validity": {
+        "valid": true,
+        "richness": true,
+        "details": {
+          "entities": 11,
+          "lines": 409
+        }
+      },
+      "plannedLandmarkTokens": [
+        "AutoCAD 2013",
+        "LINE"
+      ],
+      "assignedConfiguration": "1440x900-dark",
+      "status": "candidate-pass"
+    },
+    {
+      "index": 29,
+      "family": "3D/CAD/GIS/science",
+      "expectedType": "geojson",
+      "file": "artifacts/v0.1.0-public-beta-readiness/format-fixtures/representative.topojson",
+      "originalFile": "docs/examples/sample.geojson",
+      "replacementReason": "sample.geojson intentionally auto-detects as the distinct geo base type; a TopoJSON fixture exercises the registered geojson base type",
+      "bytes": 1399,
+      "sha256": "927fbadbc77a5527df47516ce8e23995ee2b288038fb25349c6586f14c32763f",
+      "mimeType": "application/octet-stream",
+      "isBinary": false,
+      "detectedType": "geojson",
+      "detectorScore": 0.92,
+      "detectorRanking": [
+        {
+          "id": "geojson",
+          "score": 0.92
+        },
+        {
+          "id": "dbf",
+          "score": 0.7
+        },
+        {
+          "id": "json",
+          "score": 0.5
+        },
+        {
+          "id": "raw",
+          "score": 0.05
+        },
+        {
+          "id": "markdown",
+          "score": 0
+        },
+        {
+          "id": "pdf",
+          "score": 0
+        }
+      ],
+      "knownEnhancement": null,
+      "effectiveRenderer": "base:geojson",
+      "baseViewRequired": false,
+      "validity": {
+        "valid": true,
+        "richness": true,
+        "details": {
+          "objects": [
+            "districts",
+            "transit"
+          ],
+          "arcs": 3,
+          "geometryTypes": [
+            "GeometryCollection",
+            "LineString"
+          ]
+        }
+      },
+      "plannedLandmarkTokens": [
+        "districts",
+        "TopoJSON"
+      ],
+      "assignedConfiguration": "1280x720-light",
+      "status": "candidate-pass"
+    },
+    {
+      "index": 30,
+      "family": "3D/CAD/GIS/science",
+      "expectedType": "kml",
+      "file": "docs/examples/sample.kml",
+      "originalFile": null,
+      "replacementReason": null,
+      "bytes": 2312,
+      "sha256": "766992ddbdcbce550c79483f1dc5f76542ad01584b1caed1ae70ddea26c89b5a",
+      "mimeType": "application/vnd.google-earth.kml+xml",
+      "isBinary": false,
+      "detectedType": "kml",
+      "detectorScore": 0.97,
+      "detectorRanking": [
+        {
+          "id": "kml",
+          "score": 0.97
+        },
+        {
+          "id": "xml",
+          "score": 0.85
+        },
+        {
+          "id": "raw",
+          "score": 0.05
+        },
+        {
+          "id": "markdown",
+          "score": 0
+        },
+        {
+          "id": "pdf",
+          "score": 0
+        },
+        {
+          "id": "csv",
+          "score": 0
+        }
+      ],
+      "knownEnhancement": null,
+      "effectiveRenderer": "base:kml",
+      "baseViewRequired": false,
+      "validity": {
+        "valid": true,
+        "richness": true,
+        "details": {
+          "placemarks": 5,
+          "characters": 2312
+        }
+      },
+      "plannedLandmarkTokens": [
+        "Googleplex",
+        "Apple Park"
+      ],
+      "assignedConfiguration": "390x844-dark",
+      "status": "candidate-pass"
+    },
+    {
+      "index": 31,
+      "family": "3D/CAD/GIS/science",
+      "expectedType": "dicom",
+      "file": "docs/examples/sample.dcm",
+      "originalFile": null,
+      "replacementReason": null,
+      "bytes": 9246,
+      "sha256": "d3a5049b1fea0b992ed947c9d129be7a8bab5a62eabcb241a63471017367016a",
+      "mimeType": "application/dicom",
+      "isBinary": true,
+      "detectedType": "dicom",
+      "detectorScore": 0.99,
+      "detectorRanking": [
+        {
+          "id": "dicom",
+          "score": 0.99
+        },
+        {
+          "id": "raw",
+          "score": 0.01
+        },
+        {
+          "id": "markdown",
+          "score": 0
+        },
+        {
+          "id": "pdf",
+          "score": 0
+        },
+        {
+          "id": "csv",
+          "score": 0
+        },
+        {
+          "id": "xlsx",
+          "score": 0
+        }
+      ],
+      "knownEnhancement": null,
+      "effectiveRenderer": "base:dicom",
+      "baseViewRequired": false,
+      "validity": {
+        "valid": true,
+        "richness": true,
+        "details": {
+          "bytes": 9246,
+          "pixelBytes": 8192,
+          "hasRequiredIdentity": true,
+          "syntheticPixelFixture": true
+        }
+      },
+      "plannedLandmarkTokens": [
+        "DICOM",
+        "Computed Tomography"
+      ],
+      "assignedConfiguration": "1440x900-light",
+      "status": "candidate-pass"
+    },
+    {
+      "index": 32,
+      "family": "3D/CAD/GIS/science",
+      "expectedType": "netcdf",
+      "file": "docs/examples/sample.nc",
+      "originalFile": null,
+      "replacementReason": null,
+      "bytes": 1560,
+      "sha256": "b66188d6ef95e1ee179c7cb43926269dfc55e7a58fbda6321f8e53206a4d70ab",
+      "mimeType": "application/netcdf",
+      "isBinary": true,
+      "detectedType": "netcdf",
+      "detectorScore": 0.98,
+      "detectorRanking": [
+        {
+          "id": "netcdf",
+          "score": 0.98
+        },
+        {
+          "id": "raw",
+          "score": 0.01
+        },
+        {
+          "id": "markdown",
+          "score": 0
+        },
+        {
+          "id": "pdf",
+          "score": 0
+        },
+        {
+          "id": "csv",
+          "score": 0
+        },
+        {
+          "id": "xlsx",
+          "score": 0
+        }
+      ],
+      "knownEnhancement": null,
+      "effectiveRenderer": "base:netcdf",
+      "baseViewRequired": false,
+      "validity": {
+        "valid": true,
+        "richness": true,
+        "details": {
+          "version": 1,
+          "bytes": 1560,
+          "containsTemperature": true,
+          "containsPressure": true,
+          "nonzeroTail": true
+        }
+      },
+      "plannedLandmarkTokens": [
+        "NetCDF",
+        "temperature"
+      ],
+      "assignedConfiguration": "1280x720-dark",
+      "status": "candidate-pass"
+    },
+    {
+      "index": 33,
+      "family": "3D/CAD/GIS/science",
+      "expectedType": "pdb",
+      "file": "docs/examples/sample.pdb",
+      "originalFile": null,
+      "replacementReason": null,
+      "bytes": 11486,
+      "sha256": "e0e23a56b5819bd85cad33810af20c74e1b82489566afb7ff705c3214e848321",
+      "mimeType": "chemical/x-pdb",
+      "isBinary": false,
+      "detectedType": "pdb",
+      "detectorScore": 0.96,
+      "detectorRanking": [
+        {
+          "id": "pdb",
+          "score": 0.96
+        },
+        {
+          "id": "raw",
+          "score": 0.05
+        },
+        {
+          "id": "markdown",
+          "score": 0
+        },
+        {
+          "id": "pdf",
+          "score": 0
+        },
+        {
+          "id": "csv",
+          "score": 0
+        },
+        {
+          "id": "xlsx",
+          "score": 0
+        }
+      ],
+      "knownEnhancement": null,
+      "effectiveRenderer": "base:pdb",
+      "baseViewRequired": false,
+      "validity": {
+        "valid": true,
+        "richness": true,
+        "details": {
+          "atoms": 124,
+          "chains": 2,
+          "residues": 25,
+          "completeBackbones": 25,
+          "ligandAtoms": 12,
+          "lines": 159
+        }
+      },
+      "plannedLandmarkTokens": [
+        "DEMO",
+        "1.80"
+      ],
+      "assignedConfiguration": "390x844-light",
+      "status": "candidate-pass"
+    },
+    {
+      "index": 34,
+      "family": "3D/CAD/GIS/science",
+      "expectedType": "fits",
+      "file": "docs/examples/sample.fits",
+      "originalFile": null,
+      "replacementReason": null,
+      "bytes": 11520,
+      "sha256": "ac291e65dff1e12da5f234abe9a710706337a314d3257f2b07657eec11b271d7",
+      "mimeType": "application/fits",
+      "isBinary": true,
+      "detectedType": "fits",
+      "detectorScore": 0.99,
+      "detectorRanking": [
+        {
+          "id": "fits",
+          "score": 0.99
+        },
+        {
+          "id": "raw",
+          "score": 0.01
+        },
+        {
+          "id": "markdown",
+          "score": 0
+        },
+        {
+          "id": "pdf",
+          "score": 0
+        },
+        {
+          "id": "csv",
+          "score": 0
+        },
+        {
+          "id": "xlsx",
+          "score": 0
+        }
+      ],
+      "knownEnhancement": null,
+      "effectiveRenderer": "base:fits",
+      "baseViewRequired": false,
+      "validity": {
+        "valid": true,
+        "richness": true,
+        "details": {
+          "cards": 19,
+          "bytes": 11520,
+          "headerBytes": 2880,
+          "width": 64,
+          "height": 48,
+          "bitpix": 16,
+          "pixelBytes": 6144,
+          "nonzeroPixels": 3071
+        }
+      },
+      "plannedLandmarkTokens": [
+        "FITS"
+      ],
+      "assignedConfiguration": "1440x900-dark",
+      "status": "candidate-pass"
+    },
+    {
+      "index": 35,
+      "family": "Binaries",
+      "expectedType": "wasm",
+      "file": "docs/examples/sample.wasm",
+      "originalFile": null,
+      "replacementReason": null,
+      "bytes": 36,
+      "sha256": "b2ddf5d1ff07621d423ae59d5096dd8c3cc694e9d45839ac93045b3f5b8ac394",
+      "mimeType": "application/wasm",
+      "isBinary": true,
+      "detectedType": "wasm",
+      "detectorScore": 0.99,
+      "detectorRanking": [
+        {
+          "id": "wasm",
+          "score": 0.99
+        },
+        {
+          "id": "raw",
+          "score": 0.01
+        },
+        {
+          "id": "markdown",
+          "score": 0
+        },
+        {
+          "id": "pdf",
+          "score": 0
+        },
+        {
+          "id": "csv",
+          "score": 0
+        },
+        {
+          "id": "xlsx",
+          "score": 0
+        }
+      ],
+      "knownEnhancement": null,
+      "effectiveRenderer": "base:wasm",
+      "baseViewRequired": false,
+      "validity": {
+        "valid": true,
+        "richness": true,
+        "details": {
+          "sections": 4,
+          "bytes": 36
+        }
+      },
+      "plannedLandmarkTokens": [
+        "WebAssembly",
+        "export"
+      ],
+      "assignedConfiguration": "1280x720-light",
+      "status": "candidate-pass"
+    },
+    {
+      "index": 36,
+      "family": "Binaries",
+      "expectedType": "npy",
+      "file": "docs/examples/sample.npy",
+      "originalFile": null,
+      "replacementReason": null,
+      "bytes": 176,
+      "sha256": "d3e143a10a518d642451bb78d7b0ecd521ed1fa0caf8bbf5774b6717a467b876",
+      "mimeType": "application/octet-stream",
+      "isBinary": true,
+      "detectedType": "npy",
+      "detectorScore": 0.99,
+      "detectorRanking": [
+        {
+          "id": "npy",
+          "score": 0.99
+        },
+        {
+          "id": "msgpack",
+          "score": 0.45
+        },
+        {
+          "id": "raw",
+          "score": 0.01
+        },
+        {
+          "id": "markdown",
+          "score": 0
+        },
+        {
+          "id": "pdf",
+          "score": 0
+        },
+        {
+          "id": "csv",
+          "score": 0
+        }
+      ],
+      "knownEnhancement": null,
+      "effectiveRenderer": "base:npy",
+      "baseViewRequired": false,
+      "validity": {
+        "valid": true,
+        "richness": true,
+        "details": {
+          "header": "{'descr': '<f4', 'fortran_order': False, 'shape': (3, 4), }",
+          "dataBytes": 48
+        }
+      },
+      "plannedLandmarkTokens": [
+        "NumPy",
+        "float"
+      ],
+      "assignedConfiguration": "390x844-dark",
+      "status": "candidate-pass"
+    },
+    {
+      "index": 37,
+      "family": "Binaries",
+      "expectedType": "exe",
+      "file": "docs/examples/sample.elf",
+      "originalFile": null,
+      "replacementReason": null,
+      "bytes": 704,
+      "sha256": "4753c347ae95b489bb189fa86a2ed4ebe8a3ff5ef498949c98ce595007d5be56",
+      "mimeType": "application/x-executable",
+      "isBinary": true,
+      "detectedType": "exe",
+      "detectorScore": 0.99,
+      "detectorRanking": [
+        {
+          "id": "exe",
+          "score": 0.99
+        },
+        {
+          "id": "raw",
+          "score": 0.01
+        },
+        {
+          "id": "markdown",
+          "score": 0
+        },
+        {
+          "id": "pdf",
+          "score": 0
+        },
+        {
+          "id": "csv",
+          "score": 0
+        },
+        {
+          "id": "xlsx",
+          "score": 0
+        }
+      ],
+      "knownEnhancement": null,
+      "effectiveRenderer": "base:exe",
+      "baseViewRequired": false,
+      "validity": {
+        "valid": true,
+        "richness": true,
+        "details": {
+          "class": "64-bit",
+          "machine": 62,
+          "bytes": 704,
+          "entry": 4194560,
+          "programHeaders": 2,
+          "sectionHeaders": 5,
+          "completeSectionTable": true
+        }
+      },
+      "plannedLandmarkTokens": [
+        "ELF",
+        "x86-64"
+      ],
+      "assignedConfiguration": "1440x900-light",
+      "status": "candidate-pass"
+    },
+    {
+      "index": 38,
+      "family": "Binaries",
+      "expectedType": "apk",
+      "file": "docs/examples/sample.apk",
+      "originalFile": null,
+      "replacementReason": null,
+      "bytes": 1285,
+      "sha256": "713d70f65f53d42941ad72ec17dee3ec1df9c1836e9d5e06f3f74d9f051cd903",
+      "mimeType": "application/vnd.android.package-archive",
+      "isBinary": true,
+      "detectedType": "apk",
+      "detectorScore": 0.97,
+      "detectorRanking": [
+        {
+          "id": "apk",
+          "score": 0.97
+        },
+        {
+          "id": "zip",
+          "score": 0.9
+        },
+        {
+          "id": "raw",
+          "score": 0.01
+        },
+        {
+          "id": "markdown",
+          "score": 0
+        },
+        {
+          "id": "pdf",
+          "score": 0
+        },
+        {
+          "id": "csv",
+          "score": 0
+        }
+      ],
+      "knownEnhancement": null,
+      "effectiveRenderer": "base:apk",
+      "baseViewRequired": false,
+      "validity": {
+        "valid": true,
+        "richness": true,
+        "details": {
+          "entries": 5,
+          "firstEntries": [
+            "AndroidManifest.xml",
+            "classes.dex",
+            "lib/arm64-v8a/libexample.so",
+            "lib/x86_64/libexample.so",
+            "assets/config.json"
+          ],
+          "extractedCharacters": 529,
+          "specialized": {
+            "valid": true,
+            "manifestBytes": 460,
+            "dexBytes": 140,
+            "libraries": [
+              {
+                "name": "lib/arm64-v8a/libexample.so",
+                "bytes": 704,
+                "machine": 183
+              },
+              {
+                "name": "lib/x86_64/libexample.so",
+                "bytes": 704,
+                "machine": 62
+              }
+            ],
+            "unsigned": true
+          }
+        }
+      },
+      "plannedLandmarkTokens": [
+        "classes.dex",
+        "arm64-v8a"
+      ],
+      "assignedConfiguration": "1280x720-dark",
+      "status": "candidate-pass"
+    },
+    {
+      "index": 39,
+      "family": "Binaries",
+      "expectedType": "torrent",
+      "file": "docs/examples/sample.torrent",
+      "originalFile": null,
+      "replacementReason": null,
+      "bytes": 553,
+      "sha256": "b0fa143fe4edbe2be980160f578275be39f5bd0b363e3260f200a7e1caa953a4",
+      "mimeType": "application/x-bittorrent",
+      "isBinary": false,
+      "detectedType": "torrent",
+      "detectorScore": 0.95,
+      "detectorRanking": [
+        {
+          "id": "torrent",
+          "score": 0.95
+        },
+        {
+          "id": "raw",
+          "score": 0.05
+        },
+        {
+          "id": "markdown",
+          "score": 0
+        },
+        {
+          "id": "pdf",
+          "score": 0
+        },
+        {
+          "id": "csv",
+          "score": 0
+        },
+        {
+          "id": "xlsx",
+          "score": 0
+        }
+      ],
+      "knownEnhancement": null,
+      "effectiveRenderer": "base:torrent",
+      "baseViewRequired": false,
+      "validity": {
+        "valid": true,
+        "richness": true,
+        "details": {
+          "bytes": 553,
+          "hasAnnounce": true,
+          "hasPieces": true,
+          "fileCount": 3,
+          "pieceSize": 64,
+          "totalSize": 214
+        }
+      },
+      "plannedLandmarkTokens": [
+        "tracker.invalid",
+        "docs/readme.txt"
+      ],
+      "assignedConfiguration": "390x844-light",
+      "status": "candidate-pass"
+    },
+    {
+      "index": 40,
+      "family": "Developer/config",
+      "expectedType": "dockerfile",
+      "file": "docs/examples/Dockerfile",
+      "originalFile": null,
+      "replacementReason": null,
+      "bytes": 969,
+      "sha256": "ef4966b134c815f68ada94c022bcfdabb6a0b9e51c8686f49aaccf1482bba90b",
+      "mimeType": "application/octet-stream",
+      "isBinary": false,
+      "detectedType": "dockerfile",
+      "detectorScore": 0.99,
+      "detectorRanking": [
+        {
+          "id": "dockerfile",
+          "score": 0.99
+        },
+        {
+          "id": "code",
+          "score": 0.8
+        },
+        {
+          "id": "markdown",
+          "score": 0.18
+        },
+        {
+          "id": "raw",
+          "score": 0.05
+        },
+        {
+          "id": "pdf",
+          "score": 0
+        },
+        {
+          "id": "csv",
+          "score": 0
+        }
+      ],
+      "knownEnhancement": {
+        "id": "dockerfile",
+        "label": "Dockerfile"
+      },
+      "effectiveRenderer": "known:dockerfile",
+      "baseViewRequired": true,
+      "validity": {
+        "valid": true,
+        "richness": true,
+        "details": {
+          "stages": 2,
+          "instructions": 17,
+          "lines": 25
+        }
+      },
+      "plannedLandmarkTokens": [
+        "builder",
+        "nginx"
+      ],
+      "assignedConfiguration": "1440x900-dark",
+      "status": "candidate-pass"
+    },
+    {
+      "index": 41,
+      "family": "Developer/config",
+      "expectedType": "docker-compose",
+      "file": "docs/examples/docker-compose.yml",
+      "originalFile": null,
+      "replacementReason": null,
+      "bytes": 769,
+      "sha256": "cc13153ebfba6afd80942fd6fe18acaf6ccd8c6c679461238e835bc1ba5324cd",
+      "mimeType": "application/yaml",
+      "isBinary": false,
+      "detectedType": "docker-compose",
+      "detectorScore": 0.99,
+      "detectorRanking": [
+        {
+          "id": "docker-compose",
+          "score": 0.99
+        },
+        {
+          "id": "yaml",
+          "score": 0.95
+        },
+        {
+          "id": "code",
+          "score": 0.8
+        },
+        {
+          "id": "markdown",
+          "score": 0.18
+        },
+        {
+          "id": "raw",
+          "score": 0.05
+        },
+        {
+          "id": "pdf",
+          "score": 0
+        }
+      ],
+      "knownEnhancement": {
+        "id": "docker-compose",
+        "label": "docker-compose"
+      },
+      "effectiveRenderer": "known:docker-compose",
+      "baseViewRequired": true,
+      "validity": {
+        "valid": true,
+        "richness": true,
+        "details": {
+          "services": [
+            "web",
+            "api",
+            "db",
+            "cache"
+          ],
+          "lines": 48
+        }
+      },
+      "plannedLandmarkTokens": [
+        "web",
+        "postgres"
+      ],
+      "assignedConfiguration": "1280x720-light",
+      "status": "candidate-pass"
+    },
+    {
+      "index": 42,
+      "family": "Developer/config",
+      "expectedType": "sarif",
+      "file": "docs/examples/sample.sarif",
+      "originalFile": null,
+      "replacementReason": null,
+      "bytes": 35422,
+      "sha256": "574285c4daf063103cb97527a7a60be7499aa81f3f320eb0e530827be14537ce",
+      "mimeType": "application/octet-stream",
+      "isBinary": false,
+      "detectedType": "sarif",
+      "detectorScore": 0.99,
+      "detectorRanking": [
+        {
+          "id": "sarif",
+          "score": 0.99
+        },
+        {
+          "id": "dbf",
+          "score": 0.7
+        },
+        {
+          "id": "json",
+          "score": 0.5
+        },
+        {
+          "id": "raw",
+          "score": 0.05
+        },
+        {
+          "id": "markdown",
+          "score": 0
+        },
+        {
+          "id": "pdf",
+          "score": 0
+        }
+      ],
+      "knownEnhancement": null,
+      "effectiveRenderer": "base:sarif",
+      "baseViewRequired": false,
+      "validity": {
+        "valid": true,
+        "richness": true,
+        "details": {
+          "runs": 1,
+          "results": 62,
+          "rules": 10
+        }
+      },
+      "plannedLandmarkTokens": [
+        "DemoScanner",
+        "SQL001"
+      ],
+      "assignedConfiguration": "390x844-dark",
+      "status": "candidate-pass"
+    },
+    {
+      "index": 43,
+      "family": "Developer/config",
+      "expectedType": "pem",
+      "file": "docs/examples/sample.pem",
+      "originalFile": null,
+      "replacementReason": null,
+      "bytes": 1939,
+      "sha256": "22b557a27055b33606b6559f37703928d3e4ad79f110b407d04986e1843543d1",
+      "mimeType": "application/x-pem-file",
+      "isBinary": false,
+      "detectedType": "pem",
+      "detectorScore": 0.95,
+      "detectorRanking": [
+        {
+          "id": "pem",
+          "score": 0.95
+        },
+        {
+          "id": "raw",
+          "score": 0.05
+        },
+        {
+          "id": "markdown",
+          "score": 0
+        },
+        {
+          "id": "pdf",
+          "score": 0
+        },
+        {
+          "id": "csv",
+          "score": 0
+        },
+        {
+          "id": "xlsx",
+          "score": 0
+        }
+      ],
+      "knownEnhancement": null,
+      "effectiveRenderer": "base:pem",
+      "baseViewRequired": false,
+      "validity": {
+        "valid": true,
+        "richness": true,
+        "details": {
+          "blockType": "CERTIFICATE",
+          "derBytes": 1391,
+          "subject": "C=US\nO=Internet Security Research Group\nCN=ISRG Root X1",
+          "keyType": "rsa",
+          "keyBits": 4096,
+          "selfVerified": true
+        }
+      },
+      "plannedLandmarkTokens": [
+        "Certificate",
+        "ISRG Root X1"
+      ],
+      "assignedConfiguration": "1440x900-light",
+      "status": "candidate-pass"
+    },
+    {
+      "index": 44,
+      "family": "Developer/config",
+      "expectedType": "patch",
+      "file": "docs/examples/sample.patch",
+      "originalFile": null,
+      "replacementReason": null,
+      "bytes": 482,
+      "sha256": "89d75e18a5fea418af4610490d07789a7b554b04971a1e083e51607c02eed58a",
+      "mimeType": "text/x-diff",
+      "isBinary": false,
+      "detectedType": "patch",
+      "detectorScore": 0.9,
+      "detectorRanking": [
+        {
+          "id": "patch",
+          "score": 0.9
+        },
+        {
+          "id": "markdown",
+          "score": 0.18
+        },
+        {
+          "id": "raw",
+          "score": 0.05
+        },
+        {
+          "id": "pdf",
+          "score": 0
+        },
+        {
+          "id": "csv",
+          "score": 0
+        },
+        {
+          "id": "xlsx",
+          "score": 0
+        }
+      ],
+      "knownEnhancement": null,
+      "effectiveRenderer": "base:patch",
+      "baseViewRequired": false,
+      "validity": {
+        "valid": true,
+        "richness": true,
+        "details": {
+          "files": 2,
+          "hunks": 3,
+          "lines": 23
+        }
+      },
+      "plannedLandmarkTokens": [
+        "greet.js",
+        "Goodbye"
+      ],
+      "assignedConfiguration": "1280x720-dark",
+      "status": "candidate-pass"
+    },
+    {
+      "index": 45,
+      "family": "Developer/config",
+      "expectedType": "code",
+      "file": "docs/examples/App.swift",
+      "originalFile": null,
+      "replacementReason": null,
+      "bytes": 260,
+      "sha256": "bbd41c48326cad7177c16c18230c5e748747f268c9ef28a21533b0b41a7ffedb",
+      "mimeType": "text/x-swift",
+      "isBinary": false,
+      "detectedType": "code",
+      "detectorScore": 0.8,
+      "detectorRanking": [
+        {
+          "id": "code",
+          "score": 0.8
+        },
+        {
+          "id": "raw",
+          "score": 0.05
+        },
+        {
+          "id": "markdown",
+          "score": 0
+        },
+        {
+          "id": "pdf",
+          "score": 0
+        },
+        {
+          "id": "csv",
+          "score": 0
+        },
+        {
+          "id": "xlsx",
+          "score": 0
+        }
+      ],
+      "knownEnhancement": {
+        "id": "swift-lang",
+        "label": "Swift"
+      },
+      "effectiveRenderer": "known:swift-lang",
+      "baseViewRequired": true,
+      "validity": {
+        "valid": true,
+        "richness": true,
+        "details": {
+          "lines": 12,
+          "characters": 260
+        }
+      },
+      "plannedLandmarkTokens": [
+        "Release",
+        "ISO8601DateFormatter"
+      ],
+      "assignedConfiguration": "390x844-light",
+      "status": "candidate-pass"
+    }
+  ]
+}

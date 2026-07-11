@@ -1,0 +1,115 @@
+{
+  "type": "Topology",
+  "transform": {
+    "scale": [
+      0.01,
+      0.01
+    ],
+    "translate": [
+      13,
+      52
+    ]
+  },
+  "objects": {
+    "districts": {
+      "type": "GeometryCollection",
+      "geometries": [
+        {
+          "type": "Polygon",
+          "properties": {
+            "name": "North district"
+          },
+          "arcs": [
+            [
+              0
+            ]
+          ]
+        },
+        {
+          "type": "Polygon",
+          "properties": {
+            "name": "South district"
+          },
+          "arcs": [
+            [
+              1
+            ]
+          ]
+        }
+      ]
+    },
+    "transit": {
+      "type": "LineString",
+      "properties": {
+        "name": "Connector"
+      },
+      "arcs": [
+        2
+      ]
+    }
+  },
+  "arcs": [
+    [
+      [
+        0,
+        40
+      ],
+      [
+        30,
+        0
+      ],
+      [
+        0,
+        30
+      ],
+      [
+        -30,
+        0
+      ],
+      [
+        0,
+        -30
+      ]
+    ],
+    [
+      [
+        0,
+        0
+      ],
+      [
+        30,
+        0
+      ],
+      [
+        0,
+        30
+      ],
+      [
+        -30,
+        0
+      ],
+      [
+        0,
+        -30
+      ]
+    ],
+    [
+      [
+        5,
+        10
+      ],
+      [
+        10,
+        10
+      ],
+      [
+        10,
+        10
+      ],
+      [
+        10,
+        10
+      ]
+    ]
+  ]
+}

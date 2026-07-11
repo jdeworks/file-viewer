@@ -1,0 +1,181 @@
+{
+  "schemaVersion": 1,
+  "reviewedAt": "2026-07-11T08:22:22.489Z",
+  "reviewer": "Codex offline-modal visual lane — individual original-resolution pixel inspection",
+  "summary": {
+    "passes": 12,
+    "failures": 0,
+    "pending": 0,
+    "screenshotsInspected": 12
+  },
+  "screenshots": [
+    {
+      "id": "desktop-dark-bottom",
+      "viewport": "desktop",
+      "theme": "dark",
+      "position": "bottom",
+      "screenshot": "offline-modal/offline-modal-desktop-dark-bottom.png",
+      "screenshotSha256": "a7b539e0eaf8ea834a22d8d79b568ec435773253b6ae6b872e1333f58808564a",
+      "dimensions": {
+        "width": 520,
+        "height": 792
+      },
+      "visual": "pass",
+      "observation": "Desktop dark bottom state keeps the final groups and save footer readable with no clipping, overlap, or compositor artifacts."
+    },
+    {
+      "id": "desktop-dark-top",
+      "viewport": "desktop",
+      "theme": "dark",
+      "position": "top",
+      "screenshot": "offline-modal/offline-modal-desktop-dark-top.png",
+      "screenshotSha256": "35db8e94394563906fa08419d82ed3358f66ad18270505a8890251d9a66d9787",
+      "dimensions": {
+        "width": 520,
+        "height": 792
+      },
+      "visual": "pass",
+      "observation": "Desktop dark top state keeps all controls, rows, badges, and scrollbar legible at the intended modal width."
+    },
+    {
+      "id": "desktop-light-bottom",
+      "viewport": "desktop",
+      "theme": "light",
+      "position": "bottom",
+      "screenshot": "offline-modal/offline-modal-desktop-light-bottom.png",
+      "screenshotSha256": "03c45f72611ff7a8575d2a28ce31d4d808b0c03f9c3de0e327a490b2a6174caf",
+      "dimensions": {
+        "width": 520,
+        "height": 792
+      },
+      "visual": "pass",
+      "observation": "Desktop light bottom state shows the end of the bundle list and sticky footer while the modal bounds remain clean."
+    },
+    {
+      "id": "desktop-light-top",
+      "viewport": "desktop",
+      "theme": "light",
+      "position": "top",
+      "screenshot": "offline-modal/offline-modal-desktop-light-top.png",
+      "screenshotSha256": "e814f4f451d9cf3e621ddccc4ddb00f36eddafa2aa9d49e0f1f192c0722beb46",
+      "dimensions": {
+        "width": 520,
+        "height": 792
+      },
+      "visual": "pass",
+      "observation": "Desktop light top modal is compact, with the toolbar, total, bundle list, scrollbar, and footer aligned without overflow."
+    },
+    {
+      "id": "phone-dark-bottom",
+      "viewport": "phone",
+      "theme": "dark",
+      "position": "bottom",
+      "screenshot": "offline-modal/offline-modal-phone-dark-bottom.png",
+      "screenshotSha256": "79f13e4e1bb51c715186400a2754e499e5e91a8dfbc9c59267dab0813b4a21d8",
+      "dimensions": {
+        "width": 370,
+        "height": 824
+      },
+      "visual": "pass",
+      "observation": "Phone dark bottom state keeps the final groups, internal scroll position, total, and save action readable without overlap."
+    },
+    {
+      "id": "phone-dark-top",
+      "viewport": "phone",
+      "theme": "dark",
+      "position": "top",
+      "screenshot": "offline-modal/offline-modal-phone-dark-top.png",
+      "screenshotSha256": "a8b7abb4779657933726aeaca8e0933f1c547fb66a8d54b5881c9e1606725ba5",
+      "dimensions": {
+        "width": 370,
+        "height": 824
+      },
+      "visual": "pass",
+      "observation": "Phone dark top state preserves readable contrast and the complete control hierarchy, with selected and heavy states visually distinct."
+    },
+    {
+      "id": "phone-light-bottom",
+      "viewport": "phone",
+      "theme": "light",
+      "position": "bottom",
+      "screenshot": "offline-modal/offline-modal-phone-light-bottom.png",
+      "screenshotSha256": "6b75a224fc0485a1eed9a2261b595d5a3c440897ece57280775841c0951e0045",
+      "dimensions": {
+        "width": 370,
+        "height": 824
+      },
+      "visual": "pass",
+      "observation": "Phone light bottom state exposes the final bundle groups and selected total while preserving the header, presets, internal scrollbar, and save action."
+    },
+    {
+      "id": "phone-light-top",
+      "viewport": "phone",
+      "theme": "light",
+      "position": "top",
+      "screenshot": "offline-modal/offline-modal-phone-light-top.png",
+      "screenshotSha256": "502e787ee15f5883cafea9e391b3921826c21773eb4a7ce3e2b311f5d40de426",
+      "dimensions": {
+        "width": 370,
+        "height": 824
+      },
+      "visual": "pass",
+      "observation": "Phone light top state keeps the title, close control, preset buttons, total, bundle rows, scrollbar, and sticky save footer visible without horizontal clipping."
+    },
+    {
+      "id": "tablet-dark-bottom",
+      "viewport": "tablet",
+      "theme": "dark",
+      "position": "bottom",
+      "screenshot": "offline-modal/offline-modal-tablet-dark-bottom.png",
+      "screenshotSha256": "81ea381235d3238109bdad138571cd736aa56fffd5c85274b031a15127a12559",
+      "dimensions": {
+        "width": 520,
+        "height": 792
+      },
+      "visual": "pass",
+      "observation": "Tablet dark bottom state preserves group labels, sizes, heavy badges, scroll affordance, and footer contrast."
+    },
+    {
+      "id": "tablet-dark-top",
+      "viewport": "tablet",
+      "theme": "dark",
+      "position": "top",
+      "screenshot": "offline-modal/offline-modal-tablet-dark-top.png",
+      "screenshotSha256": "57c7ee9727bd3490b051a0db318615219e2638827a22a32dc9be1da3d16362ae",
+      "dimensions": {
+        "width": 520,
+        "height": 792
+      },
+      "visual": "pass",
+      "observation": "Tablet dark top state retains strong text and control contrast, clear selection states, and a visible internal scrollbar."
+    },
+    {
+      "id": "tablet-light-bottom",
+      "viewport": "tablet",
+      "theme": "light",
+      "position": "bottom",
+      "screenshot": "offline-modal/offline-modal-tablet-light-bottom.png",
+      "screenshotSha256": "2aba157a385fc69fdbcb823be40ee9624ef192dfb186a296f7cd9e9507675d1a",
+      "dimensions": {
+        "width": 520,
+        "height": 792
+      },
+      "visual": "pass",
+      "observation": "Tablet light bottom state exposes every final bundle group with the footer and save action still visible and unobscured."
+    },
+    {
+      "id": "tablet-light-top",
+      "viewport": "tablet",
+      "theme": "light",
+      "position": "top",
+      "screenshot": "offline-modal/offline-modal-tablet-light-top.png",
+      "screenshotSha256": "dfcd8c890fdeb4a1aaa591673b8a91092bfb20655dbdef366b8612bdc4a91977",
+      "dimensions": {
+        "width": 520,
+        "height": 792
+      },
+      "visual": "pass",
+      "observation": "Tablet light top modal fits all preset controls and provides a clearly bounded scroll region above the sticky footer."
+    }
+  ]
+}

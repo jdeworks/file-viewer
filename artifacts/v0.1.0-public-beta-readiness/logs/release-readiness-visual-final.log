@@ -1,0 +1,92 @@
+→ 01-markdown welcome.md @ 1440x900-light
+  ✓ technical landmarks and captures complete (2 screenshot(s))
+→ 07-sqlite sample.sqlite @ 1440x900-light
+  ✓ technical landmarks and captures complete (2 screenshot(s))
+→ 13-pdf sample-pages.pdf @ 1440x900-light
+  ✓ technical landmarks and captures complete (2 screenshot(s))
+→ 19-archive Sample.7z @ 1440x900-light
+  ✓ technical landmarks and captures complete (2 screenshot(s))
+→ 25-font sample.ttf @ 1440x900-light
+  ✓ technical landmarks and captures complete (2 screenshot(s))
+→ 31-dicom sample.dcm @ 1440x900-light
+  ✓ technical landmarks and captures complete (3 screenshot(s))
+→ 37-exe sample.elf @ 1440x900-light
+  ✓ technical landmarks and captures complete (2 screenshot(s))
+→ 43-pem sample.pem @ 1440x900-light
+  ✓ technical landmarks and captures complete (2 screenshot(s))
+→ 02-csv sample.csv @ 1280x720-dark
+  ✓ technical landmarks and captures complete (2 screenshot(s))
+→ 08-ipynb sample.ipynb @ 1280x720-dark
+  ✓ technical landmarks and captures complete (2 screenshot(s))
+→ 14-xlsx sample.xlsx @ 1280x720-dark
+  ✓ technical landmarks and captures complete (2 screenshot(s))
+→ 20-zip sample.zip @ 1280x720-dark
+  ✓ technical landmarks and captures complete (2 screenshot(s))
+→ 26-stl sample.stl @ 1280x720-dark
+  ✓ technical landmarks and captures complete (2 screenshot(s))
+→ 32-netcdf sample.nc @ 1280x720-dark
+  ✓ technical landmarks and captures complete (3 screenshot(s))
+→ 38-apk sample.apk @ 1280x720-dark
+  ✓ technical landmarks and captures complete (2 screenshot(s))
+→ 44-patch sample.patch @ 1280x720-dark
+  ✓ technical landmarks and captures complete (3 screenshot(s))
+→ 03-json sample.json @ 390x844-light
+  ✓ technical landmarks and captures complete (2 screenshot(s))
+→ 09-image sample.png @ 390x844-light
+  ✓ technical landmarks and captures complete (2 screenshot(s))
+→ 15-docx sample.docx @ 390x844-light
+  ✓ technical landmarks and captures complete (2 screenshot(s))
+→ 21-epub sample.epub @ 390x844-light
+  ✓ technical landmarks and captures complete (2 screenshot(s))
+→ 27-gltf sample.glb @ 390x844-light
+  ✓ technical landmarks and captures complete (2 screenshot(s))
+→ 33-pdb sample.pdb @ 390x844-light
+  ✓ technical landmarks and captures complete (3 screenshot(s))
+→ 39-torrent sample.torrent @ 390x844-light
+  ✓ technical landmarks and captures complete (2 screenshot(s))
+→ 45-code App.swift @ 390x844-light
+  ✓ technical landmarks and captures complete (3 screenshot(s))
+→ 04-yaml stack.yaml @ 1440x900-dark
+  ✓ technical landmarks and captures complete (3 screenshot(s))
+→ 10-svg example.svg @ 1440x900-dark
+  ✓ technical landmarks and captures complete (2 screenshot(s))
+→ 16-pptx sample.pptx @ 1440x900-dark
+  ✓ technical landmarks and captures complete (2 screenshot(s))
+→ 22-comic sample.cbz @ 1440x900-dark
+  ✓ technical landmarks and captures complete (3 screenshot(s))
+→ 28-dxf sample.dxf @ 1440x900-dark
+  ✓ technical landmarks and captures complete (3 screenshot(s))
+→ 34-fits sample.fits @ 1440x900-dark
+  ✓ technical landmarks and captures complete (2 screenshot(s))
+→ 40-dockerfile Dockerfile @ 1440x900-dark
+  ✓ technical landmarks and captures complete (4 screenshot(s))
+→ 05-xml build.xml @ 1280x720-light
+  ✓ technical landmarks and captures complete (3 screenshot(s))
+→ 11-tiff sample.tiff @ 1280x720-light
+  ✓ technical landmarks and captures complete (2 screenshot(s))
+→ 17-odf sample.odt @ 1280x720-light
+  ✓ technical landmarks and captures complete (2 screenshot(s))
+→ 23-media sample.mp4 @ 1280x720-light
+  ✓ technical landmarks and captures complete (3 screenshot(s))
+→ 29-geojson representative.topojson @ 1280x720-light
+  ✓ technical landmarks and captures complete (2 screenshot(s))
+→ 35-wasm sample.wasm @ 1280x720-light
+  ✓ technical landmarks and captures complete (2 screenshot(s))
+→ 41-docker-compose docker-compose.yml @ 1280x720-light
+  ✓ technical landmarks and captures complete (4 screenshot(s))
+→ 06-jsonl sample.jsonl @ 390x844-dark
+  ✓ technical landmarks and captures complete (2 screenshot(s))
+→ 12-layered sample.psd @ 390x844-dark
+  ✓ technical landmarks and captures complete (2 screenshot(s))
+→ 18-rtf sample.rtf @ 390x844-dark
+  ✓ technical landmarks and captures complete (3 screenshot(s))
+→ 24-midi sample.mid @ 390x844-dark
+  ✓ technical landmarks and captures complete (3 screenshot(s))
+→ 30-kml sample.kml @ 390x844-dark
+  ✓ technical landmarks and captures complete (2 screenshot(s))
+→ 36-npy sample.npy @ 390x844-dark
+  ✓ technical landmarks and captures complete (2 screenshot(s))
+→ 42-sarif sample.sarif @ 390x844-dark
+  ✓ technical landmarks and captures complete (3 screenshot(s))
+
+Format capture complete: 45/45 technical passes; 3 manual reviews pending.

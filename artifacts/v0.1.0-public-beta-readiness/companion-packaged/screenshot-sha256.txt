@@ -1,0 +1,15 @@
+cbe9992ca3ada5b16a6dd985737bdc50f03d3362e7016e594de26910bd08626f  artifacts/v0.1.0-public-beta-readiness/companion-packaged/native-picker-disposable-root.png
+ae4e36c1b121d6e1de3c57d435783421155fe84fb114ff96e1fadf0b3b831b06  artifacts/v0.1.0-public-beta-readiness/companion-packaged/native-picker-open.png
+b756456a07fd5e1eb76b99b5eba6b7df2050ea3fc833e1990f4f0f5fe6da738b  artifacts/v0.1.0-public-beta-readiness/companion-packaged/native-picker-other-locations.png
+49c2c21483afdccc20e10b47feeca40b09624b3525dcfa41948fcce28bcd82b2  artifacts/v0.1.0-public-beta-readiness/companion-packaged/native-picker-parent-with-picker-root.png
+f3b8d6d27b275fb58799c252db54a0ed01eeacf7fe36d56b539c2b26ab196296  artifacts/v0.1.0-public-beta-readiness/companion-packaged/native-picker-picker-added.png
+1fa019d9b83d64462decb0a6b68013561d5c3f134ef61442993b257143646874  artifacts/v0.1.0-public-beta-readiness/companion-packaged/native-picker-root.png
+6dc19c75dd80f12b39c0b3f477663ebb43067fadca6ee69847bcd9c36cc6841c  artifacts/v0.1.0-public-beta-readiness/companion-packaged/native-picker-watched-root.png
+c2c0250a9af2ad1b464afdadebc2332e8a11028ad691798d6f9bf43efe9bc74d  artifacts/v0.1.0-public-beta-readiness/companion-packaged/tray-add-parent.png
+611404ea69e34a66180f58c9323ef8f09c0a3439de1ab8c7a308c0b7f98bb1ab  artifacts/v0.1.0-public-beta-readiness/companion-packaged/tray-add-picker-open.png
+f2e548bbf17767c657e2598c0b08408bbfd129ed8d19b9fddf276b02de5d59c9  artifacts/v0.1.0-public-beta-readiness/companion-packaged/tray-add-picker-tray-added.png
+64819d8774f92fdac781f8ec8bd2daef0073b07811faf2c85b87c8d08c8ffe7a  artifacts/v0.1.0-public-beta-readiness/companion-packaged/tray-menu.png
+321575bb8eb95b489395a5841786c75051317c1256c3706db381bc6d25a02a68  artifacts/v0.1.0-public-beta-readiness/companion-packaged/tray-session-token-dialog.png
+f1f6c204474efb526b6cafcf4626d39216830e247bf3bd4e87f093ca3c8244d1  artifacts/v0.1.0-public-beta-readiness/companion-packaged/tray-x11-connected.png
+61b970392da145fc637c813937e2db08fe30f8c1011f2f1180d1f7ac50e93d18  artifacts/v0.1.0-public-beta-readiness/companion-packaged/tray-x11-forced-map.png
+b7822df5d0ca679158b224026ce33c96f6f7f1a51f5989d207979972674ad87e  artifacts/v0.1.0-public-beta-readiness/companion-packaged/tray-xembed-host-connected.png

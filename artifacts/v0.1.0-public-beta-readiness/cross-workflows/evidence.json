@@ -1,0 +1,469 @@
+{
+  "generatedAt": "2026-07-11T08:22:58.220Z",
+  "origin": "http://localhost:37551",
+  "screenshots": [
+    {
+      "id": "WF-intake",
+      "screenshot": "cross-workflows/WF-intake-1440x900-light.png",
+      "screenshotSha256": "8ca9f518bebba317fac19d85281941295e3812bcc2ca824db4441193248f6f57",
+      "viewport": "1440x900",
+      "theme": "light",
+      "mobileUserAgent": false,
+      "captureRegion": "viewport",
+      "checks": {
+        "intakeVisible": true,
+        "openFile": true,
+        "openFolder": true,
+        "newFile": true,
+        "examples": true
+      },
+      "layout": {
+        "viewport": [
+          1440,
+          900
+        ],
+        "documentScrollWidth": 1440,
+        "bodyScrollWidth": 1440,
+        "horizontalPageOverflow": false,
+        "clippedInteractive": [],
+        "activeElement": "BODY"
+      },
+      "consoleErrors": [],
+      "offOrigin": [],
+      "technical": "pass",
+      "visual": "pass",
+      "observation": "Landing intake is centered and readable; all four intake actions, offline control, and beta badge are visible without overlap."
+    },
+    {
+      "id": "WF-examples",
+      "screenshot": "cross-workflows/WF-examples-1280x720-dark.png",
+      "screenshotSha256": "120f1a01665766d4443703eb02b624aa05c4bd6b99da1ab80fed4dabb29cd9c5",
+      "viewport": "1280x720",
+      "theme": "dark",
+      "mobileUserAgent": false,
+      "captureRegion": "viewport",
+      "checks": {
+        "groups": 15,
+        "samples": 549,
+        "search": true
+      },
+      "layout": {
+        "viewport": [
+          1280,
+          720
+        ],
+        "documentScrollWidth": 1280,
+        "bodyScrollWidth": 1280,
+        "horizontalPageOverflow": false,
+        "clippedInteractive": [],
+        "activeElement": "fv-dark"
+      },
+      "consoleErrors": [],
+      "offOrigin": [],
+      "technical": "pass",
+      "visual": "pass",
+      "observation": "Dark sample browser has readable filters and format chips, with the long catalog continuing through intentional page scrolling."
+    },
+    {
+      "id": "WF-folder-search",
+      "screenshot": "cross-workflows/WF-folder-search-390x844-light-mobile-ua.png",
+      "screenshotSha256": "aba05348538575f8a069bcb0805beca1b0585150ced631d89c8fd9756dfaa57a",
+      "viewport": "390x844",
+      "theme": "light",
+      "mobileUserAgent": true,
+      "captureRegion": "viewport",
+      "checks": {
+        "treeVisible": true,
+        "rows": 2,
+        "searchVisible": true,
+        "count": true,
+        "prefixedContentMatch": true,
+        "floatingControlsHidden": true
+      },
+      "layout": {
+        "viewport": [
+          390,
+          844
+        ],
+        "documentScrollWidth": 390,
+        "bodyScrollWidth": 390,
+        "horizontalPageOverflow": false,
+        "clippedInteractive": [],
+        "activeElement": "ftSearchInput"
+      },
+      "consoleErrors": [],
+      "offOrigin": [],
+      "technical": "pass",
+      "visual": "pass",
+      "observation": "Mobile project drawer fits its search field, content-match count, file rows, and sizes without horizontal page overflow or floating-control overlap."
+    },
+    {
+      "id": "WF-metadata",
+      "screenshot": "cross-workflows/WF-metadata-1440x900-dark.png",
+      "screenshotSha256": "de1cf112bea528675cffe471de77878c1d9d83cb331dbbe3a6f05b4fb13d6e35",
+      "viewport": "1440x900",
+      "theme": "dark",
+      "mobileUserAgent": false,
+      "captureRegion": "viewport",
+      "checks": {
+        "drawer": true,
+        "rows": 14,
+        "scrollable": true
+      },
+      "layout": {
+        "viewport": [
+          1440,
+          900
+        ],
+        "documentScrollWidth": 1440,
+        "bodyScrollWidth": 1440,
+        "horizontalPageOverflow": false,
+        "clippedInteractive": [],
+        "activeElement": "fv-dark"
+      },
+      "consoleErrors": [],
+      "offOrigin": [],
+      "technical": "pass",
+      "visual": "pass",
+      "observation": "Dark metadata drawer remains readable and scrollable while the PNG preview stays fully visible and unobscured."
+    },
+    {
+      "id": "WF-edit-diff",
+      "screenshot": "cross-workflows/WF-edit-diff-1280x720-light.png",
+      "screenshotSha256": "56a6362bbd3e80bed0860bf3e94f099f492e01646e4dc45b3418a99ada30b681",
+      "viewport": "1280x720",
+      "theme": "light",
+      "mobileUserAgent": false,
+      "captureRegion": "viewport",
+      "checks": {
+        "dirty": true,
+        "diffMode": true,
+        "editor": true
+      },
+      "layout": {
+        "viewport": [
+          1280,
+          720
+        ],
+        "documentScrollWidth": 1280,
+        "bodyScrollWidth": 1280,
+        "horizontalPageOverflow": false,
+        "clippedInteractive": [],
+        "activeElement": "enable-motion underline-links"
+      },
+      "consoleErrors": [],
+      "offOrigin": [],
+      "technical": "pass",
+      "visual": "pass",
+      "observation": "Edited Markdown shows a populated move-aware diff beside the live preview; the in-memory notice and dirty state remain visible."
+    },
+    {
+      "id": "WF-edit-diff-toolbar-end",
+      "screenshot": "cross-workflows/WF-edit-diff-toolbar-end-1280x720-light.png",
+      "screenshotSha256": "dbe9e204cc414c976d5b8b4ef72b60d183a9fbe5052f5314757ad36ef6b73773",
+      "viewport": "1280x720",
+      "theme": "light",
+      "mobileUserAgent": false,
+      "captureRegion": "actual formatting toolbar at horizontal-scroll end",
+      "checks": {
+        "toolbarOverflowHandled": true,
+        "endControlVisible": true
+      },
+      "layout": {
+        "viewport": [
+          1280,
+          720
+        ],
+        "documentScrollWidth": 1280,
+        "bodyScrollWidth": 1280,
+        "horizontalPageOverflow": false,
+        "clippedInteractive": [],
+        "activeElement": "enable-motion underline-links"
+      },
+      "consoleErrors": [],
+      "offOrigin": [],
+      "technical": "pass",
+      "visual": "pass",
+      "observation": "The formatting toolbar scrolls to its final WYSIWYG control, proving the narrow editor does not make end controls unreachable."
+    },
+    {
+      "id": "WF-compare",
+      "screenshot": "cross-workflows/WF-compare-390x844-dark-mobile-ua.png",
+      "screenshotSha256": "0c8ab9cb72c1db945c3b9b967854313c1d6d4919cd36273eeab9bb94aa9e9ff2",
+      "viewport": "390x844",
+      "theme": "dark",
+      "mobileUserAgent": true,
+      "captureRegion": "viewport",
+      "checks": {
+        "overlay": true,
+        "panes": 2,
+        "names": 2,
+        "modes": 4
+      },
+      "layout": {
+        "viewport": [
+          390,
+          844
+        ],
+        "documentScrollWidth": 390,
+        "bodyScrollWidth": 390,
+        "horizontalPageOverflow": false,
+        "clippedInteractive": [],
+        "activeElement": "fv-dark enable-motion underline-links"
+      },
+      "consoleErrors": [],
+      "offOrigin": [],
+      "technical": "pass",
+      "visual": "pass",
+      "observation": "Mobile dark comparison stacks two independently labeled source panes with usable mode controls and readable content; long source lines use internal scrolling."
+    },
+    {
+      "id": "WF-download-export",
+      "screenshot": "cross-workflows/WF-download-export-1440x900-light.png",
+      "screenshotSha256": "b8a7c64da6f9d1e0f2318e9d333b11c82ef815c5dc6f15b13c86b26159f26fbc",
+      "viewport": "1440x900",
+      "theme": "light",
+      "mobileUserAgent": false,
+      "captureRegion": "viewport",
+      "checks": {
+        "menu": true,
+        "actions": 2,
+        "download": true
+      },
+      "layout": {
+        "viewport": [
+          1440,
+          900
+        ],
+        "documentScrollWidth": 1440,
+        "bodyScrollWidth": 1440,
+        "horizontalPageOverflow": false,
+        "clippedInteractive": [],
+        "activeElement": "enable-motion underline-links"
+      },
+      "consoleErrors": [],
+      "offOrigin": [],
+      "technical": "pass",
+      "visual": "pass",
+      "observation": "CSV source and rendered table are populated, and the export menu exposes both JSON and Excel actions without clipping."
+    },
+    {
+      "id": "WF-settings-companion-1440x900-light",
+      "screenshot": "cross-workflows/WF-settings-companion-1440x900-light-1440x900-light.png",
+      "screenshotSha256": "8d3976d97f4851f3dd1260de54860f3dd91b58687191ba8bcd21afb1c8d0f27b",
+      "viewport": "1440x900",
+      "theme": "light",
+      "mobileUserAgent": false,
+      "captureRegion": "viewport",
+      "checks": {
+        "drawer": true,
+        "companion": true,
+        "mobileExplanation": true,
+        "desktopControls": true,
+        "focused": true,
+        "badgeBehindDrawer": true,
+        "floatingControlsHidden": true,
+        "trustTextContrast": true
+      },
+      "layout": {
+        "viewport": [
+          1440,
+          900
+        ],
+        "documentScrollWidth": 1440,
+        "bodyScrollWidth": 1440,
+        "horizontalPageOverflow": false,
+        "clippedInteractive": [],
+        "activeElement": "treeBtn"
+      },
+      "consoleErrors": [],
+      "offOrigin": [],
+      "technical": "pass",
+      "visual": "pass",
+      "observation": "Desktop light settings presents Companion status, controls, trust disclosure, and request table at readable contrast in a scrollable drawer."
+    },
+    {
+      "id": "WF-settings-companion-1440x900-dark",
+      "screenshot": "cross-workflows/WF-settings-companion-1440x900-dark-1440x900-dark.png",
+      "screenshotSha256": "74761ca60cd578e22ed5a85bcc1a1c77b986b1379785c54c8dc47aa9e2a2db32",
+      "viewport": "1440x900",
+      "theme": "dark",
+      "mobileUserAgent": false,
+      "captureRegion": "viewport",
+      "checks": {
+        "drawer": true,
+        "companion": true,
+        "mobileExplanation": true,
+        "desktopControls": true,
+        "focused": true,
+        "badgeBehindDrawer": true,
+        "floatingControlsHidden": true,
+        "trustTextContrast": true
+      },
+      "layout": {
+        "viewport": [
+          1440,
+          900
+        ],
+        "documentScrollWidth": 1440,
+        "bodyScrollWidth": 1440,
+        "horizontalPageOverflow": false,
+        "clippedInteractive": [],
+        "activeElement": "treeBtn"
+      },
+      "consoleErrors": [],
+      "offOrigin": [],
+      "technical": "pass",
+      "visual": "pass",
+      "observation": "Desktop dark settings preserves contrast for Companion status, disabled controls, disclosure text, and endpoint rows."
+    },
+    {
+      "id": "WF-settings-companion-1280x720-light",
+      "screenshot": "cross-workflows/WF-settings-companion-1280x720-light-1280x720-light.png",
+      "screenshotSha256": "4b55049af5ae683d6b5456db3b2dc237a8e1a6d83278951e5f3203d802e33fdb",
+      "viewport": "1280x720",
+      "theme": "light",
+      "mobileUserAgent": false,
+      "captureRegion": "viewport",
+      "checks": {
+        "drawer": true,
+        "companion": true,
+        "mobileExplanation": true,
+        "desktopControls": true,
+        "focused": true,
+        "badgeBehindDrawer": true,
+        "floatingControlsHidden": true,
+        "trustTextContrast": true
+      },
+      "layout": {
+        "viewport": [
+          1280,
+          720
+        ],
+        "documentScrollWidth": 1280,
+        "bodyScrollWidth": 1280,
+        "horizontalPageOverflow": false,
+        "clippedInteractive": [],
+        "activeElement": "treeBtn"
+      },
+      "consoleErrors": [],
+      "offOrigin": [],
+      "technical": "pass",
+      "visual": "pass",
+      "observation": "Short-desktop light layout keeps the Companion controls and the start of the full trust disclosure visible, with vertical scrolling for the remainder."
+    },
+    {
+      "id": "WF-settings-companion-1280x720-dark",
+      "screenshot": "cross-workflows/WF-settings-companion-1280x720-dark-1280x720-dark.png",
+      "screenshotSha256": "84bd874b167aff188adcd113a2b726e749cbf31aeddbbbefbc668e5894375a9f",
+      "viewport": "1280x720",
+      "theme": "dark",
+      "mobileUserAgent": false,
+      "captureRegion": "viewport",
+      "checks": {
+        "drawer": true,
+        "companion": true,
+        "mobileExplanation": true,
+        "desktopControls": true,
+        "focused": true,
+        "badgeBehindDrawer": true,
+        "floatingControlsHidden": true,
+        "trustTextContrast": true
+      },
+      "layout": {
+        "viewport": [
+          1280,
+          720
+        ],
+        "documentScrollWidth": 1280,
+        "bodyScrollWidth": 1280,
+        "horizontalPageOverflow": false,
+        "clippedInteractive": [],
+        "activeElement": "treeBtn"
+      },
+      "consoleErrors": [],
+      "offOrigin": [],
+      "technical": "pass",
+      "visual": "pass",
+      "observation": "Short-desktop dark layout keeps the drawer, status, controls, and disclosure legible without page-width overflow."
+    },
+    {
+      "id": "WF-settings-companion-390x844-light",
+      "screenshot": "cross-workflows/WF-settings-companion-390x844-light-390x844-light-mobile-ua.png",
+      "screenshotSha256": "0786ae08849c4321a199666bee9787b5b16811e714336647677e8d56b9711497",
+      "viewport": "390x844",
+      "theme": "light",
+      "mobileUserAgent": true,
+      "captureRegion": "viewport",
+      "checks": {
+        "drawer": true,
+        "companion": true,
+        "mobileExplanation": true,
+        "desktopControls": true,
+        "focused": true,
+        "badgeBehindDrawer": true,
+        "floatingControlsHidden": true,
+        "trustTextContrast": true
+      },
+      "layout": {
+        "viewport": [
+          390,
+          844
+        ],
+        "documentScrollWidth": 390,
+        "bodyScrollWidth": 390,
+        "horizontalPageOverflow": false,
+        "clippedInteractive": [],
+        "activeElement": "treeBtn"
+      },
+      "consoleErrors": [],
+      "offOrigin": [],
+      "technical": "pass",
+      "visual": "pass",
+      "observation": "Mobile light settings clearly replaces desktop Companion controls with the desktop-only explanation; preview and editor settings fit the drawer."
+    },
+    {
+      "id": "WF-settings-companion-390x844-dark",
+      "screenshot": "cross-workflows/WF-settings-companion-390x844-dark-390x844-dark-mobile-ua.png",
+      "screenshotSha256": "4df12061e69bdbef567c7d890090fad5fcd916f734b272d8f5398e488e709bc9",
+      "viewport": "390x844",
+      "theme": "dark",
+      "mobileUserAgent": true,
+      "captureRegion": "viewport",
+      "checks": {
+        "drawer": true,
+        "companion": true,
+        "mobileExplanation": true,
+        "desktopControls": true,
+        "focused": true,
+        "badgeBehindDrawer": true,
+        "floatingControlsHidden": true,
+        "trustTextContrast": true
+      },
+      "layout": {
+        "viewport": [
+          390,
+          844
+        ],
+        "documentScrollWidth": 390,
+        "bodyScrollWidth": 390,
+        "horizontalPageOverflow": false,
+        "clippedInteractive": [],
+        "activeElement": "treeBtn"
+      },
+      "consoleErrors": [],
+      "offOrigin": [],
+      "technical": "pass",
+      "visual": "pass",
+      "observation": "Mobile dark settings keeps the desktop-only Companion explanation and form controls readable, focused, and free of horizontal overflow."
+    }
+  ],
+  "failures": [],
+  "reviewedAt": "2026-07-11T08:24:03.786Z",
+  "visualSummary": {
+    "passes": 14,
+    "failures": 0,
+    "pending": 0,
+    "screenshotsInspected": 14
+  }
+}
