@@ -148,6 +148,7 @@ export function proveExportPlanSemantics() {
     audio: { gain: 0.25, roomTone: { kind: 'pink-noise', levelDb: -52 } },
   }));
   const plan = buildAudioMixExportPlan(project, { sampleRate: 48000, channels: 1 });
+  const mp3Plan = buildAudioMixExportPlan(project, { sampleRate: 48000, channels: 2, format: 'mp3', filename: 'voice-mix.mp3' });
   const source = plan.provenance.items.find((item) => item.elementId === elementId);
   const room = plan.provenance.items.find((item) => item.elementId === 'element-room-export');
   return {
@@ -155,6 +156,11 @@ export function proveExportPlanSemantics() {
       && plan.itemCount === 2
       && plan.provenance.renderPath === 'browser-offline-audio'
       && plan.provenance.sampleRate === 48000
+      && mp3Plan.format === 'mp3'
+      && mp3Plan.mime === 'audio/mpeg'
+      && mp3Plan.bitRate === 192
+      && mp3Plan.filename === 'voice-mix.mp3'
+      && mp3Plan.provenance.encoder === 'lamejs-1.2.1-worker'
       && source?.startMs === 1000
       && source?.sourceInMs === 250
       && source?.sourceOutMs === 5250

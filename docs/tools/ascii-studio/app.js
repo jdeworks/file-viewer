@@ -52,16 +52,24 @@ async function loadExampleSample(name) {
   const request = ++sampleRequest;
   sampleAbort?.abort();
   sampleAbort = new AbortController();
+  ensureStudio().cancelPendingImage();
   const clean = String(name || '').replace(/^\/?docs\/examples\//, '').replace(/^\/?examples\//, '');
   if (!clean || clean.includes('..') || clean.includes('\\') || !/^[a-zA-Z0-9_./ -]+$/.test(clean)) return false;
   const res = await fetch('../../examples/' + clean, { signal: sampleAbort.signal }).catch(() => null);
-  if (request !== sampleRequest) return false;
+  if (request !== sampleRequest) return null;
   if (!res?.ok) return false;
   const blob = await res.blob();
   const mime = imageMimeFor(clean, blob.type);
   if (!mime) return false; // fetched OK but not a recognizable image
   const loaded = await loadFile(new File([blob], clean.split('/').pop() || 'sample', { type: mime }));
-  return request === sampleRequest && !!loaded;
+  return request === sampleRequest ? !!loaded : null;
+}
+
+function loadLocalFile(file) {
+  sampleRequest++;
+  sampleAbort?.abort();
+  ensureStudio().cancelPendingImage();
+  return loadFile(file);
 }
 
 // A tiny generated test pattern so the page is useful with no upload.
@@ -95,13 +103,13 @@ for (const sample of SAMPLE_IMAGES) {
   button.append(preview, label);
   button.addEventListener('click', async () => {
     sampleError.textContent = '';
-    sampleGrid.querySelectorAll('button').forEach((entry) => { entry.disabled = true; });
+    button.disabled = true;
     button.setAttribute('aria-busy', 'true');
     const ok = await loadExampleSample(sample.name).catch(() => false);
-    sampleGrid.querySelectorAll('button').forEach((entry) => { entry.disabled = false; });
+    button.disabled = false;
     button.removeAttribute('aria-busy');
     if (ok) sampleDialog.close();
-    else sampleError.textContent = `Could not load ${sample.name}. The current image was kept.`;
+    else if (ok === false) sampleError.textContent = `Could not load ${sample.name}. The current image was kept.`;
   });
   sampleGrid.append(button);
 }
@@ -117,11 +125,11 @@ function openSampleGallery() {
 $('pick').addEventListener('click', () => $('file').click());
 $('sample').addEventListener('click', openSampleGallery);
 $('sample-close').addEventListener('click', () => sampleDialog.close());
-$('file').addEventListener('change', (e) => loadFile(e.target.files[0]));
+$('file').addEventListener('change', (e) => loadLocalFile(e.target.files[0]));
 const drop = $('drop');
 ['dragover', 'dragenter'].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add('over'); }));
 ['dragleave', 'drop'].forEach((ev) => drop.addEventListener(ev, () => drop.classList.remove('over')));
-drop.addEventListener('drop', (e) => { e.preventDefault(); loadFile(e.dataTransfer.files[0]); });
+drop.addEventListener('drop', (e) => { e.preventDefault(); loadLocalFile(e.dataTransfer.files[0]); });
 
 loadSample();
 const initialSample = new URLSearchParams(location.search).get('sample');

@@ -79,7 +79,8 @@
   cursor: pointer;
 }
 
-.mmx-settings-import,
+.mmx-settings-import { display: none; }
+
 .mmx-relink-file {
   max-width: 132px;
   font-size: 11px;

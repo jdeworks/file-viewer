@@ -198,6 +198,14 @@ export function mountAsciiWebcam(host, opts = {}) {
     recStudio.hidden = !(blob && opts.onRecorded);
     recStudio.disabled = !(blob && opts.onRecorded);
   }
+  function releaseRecordingStreams() {
+    recStream?.getTracks().forEach((track) => track.stop());
+    audioStream?.getTracks().forEach((track) => track.stop());
+    recStream = null;
+    audioStream = null;
+    clearInterval(recTimer);
+    recTimer = null;
+  }
   async function startRec() {
     const wantAudio = !!q('.cam-audio').checked;
     if (!out.captureStream) { stats.textContent = 'Recording is not supported by this browser.'; return; }
@@ -206,6 +214,7 @@ export function mountAsciiWebcam(host, opts = {}) {
       recStream = out.captureStream(recordFps());
       if (wantAudio) {
         audioStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+        if (destroyed) { releaseRecordingStreams(); return; }
         audioStream.getAudioTracks().forEach((track) => recStream.addTrack(track));
       }
     } catch (e) {
@@ -214,6 +223,7 @@ export function mountAsciiWebcam(host, opts = {}) {
       recStream = null; audioStream = null;
       return;
     }
+    if (destroyed) { releaseRecordingStreams(); return; }
     const mime = ['video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm']
       .find((t) => window.MediaRecorder && MediaRecorder.isTypeSupported(t)) || 'video/webm';
     recChunks = [];
@@ -222,10 +232,9 @@ export function mountAsciiWebcam(host, opts = {}) {
     recorder.onstop = () => {
       const blob = new Blob(recChunks, { type: mime }); recChunks = [];
       if (!destroyed) setLastRecording(blob);
-      if (recStream) { recStream.getTracks().forEach((t) => t.stop()); recStream = null; }
-      if (audioStream) { audioStream.getTracks().forEach((t) => t.stop()); audioStream = null; }
-      clearInterval(recTimer); recTimer = null;
-      const rb = q('.cam-rec'); rb.classList.remove('active'); rb.textContent = '● Record';
+      releaseRecordingStreams();
+      const rb = q('.cam-rec');
+      if (rb) { rb.classList.remove('active'); rb.textContent = '● Record'; }
       // In the app, keep the user in webcam mode so they can download first, then
       // choose Studio. Standalone mode has no studio bridge, so auto-download.
       if (!destroyed && !opts.onRecorded) dl(blob, 'webcam-recording.webm');
@@ -292,7 +301,7 @@ export function mountAsciiWebcam(host, opts = {}) {
     },
     destroy() {
       destroyed = true;
-      stopRec(); stop();
+      stopRec(); releaseRecordingStreams(); stop();
       ro.disconnect();
       document.removeEventListener('fullscreenchange', applyFit);
       engine.terminate();

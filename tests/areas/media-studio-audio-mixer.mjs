@@ -18,7 +18,7 @@ export async function runAudioMixerAndPlaylist(ctx) {
     await page.click('#previewHost .media-mode-tab[data-mode="mix"]');
     await page.waitForSelector('#previewHost .media-mode-panel[data-mode="mix"] .mmx-audio-multi', { timeout: 12000 });
     const mixBtnText = await page.$eval('#previewHost .media-mode-panel[data-mode="mix"] .mmx-mix-download', (e) => e.textContent).catch(() => '');
-    if (/Mixdown/i.test(mixBtnText)) pass('audio mixer: mix mode mounts multi-track mixer'); else fail('mixer panel button text: ' + mixBtnText);
+    if (/Download mix/i.test(mixBtnText)) pass('audio mixer: mix mode mounts multi-track mixer'); else fail('mixer panel button text: ' + mixBtnText);
     const laneCount = await page.$$eval('#previewHost .media-mode-panel[data-mode="mix"] .al-track', (els) => els.length);
     if (laneCount === 0) pass('audio mixer: panel opens with no lane until async decode completes');
     else pass('audio mixer: panel opens with lane(s) already loaded');
@@ -39,7 +39,7 @@ export async function runAudioMixerAndPlaylist(ctx) {
       pass('audio mixer: bespoke lane grammar visible (waveform/cursor/context/index)');
     else fail('mixer lane grammar: ' + JSON.stringify(mixGrammar));
     let laneCtrls = await page.evaluate(() => ({
-      gain: !!document.querySelector('#previewHost .media-mode-panel[data-mode="mix"] .mmx-mix-lane-gain'),
+      gain: !!document.querySelector('#previewHost .media-mode-panel[data-mode="mix"] .mmx-mix-lane-modal-gain'),
       mute: !!document.querySelector('#previewHost .media-mode-panel[data-mode="mix"] .mmx-mix-mute'),
       solo: !!document.querySelector('#previewHost .media-mode-panel[data-mode="mix"] .mmx-mix-solo'),
       fadeIn: !!document.querySelector('#previewHost .media-mode-panel[data-mode="mix"] .mmx-mix-fade-in'),
@@ -52,8 +52,22 @@ export async function runAudioMixerAndPlaylist(ctx) {
     await page.waitForSelector('#previewHost .media-mode-panel[data-mode="mix"] .al-track', { timeout: 12000 });
     const lane1Count = await page.$$eval('#previewHost .media-mode-panel[data-mode="mix"] .al-track', (els) => els.length);
     if (lane1Count >= 1) pass('audio mixer: opens with the loaded clip as lane 1'); else fail('mixer lanes after open: ' + lane1Count);
+    const compactGutter = await page.$eval('#previewHost .media-mode-panel[data-mode="mix"] .al-track', (track) => {
+      const gutter = track.querySelector('.al-track-label');
+      const visibleControls = [...gutter.querySelectorAll('button, input, select, .mmx-mix-lane-index')]
+        .filter((node) => getComputedStyle(node).display !== 'none');
+      return {
+        width: gutter.getBoundingClientRect().width,
+        controls: visibleControls.map((node) => node.className),
+        namesHidden: getComputedStyle(gutter.querySelector('.al-track-name')).display === 'none'
+          && getComputedStyle(gutter.querySelector('.al-track-kind')).display === 'none',
+      };
+    });
+    if (compactGutter.width <= 58 && compactGutter.controls.length === 2 && compactGutter.namesHidden)
+      pass('audio mixer: lane gutter contains only its number and settings button');
+    else fail('audio mixer compact gutter: ' + JSON.stringify(compactGutter));
     laneCtrls = await page.evaluate(() => ({
-      gain: !!document.querySelector('#previewHost .media-mode-panel[data-mode="mix"] .mmx-mix-lane-gain'),
+      gain: !!document.querySelector('#previewHost .media-mode-panel[data-mode="mix"] .mmx-mix-lane-modal-gain'),
       mute: !!document.querySelector('#previewHost .media-mode-panel[data-mode="mix"] .mmx-mix-mute'),
       solo: !!document.querySelector('#previewHost .media-mode-panel[data-mode="mix"] .mmx-mix-solo'),
       fadeIn: !!document.querySelector('#previewHost .media-mode-panel[data-mode="mix"] .mmx-mix-fade-in'),
@@ -66,6 +80,20 @@ export async function runAudioMixerAndPlaylist(ctx) {
     const hasRuler = await page.$('#previewHost .media-mode-panel[data-mode="mix"] .al-mix-ruler');
     if (hasRuler) pass('audio mixer: time ruler present above lanes');
     else fail('audio mixer: time ruler missing');
+    const laneAlignment = await page.evaluate(() => {
+      const panel = document.querySelector('#previewHost .media-mode-panel[data-mode="mix"]');
+      const tick = panel.querySelector('.al-mix-ruler .al-ruler-tick');
+      const canvas = panel.querySelector('.al-track .al-canvas-wrap');
+      const gutter = panel.querySelector('.al-track .al-track-label');
+      return {
+        tickLeft: tick?.getBoundingClientRect().left || 0,
+        canvasLeft: canvas?.getBoundingClientRect().left || 0,
+        gutterRight: gutter?.getBoundingClientRect().right || 0,
+      };
+    });
+    if (Math.abs(laneAlignment.tickLeft - laneAlignment.canvasLeft) <= 2 && Math.abs(laneAlignment.gutterRight - laneAlignment.canvasLeft) <= 2)
+      pass('audio mixer: compact gutter, ruler, and timeline share one alignment boundary');
+    else fail('audio mixer lane alignment: ' + JSON.stringify(laneAlignment));
     // ── Per-lane Edit modal: open it, check EQ + Dynamics buttons, expand EQ ──
     const laneEditBtn = await page.$('#previewHost .media-mode-panel[data-mode="mix"] .mmx-mix-lane-edit');
     if (laneEditBtn) {
@@ -73,10 +101,17 @@ export async function runAudioMixerAndPlaylist(ctx) {
       const modalState = await page.evaluate(() => {
         const modal = document.querySelector('#previewHost .media-mode-panel[data-mode="mix"] .mmx-mix-lane-modal:not([hidden])');
         if (!modal) return { open: false };
-        return { open: true, hasEq: !!modal.querySelector('.mmx-mix-lane-eq-btn'), hasDyn: !!modal.querySelector('.mmx-mix-lane-dyn-btn') };
+        return {
+          open: true,
+          hasEq: !!modal.querySelector('.mmx-mix-lane-eq-btn'),
+          hasDyn: !!modal.querySelector('.mmx-mix-lane-dyn-btn'),
+          hasIdentity: !!modal.querySelector('.mmx-mix-lane-source') && !!modal.querySelector('.mmx-mix-lane-label-input'),
+          hasState: !!modal.querySelector('.mmx-mix-mute') && !!modal.querySelector('.mmx-mix-solo') && !!modal.querySelector('.mmx-mix-lane-modal-gain'),
+          dialog: modal.getAttribute('role') === 'dialog' && modal.getAttribute('aria-modal') === 'true',
+        };
       });
-      if (modalState.open && modalState.hasEq && modalState.hasDyn)
-        pass('audio mixer: lane Edit button opens modal with EQ + Dynamics buttons');
+      if (modalState.open && modalState.hasEq && modalState.hasDyn && modalState.hasIdentity && modalState.hasState && modalState.dialog)
+        pass('audio mixer: lane settings dialog owns identity, mute/solo/gain, fades, EQ, and Dynamics');
       else fail('mixer lane modal: ' + JSON.stringify(modalState));
       await page.click('#previewHost .media-mode-panel[data-mode="mix"] .mmx-mix-lane-modal:not([hidden]) .mmx-mix-lane-eq-btn');
       const eqBands = await page.$$eval(
@@ -128,6 +163,26 @@ export async function runAudioMixerAndPlaylist(ctx) {
     ]);
     const wavName = wavDownload.suggestedFilename();
     if (/\.wav$/.test(wavName)) pass('audio mixer: mixdown → WAV downloaded (' + wavName + ')'); else fail('mixer WAV download name: ' + wavName);
+    await page.selectOption('#previewHost .media-mode-panel[data-mode="mix"] .mmx-mix-format', 'mp3');
+    const [mp3Download] = await Promise.all([
+      page.waitForEvent('download', { timeout: 30000 }),
+      mixBtn.click(),
+    ]);
+    const mp3Name = mp3Download.suggestedFilename();
+    if (/\.mp3$/.test(mp3Name)) pass('audio mixer: offline mixdown → MP3 downloaded (' + mp3Name + ')'); else fail('mixer MP3 download name: ' + mp3Name);
+    const fullscreenState = await page.evaluate(async () => {
+      const root = document.querySelector('#previewHost .media-mode-panel[data-mode="mix"] .mmx-audio-multi');
+      const button = root.querySelector('.mmx-mix-fullscreen');
+      if (!root.requestFullscreen) return { supported: false };
+      button.click();
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      const entered = document.fullscreenElement === root && button.getAttribute('aria-pressed') === 'true';
+      button.click();
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      return { supported: true, entered, exited: !document.fullscreenElement && button.getAttribute('aria-pressed') === 'false' };
+    });
+    if (!fullscreenState.supported || (fullscreenState.entered && fullscreenState.exited)) pass('audio mixer: workspace fullscreen toggles cleanly');
+    else fail('audio mixer fullscreen: ' + JSON.stringify(fullscreenState));
     const audioMixDesktopViewport = page.viewportSize();
     await reloadExampleAtViewport(ctx, MEDIA_MOBILE_VIEWPORT, 'Sample.wav', '#previewHost audio.media-view');
     await page.$eval('#previewHost .media-mode-tab[data-mode="mix"]', (button) => button.click());

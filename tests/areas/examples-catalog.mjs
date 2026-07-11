@@ -355,6 +355,21 @@ export async function run(ctx) {
   await page.click('.sample-card[data-sample="sample.gif"]');
   await page.waitForFunction((before) => !document.querySelector('#sample-dialog').open && document.querySelector('.asx-out')?.textContent !== before, jpgAscii, { timeout: 10000 });
   pass('ASCII sample gallery loads multiple distinct maintained images');
+  const gifAscii = await page.$eval('.asx-out', (el) => el.textContent);
+  const slowJpeg = async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 250));
+    await route.continue().catch(() => {});
+  };
+  await page.route('**/examples/sample.jpg', slowJpeg);
+  await page.click('#sample');
+  await page.click('.sample-card[data-sample="sample.jpg"]');
+  await page.click('.sample-card[data-sample="sample.gif"]');
+  await page.waitForFunction(() => !document.querySelector('#sample-dialog').open, null, { timeout: 10000 });
+  await page.waitForTimeout(400);
+  const latestAscii = await page.$eval('.asx-out', (el) => el.textContent);
+  await page.unroute('**/examples/sample.jpg', slowJpeg);
+  if (latestAscii === gifAscii) pass('ASCII sample gallery keeps the latest choice when an earlier load finishes late');
+  else fail('ASCII sample gallery allowed a stale sample load to win');
 
   // Single canonical webcam entry: no page-level "Webcam" tab; the ONLY camera
   // door is the studio's own 📷 Camera toolbar button (matches the in-viewer studio).

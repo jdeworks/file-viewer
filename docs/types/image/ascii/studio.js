@@ -347,6 +347,7 @@ export function mountAsciiStudio(host, opts = {}) {
   return {
     engine,
     setImage,
+    cancelPendingImage: () => { imageRequest++; },
     getBaseName: () => baseName,
     isCameraActive: () => cameraMode,
     stopCamera: closeCamera,

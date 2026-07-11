@@ -210,6 +210,46 @@
 .al-lanes .al-track { border-bottom: 1px solid var(--al-border); }
 .al-lane-controls { display: flex; align-items: center; gap: 6px; padding: 4px 0 0; flex-wrap: wrap; }
 .al-lane-controls .al-mini { font-size: 10px; color: var(--al-text-muted); }
+.mmx-mix { --mmx-mix-gutter-width: 56px; container-type: inline-size; }
+.mmx-mix:fullscreen {
+  width: 100vw;
+  height: 100vh;
+  max-width: none;
+  margin: 0;
+  overflow: auto;
+  background: var(--al-bg);
+  color: var(--al-text);
+}
+.mmx-mix .mmx-toolbar { align-items: center; gap: 8px; padding: 8px; }
+.mmx-mix .mmx-title { flex: 0 0 auto; min-width: 42px; }
+.mmx-mix-controls { flex: 1 1 640px; min-width: 0; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.mmx-mix-group { display: inline-flex; align-items: center; gap: 5px; min-width: 0; }
+.mmx-mix-group + .mmx-mix-group { padding-left: 6px; border-left: 1px solid var(--al-border); }
+.mmx-mix-master { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; color: var(--al-text-muted); white-space: nowrap; }
+.mmx-mix-master-slider { width: 84px; }
+.mmx-mix-format { height: 30px; border: 1px solid var(--al-border); border-radius: 7px; background: var(--al-bg); color: var(--al-text-secondary); }
+.mmx-mix-export-status { max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--al-text-muted); font-size: 10px; }
+.mmx-mix-drop-zone { flex: 1 1 180px; min-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--al-text-muted); font-size: 10px; text-align: right; }
+.mmx-mix .mmx-settings-controls { flex-wrap: nowrap; }
+.mmx-mix .mmx-settings-download,
+.mmx-mix .mmx-settings-import-label { min-height: 30px; white-space: nowrap; }
+.mmx-mix .al-track-label {
+  width: var(--mmx-mix-gutter-width);
+  padding: 0 6px;
+  align-items: center;
+}
+.mmx-mix .al-track-name,
+.mmx-mix .al-track-kind { display: none; }
+.mmx-mix .mmx-mix-lane-controls { width: 100%; justify-content: space-between; padding: 0; flex-wrap: nowrap; }
+.mmx-mix .mmx-mix-lane-index { font-size: 12px; font-variant-numeric: tabular-nums; }
+
+@container (max-width: 760px) {
+  .mmx-mix .mmx-title { flex-basis: 100%; }
+  .mmx-mix-controls { flex-basis: 100%; }
+  .mmx-mix-create-group { order: 8; }
+  .mmx-mix-drop-zone { order: 9; flex-basis: 100%; text-align: left; }
+  .mmx-mix-export-status { display: none; }
+}
 .al-overlay-canvas { display: block; width: 100%; height: 220px; background: var(--al-bg); }
 
 /* Compare view: give the control row + overlay breathing room inside the bespoke surface. */
@@ -294,7 +334,7 @@
 
 .al-note { padding: 8px 12px; font-size: 11px; color: var(--al-text-muted); border-top: 1px solid var(--al-border); }
 
-/* Mix surface time ruler — full width, ticks offset 96px to align with canvas area. */
+/* Mix surface time ruler — full width, ticks use the same compact gutter width as lanes. */
 .al-mix-ruler {
   position: relative;
   height: 22px;
@@ -339,6 +379,10 @@
   overflow-y: auto;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
 }
+.mmx-mix-lane-identity { display: grid; grid-template-columns: max-content minmax(100px, 1fr); }
+.mmx-mix-lane-source { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--al-text-secondary); font-size: 11px; }
+.mmx-mix-lane-label-input { min-width: 0; height: 28px; border: 1px solid var(--al-border); border-radius: 6px; padding: 0 8px; background: var(--al-input); color: var(--al-text); }
+.mmx-mix-lane-state .al-btn[aria-pressed="true"] { background: var(--al-primary); color: var(--al-primary-text); border-color: var(--al-primary); }
 
 .mmx-mix-lane-modal-header {
   display: flex;
@@ -382,3 +426,8 @@
 
 /* Edit button in lane gutter */
 .mmx-mix-lane-edit { font-size: 11px; padding: 1px 5px; min-width: unset; height: 22px; margin-top: 2px; }
+
+@media (max-width: 520px) {
+  .mmx-mix-lane-modal { padding: 8px; }
+  .mmx-mix-lane-modal-panel { min-width: 0; width: 100%; max-height: calc(100% - 16px); }
+}

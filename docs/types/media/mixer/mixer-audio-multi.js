@@ -9,7 +9,7 @@ import {
   applyVideoProxyResults,
   moveElement,
   renderVideoMixWithFfmpeg,
-  renderAudioMixToWav,
+  renderAudioMixToBlob,
   runVideoProxyRender,
   selectTarget,
   trimElement,
@@ -57,6 +57,7 @@ import {
   firstElementForLane,
   fitZoom,
   hasVisualElements,
+  MIX_LANE_GUTTER_WIDTH,
   reflectState,
   updateLaneControlsState,
   updateMixRuler,
@@ -69,6 +70,7 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
   const root = document.createElement('section');
   root.className = 'mmx-audio-multi mmx-mix al-surface';
   root.dataset.mixerContext = 'mix';
+  root.style.setProperty('--mmx-mix-gutter-width', `${MIX_LANE_GUTTER_WIDTH}px`);
   root.tabIndex = -1;
   panel.append(root);
   let project = selectFirstElement(buildProject(mediaEl || {}, intake || {}));
@@ -76,6 +78,7 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
   let waveformSummary = null;
   let destroyed = false;
   let lastExportPlan = null, lastVideoExportPlan = null, lastProxyPlan = null;
+  let exportAbort = null;
   const decodedAudioCache = createAudioBufferCache({ budgetBytes: options.decodedAudioBudgetBytes });
   const runtimeFiles = new Map();
   if (intake?.file) runtimeFiles.set('asset-listen-source', intake.file);
@@ -102,7 +105,7 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
     filename: `${(intake?.filename || 'media-mix').replace(/\.[^.]+$/, '')}.mixer.json`,
   });
 
-  const { toolbar, masterSlider, videoPlanBtn } = buildMixToolbar();
+  const { toolbar, masterSlider, videoPlanBtn, formatSelect, fullscreenBtn, exportStatus } = buildMixToolbar();
   const rulerEl = Object.assign(document.createElement('div'), { className: 'al-mix-ruler' });
   const lanesContainer = document.createElement('div');
   lanesContainer.className = 'al-lanes';
@@ -114,6 +117,31 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
     getProject: () => project, setProject: (p) => { project = p; }, getClipLanes: () => clipLanes, getViewport: () => viewport,
   });
   root.append(toolbar, rulerEl, lanesContainer, selPanel.el, inspector);
+
+  let fullscreenReturnFocus = null;
+  const reflectFullscreen = () => {
+    const active = document.fullscreenElement === root;
+    fullscreenBtn.textContent = active ? 'Exit fullscreen' : '⛶ Fullscreen';
+    fullscreenBtn.setAttribute('aria-label', active ? 'Exit Mix workspace fullscreen' : 'Enter Mix workspace fullscreen');
+    fullscreenBtn.setAttribute('aria-pressed', active ? 'true' : 'false');
+    if (!active && fullscreenReturnFocus) {
+      const target = fullscreenReturnFocus;
+      fullscreenReturnFocus = null;
+      target.focus?.();
+    }
+    render();
+  };
+  const onFullscreenError = () => {
+    root.dataset.fullscreenError = 'Fullscreen request was rejected.';
+    exportStatus.textContent = root.dataset.fullscreenError;
+    reflectFullscreen();
+  };
+  if (!root.requestFullscreen) {
+    fullscreenBtn.disabled = true;
+    fullscreenBtn.title = 'Fullscreen is not supported by this browser';
+  }
+  document.addEventListener('fullscreenchange', reflectFullscreen);
+  document.addEventListener('fullscreenerror', onFullscreenError);
 
   const dispatch = (action) => {
     if (action.type === 'seek') setCursorMs(action.cursorMs);
@@ -161,14 +189,14 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
   function reconcileLanes() {
     const laneIds = new Set(project.lanes.map((l) => l.id));
     for (const [id, lane] of clipLanes) if (!laneIds.has(id)) { lane.el.remove(); clipLanes.delete(id); laneModals.get(id)?.remove(); laneModals.delete(id); }
-    for (const lm of project.lanes) {
+    for (const [laneIndex, lm] of project.lanes.entries()) {
       if (!clipLanes.has(lm.id)) {
         const el = firstElementForLane(project, lm.id);
         const isVis = !!(el?.capabilities?.hasVideo || el?.capabilities?.hasImage);
         const lane = createClipLane({ label: lm.label || lm.role || 'Lane', kind: lm.role || '', interactive: !isVis, callbacks: makeLaneCallbacks(lm.id) });
         lane.setSurface(root);
         lane.el.dataset.laneId = lm.id;
-        lane.el.querySelector('.al-track-label').append(buildLaneControlsEl(lm, el));
+        lane.el.querySelector('.al-track-label').append(buildLaneControlsEl(lm, laneIndex));
         lanesContainer.append(lane.el);
         clipLanes.set(lm.id, lane);
         const modal = buildLaneEditorModal(lm, el, { getProject: () => project, setProject: (p) => { project = p; }, clipLanes, getViewport: () => viewport });
@@ -193,8 +221,8 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
       const element = firstElementForLane(project, laneId);
       const clipView = buildLaneClips(project, laneId, viewport.cursorMs, viewport.pxPerMs * 1000);
       if (clipView) lane.update(clipView);
-      updateLaneControlsState(lane.el, laneModel, element);
-      updateLaneModalValues(laneModals.get(laneId), laneModel, element);
+      updateLaneControlsState(lane.el, laneModel, project.lanes.indexOf(laneModel));
+      updateLaneModalValues(laneModals.get(laneId), laneModel, element, project);
       if (element?.capabilities?.hasVideo || element?.capabilities?.hasImage) {
         lane.canvasWrap.querySelector('.mmx-thumb-strip')?.remove();
         lane.canvasWrap.append(buildThumbnailStrip(element, visualRuntime.thumbnails));
@@ -255,10 +283,12 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
     }
     if (button.matches('.mmx-mix-lane-edit')) {
       const lid = button.dataset.laneId;
-      for (const [id, m] of laneModals) if (id !== lid) m.hidden = true;
-      const m = laneModals.get(lid); if (m) m.hidden = !m.hidden; return;
+      for (const [id, m] of laneModals) if (id !== lid) m.__close?.();
+      const m = laneModals.get(lid);
+      if (m) { if (m.hidden) m.__open?.(button); else m.__close?.(); }
+      return;
     }
-    if (button.matches('.mmx-mix-lane-modal-close')) { const m = button.closest('.mmx-mix-lane-modal'); if (m) m.hidden = true; return; }
+    if (button.matches('.mmx-mix-lane-modal-close')) { button.closest('.mmx-mix-lane-modal')?.__close?.(); return; }
     if (button.matches('.mmx-mix-mute, .mmx-mix-solo')) {
       const field = button.matches('.mmx-mix-mute') ? 'muted' : 'solo';
       project = updateLane(project, button.dataset.laneId, (lane) => ({ ...lane, [field]: !lane[field] }));
@@ -269,6 +299,16 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
     if (button.matches('.mmx-mix-fit')) { dispatch({ type: 'fit' }); return; }
     if (button.matches('.mmx-mix-play')) { playback.play(); return; }
     if (button.matches('.mmx-mix-stop')) { playback.stop({ resetCursor: true }); render(); return; }
+    if (button.matches('.mmx-mix-fullscreen')) {
+      root.dataset.fullscreenError = '';
+      if (document.fullscreenElement === root) document.exitFullscreen?.().catch(onFullscreenError);
+      else if (document.fullscreenElement) onFullscreenError();
+      else {
+        fullscreenReturnFocus = button;
+        root.requestFullscreen?.().catch(onFullscreenError);
+      }
+      return;
+    }
     if (button.matches('.mmx-mix-download')) { downloadMixdown(); return; }
     if (button.matches('.mmx-mix-video-export-plan')) {
       lastVideoExportPlan = buildVideoExportPlan();
@@ -345,6 +385,7 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
     destroy() {
       destroyed = true;
       playback.destroy();
+      exportAbort?.abort();
       visualRuntime.dispose();
       settingsUi.destroy();
       decodedAudioCache.releaseProject(project.project.id);
@@ -354,6 +395,9 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
       root.removeEventListener('dragleave', onDragLeave);
       root.removeEventListener('drop', onDrop);
       window.removeEventListener('resize', render);
+      document.removeEventListener('fullscreenchange', reflectFullscreen);
+      document.removeEventListener('fullscreenerror', onFullscreenError);
+      if (document.fullscreenElement === root) document.exitFullscreen?.().catch(() => {});
       delete root.__mediaMixerMulti;
       root.remove();
     },
@@ -415,17 +459,45 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
     for (const file of files) addDroppedFile(file, { startMs: viewport.cursorMs });
   }
 
-  function downloadMixdown() {
-    lastExportPlan = buildAudioMixExportPlan(project);
+  async function downloadMixdown() {
+    if (exportAbort) return;
+    const format = formatSelect.value === 'mp3' ? 'mp3' : 'wav';
+    const base = (intake?.filename || 'media-mix').replace(/\.[^.]+$/, '');
+    exportAbort = new AbortController();
+    const downloadButton = root.querySelector('.mmx-mix-download');
+    downloadButton.disabled = true;
+    formatSelect.disabled = true;
+    exportStatus.textContent = 'Rendering mix…';
+    root.dataset.mixdownState = 'rendering';
+    lastExportPlan = buildAudioMixExportPlan(project, { format, filename: `${base}-mix.${format}` });
     root.dataset.lastMixdownPlan = JSON.stringify(lastExportPlan.provenance);
-    renderAudioMixToWav(project, { runtimeFiles, cache: decodedAudioCache }).then(({ blob, plan }) => {
+    root.dataset.lastMixdownFormat = format;
+    try {
+      const { blob, plan } = await renderAudioMixToBlob(project, {
+        runtimeFiles,
+        cache: decodedAudioCache,
+        format,
+        filename: `${base}-mix.${format}`,
+        signal: exportAbort.signal,
+        onProgress: (value) => { exportStatus.textContent = `Encoding MP3… ${Math.round(value * 100)}%`; },
+      });
       lastExportPlan = plan;
       root.dataset.lastMixdownPlan = JSON.stringify(plan.provenance);
       root.dataset.lastMixdownBytes = String(blob.size);
+      root.dataset.mixdownState = 'complete';
+      exportStatus.textContent = `${format.toUpperCase()} ready`;
       downloadBlob(blob, plan.filename);
-    }).catch((error) => {
+    } catch (error) {
       root.dataset.lastMixdownError = error?.message || String(error);
-    });
+      root.dataset.mixdownState = error?.name === 'AbortError' ? 'cancelled' : 'error';
+      if (error?.name !== 'AbortError') exportStatus.textContent = root.dataset.lastMixdownError;
+    } finally {
+      exportAbort = null;
+      if (!destroyed) {
+        downloadButton.disabled = false;
+        formatSelect.disabled = false;
+      }
+    }
   }
 
   function buildVideoExportPlan() {

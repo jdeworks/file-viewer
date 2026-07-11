@@ -19,13 +19,44 @@ export function buildLaneEditorModal(laneModel, element, { getProject, setProjec
   modal.className = 'mmx-mix-lane-modal';
   modal.dataset.laneId = laneId;
   modal.hidden = true;
+  modal.setAttribute('role', 'dialog');
+  modal.setAttribute('aria-modal', 'true');
+  const titleId = `mmx-lane-title-${laneId}`;
+  modal.setAttribute('aria-labelledby', titleId);
+  let opener = null;
 
   const panel = document.createElement('div');
   panel.className = 'mmx-mix-lane-modal-panel';
-  panel.append(buildModalHeader(laneModel.label || 'Lane'));
+  const header = buildModalHeader(laneModel.label || 'Lane');
+  header.querySelector('.mmx-mix-lane-modal-title').id = titleId;
+  panel.append(header);
 
   const body = document.createElement('div');
   body.className = 'mmx-mix-lane-modal-body';
+
+  // Identity and the controls intentionally removed from the narrow lane gutter.
+  const labelInp = document.createElement('input');
+  labelInp.type = 'text';
+  labelInp.className = 'mmx-mix-lane-label-input';
+  labelInp.value = laneModel.label || '';
+  labelInp.setAttribute('aria-label', 'Lane label');
+  labelInp.addEventListener('input', () => {
+    const value = labelInp.value;
+    setProject(updateLane(getProject(), laneId, (lane) => ({ ...lane, label: value })));
+    header.querySelector('.mmx-mix-lane-modal-title').textContent = value || 'Lane';
+  });
+  const source = mkSpan(sourceIdentity(getProject(), laneId), 'mmx-mix-lane-source');
+  const identityRow = mkRow('mmx-mix-lane-modal-row mmx-mix-lane-identity', [
+    mkSpan('Source', 'mmx-mix-lane-modal-field-label'), source,
+    mkSpan('Label', 'mmx-mix-lane-modal-field-label'), labelInp,
+  ]);
+  const mute = mkBtn('Mute', 'al-btn mmx-mix-mute');
+  mute.dataset.laneId = laneId;
+  mute.setAttribute('aria-pressed', laneModel.muted ? 'true' : 'false');
+  const solo = mkBtn('Solo', 'al-btn mmx-mix-solo');
+  solo.dataset.laneId = laneId;
+  solo.setAttribute('aria-pressed', laneModel.solo ? 'true' : 'false');
+  const stateRow = mkRow('mmx-mix-lane-modal-row mmx-mix-lane-state', [mute, solo]);
 
   // Gain
   const initGain = laneModel.audio?.gain ?? 1;
@@ -89,19 +120,56 @@ export function buildLaneEditorModal(laneModel, element, { getProject, setProjec
     dynBtn.setAttribute('aria-pressed', dynSection.hidden ? 'false' : 'true');
   });
 
-  body.append(gainRow, fadeRow, actRow, eqSection, dynSection);
+  body.append(identityRow, stateRow, gainRow, fadeRow, actRow, eqSection, dynSection);
   panel.append(body);
   modal.append(panel);
+  const close = () => {
+    if (modal.hidden) return;
+    modal.hidden = true;
+    opener?.focus?.();
+    opener = null;
+  };
+  modal.__open = (trigger) => {
+    opener = trigger || document.activeElement;
+    modal.hidden = false;
+    labelInp.focus();
+    labelInp.select();
+  };
+  modal.__close = close;
+  header.querySelector('.mmx-mix-lane-modal-close').addEventListener('click', close);
+  modal.addEventListener('click', (event) => { if (event.target === modal) close(); });
+  modal.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') { event.preventDefault(); close(); }
+    if (event.key === 'Tab') {
+      const focusable = [...panel.querySelectorAll('button:not([disabled]), input:not([disabled]), select:not([disabled])')]
+        .filter((node) => !node.closest('[hidden]'));
+      if (!focusable.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+    }
+  });
   return modal;
 }
 
 // Sync modal slider values on render() without rebuilding the modal.
-export function updateLaneModalValues(modal, laneModel, element) {
+export function updateLaneModalValues(modal, laneModel, element, project = null) {
   if (!modal) return;
   const gainInp = modal.querySelector('.mmx-mix-lane-modal-gain');
   const gainLbl = gainInp?.closest('.mmx-mix-lane-modal-row')?.querySelector('.mmx-mix-lane-modal-field-label');
   const fiInp = modal.querySelector('.mmx-mix-fade-in');
   const foInp = modal.querySelector('.mmx-mix-fade-out');
+  const labelInp = modal.querySelector('.mmx-mix-lane-label-input');
+  const title = modal.querySelector('.mmx-mix-lane-modal-title');
+  const source = modal.querySelector('.mmx-mix-lane-source');
+  const mute = modal.querySelector('.mmx-mix-mute');
+  const solo = modal.querySelector('.mmx-mix-solo');
+  if (labelInp && document.activeElement !== labelInp) labelInp.value = laneModel.label || '';
+  if (title) title.textContent = laneModel.label || 'Lane';
+  if (source) source.textContent = sourceIdentity(project || { lanes: [laneModel], elements: element ? [element] : [], assets: [] }, laneModel.id);
+  if (mute) mute.setAttribute('aria-pressed', laneModel.muted ? 'true' : 'false');
+  if (solo) solo.setAttribute('aria-pressed', laneModel.solo ? 'true' : 'false');
   if (gainInp && document.activeElement !== gainInp) {
     const g = laneModel.audio?.gain ?? 1;
     gainInp.value = String(g);
@@ -109,6 +177,13 @@ export function updateLaneModalValues(modal, laneModel, element) {
   }
   if (fiInp && document.activeElement !== fiInp) fiInp.value = String(element?.audio?.fadeInMs ?? 0);
   if (foInp && document.activeElement !== foInp) foInp.value = String(element?.audio?.fadeOutMs ?? 0);
+}
+
+function sourceIdentity(project, laneId) {
+  const element = firstElementForLane(project, laneId);
+  if (!element) return 'No source';
+  const asset = (project.assets || []).find((candidate) => candidate.id === element.assetId);
+  return asset?.name || element.audio?.roomTone?.kind || element.type || 'Source';
 }
 
 function buildModalHeader(title) {

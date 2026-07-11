@@ -2,6 +2,11 @@
 
 Status: implementation in progress on `dev`.
 
+Progress:
+
+- ASCII gallery/full-height/shared camera settings completed and browser-validated in `34c10149`.
+- Mix toolbar/fullscreen/compact lane dialog and local WAV/MP3 export completed; focused media and decoded-output checks pass. Full gate and final cleanup remain.
+
 ## Outcomes
 
 - Standalone ASCII Studio keeps its generated starter image, fills the remaining viewport, and opens an accessible gallery of maintained raster examples from **Use a sample**.

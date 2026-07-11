@@ -14,6 +14,40 @@ export async function run(ctx) {
   else fail('modular audio mix export plan mismatch: ' + JSON.stringify(exportProof));
 
   await page.goto(origin, { waitUntil: 'load' });
+  const mp3WorkerProof = await page.evaluate(async () => {
+    const { encodeMp3 } = await import('/types/media/mixer/mixer-audio-export.js');
+    const sampleRate = 44100;
+    const length = 1152 * 8 + 137; // deliberately exercises the final partial frame
+    const left = new Float32Array(length);
+    const right = new Float32Array(length);
+    for (let i = 0; i < length; i += 1) {
+      left[i] = Math.sin(2 * Math.PI * 440 * i / sampleRate) * 0.2;
+      right[i] = Math.sin(2 * Math.PI * 660 * i / sampleRate) * 0.2;
+    }
+    const fake = { numberOfChannels: 2, sampleRate, getChannelData: (channel) => channel ? right : left };
+    const blob = await encodeMp3(fake, { bitRate: 192 });
+    const context = new AudioContext();
+    const decoded = await context.decodeAudioData(await blob.arrayBuffer());
+    await context.close();
+    const aborted = new AbortController();
+    aborted.abort();
+    let abortName = '';
+    try { await encodeMp3(fake, { signal: aborted.signal }); } catch (error) { abortName = error.name; }
+    return {
+      size: blob.size,
+      type: blob.type,
+      channels: decoded.numberOfChannels,
+      sampleRate: decoded.sampleRate,
+      duration: decoded.duration,
+      expectedDuration: length / sampleRate,
+      abortName,
+    };
+  });
+  if (mp3WorkerProof.size > 1000 && mp3WorkerProof.type === 'audio/mpeg' && mp3WorkerProof.channels === 2
+    && mp3WorkerProof.sampleRate === 44100 && Math.abs(mp3WorkerProof.duration - mp3WorkerProof.expectedDuration) < 0.08
+    && mp3WorkerProof.abortName === 'AbortError')
+    pass('modular audio mix: local MP3 worker encodes decodable stereo audio, flushes partial frames, and cancels');
+  else fail('modular audio mix MP3 worker mismatch: ' + JSON.stringify(mp3WorkerProof));
   await openExample('Sample.wav');
   await page.waitForSelector('#previewHost audio.media-view', { timeout: 12000, state: 'attached' });
   await page.waitForSelector('#previewHost .al-surface', { timeout: 12000 });
@@ -35,6 +69,7 @@ export async function run(ctx) {
       cursor: !!el.querySelector('.al-cursor'),
       canvas: !!el.querySelector('.al-canvas'),
       exportButton: !!el.querySelector('.al-export'),
+      exportButtonText: el.querySelector('.al-export')?.textContent.trim() || '',
       waveformBuckets: Number(el.dataset.mixerWaveformBuckets || 0),
       waveformStatus: el.dataset.mixerWaveformStatus || '',
       projectHasElement: !!el.__mediaMixerListen.getProject().elements[0],
@@ -49,6 +84,13 @@ export async function run(ctx) {
   if (initial.trackName && initial.ruler && initial.cursor && initial.canvas && initial.exportButton && initial.controls && initial.capabilityNote && initial.waveformStatus !== 'pending' && (initial.waveformStatus !== 'available' || (initial.waveformBuckets > 0 && initial.projectHasElement)))
     pass('modular audio listen: one-lane waveform editor controls render');
   else fail('modular audio listen surfaces missing: ' + JSON.stringify(initial));
+  const [settingsDownload] = await Promise.all([
+    page.waitForEvent('download', { timeout: 8000 }),
+    page.click('#previewHost .al-export'),
+  ]);
+  if (initial.exportButtonText === 'Download project settings' && /\.mixer\.json$/.test(settingsDownload.suggestedFilename()))
+    pass('modular audio listen: project settings action is an explicit JSON download');
+  else fail('modular audio listen project download mismatch: ' + JSON.stringify({ text: initial.exportButtonText, name: settingsDownload.suggestedFilename() }));
 
   const beforePlay = await page.$eval('#previewHost audio.media-view', (audio) => audio.currentTime);
   await page.click('#previewHost .al-play');
@@ -181,7 +223,7 @@ export async function run(ctx) {
       trackEqBands: project.lanes[0].audio.eq.bands.length,
       cacheStats: el.__mediaMixerMulti.getAudioCacheStats(),
       cacheBudgetDataset: Number(el.dataset.decodedCacheBudgetBytes || 0),
-      controls: ['.mmx-mix-play', '.mmx-mix-stop', '.mmx-mix-master-slider', '.mmx-mix-lane-gain', '.mmx-mix-mute', '.mmx-mix-solo', '.mmx-mix-fade-in', '.mmx-mix-fade-out']
+      controls: ['.mmx-mix-play', '.mmx-mix-stop', '.mmx-mix-master-slider', '.mmx-mix-lane-modal-gain', '.mmx-mix-mute', '.mmx-mix-solo', '.mmx-mix-fade-in', '.mmx-mix-fade-out']
         .every((selector) => !!el.querySelector(selector)),
       capabilityNote: /Media Transcoding|Project settings/.test(el.querySelector('.mmx-mix-capability-note')?.textContent || ''),
     };
@@ -250,7 +292,7 @@ export async function run(ctx) {
   else fail('modular audio mix dynamics playback mismatch: ' + JSON.stringify(dynPlayback));
 
   const mixLaneEdit = await page.$eval('#previewHost .media-mode-panel[data-mode="mix"] .mmx-audio-multi', (el) => {
-    const gain = el.querySelector('.mmx-mix-lane-gain');
+    const gain = el.querySelector('.mmx-mix-lane-modal-gain');
     gain.value = '0.42';
     gain.dispatchEvent(new Event('input', { bubbles: true }));
     el.querySelector('.mmx-mix-mute').click();
