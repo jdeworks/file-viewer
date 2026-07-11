@@ -56,6 +56,51 @@ function hashBytes(algorithm, bytes) {
   return createHash(algorithm).update(bytes).digest();
 }
 
+function hashPair(left, right) {
+  return hashBytes('sha256', Buffer.concat([left, right]));
+}
+
+// Build the BEP 52 piece layer from the 16 KiB data-block leaves, independently from the
+// viewer implementation. This deliberately covers both padding inside a larger logical piece and
+// padding a non-power-of-two number of piece hashes at the file-root level.
+function pieceLayerFixture(content, pieceLength) {
+  const blockLength = 16384;
+  const blocksPerPiece = pieceLength / blockLength;
+  assert.ok(Number.isInteger(blocksPerPiece) && blocksPerPiece >= 1);
+
+  const reduceLayer = (hashes) => {
+    let layer = hashes;
+    while (layer.length > 1) {
+      const next = [];
+      for (let index = 0; index < layer.length; index += 2) {
+        next.push(hashPair(layer[index], layer[index + 1]));
+      }
+      layer = next;
+    }
+    return layer[0];
+  };
+
+  const zeroLeaf = Buffer.alloc(32);
+  const zeroPiece = reduceLayer(Array.from({ length: blocksPerPiece }, () => zeroLeaf));
+  const pieceHashes = [];
+  for (let pieceStart = 0; pieceStart < content.length; pieceStart += pieceLength) {
+    const leaves = [];
+    for (let block = 0; block < blocksPerPiece; block++) {
+      const blockStart = pieceStart + block * blockLength;
+      leaves.push(blockStart < content.length
+        ? hashBytes('sha256', content.subarray(blockStart, Math.min(blockStart + blockLength, content.length)))
+        : zeroLeaf);
+    }
+    pieceHashes.push(reduceLayer(leaves));
+  }
+
+  let rootWidth = 1;
+  while (rootWidth < pieceHashes.length) rootWidth *= 2;
+  const rootHashes = [...pieceHashes];
+  while (rootHashes.length < rootWidth) rootHashes.push(zeroPiece);
+  return { layer: Buffer.concat(pieceHashes), root: reduceLayer(rootHashes) };
+}
+
 function fixtureSemantics(fixture) {
   const torrent = decodeBencode(fixture.bytes).value;
   return inspectTorrentInfo(torrent.info, torrent['piece layers']);
@@ -216,6 +261,42 @@ const inconsistentLayerHtml = (await renderTorrent({
 })).bodyHtml;
 assert.doesNotMatch(inconsistentLayerHtml, /urn:btmh:/);
 assert.match(inconsistentLayerHtml, /piece layers are malformed or inconsistent/i);
+
+// Three 32 KiB pieces exercise both kinds of BEP 52 padding that a two-leaf tree cannot: the last
+// logical piece needs a zero 16 KiB child, and the file root needs a fourth zero piece-layer hash.
+const paddedContent = Buffer.alloc(70000);
+for (let index = 0; index < paddedContent.length; index++) paddedContent[index] = (index * 17 + 91) & 0xff;
+const paddedPieceLength = 32768;
+const paddedHashes = pieceLayerFixture(paddedContent, paddedPieceLength);
+assert.equal(paddedHashes.layer.byteLength, 3 * 32);
+const paddedInfo = {
+  'file tree': { 'three-piece.bin': { '': { length: paddedContent.length, 'pieces root': paddedHashes.root } } },
+  'meta version': 2,
+  name: 'three-piece-v2',
+  'piece length': paddedPieceLength,
+};
+const padded = v2TorrentFixture(paddedInfo, {
+  'piece layers': new Map([[paddedHashes.root, paddedHashes.layer]]),
+});
+const paddedSemantics = fixtureSemantics(padded);
+assert.equal(paddedSemantics.hasV2, true);
+assert.equal(paddedSemantics.v2.pieceLayers.valid, true);
+assert.equal(paddedSemantics.v2.pieceLayers.entryCount, 1);
+const paddedHtml = (await renderTorrent({ bytes: padded.bytes, name: 'three-piece.torrent' })).bodyHtml;
+assert.match(paddedHtml, /urn:btmh:/);
+
+const unrelatedRoot = Buffer.alloc(32, 0xa5);
+const extraLayer = v2TorrentFixture(paddedInfo, {
+  'piece layers': new Map([
+    [paddedHashes.root, paddedHashes.layer],
+    [unrelatedRoot, Buffer.alloc(32, 0x5a)],
+  ]),
+});
+const extraLayerSemantics = fixtureSemantics(extraLayer);
+assert.equal(extraLayerSemantics.hasV2, false);
+assert.equal(extraLayerSemantics.v2.pieceLayers.malformed, true);
+const extraLayerHtml = (await renderTorrent({ bytes: extraLayer.bytes, name: 'extra-layer.torrent' })).bodyHtml;
+assert.doesNotMatch(extraLayerHtml, /magnet:\?/);
 
 const hybridInfo = {
   'file tree': { 'hybrid.bin': v2File(5, 0x33) },
