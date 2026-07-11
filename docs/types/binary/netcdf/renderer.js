@@ -111,7 +111,10 @@ export function render(intake) {
     html += `<div class="sec"><div class="sec-title">Dimensions (${parsed.dimensions.length})</div><div class="card">`;
     html += `<table><thead><tr><th>Name</th><th style="text-align:right">Size</th></tr></thead><tbody>`;
     for (const d of parsed.dimensions) {
-      const sizeLabel = d.size === 'UNLIMITED' ? `<em>UNLIMITED</em>${parsed.numRecs > 0 ? ` (${parsed.numRecs} records)` : ''}` : String(d.size);
+      const recordLabel = parsed.streamingRecords
+        ? ' (streaming record count)'
+        : (parsed.numRecs > 0 ? ` (${parsed.numRecs} records)` : '');
+      const sizeLabel = d.size === 'UNLIMITED' ? `<em>UNLIMITED</em>${recordLabel}` : String(d.size);
       html += `<tr><td>${esc(d.name)}</td><td class="td-size">${sizeLabel}</td></tr>`;
     }
     html += `</tbody></table></div></div>`;

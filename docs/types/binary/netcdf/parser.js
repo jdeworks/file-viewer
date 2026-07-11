@@ -113,9 +113,11 @@ export function parseNetcdfHeader(bytes) {
   if (bytes[0] !== 0x43 || bytes[1] !== 0x44 || bytes[2] !== 0x46 || (bytes[3] !== 1 && bytes[3] !== 2)) {
     throw new Error('Not a NetCDF-3 classic/64-bit-offset header');
   }
+  const rawNumRecs = readU32BE(bytes, 4, 'record count');
   const result = {
     version: bytes[3],
-    numRecs: readU32BE(bytes, 4, 'record count'),
+    numRecs: rawNumRecs === 0xffffffff ? null : rawNumRecs,
+    streamingRecords: rawNumRecs === 0xffffffff,
     dimensions: [],
     globalAttrs: [],
     variables: [],

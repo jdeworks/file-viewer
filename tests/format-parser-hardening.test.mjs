@@ -91,6 +91,19 @@ const u32 = (value) => {
   output.writeUInt32BE(value >>> 0);
   return output;
 };
+const streamingNetcdf = Buffer.concat([
+  Buffer.from([0x43, 0x44, 0x46, 0x01]), u32(0xffffffff),
+  u32(10), u32(1), u32(4), Buffer.from('time'), u32(0),
+  u32(0), u32(0), u32(0), u32(0),
+]);
+assert.equal(streamingNetcdf.length, 44);
+const streamingParsed = parseNetcdfHeader(streamingNetcdf);
+assert.equal(streamingParsed.numRecs, null);
+assert.equal(streamingParsed.streamingRecords, true);
+const streamingHtml = renderNetcdf({ bytes: streamingNetcdf, size: streamingNetcdf.length }).bodyHtml;
+assert.match(streamingHtml, /UNLIMITED<\/em> \(streaming record count\)/);
+assert.doesNotMatch(streamingHtml, /4294967295 records/);
+
 const pad4 = (value) => Buffer.concat([value, Buffer.alloc((4 - value.length % 4) % 4)]);
 const ncName = (value) => Buffer.concat([u32(Buffer.byteLength(value)), pad4(Buffer.from(value))]);
 const numericAttribute = (name, type, count, value) => Buffer.concat([ncName(name), u32(type), u32(count), pad4(value)]);
