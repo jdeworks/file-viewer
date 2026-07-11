@@ -12,14 +12,15 @@ import { defaultState } from "../state.js";
 const lockedActions = { hasAction: () => false };
 const unlockedActions = { hasAction: (stage, action) => stage === 6 && action === "protocol_ch9_read" };
 
-// Locked: ch9 unread ⇒ permanent mismatch, no defeat possible (the load-bearing un-cheat).
+// 2026-07-11 playtest fix: ch9 unread ⇒ a tougher fight (bigger HP pools, boss-combat.js's
+// UNCH9_HP_MULT), not a permanent mismatch — the boss is always defeatable.
 {
   const state = defaultState();
   const lock = getBossLockState({ actions: lockedActions, state });
   assert.equal(lock.unlocked, false);
-  assert.equal(lock.status, "PROTOCOL MISMATCH");
-  assert.equal(lock.mismatchPermanent, true);
-  assert.equal(lock.defeatPossible, false);
+  assert.match(lock.status, /MISMATCH/);
+  assert.equal(lock.mismatchPermanent, false);
+  assert.equal(lock.defeatPossible, true);
 }
 
 // Repeated locked attempts escalate the hint ladder.

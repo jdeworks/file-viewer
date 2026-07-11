@@ -20,13 +20,13 @@ var bellMessages = {
   defeated: "the connection accepted a shared rule."
 };
 var lockedHintLadder = [
-  "REFUSED. no protocol recognized.",
-  "you are sending data I cannot parse. the protocol must be established first.",
+  "the protocol goes unrecognized — the handshake still works, but it's a longer fight this way.",
+  "you are sending data I cannot parse cleanly. the protocol should be established first.",
   "Chapter 9 describes what The Refused Connection accepts.",
-  "open protocols_of_the_entity.epub and read Chapter 9, then return."
+  "open protocols_of_the_entity.epub and read Chapter 9 to shorten the fight."
 ];
 var combatLines = {
-  lockedDeath: "PROTOCOL MISMATCH remains permanent. every card resolves to zero.",
+  lockedDeath: "PROTOCOL MISMATCH costs HP, not the fight — Chapter 9 would make this shorter.",
   mismatch: "protocol mismatch. no damage accepted.",
   synFirst: "SYN opened the turn. the first phase accepts damage.",
   ackSignal: "ACK acknowledged. Signal damage accepted.",
@@ -44,9 +44,9 @@ function getBossLockState({ actions, state }) {
   return {
     unlocked,
     defeated: Boolean(state?.boss?.defeated),
-    status: unlocked ? "PROTOCOL MATCH NEGOTIABLE" : "PROTOCOL MISMATCH",
-    mismatchPermanent: !unlocked,
-    defeatPossible: unlocked,
+    status: unlocked ? "PROTOCOL MATCH NEGOTIABLE" : "PROTOCOL MISMATCH (tougher — unread)",
+    mismatchPermanent: false,
+    defeatPossible: true,
     phase: Number(state?.boss?.phase || 1),
     hint: unlocked ? bellMessages.unlock : lockedHintLadder[hintIndex]
   };
@@ -3381,8 +3381,8 @@ function ackPlayed(combat) {
 function demandMet(combat) {
   return currentDemand(combat) === DEMAND_LEAD_SYN ? baseId2(combat.playedIdsThisTurn[0]) === "SYN" : ackPlayed(combat);
 }
+var UNCH9_HP_MULT = 1.4;
 function accepts(combat, card) {
-  if (combat.bossLocked) return false;
   return demandMet(combat);
 }
 function phaseHp(phase, hpMult) {
@@ -3391,10 +3391,10 @@ function phaseHp(phase, hpMult) {
 function wireBossCombat(combat, { locked = false, hpMult = 1, extraPhase = false } = {}) {
   combat.bossPhase = 1;
   combat.bossLocked = Boolean(locked);
-  combat.bossHpMult = hpMult;
+  combat.bossHpMult = (hpMult || 1) * (combat.bossLocked ? UNCH9_HP_MULT : 1);
   combat.bossMaxPhase = extraPhase ? 4 : 3;
-  combat.enemy.hp = phaseHp(1, hpMult);
-  combat.enemy.maxHp = phaseHp(1, hpMult);
+  combat.enemy.hp = phaseHp(1, combat.bossHpMult);
+  combat.enemy.maxHp = phaseHp(1, combat.bossHpMult);
   rewireBossCombat(combat);
   return combat;
 }
@@ -3591,7 +3591,8 @@ function installStage6TestHook(api) {
       return state.run.currentNodeId;
     },
     // Drive the in-run boss fight with a correct handshake strategy using the REAL engine +
-    // acceptance. NOT a bypass — if ch9 is unread the boss is locked and this cannot win.
+    // acceptance. NOT a bypass — if ch9 is unread the boss just has more HP (UNCH9_HP_MULT);
+    // the handshake demand-gate is identical either way.
     autoNegotiate(maxTurns = 80) {
       const run = state.run;
       if (!run || run.status !== "boss") return { ok: false, reason: "not-at-boss" };
@@ -3791,7 +3792,7 @@ function bossBanner(combat) {
         <span class="s6db-boss-phase">phase ${combat.bossPhase} / 3</span>
       </div>
       <p class="s6db-boss-rule">${esc2(phaseRuleText(combat))}</p>
-      ${locked ? `<p class="s6db-boss-mismatch">PROTOCOL MISMATCH — every Signal deals 0 until you read Chapter 9.</p>
+      ${locked ? `<p class="s6db-boss-mismatch">PROTOCOL MISMATCH — the handshake still lands, but Chapter 9 unread means a tougher fight (more HP).</p>
            <button type="button" data-action="epub">open the codex</button>` : ""}
     </div>`;
 }
@@ -5239,8 +5240,13 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
       case "epub":
         openEpub({ viewer, actions, achievements, bell, state });
         if (combat && combat.bossPhase && combat.bossLocked) {
-          if (combatRun) combatRun.reset();
-          combat = null;
+          const newMult = (combat.bossHpMult || UNCH9_HP_MULT) / UNCH9_HP_MULT;
+          const frac = combat.enemy.maxHp > 0 ? combat.enemy.hp / combat.enemy.maxHp : 1;
+          combat.bossLocked = false;
+          combat.bossHpMult = newMult;
+          combat.enemy.maxHp = Math.round((BOSS_PHASE_HP[combat.bossPhase] || BOSS_PHASE_HP[1]) * newMult);
+          combat.enemy.hp = Math.min(combat.enemy.maxHp, Math.max(1, Math.round(combat.enemy.maxHp * frac)));
+          checkpointCombat(combat, run);
         }
         return true;
       case "bts":

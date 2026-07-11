@@ -28,7 +28,7 @@ export const roundIntros = [
   'this round: the channel splits — pick a route and hold it to the merge.',
   'this round: beat the par ghost (P) to the line — survival alone is not a clear.',
   'this round: forks come fast — commit ↑HI for gates or ↓LO to stay alive.',
-  'this round: the jammer races every verb at once. only a calibrated counter-wave wins.',
+  'this round: the jammer races every verb at once, and bleeds your integrity the whole way — a calibrated counter-wave cancels that outright; a maxed rig can outrun it uncalibrated, but barely.',
 ];
 
 export function roundIntro(roundIdx) {

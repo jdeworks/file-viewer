@@ -135,7 +135,8 @@ export function installStage6TestHook(api) {
       return state.run.currentNodeId;
     },
     // Drive the in-run boss fight with a correct handshake strategy using the REAL engine +
-    // acceptance. NOT a bypass — if ch9 is unread the boss is locked and this cannot win.
+    // acceptance. NOT a bypass — if ch9 is unread the boss just has more HP (UNCH9_HP_MULT);
+    // the handshake demand-gate is identical either way.
     autoNegotiate(maxTurns = 80) {
       const run = state.run;
       if (!run || run.status !== "boss") return { ok: false, reason: "not-at-boss" };

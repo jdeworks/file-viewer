@@ -22,10 +22,10 @@ var bellMessages = {
   defeated: "the loop reached its own beginning and stopped."
 };
 var lockedHintLadder = [
-  "the bastion folds damage away before it arrives.",
+  "the weak points are scattered and invisible — cover enough ground and you will find one eventually.",
   "the weak points are not on the surface of the tower list.",
   "follow the tower upgrade folders all the way down.",
-  "open towers/upgrades/tier3_blueprints/recursion_points.json before fighting The Infinite Loop."
+  "open towers/upgrades/tier3_blueprints/recursion_points.json for exact coordinates and a damage bonus."
 ];
 
 // ../../docs/games/metagame/stages/stage4/content.js
@@ -118,8 +118,8 @@ function getBossLockState({ actions, state }) {
     coveredPoints: coverage.covered.length,
     totalPoints: coverage.total,
     vulnerability: unlocked ? "mapped" : "unread",
-    defeatPossible: unlocked && coverage.covered.length > 0,
-    hint: !unlocked ? lockedHintLadder[hintIndex] : coverage.covered.length > 0 ? bellMessages.unlock : bellMessages.needsCoverage
+    defeatPossible: coverage.covered.length > 0,
+    hint: !unlocked ? coverage.covered.length > 0 ? "a strike is landing — keep covering ground blind, or read the blueprint for exact coordinates and a damage bonus." : lockedHintLadder[hintIndex] : coverage.covered.length > 0 ? bellMessages.unlock : bellMessages.needsCoverage
   };
 }
 function applyRecursionBlueprintOpen({ state, actions, achievements, bell, path }) {
@@ -186,16 +186,12 @@ function fightInfiniteLoop({ state, actions }) {
   const lock = getBossLockState({ actions, state });
   state.boss.reached = true;
   state.boss.attempts = Number(state.boss.attempts || 0) + 1;
-  if (!lock.unlocked) {
-    state.boss.lockHintStep = Math.min(Number(state.boss.lockHintStep || 0) + 1, lockedHintLadder.length - 1);
-    pushLog(state, "the loop regenerates before damage resolves.");
-    return { defeated: false, locked: true, damage: 0 };
-  }
   if (!lock.coveredPoints) {
-    pushLog(state, "the blueprint is read, but no tower touches a recursion point.");
+    state.boss.lockHintStep = Math.min(Number(state.boss.lockHintStep || 0) + 1, lockedHintLadder.length - 1);
+    pushLog(state, lock.unlocked ? "the blueprint is read, but no tower touches a recursion point." : "no strike lands — nothing placed touches a weak point yet.");
     return { defeated: false, locked: false, damage: 0 };
   }
-  const damage = lock.coveredPoints * 120;
+  const damage = lock.coveredPoints * (lock.unlocked ? 150 : 100);
   state.boss.hp = Math.max(0, Number(state.boss.hp || 300) - damage);
   if (state.boss.hp === 0) {
     state.boss.defeated = true;

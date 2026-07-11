@@ -83,8 +83,9 @@ export function combatView(combat, run, opts = {}) {
 }
 
 // The act-4 boss negotiation banner: only for a wired boss combat (combat.bossPhase set). Shows the
-// active phase rule and — while ch9 is unread (locked) — a PROTOCOL MISMATCH warning + a codex button
-// (reading Chapter 9 is the load-bearing un-cheat). Kept working inside the new layout.
+// active phase rule and — while ch9 is unread — a PROTOCOL MISMATCH warning (the fight is real and
+// winnable, just tougher — see boss-combat.js's UNCH9_HP_MULT) + a codex button (reading Chapter 9 is
+// an optional buff, not a requirement). Kept working inside the new layout.
 function bossBanner(combat) {
   if (!combat.bossPhase) return "";
   const locked = Boolean(combat.bossLocked);
@@ -96,7 +97,7 @@ function bossBanner(combat) {
       </div>
       <p class="s6db-boss-rule">${esc(phaseRuleText(combat))}</p>
       ${locked
-        ? `<p class="s6db-boss-mismatch">PROTOCOL MISMATCH — every Signal deals 0 until you read Chapter 9.</p>
+        ? `<p class="s6db-boss-mismatch">PROTOCOL MISMATCH — the handshake still lands, but Chapter 9 unread means a tougher fight (more HP).</p>
            <button type="button" data-action="epub">open the codex</button>`
         : ""}
     </div>`;

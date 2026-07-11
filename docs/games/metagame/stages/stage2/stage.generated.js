@@ -20,10 +20,10 @@ var bellMessages = {
   defeated: "I parsed it correctly. the grammar held."
 };
 var lockedHintLadder = [
-  "the arena has structure. you cannot cross a pattern without understanding it.",
-  "there is a passage. it is written down.",
+  "the arena has structure. cross it blind and it will cost you.",
+  "there is an easier way through. it is written down.",
   "cipher.txt knows the way.",
-  "search cipher.txt for PASSAGE. mark PASSAGE:247, then return."
+  "search cipher.txt for PASSAGE. mark PASSAGE:247, then return — the crossing gets a lot safer."
 ];
 var combatLines = {
   floorAdvance: [
@@ -31,7 +31,9 @@ var combatLines = {
     "glyph shard recovered.",
     "a door becomes a sentence."
   ],
-  lockedDeath: "the pattern closes. no route remains.",
+  // 2026-07-11 playtest fix: PASSAGE is a buff now, not a gate — a blind strike still lands, it
+  // just costs a counter-hit back. "no route remains" is retired; see renderer.js's challengeBoss.
+  lockedExchange: "the strike lands, but the pattern bites back.",
   unlocked: "north pillar active. a two-tile passage opens.",
   defeated: "the expression resolves to one meaning."
 };
@@ -50,17 +52,19 @@ function getBossLockState({ actions, state }) {
     phase: unlocked ? Math.max(Number(boss.phase || 1), 2) : Number(boss.phase || 1),
     northPillar: unlocked ? "active" : "silent",
     projectileGapTiles: unlocked ? 2 : 0,
-    defeatPossible: unlocked,
+    // 2026-07-11 playtest fix: PASSAGE is now an optional buff, not a gate — defeatPossible is
+    // always true once the boss is reached. `unlocked` still drives the one-hit clean-clear buff
+    // (see damageBoss's caller in renderer.js) and the cosmetic pillar/gap status text above.
+    defeatPossible: true,
     hint: unlocked ? combatLines.unlocked : lockedHintLadder[hintIndex]
   };
 }
-function recordLockedBossAttempt(state) {
+function recordBossAttempt(state) {
   const boss = state.run.boss;
   boss.reached = true;
   boss.attempts = Number(boss.attempts || 0) + 1;
   boss.lockHintStep = Math.min(Number(boss.lockHintStep || 0) + 1, lockedHintLadder.length - 1);
   state.meta.bossAttempts = Number(state.meta.bossAttempts || 0) + 1;
-  pushCombatLine(state, combatLines.lockedDeath);
   return getBossLockState({ actions: null, state });
 }
 function applySearchPassageUnlock({ state, achievements, bell }) {
@@ -80,9 +84,9 @@ function applySearchPassageUnlock({ state, achievements, bell }) {
   }
   return firstUnlock;
 }
-function damageUnlockedBoss({ state, amount = 50 }) {
+function damageBoss({ state, amount = 50 }) {
   const boss = state.run.boss;
-  if (!boss.unlocked || boss.defeated) return { defeated: false, phaseChanged: false };
+  if (boss.defeated) return { defeated: false, phaseChanged: false };
   const beforePhase = boss.phase;
   boss.hp = Math.max(0, Number(boss.hp || 150) - amount);
   if (boss.hp === 0 && boss.phase < 3) {
@@ -3352,19 +3356,36 @@ function renderStage2({
   function challengeBoss() {
     state.run.boss.reached = true;
     const lock = getBossLockState({ actions, state });
-    if (!lock.unlocked) {
-      recordLockedBossAttempt(state);
+    recordBossAttempt(state);
+    if (lock.unlocked) {
+      state.run.boss.unlocked = true;
+      let result2 = damageBoss({ state, amount: 999 });
+      for (let i = 0; i < 5 && !result2.defeated; i++) {
+        result2 = damageBoss({ state, amount: 999 });
+      }
+      if (result2.defeated) {
+        appendLog(state, bellMessages.defeated);
+        completeOnce({ stage: 2, defeated: true, reward: { glyphs: 25 }, btsPath: BTS_PATH });
+      }
       return;
     }
-    state.run.boss.unlocked = true;
-    let result = damageUnlockedBoss({ state, amount: 999 });
-    for (let i = 0; i < 5 && !result.defeated; i++) {
-      result = damageUnlockedBoss({ state, amount: 999 });
+    const result = damageBoss({ state, amount: 45 });
+    const entity = state.run.entity;
+    const counter = Math.max(3, Math.round((entity.maxHp || 30) * 0.2));
+    entity.hp = Math.max(0, Number(entity.hp || 0) - counter);
+    appendLog(state, combatLines.lockedExchange);
+    if (entity.hp <= 0) {
+      appendLog(state, "@ was unparsed. run reset — banked glyphs survive.");
+      resetRun(state, { banked: true, death: true });
+      persistAndPaint();
+      return;
     }
     if (result.defeated) {
       appendLog(state, bellMessages.defeated);
       completeOnce({ stage: 2, defeated: true, reward: { glyphs: 25 }, btsPath: BTS_PATH });
+      return;
     }
+    persistAndPaint();
   }
 }
 
@@ -3532,6 +3553,6 @@ export {
   defaultState2 as defaultState,
   getBossLockState,
   mountStage,
-  recordLockedBossAttempt,
+  recordBossAttempt,
   stageMeta
 };

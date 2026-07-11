@@ -17,14 +17,23 @@ export function getBossLockState({ actions, state }) {
   const boss = state?.boss || {};
   const coverage = getTowerCoverage(state);
   const hintIndex = Math.min(Math.max(Number(boss.lockHintStep || 0), 0), lockedHintLadder.length - 1);
+  // 2026-07-11 playtest fix: the blueprint is an optional buff now, not a gate. Recursion points sit
+  // at fixed, invisible coordinates whether or not the blueprint's been read — a player who blankets
+  // enough of the map with towers can land a real hit on one blind (the same tower-placement skill
+  // the rest of the stage already uses), it's just slow and wasteful without the map. Reading the
+  // blueprint reveals exact coordinates (so placement is deliberate, not statistical) AND raises the
+  // per-point damage (see fightInfiniteLoop) — a genuine reward, not the only door.
   return {
     unlocked,
     defeated: Boolean(boss.defeated),
     coveredPoints: coverage.covered.length,
     totalPoints: coverage.total,
     vulnerability: unlocked ? 'mapped' : 'unread',
-    defeatPossible: unlocked && coverage.covered.length > 0,
-    hint: !unlocked ? lockedHintLadder[hintIndex]
+    defeatPossible: coverage.covered.length > 0,
+    hint: !unlocked
+      ? (coverage.covered.length > 0
+        ? 'a strike is landing — keep covering ground blind, or read the blueprint for exact coordinates and a damage bonus.'
+        : lockedHintLadder[hintIndex])
       : (coverage.covered.length > 0 ? bellMessages.unlock : bellMessages.needsCoverage),
   };
 }
@@ -102,16 +111,15 @@ export function fightInfiniteLoop({ state, actions }) {
   const lock = getBossLockState({ actions, state });
   state.boss.reached = true;
   state.boss.attempts = Number(state.boss.attempts || 0) + 1;
-  if (!lock.unlocked) {
-    state.boss.lockHintStep = Math.min(Number(state.boss.lockHintStep || 0) + 1, lockedHintLadder.length - 1);
-    pushLog(state, 'the loop regenerates before damage resolves.');
-    return { defeated: false, locked: true, damage: 0 };
-  }
   if (!lock.coveredPoints) {
-    pushLog(state, 'the blueprint is read, but no tower touches a recursion point.');
+    state.boss.lockHintStep = Math.min(Number(state.boss.lockHintStep || 0) + 1, lockedHintLadder.length - 1);
+    pushLog(state, lock.unlocked
+      ? 'the blueprint is read, but no tower touches a recursion point.'
+      : 'no strike lands — nothing placed touches a weak point yet.');
     return { defeated: false, locked: false, damage: 0 };
   }
-  const damage = lock.coveredPoints * 120;
+  // The blueprint buff: exact coordinates make every covered point a cleaner, harder hit.
+  const damage = lock.coveredPoints * (lock.unlocked ? 150 : 100);
   state.boss.hp = Math.max(0, Number(state.boss.hp || 300) - damage);
   if (state.boss.hp === 0) {
     state.boss.defeated = true;

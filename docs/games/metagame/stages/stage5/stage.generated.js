@@ -20,10 +20,10 @@ var bellMessages = {
   defeated: "the jammer signal collapses into silence."
 };
 var lockedHintLadder = [
-  "the jammer wins before the race starts.",
+  "the jammer bleeds your integrity the whole race. a maxed rig can outrun it — barely.",
   "its suppression wave has a rhythm. the rhythm can be answered.",
   "transmission_hum.mp3 carries the counter-signal.",
-  "play transmission_hum.mp3 continuously for one full 14-second loop, then race The Jammer."
+  "play transmission_hum.mp3 continuously for one full 14-second loop to cancel the suppression entirely."
 ];
 
 // ../../docs/games/metagame/stages/stage5/boss.js
@@ -39,7 +39,10 @@ function getBossLockState({ actions, state }) {
     defeated: Boolean(boss.defeated),
     jammerSuppression: unlocked ? "canceled" : "dominant",
     playerCounterWave: unlocked ? "phase-inverted" : "absent",
-    defeatPossible: unlocked,
+    // 2026-07-11 playtest fix: calibration is a buff (it cancels the suppression drain outright, see
+    // game-loop.js), not a hard requirement — the boss race is always attemptable/winnable, just far
+    // harder (near-maxed Hull + Engine, near-flawless play) without it.
+    defeatPossible: true,
     hint: unlocked ? bellMessages.unlock : lockedHintLadder[hintIndex]
   };
 }
@@ -49,8 +52,6 @@ function raceTheJammer({ state, actions }) {
   state.boss.attempts = Number(state.boss.attempts || 0) + 1;
   if (!lock.unlocked) {
     state.boss.lockHintStep = Math.min(Number(state.boss.lockHintStep || 0) + 1, lockedHintLadder.length - 1);
-    pushLog(state, "suppression wave holds the throttle down.");
-    return { defeated: false, locked: true };
   }
   state.boss.defeated = true;
   if (state.run) state.run.roundComplete = true;
@@ -812,6 +813,7 @@ function replayResume(loop, resume) {
 
 // ../../docs/games/metagame/stages/stage5/game-loop.js
 var BUMP_COOLDOWN = 10;
+var SUPPRESSION_DRAIN_INTERVAL = 6;
 function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onEnd, getTickMs, roundOverride, prevGhost, mods = {}, resume = null }) {
   const round = roundOverride || roundByIdx(roundIdx);
   const tickMs = getTickMs || (() => round.tickMs);
@@ -990,7 +992,7 @@ function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onEnd, get
       else if (isGate(glyph)) run.gatesThisRound += 1;
       else if (isPowerup(glyph)) collectPowerup(powerupType(glyph));
     }
-    if (suppressionActive) run.integrity -= 1;
+    if (suppressionActive && tick % SUPPRESSION_DRAIN_INTERVAL === 0) run.integrity -= 1;
     const slow = resolveBumps();
     if (run.integrity <= 0) {
       run.integrity = 0;
@@ -1295,7 +1297,7 @@ var roundIntros = [
   "this round: the channel splits — pick a route and hold it to the merge.",
   "this round: beat the par ghost (P) to the line — survival alone is not a clear.",
   "this round: forks come fast — commit ↑HI for gates or ↓LO to stay alive.",
-  "this round: the jammer races every verb at once. only a calibrated counter-wave wins."
+  "this round: the jammer races every verb at once, and bleeds your integrity the whole way — a calibrated counter-wave cancels that outright; a maxed rig can outrun it uncalibrated, but barely."
 ];
 function roundIntro(roundIdx) {
   return roundIntros[Math.max(0, Math.min(roundIntros.length - 1, Number(roundIdx) || 0))];

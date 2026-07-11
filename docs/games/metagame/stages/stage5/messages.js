@@ -16,8 +16,8 @@ export const bellMessages = {
 };
 
 export const lockedHintLadder = [
-  'the jammer wins before the race starts.',
+  'the jammer bleeds your integrity the whole race. a maxed rig can outrun it — barely.',
   'its suppression wave has a rhythm. the rhythm can be answered.',
   'transmission_hum.mp3 carries the counter-signal.',
-  'play transmission_hum.mp3 continuously for one full 14-second loop, then race The Jammer.',
+  'play transmission_hum.mp3 continuously for one full 14-second loop to cancel the suppression entirely.',
 ];

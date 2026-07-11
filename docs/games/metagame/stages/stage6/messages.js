@@ -14,14 +14,14 @@ export const bellMessages = {
 };
 
 export const lockedHintLadder = [
-  "REFUSED. no protocol recognized.",
-  "you are sending data I cannot parse. the protocol must be established first.",
+  "the protocol goes unrecognized — the handshake still works, but it's a longer fight this way.",
+  "you are sending data I cannot parse cleanly. the protocol should be established first.",
   "Chapter 9 describes what The Refused Connection accepts.",
-  "open protocols_of_the_entity.epub and read Chapter 9, then return."
+  "open protocols_of_the_entity.epub and read Chapter 9 to shorten the fight."
 ];
 
 export const combatLines = {
-  lockedDeath: "PROTOCOL MISMATCH remains permanent. every card resolves to zero.",
+  lockedDeath: "PROTOCOL MISMATCH costs HP, not the fight — Chapter 9 would make this shorter.",
   mismatch: "protocol mismatch. no damage accepted.",
   synFirst: "SYN opened the turn. the first phase accepts damage.",
   ackSignal: "ACK acknowledged. Signal damage accepted.",

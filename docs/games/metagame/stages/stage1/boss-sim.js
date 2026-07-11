@@ -1,10 +1,14 @@
 // boss-sim.js — Stage 1 Defragmenter: the PURE, deterministic scoring model shared by the live boss
 // (boss1.js) and the headless smoke (__fvStage1.fightBoss). No Date.now / no Math.random.
 //
-// THE UN-CHEAT IS LOAD-BEARING HERE: while the cheat is active the boss shadows every tap with a
-// >1.0 edge plus a strong auto-floor and vicious bursts → structurally unwinnable. Editing
-// Overwriter.frag to CHEAT=false drops the shadow below 1.0, weakens the floor, and neutralises the
-// bursts → a steady tapper can pull ahead. So the ONLY way to win is to disable the cheat.
+// 2026-07-11 playtest fix: the boss is winnable from the FIRST attempt now — no more literal
+// unbeatable-until-you-cheat-edit design. Before the un-cheat (CHEAT=true, `cheatActive`), the
+// shadow/floor/burst are tuned HARD (empirically: needs ~6+ sustained taps/sec for all 20s, see
+// scripted sweep referenced in the commit) but genuinely winnable. Editing Overwriter.frag to
+// CHEAT=false is now an optional BUFF — it drops the shadow well below 1.0 and softens the floor/
+// bursts, turning the fight from "hard, needs real effort" into "comfortably winnable at a casual
+// pace" (~1.5 taps/sec already wins reliably). Finding the flag still matters; it's no longer the
+// only door.
 
 export const FIGHT_MS = 20000;
 export const BURST_MS = 800;
@@ -12,7 +16,7 @@ export const BURST_MS = 800;
 // Per-fight parameters, decided once by the cheat state (read at fight start, §10A.5).
 export function fightParams(cheatActive) {
   return cheatActive
-    ? { shadow: 1.12, floorWeight: 1.0, floorMs: (r) => Math.min(500, r * 0.95), burstCount: 4, burstWeight: 1.5 }
+    ? { shadow: 0.80, floorWeight: 0.35, floorMs: (r) => Math.max(420, r * 1.3), burstCount: 3, burstWeight: 0.8 }
     : { shadow: 0.62, floorWeight: 0.3, floorMs: (r) => Math.max(320, r * 1.5), burstCount: 2, burstWeight: 1.0 };
 }
 
@@ -50,9 +54,7 @@ export function simulateFight({ cheatActive, tapsPerSec = 10, seed = 1 } = {}) {
   for (let now = 0; now <= FIGHT_MS; now += 100) {
     while (nextTapAt <= now && nextTapAt <= FIGHT_MS) {
       userScore += 1;
-      const elapsed = nextTapAt;
-      const inBurst = bursts.some((b) => elapsed >= b.start && elapsed < b.end);
-      bossAcc += (inBurst && cheatActive) ? 1.5 : p.shadow;
+      bossAcc += p.shadow; // per-tap shadow only; burst pressure comes solely from the timed auto-fire below
       tapTimes.push(nextTapAt);
       tapTimes = tapTimes.filter((t) => nextTapAt - t < 3000);
       nextTapAt += tapInterval;

@@ -4,7 +4,7 @@ import { createCombat, playCard, endTurn } from "../combat.js";
 import { makeCtx } from "../combat-ctx.js";
 import { instantiateEnemy } from "../enemies.js";
 import { relicsFor } from "../relics.js";
-import { wireBossCombat, autoNegotiate, currentDemand, BOSS_PHASE_HP } from "../boss-combat.js";
+import { wireBossCombat, autoNegotiate, currentDemand, BOSS_PHASE_HP, UNCH9_HP_MULT } from "../boss-combat.js";
 
 function bossCombat({ deck = ["SYN"], hp = 300, seed = 1, locked = false } = {}) {
   const c = createCombat({
@@ -124,34 +124,43 @@ function bossCombat({ deck = ["SYN"], hp = 300, seed = 1, locked = false } = {})
   assert.equal(c.bossPhase, 2, "it stalls at phase 2 (the ACK-FIRST demand is unmeetable)");
 }
 
-// ── locked (ch9 unread): every Signal is refused in EVERY phase ⇒ unwinnable (the un-cheat) ────────
+// ── 2026-07-11 playtest fix: locked (ch9 unread) is a difficulty COST now, not a win/loss gate ─────
 {
-  // Even a perfectly-correct handshake sequence deals 0 while ch9 is unread, in all three phases.
-  for (const phase of [1, 2, 3]) {
-    const c = bossCombat({ locked: true });
-    c.bossPhase = phase; c.enemy.hp = BOSS_PHASE_HP[phase];
-    c.hand = ["ACK", "SYN", "SYN"]; c.player.energy = 99;
-    const before = c.enemy.hp;
-    // Play a correct handshake (ACK then SYNs). Bounded — SYN draws 2 after an ACK, so the hand
-    // can refill; the cap stops that from looping while still playing the whole opening sequence.
-    for (let k = 0; k < 12 && c.hand.length && !c.over; k++) {
-      if (!playCard(c, 0).ok) break;
-    }
-    assert.equal(c.enemy.hp, before, `locked: phase ${phase} boss takes 0 despite a correct sequence`);
-  }
+  // The boss's HP pool is scaled up (UNCH9_HP_MULT) while ch9 is unread — the wiring cost.
+  const c = bossCombat({ locked: true });
+  assert.equal(c.enemy.hp, Math.round(BOSS_PHASE_HP[1] * UNCH9_HP_MULT), "locked: phase-1 HP pool is scaled up by UNCH9_HP_MULT, not zeroed out");
+  assert.equal(c.enemy.maxHp, Math.round(BOSS_PHASE_HP[1] * UNCH9_HP_MULT), "locked: phase-1 maxHp matches the scaled pool");
+  const advance = c.advancePhase(c);
+  assert.ok(advance, "phase advance still works while locked");
+  assert.equal(c.enemy.hp, Math.round(BOSS_PHASE_HP[2] * UNCH9_HP_MULT), "locked: phase-2 pool is also scaled up");
 }
 {
-  const deck = ["SYN", "ACK", "PRIORITY_PACKET", "SYN"];
-  const c = bossCombat({ deck, hp: 500, seed: 7, locked: true });
-  autoNegotiate(c, 30);
-  assert.equal(c.bossPhase, 1, "locked: never advances past phase 1");
-  assert.equal(c.enemy.hp, BOSS_PHASE_HP[1], "locked: boss takes 0 — all Signals refused");
-  assert.ok(!(c.over && c.result === "win"), "locked: cannot win the fight");
+  // A correct handshake sequence lands real damage while ch9 is unread — the SAME demand-satisfaction
+  // rule as unlocked, not a flat refusal.
+  const c = bossCombat({ locked: true });
+  c.hand = ["SYN", "RST"];
+  c.player.energy = 5;
+  const before = c.enemy.hp;
+  playCard(c, 0); // SYN leads ⇒ demand met even while locked
+  assert.ok(c.enemy.hp < before, "locked: leading SYN still lands damage — ch9 is a buff, not a gate");
+}
+{
+  // The boss is fully winnable while locked with a real deck — just a longer fight (more total HP to
+  // clear) than the same deck would face unlocked.
+  const deck = ["SYN", "SYN", "SYN", "SYN", "ACK", "ACK", "ACK", "ACK", "PRIORITY_PACKET", "PRIORITY_PACKET"];
+  const locked = bossCombat({ deck, hp: 500, seed: 7, locked: true });
+  autoNegotiate(locked, 200);
+  assert.ok(locked.over && locked.result === "win", "locked: a real deck with Protocol cards still clears all 3 phases eventually");
+  const unlocked = bossCombat({ deck, hp: 500, seed: 7, locked: false });
+  autoNegotiate(unlocked, 200);
+  assert.ok(unlocked.turn <= locked.turn, "unlocked (ch9 read) clears in no more turns than locked — the buff shortens, never lengthens, the fight");
 }
 
-// ── H · hardened un-cheat: NON-Signal / relic / corruption damage cannot touch a locked boss ───────
+// ── H · relic / corruption damage: the demand-gate applies to relic damage too, independent of lock ─
 {
-  // Checksum Offload (a relic that deals on Protocol play) cannot chip a ch9-locked boss.
+  // Checksum Offload (a relic that deals on Protocol play) is refused here because the ACK itself
+  // doesn't satisfy phase 1's LEAD-SYN demand — the SAME demand-gate real Signal cards face, whether
+  // or not ch9 has been read (this is not a lock-specific mechanic any more).
   const c = createCombat({
     deck: ["ACK"], player: { hp: 300, maxHp: 300 },
     enemy: instantiateEnemy("the-refused-connection", 4), seed: 1,
@@ -160,8 +169,22 @@ function bossCombat({ deck = ["SYN"], hp = 300, seed = 1, locked = false } = {})
   wireBossCombat(c, { locked: true });
   const before = c.enemy.hp;
   c.hand = ["ACK"]; c.player.energy = 3;
-  playCard(c, 0); // Protocol play → checksum-offload tries to deal 3 → refused while locked
-  assert.equal(c.enemy.hp, before, "locked: relic damage is refused too (airtight un-cheat)");
+  playCard(c, 0); // Protocol play, but ACK isn't SYN ⇒ phase-1 LEAD-SYN demand unmet ⇒ refused
+  assert.equal(c.enemy.hp, before, "relic damage is refused by the demand-gate, same as any other card");
+}
+{
+  // The SAME relic DOES land once the demand is met — locked or not.
+  const c = createCombat({
+    deck: ["SYN", "ACK"], player: { hp: 300, maxHp: 300 },
+    enemy: instantiateEnemy("the-refused-connection", 4), seed: 1,
+    relics: relicsFor(["checksum-offload"])
+  });
+  wireBossCombat(c, { locked: true });
+  c.hand = ["SYN", "ACK"]; c.player.energy = 5;
+  const before = c.enemy.hp;
+  playCard(c, 0); // SYN leads ⇒ demand met
+  playCard(c, 0); // Protocol play → checksum-offload lands too, while still locked
+  assert.ok(c.enemy.hp < before, "relic damage lands once the demand is met, even while ch9 is unread");
 }
 {
   // The boss is immune to CORRUPTION — a corruption build can't sidestep the handshake.

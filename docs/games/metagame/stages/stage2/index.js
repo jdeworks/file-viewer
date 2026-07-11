@@ -98,5 +98,5 @@ function ensureStylesheet(id, href) {
 export {
   applySearchPassageUnlock,
   getBossLockState,
-  recordLockedBossAttempt
+  recordBossAttempt
 } from "./boss.js";

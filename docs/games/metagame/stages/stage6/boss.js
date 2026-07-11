@@ -20,12 +20,15 @@ export function hasProtocolChapter9(actions) {
 export function getBossLockState({ actions, state }) {
   const unlocked = hasProtocolChapter9(actions) || Boolean(state?.boss?.unlocked);
   const hintIndex = Math.min(Math.max(Number(state?.boss?.lockHintStep || 0), 0), lockedHintLadder.length - 1);
+  // 2026-07-11 playtest fix: ch9 is an optional buff now, not a gate — the negotiation always accepts
+  // a satisfied handshake (see boss-combat.js's accepts()); unread, the boss just carries more HP
+  // (UNCH9_HP_MULT), a real but survivable difficulty cost, not a permanent mismatch.
   return {
     unlocked,
     defeated: Boolean(state?.boss?.defeated),
-    status: unlocked ? "PROTOCOL MATCH NEGOTIABLE" : "PROTOCOL MISMATCH",
-    mismatchPermanent: !unlocked,
-    defeatPossible: unlocked,
+    status: unlocked ? "PROTOCOL MATCH NEGOTIABLE" : "PROTOCOL MISMATCH (tougher — unread)",
+    mismatchPermanent: false,
+    defeatPossible: true,
     phase: Number(state?.boss?.phase || 1),
     hint: unlocked ? bellMessages.unlock : lockedHintLadder[hintIndex]
   };

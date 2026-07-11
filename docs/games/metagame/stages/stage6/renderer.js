@@ -1,9 +1,9 @@
 // renderer.js — Stage 6 Protocol Codex controller: routes between the hub and the act-map run
 // (combat / reward / rest / shop / event). Owns the transient combat instance (never persisted —
 // a reload re-instantiates from the run's node). The act-4 boss, The Refused Connection, is fought
-// with the player's REAL deck (boss-combat.js wires the negotiation as an acceptance hook); the
-// stage-clear gate is unchanged: read the codex (epub) — without it every Signal deals 0 — then
-// defeat the boss with the deck built across acts 1–3.
+// with the player's REAL deck (boss-combat.js wires the negotiation as an acceptance hook); reading
+// the codex (epub) is an optional buff — unread, the boss just carries more HP (UNCH9_HP_MULT) — not
+// a requirement to defeat it with the deck built across acts 1–3.
 
 import { createCombat, playCard, endTurn, makeRng, applyPotionEffect, strHash, congestionForAct, currentIntent } from "./combat.js";
 import { cardById } from "./cards.js";
@@ -22,7 +22,7 @@ import {
 import { banner } from "../../shared/feedback.js";
 import { getBossLockState } from "./boss.js";
 import { BTS_PATH } from "./messages.js";
-import { wireBossCombat, autoNegotiate as runAutoNegotiate } from "./boss-combat.js";
+import { wireBossCombat, autoNegotiate as runAutoNegotiate, BOSS_PHASE_HP, UNCH9_HP_MULT } from "./boss-combat.js";
 import { SUPERBOSS_ID, wireSuperboss } from "./superboss.js";
 import { installStage6TestHook, removeStage6TestHook } from "./testhook.js";
 import { snapshotCombat, restoreCombat } from "./combat-persist.js";
@@ -500,9 +500,18 @@ export function renderStage6({ host, state, actions, achievements, bell, bts, vi
         return true;
       case "epub":
         openEpub({ viewer, actions, achievements, bell, state });
-        // Reading ch9 mid-fight unlocks the negotiation: drop the locked snapshot and rebuild the boss
-        // combat fresh (unlocked). This is an intentional restart of the boss fight, not the exploit.
-        if (combat && combat.bossPhase && combat.bossLocked) { if (combatRun) combatRun.reset(); combat = null; }
+        // 2026-07-11 playtest fix: ch9 is a buff now, not a gate — reading it mid-fight should not
+        // wipe progress you already fought for. Rescale the CURRENT fight's HP pool down in place
+        // (removing the unread-cost multiplier) instead of discarding the combat and restarting.
+        if (combat && combat.bossPhase && combat.bossLocked) {
+          const newMult = (combat.bossHpMult || UNCH9_HP_MULT) / UNCH9_HP_MULT;
+          const frac = combat.enemy.maxHp > 0 ? combat.enemy.hp / combat.enemy.maxHp : 1;
+          combat.bossLocked = false;
+          combat.bossHpMult = newMult;
+          combat.enemy.maxHp = Math.round((BOSS_PHASE_HP[combat.bossPhase] || BOSS_PHASE_HP[1]) * newMult);
+          combat.enemy.hp = Math.min(combat.enemy.maxHp, Math.max(1, Math.round(combat.enemy.maxHp * frac)));
+          checkpointCombat(combat, run);
+        }
         return true;
       case "bts": openBts({ bts, viewer }); return true;
       default: return false;

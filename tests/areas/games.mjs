@@ -734,19 +734,23 @@ export async function run(ctx) {
   });
   if (reso) pass('Stage 1 Resonance discovered at the box:booster sweet spot'); else fail('Stage 1 Resonance not discovered');
 
-  // Boss gate is real, and the boss is UNWINNABLE while the cheat is active (un-cheat is load-bearing).
+  // Boss gate is real (reachability), and the boss is HARD but NOT a wall while the cheat is active —
+  // 2026-07-11 playtest fix: casual tapping still loses (the fight is genuinely hard), but it's not
+  // structurally unwinnable — boss-sim.js's own unit test proves sustained fast tapping wins even
+  // before the un-cheat. Disabling the cheat is an optional buff (exercised below via the real
+  // raw-edit path), not the only door.
   const gate = await page.evaluate(() => {
     const s = window.__fvStage1.state();
     s.owned = {}; s.bits = { m: 0, e: 0 };
     const before = window.__fvStage1.fightBoss();
     window.__fvStage1.grind();
-    const after = window.__fvStage1.fightBoss({ tapsPerSec: 12 });
+    const after = window.__fvStage1.fightBoss({ tapsPerSec: 4 });
     return { before, after };
   });
   if (gate.before.gated) pass('Stage 1 boss gated until all tiers owned + bits ≥ ticket'); else fail('Stage 1 boss not gated from start: ' + JSON.stringify(gate.before));
   if (!gate.after.gated && gate.after.cheatActive && !gate.after.won)
-    pass('Stage 1 boss is unwinnable while the cheat is active');
-  else fail('Stage 1 boss should lose while cheating: ' + JSON.stringify(gate.after));
+    pass('Stage 1 boss is hard (casual tapping loses) while the cheat is active');
+  else fail('Stage 1 boss should still be hard at a casual pace while cheating: ' + JSON.stringify(gate.after));
 
   await page.click('.games-close');
 
@@ -834,9 +838,21 @@ export async function run(ctx) {
   const body = await page.evaluate(() => window.__fvStage2.bodySolver());
   if (body.reached && body.floor >= 9) pass('Stage 2 body: descended all 3 acts to the floor-9 boss'); else fail('Stage 2 body solver: ' + JSON.stringify(body));
 
-  // The boss is gated: attempting it before the cipher.txt search un-cheat must stay LOCKED.
-  const lockedPre = await page.evaluate(() => { window.__fvStage2.bossSolver(); return window.__fvStage2.lockState().unlocked; });
-  if (lockedPre === false) pass('Stage 2 boss starts locked before search action'); else fail('Stage 2 boss not locked pre-search');
+  // 2026-07-11 playtest fix: the cipher.txt search is an optional buff now, not a gate — the boss
+  // is genuinely fightable (and damageable) before it's found, just at a real risk/cost (a counter-
+  // hit lands on @ each exchange), rather than the old dead-end 0-damage "locked" wall.
+  const lockedFight = await page.evaluate(() => {
+    const before = window.__fvStage2.state().run.boss.hp;
+    const beforeHp = window.__fvStage2.state().run.entity.hp;
+    window.__fvStage2.bossSolver();
+    const s = window.__fvStage2.state();
+    return { unlocked: window.__fvStage2.lockState().unlocked, bossHpBefore: before, bossHpAfter: s.run.boss.hp, entityHpBefore: beforeHp, entityHpAfter: s.run.entity.hp };
+  });
+  if (lockedFight.unlocked === false) pass('Stage 2 boss starts locked (no buff) before search action'); else fail('Stage 2 boss buff active pre-search');
+  if (lockedFight.bossHpAfter < lockedFight.bossHpBefore) pass('Stage 2 boss takes real damage even before the search buff');
+  else fail('Stage 2 locked boss should still take damage: ' + JSON.stringify(lockedFight));
+  if (lockedFight.entityHpAfter < lockedFight.entityHpBefore) pass('Stage 2 fighting the boss without the buff costs a real counter-hit');
+  else fail('Stage 2 locked boss exchange should cost @ HP: ' + JSON.stringify(lockedFight));
 
   await page.evaluate(async () => {
     await window.__fv.searchViewerFile('/docs/examples/metagame/stage2/cipher.txt', 'PASSAGE');
@@ -995,18 +1011,22 @@ export async function run(ctx) {
   if (s4Depth.level === 3 && s4Depth.fork === 'emp_lance' && s4Depth.forkOk && s4Depth.builtThermal) pass('Stage 4 depth: new tower builds + upgrades to L3 + picks an irrevocable tier-3 fork'); else fail('Stage 4 tier-3 fork path broken: ' + JSON.stringify(s4Depth));
   // Reset the campaign back to a clean map-select so the boss-gate assertions below are unaffected.
   await page.evaluate(() => { const h = window.__fvStage4; const st = h.state(); st.towers = []; st.enemies = []; st.waveActive = false; h.leaveArmory?.(); });
-  // Debug-seat the boss (smoke shortcut for clearing 150 waves; NOT a player affordance). The boss is
-  // load-bearing-gated by the REAL blueprint un-cheat: BEFORE the file is opened it folds all damage
-  // away even with full recursion-point coverage.
+  // Debug-seat the boss (smoke shortcut for clearing 150 waves; NOT a player affordance).
+  // 2026-07-11 playtest fix: the blueprint is an optional buff now, not a gate — covering recursion
+  // points BLIND (before the file is ever opened) still lands real damage, at a lower per-point rate
+  // than the buffed hit. Cover 2 of the 3 points and confirm real, partial damage lands pre-blueprint.
   const s4Locked = await page.evaluate(() => {
     window.__fvStage4.seatAtBoss();
-    for (const p of window.__fvStage4.state().recursion.points) window.__fvStage4.place(p.x, p.y, 'pulse_node');
+    const points = window.__fvStage4.state().recursion.points;
+    for (const p of points.slice(0, 2)) window.__fvStage4.place(p.x, p.y, 'pulse_node');
     const hpBefore = window.__fvStage4.state().boss.hp;
     window.__fvStage4.confront();
     const s = window.__fvStage4.state();
-    return { status: s.campaign.status, defeated: s.boss.defeated, hpUnchanged: s.boss.hp === hpBefore };
+    return { status: s.campaign.status, defeated: s.boss.defeated, hpBefore, hpAfter: s.boss.hp };
   });
-  if (s4Locked.status === 'boss' && !s4Locked.defeated && s4Locked.hpUnchanged) pass('Stage 4 boss is unwinnable before the blueprint file is opened (total-armor while locked)'); else fail('Stage 4 boss took damage / was defeated before the un-cheat: ' + JSON.stringify(s4Locked));
+  if (s4Locked.status === 'boss' && !s4Locked.defeated && s4Locked.hpAfter < s4Locked.hpBefore)
+    pass('Stage 4 boss takes real (if weaker) damage even before the blueprint is opened');
+  else fail('Stage 4 boss should still be damageable pre-blueprint: ' + JSON.stringify(s4Locked));
   // Un-cheat = a REAL file-open: click the navigation hint, which opens the static blueprint file in the
   // viewer. The action 4.recursion_blueprint_read is fired by openViewerFile → recordMetagameViewerOpen
   // (NOT by an in-game button), and the achievement auto-unlocks from the action.
@@ -1028,7 +1048,7 @@ export async function run(ctx) {
       return save.defeated?.includes(4) && save.unlockedStages?.includes(5);
     } catch { return false; }
   }, null, { timeout: 5000 });
-  pass('Stage 4 clears via blueprint un-cheat + recursion-point coverage after all maps cleared');
+  pass('Stage 4 clears via the blueprint buff finishing off the damage started blind, after all maps cleared');
 
   await page.waitForSelector('.stage5-signal-racer', { timeout: 8000 });
   // UX-audit M3: the select screen now OPENS ON PLAY — a fresh save shows one primed START (round 1),
@@ -1049,9 +1069,12 @@ export async function run(ctx) {
   // Play the eight real body rounds (incl. the time-trial + fork relay) to reach the jammer.
   const s5Cleared = await page.evaluate(() => window.__fvStage5.solveRun());
   if (s5Cleared === 8) pass('Stage 5 run cleared: rounds 1–8 (incl. time-trial + fork relay) played to reach The Jammer'); else fail(`Stage 5 only cleared ${s5Cleared}/8 rounds`);
-  // Load-bearing un-cheat: the jammer is unwinnable WITHOUT the calibrated counter-wave.
+  // 2026-07-11 playtest fix: calibration is a buff, not a gate — the jammer's suppression drain is
+  // survivable uncalibrated only by a near-maxed (Hull+Engine) rig (see game-loop.js /
+  // stage5/tests/boss.test.mjs), so a completely fresh, un-upgraded run (this smoke's state) still
+  // loses uncalibrated, same observable outcome as before, for a different (no-longer-absolute) reason.
   const s5Uncal = await page.evaluate(() => ({ outcome: window.__fvStage5.solveBoss(), defeated: window.__fvStage5.state().boss.defeated }));
-  if (s5Uncal.outcome === 'fail' && !s5Uncal.defeated) pass('Stage 5 jammer is unwinnable without calibration (load-bearing un-cheat)'); else fail('Stage 5 boss beatable without calibration');
+  if (s5Uncal.outcome === 'fail' && !s5Uncal.defeated) pass('Stage 5 jammer: a fresh, un-upgraded run still loses uncalibrated (calibration is a big buff)'); else fail('Stage 5 boss beatable without calibration');
   // Open transmission_hum.mp3 (the real un-cheat is 14s of continuous playback in the media viewer).
   await page.click('[data-action="audio"]');
   await page.waitForFunction(() => window.__fv.state.intake?.filename === 'transmission_hum.mp3' && window.__fv.state.type.id === 'media', null, { timeout: 5000 });
@@ -1174,12 +1197,14 @@ export async function run(ctx) {
   // It is a real combat (data-play hand), not the retired 3-button puzzle.
   await page.waitForSelector('.s6db-combat .s6db-boss-banner.is-locked', { timeout: 4000 });
   pass('Stage 6 boss is a real-deck fight reached only through a run');
-  // Un-cheat is load-bearing: while ch9 is unread, a correct attack sequence deals 0 (boss HP unchanged).
+  // 2026-07-11 playtest fix: ch9 unread is a difficulty cost now (boss starts at 84 HP = 60 ×
+  // UNCH9_HP_MULT 1.4, instead of 60), not a win/loss gate — a correct handshake still lands real
+  // damage, it just has more HP to clear.
   const lockedAttack = await page.evaluate(() => window.__fvStage6.autoNegotiate(3));
-  if (lockedAttack.enemyHp !== 60 || lockedAttack.bossDefeated) {
-    throw new Error(`Stage 6 boss took damage while ch9 locked: ${JSON.stringify(lockedAttack)}`);
+  if (lockedAttack.enemyHp >= 84 || lockedAttack.bossDefeated) {
+    throw new Error(`Stage 6 boss should take real damage while ch9 unread: ${JSON.stringify(lockedAttack)}`);
   }
-  pass('Stage 6 boss is unwinnable until Chapter 9 is read (locked Signals deal 0)');
+  pass('Stage 6 boss takes real damage before Chapter 9 is read (tougher HP pool, not a 0-damage wall)');
   // Stage-clear gate (un-cheat): read the codex from the boss banner to unlock the negotiation.
   await page.click('.s6db-combat .s6db-boss-banner [data-action="epub"]');
   await page.waitForFunction(() => window.__fv.state.intake?.filename === 'protocols_of_the_entity.epub' && window.__fv.state.type.id === 'epub', null, { timeout: 5000 });

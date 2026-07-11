@@ -78,11 +78,21 @@ function hasDiffKeyRestored(actions) {
 function bodyComplete(state) {
   return Boolean(state?.boss?.corruption8Reached);
 }
+var REVEAL_START_ATTEMPT = lockedHintLadder.length;
+var KEY_LENGTH = 9;
+function revealedKey(state, count) {
+  const key2 = diffKeyFromState(state);
+  const shown = key2.slice(0, Math.max(0, Math.min(KEY_LENGTH, count)));
+  return shown.padEnd(KEY_LENGTH, "?");
+}
 function getBossLockState({ actions, state }) {
   const keyRestored = hasDiffKeyRestored(actions) || Boolean(state?.boss?.unlocked);
   const bodyReady = bodyComplete(state);
   const unlocked = keyRestored && bodyReady;
+  const attempts = Number(state?.boss?.attempts || 0);
   const hintIndex = Math.min(Math.max(Number(state?.boss?.lockHintStep || 0), 0), lockedHintLadder.length - 1);
+  const revealCount = bodyReady && !keyRestored ? Math.max(0, attempts - REVEAL_START_ATTEMPT) : 0;
+  const revealHint = revealCount > 0 ? `key so far, from wrong attempts: ${revealedKey(state, revealCount)} — ${Math.max(0, KEY_LENGTH - revealCount)} character(s) still unknown (or diff the logs to read it outright).` : lockedHintLadder[hintIndex];
   return {
     unlocked,
     bodyReady,
@@ -90,8 +100,10 @@ function getBossLockState({ actions, state }) {
     defeated: Boolean(state?.boss?.defeated),
     corruptionRate: unlocked ? "normal" : "accelerated",
     columnClues: unlocked ? "restored" : "missing",
-    defeatPossible: unlocked,
-    hint: !bodyReady ? bodyHint : keyRestored ? bellMessages.unlock : lockedHintLadder[hintIndex]
+    // The fight is attemptable — and, with enough persistence, winnable — the moment the body is
+    // done; the diff buff is no longer required, just a much faster path.
+    defeatPossible: bodyReady,
+    hint: !bodyReady ? bodyHint : keyRestored ? bellMessages.unlock : revealHint
   };
 }
 function tryRestoreDiffKey({ state, actions, achievements, bell, input }) {
@@ -104,7 +116,7 @@ function tryRestoreDiffKey({ state, actions, achievements, bell, input }) {
   }
   if (normalized !== expected) {
     state.boss.lockHintStep = Math.min(Number(state.boss.lockHintStep || 0) + 1, lockedHintLadder.length - 1);
-    pushLog(state, "wrong restoration key. the leak keeps the columns hidden.");
+    pushLog(state, "wrong restoration key. but the attempt wasn't wasted — check the hint, another character just surfaced.");
     return { ok: false, expected };
   }
   state.boss.unlocked = true;

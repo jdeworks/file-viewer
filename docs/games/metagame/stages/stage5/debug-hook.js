@@ -1,8 +1,9 @@
 // debug-hook.js — Stage 5 Signal Racer: the window.__fvStage5 TEST/DEBUG hook, split out of
 // renderer.js to keep it under the soft LOC cap. NOT a player affordance: it drives the racer
 // deterministically for the smoke. It does NOT bypass anything — solveRun plays each real round
-// optimally, and the boss still needs the calibrated counter-wave (the real un-cheat = playing
-// transmission_hum.mp3 for one full loop).
+// optimally, and the boss race still runs the same suppression-drain math a real uncalibrated
+// attempt would (calibration, i.e. playing transmission_hum.mp3 for one full loop, is a buff that
+// cancels the drain — not a requirement to win).
 
 import { runCalibrationTimeline } from './calibration.js';
 import { TRANSMISSION_HUM_PATH } from './messages.js';

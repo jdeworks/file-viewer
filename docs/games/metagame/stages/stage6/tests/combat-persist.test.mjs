@@ -83,10 +83,11 @@ function view(combat) {
   assert.equal(typeof restored.acceptance, "function", "acceptance hook re-attached");
   assert.equal(typeof restored.advancePhase, "function", "advancePhase hook re-attached");
 
-  // Load-bearing un-cheat survives: while locked, a Signal deals 0 (PROTOCOL MISMATCH).
+  // 2026-07-11 playtest fix: locked (ch9 unread) survives a restore as a difficulty cost (scaled-up
+  // HP), not a win/loss gate — a demand-satisfying Signal still lands real damage after restore.
   const synIdx = restored.hand.indexOf("SYN");
   if (synIdx >= 0) { restored.player.energy = 3; playCard(restored, synIdx); }
-  assert.equal(restored.enemy.hp, enemyHp0, "a locked Signal still deals 0 after restore");
+  assert.ok(restored.enemy.hp < enemyHp0, "a demand-satisfying Signal still lands damage after restore, even while locked");
 }
 
 // ── run-state integration: checkpoint writes the 'combat' slot; reset clears it; siblings survive ───

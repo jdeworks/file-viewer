@@ -102,4 +102,33 @@ const lockedActions = { hasAction: () => false, setAction() {} };
   assert.equal(state.registers, 120);
 }
 
+{
+  // 2026-07-11 playtest fix: the diff is an optional buff, not a gate — once the body is complete
+  // the fight is attemptable (defeatPossible) even with zero diff progress, and enough WRONG
+  // submissions eventually leak the real key characters, so a determined player can grind out a win
+  // blind. Diffing the logs stays the fast, guess-free path.
+  const state = defaultState({ now: 1234 });
+  state.boss.corruption8Reached = true;
+  const key = diffKeyFromState(state);
+
+  const readyLock = getBossLockState({ actions: lockedActions, state });
+  assert.equal(readyLock.defeatPossible, true, 'fight is attemptable the moment the body is done, no diff required');
+  assert.equal(readyLock.unlocked, false, 'buff itself is still off (no diff, no correct key yet)');
+
+  // Burn through the static hint ladder, then keep submitting wrong keys — each one should leak one
+  // more real character of the actual key into the hint text.
+  for (let i = 0; i < 4; i++) tryRestoreDiffKey({ state, actions: lockedActions, input: 'nope' });
+  const midLock = getBossLockState({ actions: lockedActions, state });
+  assert.equal(midLock.hint.includes(key[0]), false, 'no characters leaked yet — reveal starts after the static hints');
+
+  for (let i = 0; i < 9; i++) tryRestoreDiffKey({ state, actions: lockedActions, input: 'nope' });
+  const fullyLeakedLock = getBossLockState({ actions: lockedActions, state });
+  assert.equal(fullyLeakedLock.hint.includes(key), true, 'grinding wrong attempts eventually leaks the entire real key');
+
+  // The leaked key still WORKS to actually win, without ever touching the diff viewer.
+  const win = tryRestoreDiffKey({ state, actions: lockedActions, input: key });
+  assert.equal(win.ok, true, 'the fully-leaked key is accepted the same as a diffed key');
+  assert.equal(defeatMemoryLeak(state), true, 'boss is defeatable via the grind-leaked key alone');
+}
+
 console.log('stage3 boss tests passed');

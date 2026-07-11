@@ -1,4 +1,4 @@
-import { damageUnlockedBoss, getBossLockState, recordLockedBossAttempt } from "./boss.js";
+import { damageBoss, getBossLockState, recordBossAttempt } from "./boss.js";
 import { bossArenaLocked, bossArenaUnlocked } from "./content.js";
 import { exitDistanceField, reconstructRoute, step, stepToExit, tickPlayerStatus } from "./engine.js";
 import { stairTrailEnabled } from "./data.js";
@@ -13,7 +13,7 @@ import { buildShopPanel } from "./shop.js";
 import { buildHelpPanel } from "./help.js";
 import { buildRunePickupPanel } from "./rune-pickup.js";
 import { createView, renderHpBar } from "./view.js";
-import { BTS_PATH, bellMessages } from "./messages.js";
+import { BTS_PATH, bellMessages, combatLines } from "./messages.js";
 import { MAX_FLOOR, ensureWorld, descend, resetRun, appendLog, damageNoise, openCipher, openBts, once, DIR_ARROW } from "./runloop.js";
 
 const MOVE_KEYS = {
@@ -473,21 +473,41 @@ export function renderStage2({
   function challengeBoss() {
     state.run.boss.reached = true;
     const lock = getBossLockState({ actions, state });
-    if (!lock.unlocked) {
-      recordLockedBossAttempt(state);
+    recordBossAttempt(state);
+    if (lock.unlocked) {
+      state.run.boss.unlocked = true;
+      // The buff: PASSAGE found → a decisive blow clears every remaining phase in one challenge.
+      // Each 999-hit only zeroes the current phase (advancing 1→2→3), so loop until defeated,
+      // bounded well above the 3 phases as a safety guard.
+      let result = damageBoss({ state, amount: 999 });
+      for (let i = 0; i < 5 && !result.defeated; i++) {
+        result = damageBoss({ state, amount: 999 });
+      }
+      if (result.defeated) {
+        appendLog(state, bellMessages.defeated);
+        completeOnce({ stage: 2, defeated: true, reward: { glyphs: 25 }, btsPath: BTS_PATH });
+      }
       return;
     }
-    state.run.boss.unlocked = true;
-    // A decisive blow: keep striking through every phase until the boss falls. Each 999-hit only
-    // zeroes the current phase (advancing 1→2→3), so a single strike isn't enough — loop until
-    // defeated, bounded well above the 3 phases as a safety guard.
-    let result = damageUnlockedBoss({ state, amount: 999 });
-    for (let i = 0; i < 5 && !result.defeated; i++) {
-      result = damageUnlockedBoss({ state, amount: 999 });
+    // 2026-07-11 playtest fix: without PASSAGE the fight still happens, just costs a real risk —
+    // one exchange per challenge click (modest boss damage, real counter-hit to @). Grinding it out
+    // is genuinely possible, just slower and riskier than the buffed one-hit clear above.
+    const result = damageBoss({ state, amount: 45 });
+    const entity = state.run.entity;
+    const counter = Math.max(3, Math.round((entity.maxHp || 30) * 0.2));
+    entity.hp = Math.max(0, Number(entity.hp || 0) - counter);
+    appendLog(state, combatLines.lockedExchange);
+    if (entity.hp <= 0) {
+      appendLog(state, "@ was unparsed. run reset — banked glyphs survive.");
+      resetRun(state, { banked: true, death: true });
+      persistAndPaint();
+      return;
     }
     if (result.defeated) {
       appendLog(state, bellMessages.defeated);
       completeOnce({ stage: 2, defeated: true, reward: { glyphs: 25 }, btsPath: BTS_PATH });
+      return;
     }
+    persistAndPaint();
   }
 }

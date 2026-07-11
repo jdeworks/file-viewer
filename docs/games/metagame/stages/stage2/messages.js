@@ -14,10 +14,10 @@ export const bellMessages = {
 };
 
 export const lockedHintLadder = [
-  "the arena has structure. you cannot cross a pattern without understanding it.",
-  "there is a passage. it is written down.",
+  "the arena has structure. cross it blind and it will cost you.",
+  "there is an easier way through. it is written down.",
   "cipher.txt knows the way.",
-  "search cipher.txt for PASSAGE. mark PASSAGE:247, then return."
+  "search cipher.txt for PASSAGE. mark PASSAGE:247, then return — the crossing gets a lot safer."
 ];
 
 export const combatLines = {
@@ -26,7 +26,9 @@ export const combatLines = {
     "glyph shard recovered.",
     "a door becomes a sentence."
   ],
-  lockedDeath: "the pattern closes. no route remains.",
+  // 2026-07-11 playtest fix: PASSAGE is a buff now, not a gate — a blind strike still lands, it
+  // just costs a counter-hit back. "no route remains" is retired; see renderer.js's challengeBoss.
+  lockedExchange: "the strike lands, but the pattern bites back.",
   unlocked: "north pillar active. a two-tile passage opens.",
   defeated: "the expression resolves to one meaning."
 };

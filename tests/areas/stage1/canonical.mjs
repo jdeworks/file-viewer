@@ -101,10 +101,14 @@ const { simulateFight } = await import('../../../docs/games/metagame/stages/stag
   assert.ok(Math.abs(resonanceMult(s) - 1.3) < 1e-9, 'box:booster 3:1 → ×1.3');
 }
 {
-  // The un-cheat is load-bearing: identical taps lose while cheating, win once disabled.
+  // 2026-07-11 playtest fix: the boss is winnable from the first attempt (hard, not a wall). A slow,
+  // casual pace still loses while the cheat is active but wins comfortably once it's disabled — the
+  // un-cheat is a genuine buff, not the only door. A fast, sustained pace wins either way.
   for (let seed = 1; seed <= 5; seed++) {
-    assert.equal(simulateFight({ cheatActive: true, tapsPerSec: 12, seed }).won, false, 'cheat active → boss wins');
-    assert.equal(simulateFight({ cheatActive: false, tapsPerSec: 12, seed }).won, true, 'cheat disabled → fair fight winnable');
+    assert.equal(simulateFight({ cheatActive: true, tapsPerSec: 4, seed }).won, false, 'cheat active, casual pace → boss still wins');
+    assert.equal(simulateFight({ cheatActive: false, tapsPerSec: 4, seed }).won, true, 'cheat disabled, casual pace → comfortably winnable');
+    assert.equal(simulateFight({ cheatActive: true, tapsPerSec: 8, seed }).won, true, 'cheat active, sustained fast tapping → hard but winnable');
+    assert.equal(simulateFight({ cheatActive: false, tapsPerSec: 8, seed }).won, true, 'cheat disabled, sustained fast tapping → still winnable');
   }
 }
 

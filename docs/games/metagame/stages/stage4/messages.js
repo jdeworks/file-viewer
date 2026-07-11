@@ -16,8 +16,8 @@ export const bellMessages = {
 };
 
 export const lockedHintLadder = [
-  'the bastion folds damage away before it arrives.',
+  'the weak points are scattered and invisible — cover enough ground and you will find one eventually.',
   'the weak points are not on the surface of the tower list.',
   'follow the tower upgrade folders all the way down.',
-  'open towers/upgrades/tier3_blueprints/recursion_points.json before fighting The Infinite Loop.',
+  'open towers/upgrades/tier3_blueprints/recursion_points.json for exact coordinates and a damage bonus.',
 ];

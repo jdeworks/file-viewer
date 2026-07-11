@@ -17,10 +17,10 @@ export const TAUNTS = {
     "don't worry, I'll put your bits in order. my order.",
   ],
   hint: [
-    'I don\'t fight fair — and you can\'t out-tap a cheater. the rules of this fight are written down somewhere you can edit. this window won\'t help you.',
-    'a file decides how I cheat. Overwriter.frag — CHEAT=true. flip it to false and come back. …not that you would.',
+    'you can out-tap me. it just takes real focus — or you could make it easier on yourself. there\'s a file you can edit, somewhere you can look. this window won\'t help you.',
+    'a file tunes how hard I hit. Overwriter.frag — CHEAT=true. flip it to false and I go easy on you. …not that you would.',
     'still losing? the examples folder. Overwriter.frag. CHEAT=false. I\'m only saying it so you DON\'T do it.',
-    'open Overwriter.frag, set CHEAT=false, fight me again. there. now stop losing.',
+    'open Overwriter.frag, set CHEAT=false, fight me again. there. now it\'s easy.',
   ],
   burstCheat: [
     'look at this box I found! 📦',

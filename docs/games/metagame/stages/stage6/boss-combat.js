@@ -55,31 +55,38 @@ function demandMet(combat) {
     : ackPlayed(combat);
 }
 
+// 2026-07-11 playtest fix: reading ch9 is an optional buff now, not a gate. Unread, every Signal used
+// to deal flat 0 regardless of play — a literal, un-survivable wall. Now the SAME handshake-sequencing
+// challenge (demandMet) determines whether a Signal lands whether or not ch9 has been read; ch9's
+// buff instead shrinks the boss's own HP pools (UNCH9_HP_MULT), so the unread fight is real and
+// winnable — just a longer, tougher slog — while reading ch9 makes it the normal-length fight.
+export const UNCH9_HP_MULT = 1.4; // within the existing ascension "tougher boss" band (1.3–1.625x)
+
 // acceptance(combat, card) — consulted by the engine before ANY damage lands on the boss (ctx.deal /
-// relicCtx.deal), regardless of the card's archetype. While ch9 is unread (locked) nothing lands —
-// the un-cheat, airtight against Signal/Daemon/Recursion/relic damage alike. While unlocked, damage
-// lands only when this turn's handshake demand is satisfied. Non-damage effects (block, strength,
-// corruption-apply, draw) always resolve — so a deck still satisfies the handshake with real cards.
+// relicCtx.deal), regardless of the card's archetype. Damage lands only when this turn's handshake
+// demand is satisfied — this is the real, load-bearing sequencing challenge, unaffected by ch9.
+// Non-damage effects (block, strength, corruption-apply, draw) always resolve — so a deck still
+// satisfies the handshake with real cards either way.
 export function accepts(combat, card) {
-  if (combat.bossLocked) return false;           // ch9 unread ⇒ permanent mismatch (B3)
   return demandMet(combat);
 }
 
-// Per-phase HP for this fight, scaled by a prestige `hpMult` (tougher-boss modifier).
+// Per-phase HP for this fight, scaled by a prestige `hpMult` (tougher-boss modifier) and, while ch9
+// is unread, the UNCH9_HP_MULT buff-absence cost.
 function phaseHp(phase, hpMult) {
   return Math.round(BOSS_PHASE_HP[phase] * (hpMult || 1));
 }
 
 // Wire the negotiation onto a freshly-created combat whose enemy is the-refused-connection.
-// `locked` (ch9 unread) makes every Signal a mismatch ⇒ the fight is unwinnable (B3).
-// `hpMult` scales each phase's HP pool (prestige tougher-boss modifier).
+// `locked` (ch9 unread) is now a difficulty cost (UNCH9_HP_MULT), not a win/loss gate.
+// `hpMult` scales each phase's HP pool (prestige tougher-boss modifier); the two multiply together.
 export function wireBossCombat(combat, { locked = false, hpMult = 1, extraPhase = false } = {}) {
   combat.bossPhase = 1;
   combat.bossLocked = Boolean(locked);
-  combat.bossHpMult = hpMult;
+  combat.bossHpMult = (hpMult || 1) * (combat.bossLocked ? UNCH9_HP_MULT : 1);
   combat.bossMaxPhase = extraPhase ? 4 : 3; // endurance ascension adds a 4th mutating phase
-  combat.enemy.hp = phaseHp(1, hpMult);
-  combat.enemy.maxHp = phaseHp(1, hpMult);
+  combat.enemy.hp = phaseHp(1, combat.bossHpMult);
+  combat.enemy.maxHp = phaseHp(1, combat.bossHpMult);
   rewireBossCombat(combat);
   return combat;
 }
@@ -104,8 +111,9 @@ export function rewireBossCombat(combat) {
 
 // ── Test/debug driver ──────────────────────────────────────────────────────────────────────────
 // Drive the REAL engine through the handshake correctly until the fight ends (or maxTurns). This
-// plays real cards via the real acceptance — it is NOT a bypass: if `locked`, Signals deal 0 and
-// the boss never dies. Used by the smoke harness to clear the fight without a hand-scripted hand.
+// plays real cards via the real acceptance — it is NOT a bypass: if `locked` (ch9 unread), the boss
+// simply has more HP (UNCH9_HP_MULT) and the fight runs longer, it is not an automatic loss. Used by
+// the smoke harness to clear the fight without a hand-scripted hand.
 export function autoNegotiate(combat, maxTurns = 80) {
   let turns = 0;
   while (!combat.over && turns++ < maxTurns) {

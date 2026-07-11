@@ -21,18 +21,23 @@ export function getBossLockState({ actions, state }) {
     phase: unlocked ? Math.max(Number(boss.phase || 1), 2) : Number(boss.phase || 1),
     northPillar: unlocked ? "active" : "silent",
     projectileGapTiles: unlocked ? 2 : 0,
-    defeatPossible: unlocked,
+    // 2026-07-11 playtest fix: PASSAGE is now an optional buff, not a gate — defeatPossible is
+    // always true once the boss is reached. `unlocked` still drives the one-hit clean-clear buff
+    // (see damageBoss's caller in renderer.js) and the cosmetic pillar/gap status text above.
+    defeatPossible: true,
     hint: unlocked ? combatLines.unlocked : lockedHintLadder[hintIndex]
   };
 }
 
-export function recordLockedBossAttempt(state) {
+// Records a challenge attempt made before PASSAGE was found — no longer a dead end (the fight still
+// proceeds, see renderer.js's challengeBoss), just tougher and riskier. Kept named "attempt", not
+// "locked death", since the attempt can now succeed.
+export function recordBossAttempt(state) {
   const boss = state.run.boss;
   boss.reached = true;
   boss.attempts = Number(boss.attempts || 0) + 1;
   boss.lockHintStep = Math.min(Number(boss.lockHintStep || 0) + 1, lockedHintLadder.length - 1);
   state.meta.bossAttempts = Number(state.meta.bossAttempts || 0) + 1;
-  pushCombatLine(state, combatLines.lockedDeath);
   return getBossLockState({ actions: null, state });
 }
 
@@ -54,9 +59,9 @@ export function applySearchPassageUnlock({ state, achievements, bell }) {
   return firstUnlock;
 }
 
-export function damageUnlockedBoss({ state, amount = 50 }) {
+export function damageBoss({ state, amount = 50 }) {
   const boss = state.run.boss;
-  if (!boss.unlocked || boss.defeated) return { defeated: false, phaseChanged: false };
+  if (boss.defeated) return { defeated: false, phaseChanged: false };
   const beforePhase = boss.phase;
   boss.hp = Math.max(0, Number(boss.hp || 150) - amount);
   if (boss.hp === 0 && boss.phase < 3) {

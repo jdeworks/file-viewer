@@ -2,8 +2,9 @@
 // the boss mount under the LOC cap. Pure behaviour move: builds the fight DOM, reads the cheat ONCE
 // at start (§10A.5), runs the per-tap shadow + auto-floor + burst auto-fires, and calls onFinish.
 //
-// THE UN-CHEAT IS LOAD-BEARING: while the cheat is active the shadow/floor/bursts make the contest
-// structurally unwinnable; the matching deterministic model lives in boss-sim.js.
+// 2026-07-11 playtest fix: while the cheat is active the shadow/floor/bursts are tuned hard-but-
+// winnable (needs sustained fast tapping); disabling it (CHEAT=false) is an optional buff that
+// makes the fight comfortably winnable at a casual pace. See boss-sim.js for the tuned numbers.
 
 import { FIGHT_MS, BURST_MS, makeBurstSchedule, fightParams } from './boss-sim.js';
 import { TAUNTS, pick, readCheat } from './boss1-data.js';
@@ -63,9 +64,7 @@ export function makeFight({ arena, actions, setT, setI, clearTimer, on, onFinish
       if (!fightActive) return;
       userScore += 1;
       const now = Date.now();
-      const elapsed = now - fightStart;
-      const inBurst = bursts.some((b) => elapsed >= b.start && elapsed < b.end);
-      if (inBurst && cheatActive) bossAcc += 1.5; else bossAcc += p.shadow;
+      bossAcc += p.shadow; // per-tap shadow only; burst pressure comes solely from the timed auto-fire below
       bossScore = Math.floor(bossAcc);
       tapTimes.push(now);
       tapTimes = tapTimes.filter((t) => now - t < 3000);

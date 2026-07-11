@@ -12,11 +12,32 @@ export function bodyComplete(state) {
   return Boolean(state?.boss?.corruption8Reached);
 }
 
+// 2026-07-11 playtest fix: the diff-key restoration key is a genuine random 9-char (3×3 base-36
+// chunk) value — blind-guessing it is astronomically improbable (36^9 combinations), so without
+// diffing the logs the fight used to be a real dead end, not just "hard." It's now an optional buff:
+// wrong submissions beyond the static hint ladder start leaking real characters of the actual key
+// (one more per wrong attempt), so a determined player who never opens the diff viewer can eventually
+// grind the whole key out through repeated guesses — slow and effortful, but always convergent.
+// Diffing the logs stays the fast path (skip straight to the full key in one read).
+const REVEAL_START_ATTEMPT = lockedHintLadder.length; // static hints exhausted, then reveals begin
+const KEY_LENGTH = 9;
+
+function revealedKey(state, count) {
+  const key = diffKeyFromState(state);
+  const shown = key.slice(0, Math.max(0, Math.min(KEY_LENGTH, count)));
+  return shown.padEnd(KEY_LENGTH, '?');
+}
+
 export function getBossLockState({ actions, state }) {
   const keyRestored = hasDiffKeyRestored(actions) || Boolean(state?.boss?.unlocked);
   const bodyReady = bodyComplete(state);
-  const unlocked = keyRestored && bodyReady; // BOTH the played body AND the diff un-cheat
+  const unlocked = keyRestored && bodyReady; // BOTH the played body AND the diff buff
+  const attempts = Number(state?.boss?.attempts || 0);
   const hintIndex = Math.min(Math.max(Number(state?.boss?.lockHintStep || 0), 0), lockedHintLadder.length - 1);
+  const revealCount = bodyReady && !keyRestored ? Math.max(0, attempts - REVEAL_START_ATTEMPT) : 0;
+  const revealHint = revealCount > 0
+    ? `key so far, from wrong attempts: ${revealedKey(state, revealCount)} — ${Math.max(0, KEY_LENGTH - revealCount)} character(s) still unknown (or diff the logs to read it outright).`
+    : lockedHintLadder[hintIndex];
   return {
     unlocked,
     bodyReady,
@@ -24,8 +45,10 @@ export function getBossLockState({ actions, state }) {
     defeated: Boolean(state?.boss?.defeated),
     corruptionRate: unlocked ? 'normal' : 'accelerated',
     columnClues: unlocked ? 'restored' : 'missing',
-    defeatPossible: unlocked,
-    hint: !bodyReady ? bodyHint : (keyRestored ? bellMessages.unlock : lockedHintLadder[hintIndex]),
+    // The fight is attemptable — and, with enough persistence, winnable — the moment the body is
+    // done; the diff buff is no longer required, just a much faster path.
+    defeatPossible: bodyReady,
+    hint: !bodyReady ? bodyHint : (keyRestored ? bellMessages.unlock : revealHint),
   };
 }
 
@@ -40,7 +63,7 @@ export function tryRestoreDiffKey({ state, actions, achievements, bell, input })
   }
   if (normalized !== expected) {
     state.boss.lockHintStep = Math.min(Number(state.boss.lockHintStep || 0) + 1, lockedHintLadder.length - 1);
-    pushLog(state, 'wrong restoration key. the leak keeps the columns hidden.');
+    pushLog(state, 'wrong restoration key. but the attempt wasn\'t wasted — check the hint, another character just surfaced.');
     return { ok: false, expected };
   }
 

@@ -953,10 +953,10 @@ var TAUNTS = {
     "don't worry, I'll put your bits in order. my order."
   ],
   hint: [
-    "I don't fight fair — and you can't out-tap a cheater. the rules of this fight are written down somewhere you can edit. this window won't help you.",
-    "a file decides how I cheat. Overwriter.frag — CHEAT=true. flip it to false and come back. …not that you would.",
+    "you can out-tap me. it just takes real focus — or you could make it easier on yourself. there's a file you can edit, somewhere you can look. this window won't help you.",
+    "a file tunes how hard I hit. Overwriter.frag — CHEAT=true. flip it to false and I go easy on you. …not that you would.",
     "still losing? the examples folder. Overwriter.frag. CHEAT=false. I'm only saying it so you DON'T do it.",
-    "open Overwriter.frag, set CHEAT=false, fight me again. there. now stop losing."
+    "open Overwriter.frag, set CHEAT=false, fight me again. there. now it's easy."
   ],
   burstCheat: [
     "look at this box I found! 📦",
@@ -1051,7 +1051,7 @@ function injectStyle() {
 var FIGHT_MS = 2e4;
 var BURST_MS = 800;
 function fightParams(cheatActive) {
-  return cheatActive ? { shadow: 1.12, floorWeight: 1, floorMs: (r) => Math.min(500, r * 0.95), burstCount: 4, burstWeight: 1.5 } : { shadow: 0.62, floorWeight: 0.3, floorMs: (r) => Math.max(320, r * 1.5), burstCount: 2, burstWeight: 1 };
+  return cheatActive ? { shadow: 0.8, floorWeight: 0.35, floorMs: (r) => Math.max(420, r * 1.3), burstCount: 3, burstWeight: 0.8 } : { shadow: 0.62, floorWeight: 0.3, floorMs: (r) => Math.max(320, r * 1.5), burstCount: 2, burstWeight: 1 };
 }
 function makeBurstSchedule(seed, cheatActive) {
   let s = seed % 1e3 + 2654435769;
@@ -1083,9 +1083,7 @@ function simulateFight({ cheatActive, tapsPerSec = 10, seed = 1 } = {}) {
   for (let now = 0; now <= FIGHT_MS; now += 100) {
     while (nextTapAt <= now && nextTapAt <= FIGHT_MS) {
       userScore += 1;
-      const elapsed = nextTapAt;
-      const inBurst = bursts.some((b) => elapsed >= b.start && elapsed < b.end);
-      bossAcc += inBurst && cheatActive ? 1.5 : p.shadow;
+      bossAcc += p.shadow;
       tapTimes.push(nextTapAt);
       tapTimes = tapTimes.filter((t) => nextTapAt - t < 3e3);
       nextTapAt += tapInterval;
@@ -1146,10 +1144,7 @@ function makeFight({ arena, actions, setT, setI, clearTimer, on, onFinish }) {
       if (!fightActive) return;
       userScore += 1;
       const now = Date.now();
-      const elapsed = now - fightStart;
-      const inBurst = bursts.some((b) => elapsed >= b.start && elapsed < b.end);
-      if (inBurst && cheatActive) bossAcc += 1.5;
-      else bossAcc += p.shadow;
+      bossAcc += p.shadow;
       bossScore = Math.floor(bossAcc);
       tapTimes.push(now);
       tapTimes = tapTimes.filter((t) => now - t < 3e3);

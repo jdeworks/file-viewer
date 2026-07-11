@@ -15,8 +15,8 @@ const unlockedActions = { hasAction: (stage, action) => stage === 4 && action ==
   const state = defaultState({ seed: 'alpha' });
   const lock = getBossLockState({ actions: lockedActions, state });
   assert.equal(lock.unlocked, false);
-  assert.equal(lock.defeatPossible, false);
-  assert.match(lock.hint, /bastion|folds/i);
+  assert.equal(lock.defeatPossible, false); // no towers placed yet — not a hard gate, just genuinely 0 coverage
+  assert.match(lock.hint, /scattered|invisible/i);
 }
 
 {
@@ -53,16 +53,33 @@ const unlockedActions = { hasAction: (stage, action) => stage === 4 && action ==
 }
 
 {
+  // 2026-07-11 playtest fix: the blueprint is a buff, not a gate — a tower placed on a recursion
+  // point deals real damage even with zero blueprint progress, just at a lower rate than the buffed
+  // (coordinates-known) hit.
   const state = defaultState({ seed: 'alpha' });
   const firstPoint = state.recursion.points[0];
-  assert.equal(fightInfiniteLoop({ state, actions: lockedActions }).locked, true);
+  const blind = fightInfiniteLoop({ state, actions: lockedActions });
+  assert.equal(blind.locked, false, 'no hard lock — just genuinely 0 coverage with no towers placed');
+  assert.equal(blind.damage, 0);
   assert.equal(placeTower(state, { x: firstPoint.x, y: firstPoint.y }).ok, true);
-  const result = fightInfiniteLoop({ state, actions: unlockedActions });
-  assert.equal(result.locked, false);
-  assert.equal(result.damage, 120);
+  const blindHit = fightInfiniteLoop({ state, actions: lockedActions });
+  assert.equal(blindHit.locked, false);
+  assert.equal(blindHit.damage, 100, 'a blind (un-buffed) covered hit still lands, at the lower rate');
+  const buffedHit = fightInfiniteLoop({ state, actions: unlockedActions });
+  assert.equal(buffedHit.locked, false);
+  assert.equal(buffedHit.damage, 150, 'the blueprint buff raises the same coverage to a harder hit');
   state.recursion.points.slice(1).forEach((point) => placeTower(state, { x: point.x, y: point.y }));
   assert.equal(fightInfiniteLoop({ state, actions: unlockedActions }).defeated, true);
   assert.equal(state.boss.defeated, true);
+}
+
+{
+  // The boss is fully defeatable with ZERO blueprint progress — grinding blind coverage alone wins.
+  const state = defaultState({ seed: 'gamma' });
+  state.recursion.points.forEach((point) => placeTower(state, { x: point.x, y: point.y }));
+  let result = fightInfiniteLoop({ state, actions: lockedActions });
+  for (let i = 0; i < 5 && !result.defeated; i++) result = fightInfiniteLoop({ state, actions: lockedActions });
+  assert.equal(result.defeated, true, 'boss falls to blind (never-read-the-blueprint) coverage alone');
 }
 
 console.log('stage4 boss tests passed');

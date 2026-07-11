@@ -2,9 +2,14 @@
 // the test hook) advances step() once per logical tick; handleKey() switches lanes. Collision/scoring
 // is pure given the table + key presses, so a seed fully determines an optimally-played outcome.
 //
-// Boss gate (load-bearing): on the boss round the jammer's suppression chips integrity every tick when
-// the counter-wave is NOT calibrated, so an un-calibrated boss run mathematically runs out of integrity.
-// The actual defeat is ALSO gated by raceTheJammer/hasCounterWave in the renderer — double-locked.
+// 2026-07-11 playtest fix: calibration is now an optional BUFF, not a gate. Before this fix the jammer's
+// suppression chipped integrity EVERY tick while uncalibrated — over an ~900-1100 tick boss race that
+// exceeds even a maxed-Hull run's cap (156) by 6-7×, so it was a literal, un-survivable wall no skill or
+// upgrade could beat (and defeat was ALSO separately gated by raceTheJammer/hasCounterWave — double-
+// locked). The drain is now interval-based (SUPPRESSION_DRAIN_INTERVAL ticks/point), tuned so a maxed-
+// Hull run has just enough margin to survive a clean race uncalibrated (hard — near-flawless play
+// required), while a fresh, un-upgraded run still can't. Calibrating still fully removes the drain — a
+// real, big buff, just no longer the only door. See tests/boss.test.mjs's uncalibrated-winnability block.
 
 import { buildObstacleTable, isBlock, isGate } from './track.js';
 import { roundByIdx, isBossRound, GLYPH_DAMAGE } from './rounds.js';
@@ -19,6 +24,7 @@ import { applyForks, resolveRow } from './fork.js';
 import { autoSolve, replayResume } from './drive.js';
 
 const BUMP_COOLDOWN = 10;    // ticks before the same rival can bump again
+const SUPPRESSION_DRAIN_INTERVAL = 6; // uncalibrated boss round: -1 integrity every Nth tick, not every tick
 // Look-ahead / speeds / bump costs all come from the vehicle-shop tuning now (applyUpgrades), so a
 // kitted-out racer reads further, runs faster, and shrugs off bumps. See shop.js BASE_TUNING.
 
@@ -196,7 +202,7 @@ export function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onE
       else if (isGate(glyph)) run.gatesThisRound += 1;
       else if (isPowerup(glyph)) collectPowerup(powerupType(glyph));
     }
-    if (suppressionActive) run.integrity -= 1; // jammer suppression — only ever an un-calibrated boss
+    if (suppressionActive && tick % SUPPRESSION_DRAIN_INTERVAL === 0) run.integrity -= 1; // jammer suppression, uncalibrated boss only
     const slow = resolveBumps();
     if (run.integrity <= 0) { run.integrity = 0; finish('fail'); return outcome; }
     race.advance(Math.max(0, speedFor() - slow));
