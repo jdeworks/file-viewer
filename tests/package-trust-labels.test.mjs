@@ -96,4 +96,25 @@ const invalidDateHtml = await renderCertificate(
 assert.match(invalidDateHtml, /Invalid\/unknown validity dates/);
 assert.doesNotMatch(invalidDateHtml, /Within validity dates/);
 
+const normalizedDateDer = Buffer.from(match[1].replace(/\s/g, ''), 'base64');
+Buffer.from('350231110438Z').copy(normalizedDateDer, notAfterOffset);
+const normalizedDateBase64 = normalizedDateDer.toString('base64').match(/.{1,64}/g).join('\n');
+const normalizedDateHtml = await renderCertificate(
+  `-----BEGIN CERTIFICATE-----\n${normalizedDateBase64}\n-----END CERTIFICATE-----\n`,
+);
+assert.match(normalizedDateHtml, /Invalid\/unknown validity dates/);
+assert.doesNotMatch(normalizedDateHtml, /Within validity dates|2035-03-03/);
+
+const reversedWindowDer = Buffer.from(match[1].replace(/\s/g, ''), 'base64');
+const originalNotBefore = Buffer.from('150604110438Z');
+const notBeforeOffset = reversedWindowDer.indexOf(originalNotBefore);
+assert.notEqual(notBeforeOffset, -1, 'sample certificate contains the expected notBefore field');
+Buffer.from('490101000000Z').copy(reversedWindowDer, notBeforeOffset);
+const reversedWindowBase64 = reversedWindowDer.toString('base64').match(/.{1,64}/g).join('\n');
+const reversedWindowHtml = await renderCertificate(
+  `-----BEGIN CERTIFICATE-----\n${reversedWindowBase64}\n-----END CERTIFICATE-----\n`,
+);
+assert.match(reversedWindowHtml, /Invalid\/unknown validity dates/);
+assert.doesNotMatch(reversedWindowHtml, /Within validity dates|Not yet within validity dates/);
+
 console.log('package and certificate trust-label tests passed');

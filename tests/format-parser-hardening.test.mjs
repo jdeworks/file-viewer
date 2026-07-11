@@ -7,10 +7,39 @@ import { extract as torrentMetadata } from '../docs/types/binary/torrent/metadat
 import { render as renderTorrent } from '../docs/types/binary/torrent/renderer.js';
 import { parseNetcdfHeader } from '../docs/types/binary/netcdf/parser.js';
 import { render as renderNetcdf } from '../docs/types/binary/netcdf/renderer.js';
+import { parseCertificate } from '../docs/types/text/pem/asn1.js';
+import { render as renderPem } from '../docs/types/text/pem/renderer.js';
 
 const root = new URL('../', import.meta.url);
 const examples = new URL('../docs/examples/', import.meta.url);
 const textBytes = (value) => new TextEncoder().encode(value);
+
+const pemChild = spawnSync(process.execPath, ['--input-type=module', '--eval', `
+  import { parseCertificate } from './docs/types/text/pem/asn1.js';
+  import { render } from './docs/types/text/pem/renderer.js';
+  const der = Uint8Array.from([0x30, 0x08, 0x30, 0x84, 0x80, 0, 0, 0, 0, 0]);
+  try { parseCertificate(der); process.exit(2); } catch (_) {}
+  const encoded = btoa(String.fromCharCode(...der));
+  const text = '-----BEGIN CERTIFICATE-----\\n' + encoded + '\\n-----END CERTIFICATE-----\\n';
+  const html = (await render({ text, bytes: new TextEncoder().encode(text), isBinary: false })).bodyHtml;
+  if (!/Could not parse certificate structure/.test(html)) process.exit(3);
+`], { cwd: root, encoding: 'utf8', timeout: 1000 });
+assert.ifError(pemChild.error);
+assert.equal(pemChild.status, 0, pemChild.stderr || pemChild.stdout);
+
+for (const malformed of [
+  [0x30, 0x80, 0, 0],
+  [0x30, 0x85, 1, 0, 0, 0, 0],
+  [0x30, 0x82, 1],
+  [0x30, 0x81, 0x7f],
+  [0x30, 0x02, 0x02, 0x02, 0x01, 0x01],
+]) assert.throws(() => parseCertificate(Uint8Array.from(malformed)));
+
+const malformedDer = Uint8Array.from([0x30, 0x08, 0x30, 0x84, 0x80, 0, 0, 0, 0, 0]);
+assert.throws(() => parseCertificate(malformedDer));
+const malformedPem = `-----BEGIN CERTIFICATE-----\n${Buffer.from(malformedDer).toString('base64')}\n-----END CERTIFICATE-----\n`;
+assert.match((await renderPem({ text: malformedPem, bytes: textBytes(malformedPem), isBinary: false })).bodyHtml,
+  /Could not parse certificate structure/);
 
 // Run the exact historical infinite-loop repros out of process so a regression terminates with a
 // focused one-second failure instead of hanging the complete check indefinitely.

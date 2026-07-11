@@ -94,12 +94,13 @@ function renderCertInfo(cert, type, block, badgeClass, badgeLabel, isCSR) {
   const now = Date.now();
   const notBeforeMs = cert.notBefore?.getTime();
   const notAfterMs = cert.notAfter?.getTime();
-  const hasFiniteValidity = Number.isFinite(notBeforeMs) && Number.isFinite(notAfterMs);
-  const expiringSoonMs = hasFiniteValidity ? notAfterMs - 30 * 24 * 60 * 60 * 1000 : null;
+  const hasValidWindow = Number.isFinite(notBeforeMs) && Number.isFinite(notAfterMs)
+    && notBeforeMs <= notAfterMs;
+  const expiringSoonMs = hasValidWindow ? notAfterMs - 30 * 24 * 60 * 60 * 1000 : null;
 
   let validityBadge = '';
   if (!isCSR) {
-    if (!hasFiniteValidity) {
+    if (!hasValidWindow) {
       validityBadge = '<span class="badge badge-other">Invalid/unknown validity dates</span>';
     } else if (now < notBeforeMs) {
       validityBadge = '<span class="badge badge-expiring">Not yet within validity dates</span>';
