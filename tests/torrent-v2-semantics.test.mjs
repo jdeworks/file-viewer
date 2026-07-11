@@ -114,13 +114,18 @@ const malformed = torrentFixture({
 const malformedHtml = (await renderTorrent({ bytes: malformed.bytes, name: 'malformed.torrent' })).bodyHtml;
 assert.match(malformedHtml, /file tree is malformed/i);
 assert.match(malformedHtml, /<dt>Files<\/dt><dd>0<\/dd>/);
+assert.doesNotMatch(malformedHtml, /magnet:\?/);
 const malformedMetadata = extractTorrentMetadata({ bytes: malformed.bytes });
 assert.equal(malformedMetadata.totalSize, 0);
 assert.equal(malformedMetadata.fileCount, 0);
 const malformedTree = inspectV2FileTree(decodeBencode(malformed.bytes).value.info['file tree']);
 assert.equal(malformedTree.malformed, true);
 
-const fileNode = (length) => ({ '': { length } });
+const invalidPieceLength = torrentFixture({ ...v2Info, 'piece length': 12000 });
+const invalidPieceHtml = (await renderTorrent({ bytes: invalidPieceLength.bytes, name: 'invalid-piece.torrent' })).bodyHtml;
+assert.doesNotMatch(invalidPieceHtml, /magnet:\?/);
+
+const fileNode = (length) => ({ '': { length, ...(length > 0 ? { 'pieces root': Buffer.alloc(32, 0x55) } : {}) } });
 const wideTree = {
   f1: fileNode(1),
   f2: fileNode(2),

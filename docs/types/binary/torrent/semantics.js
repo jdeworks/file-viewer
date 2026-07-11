@@ -79,7 +79,9 @@ export function inspectV2FileTree(tree, options = {}) {
     if (hasFileMarker) {
       const properties = current.node[''];
       const length = isBencodeDictionary(properties) ? properties.length : null;
-      if (current.root || keys.length !== 1 || !safeLength(length)) {
+      const piecesRootLength = isBencodeDictionary(properties) ? byteStringLength(properties['pieces root']) : null;
+      const validPiecesRoot = length === 0 || piecesRootLength === 32;
+      if (current.root || keys.length !== 1 || !safeLength(length) || !validPiecesRoot) {
         state.malformed = true;
       }
       // A file marker makes this node a leaf. Ignore malformed siblings instead of recursively
@@ -185,10 +187,15 @@ export function inspectTorrentInfo(info) {
   const v2 = isV2
     ? inspectV2FileTree(info['file tree'])
     : null;
+  const pieceLength = isBencodeDictionary(info) ? info['piece length'] : null;
+  const validV2PieceLength = Number.isSafeInteger(pieceLength) && pieceLength >= 16384
+    && pieceLength <= 16777216 && (pieceLength & (pieceLength - 1)) === 0;
+  const validV2 = isV2 && v2.totalSizeComplete && validV2PieceLength;
   return {
     metaVersion,
     hasV1: v1.valid,
-    hasV2: isV2,
+    hasV2: validV2,
+    declaresV2: isV2,
     v1,
     v2,
     inventory: isV2 ? v2 : v1,

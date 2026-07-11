@@ -1,6 +1,6 @@
 # Torrent
 
-> BitTorrent metainfo viewer — info hash, name, tracker URLs, file list, total size, and piece size.
+> BitTorrent v1/v2 metainfo viewer — exact info hashes, tracker URLs, bounded file inventory, total size, and piece size.
 
 ## Format Details
 
@@ -16,17 +16,17 @@
 ### View
 | Capability | Status | Notes |
 |------------|--------|-------|
-| Info hash (SHA-1) | ✅ | Hex representation of torrent hash |
+| Info hashes | ✅ | SHA-1 `btih` for valid v1 layouts; SHA-256 `btmh` multihash for valid v2 metadata |
 | Name | ✅ | From `info.name` |
 | Tracker URLs | ✅ | `announce` + `announce-list` tiers |
-| Total size | ✅ | Sum of all file lengths |
+| Total size | ✅ | v1 file layout or bounded BEP 52 file-tree traversal |
 | Piece size | ✅ | `info['piece length']` in KB/MB |
-| File count | ✅ | Number of files in multi-file torrent |
-| File list | ✅ | Path and size per file (first 200) |
+| File count | ✅ | Number of files in v1 layouts or v2 file trees |
+| File list | ✅ | Path and size per file (first 200; traversal is depth/node bounded) |
 | Creation date | ✅ | Unix epoch from `creation date` |
 | Created by | ✅ | `created by` client string |
 | Comment | ✅ | `comment` field |
-| Magnet link | ✅ | Composed from info hash + name + tracker list |
+| Magnet link | ✅ | v1 `btih`, v2 `btmh`, or both exact topics for a valid hybrid, plus name and trackers |
 | Raw view | ✅ | Binary/raw pane available for the bencoded source bytes |
 | Diff | ❌ | Binary bencoded format |
 | Metadata | ✅ | Name, size, file count, piece size, tracker count, created by/date |
@@ -45,6 +45,7 @@
 
 - Private torrent flag is not surfaced yet
 - Piece hashes are not verified
+- Malformed or traversal-truncated v2 file trees are reported without emitting a usable-looking v2 magnet
 
 ## Gap Analysis
 

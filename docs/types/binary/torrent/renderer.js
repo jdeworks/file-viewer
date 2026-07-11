@@ -73,8 +73,8 @@ export async function render(intake, _ctx) {
   html += `<div class="sec"><div class="sec-title">Info</div><dl>`;
   html += `<dt>Size</dt><dd>${inventory.totalSizeComplete === false ? 'At least ' : ''}${esc(fmtBytes(inventory.totalSize))}</dd>`;
   html += `<dt>Files</dt><dd>${inventory.truncated ? 'At least ' : ''}${inventory.fileCount}</dd>`;
-  if (semantics.hasV2 && semantics.hasV1) html += '<dt>Version</dt><dd>BitTorrent v1 + v2 hybrid</dd>';
-  else if (semantics.hasV2) html += '<dt>Version</dt><dd>BitTorrent v2</dd>';
+  if (semantics.declaresV2 && semantics.hasV1) html += '<dt>Version</dt><dd>BitTorrent v1 + v2 hybrid</dd>';
+  else if (semantics.declaresV2) html += '<dt>Version</dt><dd>BitTorrent v2</dd>';
   if (typeof info['piece length'] === 'number') html += `<dt>Piece size</dt><dd>${esc(fmtBytes(info['piece length']))}</dd>`;
   if (typeof torrent.comment === 'string') html += `<dt>Comment</dt><dd>${esc(torrent.comment)}</dd>`;
   if (typeof torrent['created by'] === 'string') html += `<dt>Created by</dt><dd>${esc(torrent['created by'])}</dd>`;
@@ -114,13 +114,13 @@ export async function render(intake, _ctx) {
     html += `</ul></div>`;
   }
 
-  if (semantics.hasV2 && inventory.truncated) {
+  if (semantics.declaresV2 && inventory.truncated) {
     html += '<div class="more">File tree traversal limit reached; counts and size are partial.</div>';
   }
-  if (semantics.hasV2 && inventory.overflow) {
+  if (semantics.declaresV2 && inventory.overflow) {
     html += '<div class="more">File sizes exceed the supported total-size range.</div>';
   }
-  if (semantics.hasV2 && inventory.malformed) {
+  if (semantics.declaresV2 && inventory.malformed) {
     html += '<div class="more">The BitTorrent v2 file tree is malformed; totals may be incomplete.</div>';
   }
 
