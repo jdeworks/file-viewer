@@ -1,7 +1,7 @@
 // game.test.mjs — Stage 8: the movement/level table + the mode-dispatching CROSS evaluation.
 import assert from "node:assert/strict";
 import {
-  levelConfig, crossAttempt, crossOutcome, solveMoment, rotSpeedFor, renderLevel,
+  levelConfig, crossAttempt, crossOutcome, solveMoment, rotSpeedFor,
   missDelta, movementForLevel, modeHint, gapAngleAt, LEVELS, BOSS_LEVEL
 } from "../game.js";
 
@@ -44,7 +44,40 @@ for (let level = 1; level <= BOSS_LEVEL; level += 1) {
   const a = crossAttempt({ seed, elapsedMs: 1234, level });
   const b = crossAttempt({ seed, elapsedMs: 1234, level });
   assert.deepEqual(a, b, `level ${level}: crossAttempt deterministic`);
-  assert.ok(renderLevel(seed, level, moments[0]).length > 8, `level ${level}: renders`);
+}
+
+// ── ship steering (2026-07-11): shipAngle defaults to 0 (byte-identical to every assertion above,
+// none of which pass it), but a non-zero shipAngle genuinely shifts the hit window — proving `ref`
+// is really threaded through crossAttempt, not just accepted and ignored. ────────────────────────────
+{
+  // simple (level 1): the OLD solveMoment (ref=0) misses once the ship steers away, and there exists
+  // a later moment (the gap reaching the NEW ship position) that hits instead.
+  const level = 1; const seed = 21;
+  const zeroRefMoment = solveMoment(seed, level);
+  assert.equal(crossAttempt({ seed, elapsedMs: zeroRefMoment, level, shipAngle: 0 }).hit, true, "ref=0 still hits at the old solve moment");
+  assert.equal(crossAttempt({ seed, elapsedMs: zeroRefMoment, level, shipAngle: 90 }).hit, false, "steering away from the old solve moment now misses it");
+  const speed = rotSpeedFor(seed, level);
+  const shiftedMoment = zeroRefMoment + (90 / speed) * 1000; // the gap needs 90deg/speed more time to reach the new ship angle
+  assert.equal(crossAttempt({ seed, elapsedMs: shiftedMoment, level, shipAngle: 90 }).hit, true, "the SAME steered angle hits once the gap actually arrives there");
+}
+// darkzone (level 15) / the boss (level 16, mode "simple" + darkZone set): the review-fixed design —
+// the blackout is a RENDER-only concern (evaluate() doesn't reference cfg.darkZone at all), so a hit
+// test at the darkzone's own solveMoment must still pass with a non-zero ref too (evaluate()'s hit
+// logic is identical to `simple`'s — only the visual occlusion, exercised by effectiveDarkZone, is
+// ref-relative; see canvas-modes.js / modes.js for the actual rendering-side proof).
+{
+  const level = 15; const seed = 8;
+  const t = solveMoment(seed, level); // still ref=0 internally (matches the default ship position)
+  assert.equal(crossAttempt({ seed, elapsedMs: t, level, shipAngle: 0 }).hit, true, "darkzone: default (unsteered) ship still hits its solved moment");
+}
+{
+  // dual (level 9): steering the ship shifts BOTH rings' required alignment point together — pressing
+  // at the OLD (ref=0) solve moment with the ship steered away now misses (neither ring "sees" ref=0
+  // as aligned near it), proving `ref` isn't silently ignored for the two-ring AND-window either.
+  const level = 9; const seed = 11;
+  const zeroRefMoment = solveMoment(seed, level);
+  assert.equal(crossAttempt({ seed, elapsedMs: zeroRefMoment, level, shipAngle: 0 }).hit, true, "dual: ref=0 still hits at the old solve moment");
+  assert.equal(crossAttempt({ seed, elapsedMs: zeroRefMoment, level, shipAngle: 90 }).hit, false, "dual: steering away from the old solve moment now misses it");
 }
 
 // ── a full rotation on a single-ring level has both hit and miss windows ─────────────────────────────
@@ -91,7 +124,9 @@ for (let level = 1; level <= BOSS_LEVEL; level += 1) {
 }
 
 // ── modeHint: each archetype announces its actual verb (onboarding for the unmarked spikes) ───────────
-assert.match(modeHint(levelConfig(1)), /CROSS when it faces the top/, "simple hint");
+// 2026-07-11 ship steering: hints reworded away from "the top (12 o'clock)" — the crossing point is
+// now wherever the player has steered their ship, not a fixed position.
+assert.match(modeHint(levelConfig(1)), /steer your ship/, "simple hint");
 assert.match(modeHint(levelConfig(7)), /3 crosses in a row/, "rhythm hint names the chain length");
 assert.match(modeHint(levelConfig(8)), /4 crosses in a row/, "rhythm chain length is per-level");
 assert.match(modeHint(levelConfig(9)), /BOTH gaps/, "dual hint");

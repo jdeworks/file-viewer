@@ -1,21 +1,27 @@
 # Stage 8 — Observer State
 
-**Genre:** timing / observation puzzle. **Theme:** you've started noticing that you're
-noticing. A rotating gap must be crossed at exactly the right instant.
+**Genre:** timing / observation puzzle, now with real positioning. **Theme:** you've started
+noticing that you're noticing. A rotating gap must be met, at exactly the right place and
+instant, by a ship you steer around the ring.
 
 ## How to play
 
-- An ASCII **ring rotates** with a gap in it. **OBSERVE** to reset the rotation, then
-  **CROSS** at the moment the gap lines up with the top.
+- A **ring rotates** with a gap in it. Steer your **ship** around the ring with the arrow
+  keys to meet the gap wherever it currently is, then **CROSS** the instant it lines up
+  with your ship — **OBSERVE** resets the rotation if you want to restudy it.
 - Sixteen levels span ten **movements**, each teaching a new verb: watch & time, read a
   changing speed, read your own error, hold a beat, hold two rhythms, wait for the blind
-  window, track flips, pick the real gap among decoys, and extrapolate an occluded gap.
+  window, track flips, pick the real gap among decoys, and extrapolate an occluded gap
+  (a blackout that always hides the approach to wherever you're currently aimed, so
+  steering elsewhere for a clearer view never fully escapes it).
 - Earn currency to buy **aids** that ease a level.
 
 ## Controls
 
+- **← / →** — steer your ship around the ring (2026-07-11: the crossing point is wherever
+  you've steered, not a fixed position).
 - **OBSERVE** button — reset the rotation to study it.
-- **CROSS** button — commit your timed press.
+- **CROSS** button — commit your timed, positioned press.
 - **Aid** buttons — spend to assist the current level.
 
 ## The boss — The Observer Effect (Level 16)

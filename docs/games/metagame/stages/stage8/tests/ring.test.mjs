@@ -1,7 +1,14 @@
-// ring.test.mjs — Stage 8: seed→angle determinism + ASCII ring rendering.
+// ring.test.mjs — Stage 8: seed→angle determinism (ring.js) + the pure geometry math the canvas
+// renderer depends on (canvas-modes.js's polarPoint/angularSpan). 2026-07-11: the ASCII grid renderer
+// this file used to test (renderRing/renderRingHidden/ringChar) was deleted in the canvas rewrite —
+// see canvas-ring.js/canvas-modes.js for the replacement, and modes.test.mjs for evaluate()-level
+// coverage of the darkzone re-centering fix. CanvasRenderingContext2D calls themselves aren't
+// testable outside a browser, so this file only covers the PURE math canvas-modes.js keeps separable
+// from the actual ctx.arc()/ctx.fill() calls.
 import assert from "node:assert/strict";
 import { makeRng } from "../rng.js";
-import { ringAngle, renderRing, renderRingHidden, ringChar } from "../ring.js";
+import { ringAngle } from "../ring.js";
+import { polarPoint, angularSpan } from "../canvas-modes.js";
 
 // ── rng determinism ────────────────────────────────────────────────────────────────────────────
 assert.equal(makeRng(0).float(), makeRng(0).float(), "same seed ⇒ same first float");
@@ -17,46 +24,43 @@ assert.equal(makeRng(0).float(), makeRng(0).float(), "same seed ⇒ same first f
   assert.notEqual(ringAngle(1, 0, 30), ringAngle(2, 0, 30), "different seed ⇒ different base angle");
 }
 
-// ── renderRing: the gap sits at the given angle; rendering is deterministic ────────────────────────
-// Raster densified to 33×17 (UX audit #3): centre column is (33-1)/2 = 16, top row is 0.
+// ── polarPoint: 0deg = 12 o'clock (straight up from center), matching every mode's angle math ─────
 {
-  const TOP = [0, 16]; // top row, centre column of the 33×17 ring grid
-  const lines = renderRing(0, {}).split("\n");
-  assert.equal(lines.length, 17, "densified raster is 17 rows tall");
-  assert.ok(lines.every((l) => l.length === 33), "densified raster is 33 columns wide");
-  const gapAtTop = renderRing(0, {}).split("\n");
-  const gapAtBottom = renderRing(180, {}).split("\n");
-  assert.equal(gapAtTop[TOP[0]][TOP[1]], " ", "gap at 0deg leaves the 12-o'clock cell empty");
-  assert.notEqual(gapAtBottom[TOP[0]][TOP[1]], " ", "gap at 180deg fills the 12-o'clock cell with ring");
-  assert.equal(renderRing(0, {}), renderRing(0, {}), "renderRing is deterministic");
-  assert.ok(renderRing(0, {}).replace(/[\s]/g, "").length > 8, "the ring draws solid chars");
-  // Block glyphs (#3): the ring is drawn with solid █ / ▓ and no ragged `─│+` segments remain.
-  assert.ok(/[█▓]/.test(renderRing(180, {})), "ring draws with block glyphs");
-  assert.ok(!/[─│+]/.test(renderRing(180, {})), "no legacy line glyphs remain");
+  const geom = { cx: 100, cy: 100, r: 50 };
+  const top = polarPoint(geom, 0);
+  assert.ok(Math.abs(top.x - 100) < 1e-6, "0deg sits on the vertical centerline");
+  assert.ok(top.y < geom.cy, "0deg is ABOVE center (12 o'clock, canvas y grows downward)");
+  assert.ok(Math.abs(top.y - (geom.cy - geom.r)) < 1e-6, "0deg is exactly `r` above center");
+
+  const bottom = polarPoint(geom, 180);
+  assert.ok(Math.abs(bottom.y - (geom.cy + geom.r)) < 1e-6, "180deg is exactly `r` below center");
+
+  const right = polarPoint(geom, 90);
+  assert.ok(Math.abs(right.x - (geom.cx + geom.r)) < 1e-6, "90deg is directly right of center (clockwise from top)");
+
+  // an explicit radius overrides geom.r (used for the ship marker sitting slightly inside the ring, etc.)
+  const inner = polarPoint(geom, 0, 20);
+  assert.ok(Math.abs(inner.y - (geom.cy - 20)) < 1e-6, "an explicit radius argument overrides geom.r");
 }
 
-// ── dark zone + hidden + ghosts ───────────────────────────────────────────────────────────────────
+// ── angularSpan: darkZone {start,end} → {center,width}, including the wrap-through-0 case ─────────
 {
-  assert.ok(renderRing(0, { darkZone: { start: 80, end: 100 } }).includes("█"), "dark zone renders as █");
-  assert.ok(renderRingHidden({}).includes("?"), "hidden ring shows '?'");
-  assert.ok(renderRing(0, { ghosts: [{ angle: 180, result: "miss" }] }).includes("·"), "ghost miss renders as ·");
-  assert.ok(renderRing(0, { ghosts: [{ angle: 180, result: "hit" }] }).includes("⊕"), "ghost hit renders as ⊕");
-}
+  // A zone that does NOT wrap through 0 (e.g. 80..100): center 90, width 20.
+  const plain = angularSpan({ start: 80, end: 100 });
+  assert.equal(plain.center, 90, "non-wrapping zone: center is the midpoint");
+  assert.equal(plain.width, 20, "non-wrapping zone: width is end-start");
 
-// ── ringChar block-glyph mapping (UX audit #3): the shared helper (imported by rings.js so the two
-// renderers can't drift) returns solid █ on the cardinal arcs and a lighter ▓ on the diagonals, and the
-// leading mod360 keeps it safe for out-of-range inputs. ────────────────────────────────────────────────
-{
-  const angDist = (a, b) => Math.abs(((a - b) % 360 + 540) % 360 - 180);
-  const inArc = (a, c, w) => angDist(a, c) <= w / 2;
-  const ref = (a) => {
-    const d = ((a % 360) + 360) % 360;
-    return (inArc(d, 0, 60) || inArc(d, 180, 60) || inArc(d, 90, 60) || inArc(d, 270, 60)) ? "█" : "▓";
-  };
-  for (let a = 0; a < 360; a += 1) assert.equal(ringChar(a), ref(a), `block-glyph mapping at ${a}`);
-  for (const a of [-30, -1, 360, 540, 720.5]) assert.equal(ringChar(a), ref(a), `block-glyph mapping at ${a}`);
-  assert.equal(ringChar(0), "█", "top is a solid block");
-  assert.equal(ringChar(45), "▓", "the diagonal is the lighter block");
+  // A zone that wraps through 0 (e.g. 320..40, as used by Stage 8's own darkzone levels): the true
+  // center is 0 (the top), and the width is the SHORT way around (80deg), not naively end-start.
+  const wrapped = angularSpan({ start: 320, end: 40 });
+  assert.equal(wrapped.center, 0, "wrapping zone (320..40): center is 0 (the top), not a naive midpoint");
+  assert.equal(wrapped.width, 80, "wrapping zone (320..40): width is the short way around (80deg)");
+
+  // The boss's own zone (300..60): center 0, width 120 — matches modes.js's effectiveDarkZone() math
+  // (half-span 60 on each side), proving the two independent computations agree.
+  const boss = angularSpan({ start: 300, end: 60 });
+  assert.equal(boss.center, 0, "boss zone (300..60): center is 0");
+  assert.equal(boss.width, 120, "boss zone (300..60): width is 120 (±60 half-span)");
 }
 
 console.log("stage8 ring tests passed");

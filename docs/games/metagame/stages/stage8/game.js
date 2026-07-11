@@ -23,11 +23,14 @@ export function crossOutcome(result) {
 
 // Evaluate a CROSS press for (seed, level, elapsedMs). Dispatches to the level's mode. toleranceMult
 // (>1) widens the win window for one press — used by the optional Stabilizer Lens aid; it never changes
-// the gap MOTION (still pure f(seed,elapsedMs)) and is irrelevant to the offline un-cheat.
-export function crossAttempt({ seed, elapsedMs, level, toleranceMult = 1 }) {
+// the gap MOTION (still pure f(seed,elapsedMs)) and is irrelevant to the offline un-cheat. `shipAngle`
+// (default 0, matching the pre-steering "fixed top" reference) is the player-steered crossing point —
+// see modes.js's 2026-07-11 header comment for why defaulting to 0 keeps every non-steering caller
+// (tests, solveMoment-driven smoke) byte-identical to before.
+export function crossAttempt({ seed, elapsedMs, level, toleranceMult = 1, shipAngle = 0 }) {
   let cfg = levelConfig(level);
   if (toleranceMult !== 1) cfg = { ...cfg, tolerance: cfg.tolerance * toleranceMult };
-  return { ...getMode(cfg.mode).evaluate(cfg, seed, Number(elapsedMs) || 0), level: cfg.level };
+  return { ...getMode(cfg.mode).evaluate(cfg, seed, Number(elapsedMs) || 0, Number(shipAngle) || 0), level: cfg.level };
 }
 
 // The earliest elapsed (ms) at which (seed, level) is a perfect CROSS — learnable by watching when the
@@ -42,30 +45,28 @@ export const solveElapsed = solveMoment;
 
 // Verdict readout (UX audit #6): how EARLY or LATE a CROSS press was, in ms — a pure function of the
 // already-computed gap angle and the level's effective rotation speed (no engine state touched). The
-// gap's signed offset from the top maps to [-180,180]: a gap that has already swept PAST the top reads
-// as a LATE press, one still approaching reads EARLY. deltaMs = |offset| / speed. Presentation only —
-// it never feeds back into crossAttempt; it just tells the player which way to nudge next time.
-export function missDelta({ seed, elapsedMs, level }) {
-  const r = crossAttempt({ seed, elapsedMs, level });
+// gap's signed offset from `shipAngle` (default 0, "the top") maps to [-180,180]: a gap that has
+// already swept PAST the ship's position reads as a LATE press, one still approaching reads EARLY.
+// deltaMs = |offset| / speed. Presentation only — it never feeds back into crossAttempt; it just tells
+// the player which way to nudge next time. `shipAngle` MUST be threaded through here too (2026-07-11
+// ship-steering fix) — without it this readout would silently report distance-from-the-old-fixed-top
+// instead of distance-from-wherever-the-player-actually-is, the instant a player ever steers.
+export function missDelta({ seed, elapsedMs, level, shipAngle = 0 }) {
+  const ref = Number(shipAngle) || 0;
+  const r = crossAttempt({ seed, elapsedMs, level, shipAngle: ref });
   const speed = Math.abs(rotSpeedFor(seed, level)) || 30; // deg/s effective
-  const a = Number.isFinite(r.angle) ? r.angle : r.distance; // gap angle from top (0 = perfect)
-  const signed = ((a % 360) + 540) % 360 - 180; // (-180,180]: >0 gap swept past top, <0 still approaching
+  const a = Number.isFinite(r.angle) ? r.angle : r.distance; // gap angle (0 = perfect at ref)
+  const signed = (((a - ref) % 360) + 540) % 360 - 180; // (-180,180]: >0 gap swept past ref, <0 still approaching
   return { deltaMs: Math.round(Math.abs(signed) / speed * 1000), dir: signed >= 0 ? "late" : "early", offsetDeg: signed };
 }
 
-// Render the arena for (seed, level, elapsedMs) — dispatches to the mode's renderer. ctx carries optional
-// per-frame extras (e.g. ghostecho's attempt ghosts) that don't affect motion (pure presentation).
-export function renderLevel(seed, level, elapsedMs, ctx = {}) {
-  const cfg = levelConfig(level);
-  return getMode(cfg.mode).render(cfg, seed, Number(elapsedMs) || 0, ctx);
-}
-
-// The single gap angle for (seed, level, elapsedMs), for a smoothly-animated presentation layer (the
-// CSS ring wheel) that needs ONE rotation angle per frame. Most modes expose angleAt(cfg,seed,ms); the
-// two-ring "stealth" mode exposes gapAngle(cfg,seed,ms) instead (its OTHER ring, "eye", has no single
-// combined angle worth animating this way). "dual" (two rings that must BOTH align) and "multigap"
-// (several gaps on one ring) have no single representative angle at all — returns null for those, so
-// the caller can fall back to ASCII-only for those levels rather than animating something misleading.
+// The single gap angle for (seed, level, elapsedMs) — a convenience for callers that only need ONE
+// representative rotation angle per frame. Most modes expose angleAt(cfg,seed,ms); the two-ring
+// "stealth" mode exposes gapAngle(cfg,seed,ms) instead (its OTHER ring, "eye", has no single combined
+// angle worth reporting this way). "dual" (two rings that must BOTH align) and "multigap" (several
+// gaps on one ring) have no single representative angle at all — returns null for those. The canvas
+// renderer (canvas-ring.js/canvas-modes.js) does NOT use this — it calls each mode's full geometry
+// accessor(s) directly, since a real draw needs every gap's angle, not just one representative value.
 export function gapAngleAt(seed, level, elapsedMs) {
   const cfg = levelConfig(level);
   const mode = getMode(cfg.mode);

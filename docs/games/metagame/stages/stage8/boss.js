@@ -86,19 +86,21 @@ export function getBossLockState({ actions, state }) {
 }
 
 // Attempt the boss CROSS at a given elapsed (ms), against `seed` (the seed CURRENTLY on screen — the
-// renderer's activeSeed(), so the evaluation always matches what the player was actually watching).
+// renderer's activeSeed(), so the evaluation always matches what the player was actually watching) and
+// `shipAngle` (the renderer's live steered ship position — 2026-07-11 ship steering, see modes.js).
 //
 // 2026-07-11 playtest fix: offline mode is an optional buff now, not a gate. Online, the seed still
 // reseeds after every attempt (so a pattern memorized in advance never survives to the next try), but
 // the press IS genuinely evaluated against the live seed the player was watching — a real-time read of
 // the rendered rotation (not memorization) can still land the gap. Offline fixes the seed so the SAME
 // pattern can be learned/memorized ahead of time, turning a live read into a reliable, planned cross —
-// a real, big buff, just no longer the only door.
-export function recordObserverBossAttempt({ state, actions, elapsedMs = 0, seed }) {
+// a real, big buff, just no longer the only door. Steering applies at the boss exactly like every
+// other level (per the "all levels uniformly" design decision).
+export function recordObserverBossAttempt({ state, actions, elapsedMs = 0, seed, shipAngle = 0 }) {
   state.boss.reached = true;
   const lock = getBossLockState({ actions, state });
   const activeSeed = lock.unlocked ? FIXED_OFFLINE_SEED : (Number.isFinite(seed) ? seed : getBossSeed({ state, actions }));
-  const result = crossAttempt({ seed: activeSeed, elapsedMs: Number(elapsedMs) || 0, level: BOSS_LEVEL });
+  const result = crossAttempt({ seed: activeSeed, elapsedMs: Number(elapsedMs) || 0, level: BOSS_LEVEL, shipAngle });
   state.boss.attempts = Number(state.boss.attempts || 0) + 1;
 
   if (!result.hit) {

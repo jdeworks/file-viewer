@@ -24,14 +24,12 @@ export function stage8Markup(AIDS, BOSS_LEVEL) {
     </header>
     <div class="s8-layout">
       <div class="s8-arena-wrap">
-        <div class="s8-marker" data-field="marker" aria-hidden="true">&#9660;</div>
-        <!-- Smoothly-ANIMATED ring (playtest: "the crossing needs at least some animation" — the
-             ASCII grid below is technically a continuous f(seed,elapsedMs), but character-cell
-             quantization reads as static/choppy). Pure CSS: a conic-gradient wheel rotated via
-             --s8-gap-angle every frame, driven by the SAME crossAttempt() angle the ASCII uses —
-             no simulation change, presentation only. See paintOverlays() in renderer.js. -->
-        <div class="s8-ring-wheel" data-field="ringWheel" aria-hidden="true"></div>
-        <pre class="s8-arena" data-field="arena" tabindex="0" role="button" aria-label="observer ring — tap or press Space to CROSS"></pre>
+        <!-- 2026-07-11: a single <canvas> replaces the old ASCII <pre> (rebuilt from scratch every
+             rAF frame) + CSS conic-gradient wheel (the actual visual) dual-rendering pipeline — one
+             draw call per frame, and a natural surface for the new steerable ship + path trail. See
+             canvas-ring.js / canvas-modes.js. Keyboard CROSS still works via Space/Enter (renderer.js
+             listens on document); tabindex/role/aria-label preserve the tap-to-CROSS affordance. -->
+        <canvas class="s8-canvas" data-field="arena" tabindex="0" role="button" aria-label="observer ring — steer with the arrow keys, tap or press Space to CROSS"></canvas>
         <span class="s8-beat" data-field="beat" hidden aria-hidden="true"></span>
         <span class="s8-streak" data-field="streak" hidden></span>
         <div class="s8-readout" data-field="readout" aria-live="polite"></div>

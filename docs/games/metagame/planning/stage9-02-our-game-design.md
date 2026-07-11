@@ -1,5 +1,14 @@
 # Stage 9 — 02: Observer State — Our Game Design
 
+> **Note (2026-07-11, additive):** on top of the boss-lock SUPERSEDED banner below, the shipped
+> game also gained player-controlled STEERING that day — arrow keys move a ship around the ring;
+> CROSS succeeds when the gap aligns with the ship's current position (not a fixed "top"), for
+> every level including the boss. A single `<canvas>` replaced the old ASCII+CSS-wheel rendering
+> (see `docs/games/metagame/stages/stage8/canvas-ring.js`/`canvas-modes.js`). This doc's original
+> "hover freezes it" concept below was already superseded by the actual shipped rotating-ring
+> timing design well before this change; treat `docs/games/metagame/stages/stage8/*.js` as the
+> only authoritative source for current mechanics.
+
 Maps the genre research (`stage9-01`) onto **Stage 9 of the Defragmenter metagame**.
 Stage 9 is a top-down stealth / reaction puzzle game centered on the Observer Effect: hovering
 the cursor over an observer freezes it — but simultaneously freezes the entity (the player).

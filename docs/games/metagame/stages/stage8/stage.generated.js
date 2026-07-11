@@ -72,151 +72,35 @@ function makeRng(seed) {
 }
 
 // ../../docs/games/metagame/stages/stage8/ring.js
-var RING_W = 33;
-var RING_H = 17;
-var DEFAULT_GAP_DEG = 20;
 function ringAngle(seed, elapsedMs, rotSpeedDegPerSec = 30) {
   const base = makeRng(seed).float() * 360;
   return mod360(base + rotSpeedDegPerSec * (Number(elapsedMs) || 0) / 1e3);
 }
-function renderRing(gapAngleDeg, opts = {}) {
-  const { gapWidth = DEFAULT_GAP_DEG, darkZone = null, ghosts = [], hidden = false } = opts;
-  const grid = Array.from({ length: RING_H }, () => Array(RING_W).fill(" "));
-  const cx = (RING_W - 1) / 2;
-  const cy = (RING_H - 1) / 2;
-  for (let a = 0; a < 360; a += 3) {
-    const rad = (a - 90) * Math.PI / 180;
-    const x = Math.round(cx + cx * Math.cos(rad));
-    const y = Math.round(cy + cy * Math.sin(rad));
-    if (y < 0 || y >= RING_H || x < 0 || x >= RING_W) continue;
-    let ch = hidden ? "?" : ringChar(a);
-    if (!hidden && inArc(a, gapAngleDeg, gapWidth)) ch = " ";
-    for (const g of ghosts) if (inArc(a, g.angle, 6)) ch = g.result === "hit" || g.hit ? "⊕" : "·";
-    if (darkZone && inZone(a, darkZone)) ch = "█";
-    grid[y][x] = ch;
-  }
-  return grid.map((row) => row.join("")).join("\n");
-}
-function ringChar(a) {
-  const d = mod360(a);
-  if (inArc(d, 0, 60) || inArc(d, 180, 60) || inArc(d, 90, 60) || inArc(d, 270, 60)) return "█";
-  return "▓";
-}
 function mod360(a) {
+  return (a % 360 + 360) % 360;
+}
+
+// ../../docs/games/metagame/stages/stage8/modes.js
+var TWO_PI = Math.PI * 2;
+function mod3602(a) {
   return (a % 360 + 360) % 360;
 }
 function angularDist(a, b) {
   return Math.abs(((a - b) % 360 + 540) % 360 - 180);
 }
-function inArc(a, center, width) {
-  return angularDist(a, center) <= width / 2;
-}
-function inZone(a, zone) {
-  const x = mod360(a);
-  const s = mod360(zone.start);
-  const e = mod360(zone.end);
-  return s <= e ? x >= s && x <= e : x >= s || x <= e;
-}
-
-// ../../docs/games/metagame/stages/stage8/rings.js
-var RING_W2 = 33;
-var RING_H2 = 17;
-function renderConcentric(innerAngleDeg, outerAngleDeg, opts = {}) {
-  const { gapWidth = 22, darkZone = null } = opts;
-  const grid = blankGrid();
-  const cx = (RING_W2 - 1) / 2;
-  const cy = (RING_H2 - 1) / 2;
-  plotRing(grid, cx, cy, cx, cy, outerAngleDeg, gapWidth, "█", darkZone);
-  plotRing(grid, cx, cy, cx * 0.55, cy * 0.55, innerAngleDeg, gapWidth + 6, "▓", darkZone);
-  return gridToString(grid);
-}
-function renderStealth(gapAngleDeg, eyeAngleDeg, opts = {}) {
-  const { gapWidth = 20, blind = 60 } = opts;
-  const grid = blankGrid();
-  const cx = (RING_W2 - 1) / 2;
-  const cy = (RING_H2 - 1) / 2;
-  for (let a = 0; a < 360; a += 3) {
-    const { x, y } = project(cx, cy, cx, cy, a);
-    if (offGrid(x, y)) continue;
-    const inGap = inArc2(a, gapAngleDeg, gapWidth);
-    let ch = inGap ? " " : ringChar(a);
-    if (inArc2(a, eyeAngleDeg, blind)) ch = inGap ? "░" : "▒";
-    grid[y][x] = ch;
-  }
-  const ep = project(cx, cy, cx, cy, eyeAngleDeg);
-  if (!offGrid(ep.x, ep.y)) grid[ep.y][ep.x] = "@";
-  return gridToString(grid);
-}
-function renderMultiGap(gapAngles = [], opts = {}) {
-  const { gapWidth = 20, darkZone = null } = opts;
-  const grid = blankGrid();
-  const cx = (RING_W2 - 1) / 2;
-  const cy = (RING_H2 - 1) / 2;
-  for (let a = 0; a < 360; a += 3) {
-    const { x, y } = project(cx, cy, cx, cy, a);
-    if (offGrid(x, y)) continue;
-    let ch = ringChar(a);
-    for (const g of gapAngles) if (inArc2(a, g, gapWidth)) ch = " ";
-    if (darkZone && inZone2(a, darkZone)) ch = "█";
-    grid[y][x] = ch;
-  }
-  return gridToString(grid);
-}
-function plotRing(grid, cx, cy, rx, ry, gapAngle, gapWidth, glyph, darkZone) {
-  for (let a = 0; a < 360; a += 3) {
-    const { x, y } = project(cx, cy, rx, ry, a);
-    if (offGrid(x, y)) continue;
-    let ch = glyph;
-    if (inArc2(a, gapAngle, gapWidth)) ch = " ";
-    if (darkZone && inZone2(a, darkZone)) ch = "█";
-    grid[y][x] = ch;
-  }
-}
-function project(cx, cy, rx, ry, a) {
-  const rad = (a - 90) * Math.PI / 180;
-  return { x: Math.round(cx + rx * Math.cos(rad)), y: Math.round(cy + ry * Math.sin(rad)) };
-}
-function blankGrid() {
-  return Array.from({ length: RING_H2 }, () => Array(RING_W2).fill(" "));
-}
-function gridToString(grid) {
-  return grid.map((row) => row.join("")).join("\n");
-}
-function offGrid(x, y) {
-  return y < 0 || y >= RING_H2 || x < 0 || x >= RING_W2;
-}
-function mod3602(a) {
-  return (a % 360 + 360) % 360;
-}
-function angularDist2(a, b) {
-  return Math.abs(((a - b) % 360 + 540) % 360 - 180);
-}
-function inArc2(a, center, width) {
-  return angularDist2(a, center) <= width / 2;
-}
-function inZone2(a, zone) {
-  const x = mod3602(a);
-  const s = mod3602(zone.start);
-  const e = mod3602(zone.end);
-  return s <= e ? x >= s && x <= e : x >= s || x <= e;
-}
-
-// ../../docs/games/metagame/stages/stage8/modes.js
-var TWO_PI = Math.PI * 2;
-function mod3603(a) {
-  return (a % 360 + 360) % 360;
-}
-function angularDist3(a, b) {
-  return Math.abs(((a - b) % 360 + 540) % 360 - 180);
-}
 function ringSpeed(cfg, seed) {
   return (cfg.speed || 30) + makeRng(`${seed}s`).float() * (cfg.speedVar || 0);
+}
+function effectiveDarkZone(cfg, ref = 0) {
+  if (!cfg.darkZone) return null;
+  const halfSpan = angularDist(cfg.darkZone.end, 0);
+  return { start: mod3602(ref - halfSpan), end: mod3602(ref + halfSpan) };
 }
 function scanSolve(angleAt, tol, { maxMs = 4e4, step = 4 } = {}) {
   let bestT = 0;
   let bestD = Infinity;
   for (let t = 0; t <= maxMs; t += step) {
-    const d = angularDist3(angleAt(t), 0);
+    const d = angularDist(angleAt(t), 0);
     if (d <= tol / 2) return t;
     if (d < bestD) {
       bestD = d;
@@ -229,22 +113,15 @@ var simple = {
   angleAt(cfg, seed, ms) {
     return ringAngle(seed, ms, ringSpeed(cfg, seed));
   },
-  evaluate(cfg, seed, ms) {
+  evaluate(cfg, seed, ms, ref = 0) {
     const angle = this.angleAt(cfg, seed, ms);
-    const distance = angularDist3(angle, 0);
+    const distance = angularDist(angle, ref);
     return { hit: distance <= cfg.tolerance / 2, angle, distance, tolerance: cfg.tolerance };
   },
   solveMoment(cfg, seed) {
     const speed = ringSpeed(cfg, seed);
     const base = ringAngle(seed, 0, speed);
     return Math.round(((360 - base) % 360 + 360) % 360 / speed * 1e3);
-  },
-  render(cfg, seed, ms) {
-    return renderRing(this.angleAt(cfg, seed, ms), {
-      gapWidth: cfg.tolerance,
-      hidden: cfg.display === "hidden",
-      darkZone: cfg.darkZone || null
-    });
   }
 };
 function oscParams(cfg, seed) {
@@ -256,18 +133,15 @@ var oscillating = {
     const { base, phase, b, amp, Tp } = oscParams(cfg, seed);
     const t = ms / 1e3;
     const integral = b * t - amp * Tp / TWO_PI * (Math.cos(TWO_PI * t / Tp + phase) - Math.cos(phase));
-    return mod3603(base + integral);
+    return mod3602(base + integral);
   },
-  evaluate(cfg, seed, ms) {
+  evaluate(cfg, seed, ms, ref = 0) {
     const angle = this.angleAt(cfg, seed, ms);
-    const distance = angularDist3(angle, 0);
+    const distance = angularDist(angle, ref);
     return { hit: distance <= cfg.tolerance / 2, angle, distance, tolerance: cfg.tolerance };
   },
   solveMoment(cfg, seed) {
     return scanSolve((t) => this.angleAt(cfg, seed, t), cfg.tolerance);
-  },
-  render(cfg, seed, ms) {
-    return renderRing(this.angleAt(cfg, seed, ms), { gapWidth: cfg.tolerance, darkZone: cfg.darkZone || null });
   }
 };
 function revSegments(cfg, seed) {
@@ -294,18 +168,15 @@ var reversing = {
       left -= span;
       if (left <= 0) break;
     }
-    return mod3603(angle);
+    return mod3602(angle);
   },
-  evaluate(cfg, seed, ms) {
+  evaluate(cfg, seed, ms, ref = 0) {
     const angle = this.angleAt(cfg, seed, ms);
-    const distance = angularDist3(angle, 0);
+    const distance = angularDist(angle, ref);
     return { hit: distance <= cfg.tolerance / 2, angle, distance, tolerance: cfg.tolerance };
   },
   solveMoment(cfg, seed) {
     return scanSolve((t) => this.angleAt(cfg, seed, t), cfg.tolerance, { maxMs: 6e4 });
-  },
-  render(cfg, seed, ms) {
-    return renderRing(this.angleAt(cfg, seed, ms), { gapWidth: cfg.tolerance, darkZone: cfg.darkZone || null });
   }
 };
 function dualParams(cfg, seed) {
@@ -313,26 +184,22 @@ function dualParams(cfg, seed) {
   const si = cfg.speedInner || 45;
   const so = cfg.speedOuter || 30;
   const tAlign = 1500 + Math.floor(r.float() * 4e3);
-  return { si, so, tAlign, bi: mod3603(-si * tAlign / 1e3), bo: mod3603(-so * tAlign / 1e3) };
+  return { si, so, tAlign, bi: mod3602(-si * tAlign / 1e3), bo: mod3602(-so * tAlign / 1e3) };
 }
 var dual = {
   anglesAt(cfg, seed, ms) {
     const { si, so, bi, bo } = dualParams(cfg, seed);
-    return { inner: mod3603(bi + si * ms / 1e3), outer: mod3603(bo + so * ms / 1e3) };
+    return { inner: mod3602(bi + si * ms / 1e3), outer: mod3602(bo + so * ms / 1e3) };
   },
-  evaluate(cfg, seed, ms) {
+  evaluate(cfg, seed, ms, ref = 0) {
     const { inner, outer } = this.anglesAt(cfg, seed, ms);
-    const di = angularDist3(inner, 0);
-    const dou = angularDist3(outer, 0);
+    const di = angularDist(inner, ref);
+    const dou = angularDist(outer, ref);
     const distance = Math.max(di, dou);
     return { hit: di <= cfg.tolerance / 2 && dou <= cfg.tolerance / 2, distance, inner, outer, tolerance: cfg.tolerance };
   },
   solveMoment(cfg, seed) {
     return dualParams(cfg, seed).tAlign;
-  },
-  render(cfg, seed, ms) {
-    const { inner, outer } = this.anglesAt(cfg, seed, ms);
-    return renderConcentric(inner, outer, { gapWidth: cfg.tolerance, darkZone: cfg.darkZone || null });
   }
 };
 function multiParams(cfg, seed) {
@@ -347,24 +214,21 @@ function multiParams(cfg, seed) {
 var multigap = {
   gapsAt(cfg, seed, ms) {
     const { count, speed, base, step } = multiParams(cfg, seed);
-    return Array.from({ length: count }, (_, i) => mod3603(base + i * step + speed * ms / 1e3));
+    return Array.from({ length: count }, (_, i) => mod3602(base + i * step + speed * ms / 1e3));
   },
   realAngle(cfg, seed, ms) {
     const { speed, base, realIdx, step } = multiParams(cfg, seed);
-    return mod3603(base + realIdx * step + speed * ms / 1e3);
+    return mod3602(base + realIdx * step + speed * ms / 1e3);
   },
-  evaluate(cfg, seed, ms) {
+  evaluate(cfg, seed, ms, ref = 0) {
     const angle = this.realAngle(cfg, seed, ms);
-    const distance = angularDist3(angle, 0);
+    const distance = angularDist(angle, ref);
     return { hit: distance <= cfg.tolerance / 2, distance, angle, tolerance: cfg.tolerance };
   },
   solveMoment(cfg, seed) {
     const { speed, base, realIdx, step } = multiParams(cfg, seed);
-    const start = mod3603(base + realIdx * step);
+    const start = mod3602(base + realIdx * step);
     return Math.round(((360 - start) % 360 + 360) % 360 / speed * 1e3);
-  },
-  render(cfg, seed, ms) {
-    return renderMultiGap(this.gapsAt(cfg, seed, ms), { gapWidth: cfg.tolerance, darkZone: cfg.darkZone || null });
   }
 };
 function simpleSolve(cfg, seed) {
@@ -376,16 +240,13 @@ var ghostecho = {
   angleAt(cfg, seed, ms) {
     return ringAngle(seed, ms, ringSpeed(cfg, seed));
   },
-  evaluate(cfg, seed, ms) {
+  evaluate(cfg, seed, ms, ref = 0) {
     const angle = this.angleAt(cfg, seed, ms);
-    const distance = angularDist3(angle, 0);
+    const distance = angularDist(angle, ref);
     return { hit: distance <= cfg.tolerance / 2, angle, distance, tolerance: cfg.tolerance };
   },
   solveMoment(cfg, seed) {
     return simpleSolve(cfg, seed);
-  },
-  render(cfg, seed, ms, ctx = {}) {
-    return renderRing(this.angleAt(cfg, seed, ms), { gapWidth: cfg.tolerance, ghosts: ctx.ghosts || [] });
   }
 };
 function rhythmParams(cfg, seed) {
@@ -397,18 +258,15 @@ var rhythm = {
   angleAt(cfg, seed, ms) {
     return ringAngle(seed, ms, ringSpeed(cfg, seed));
   },
-  evaluate(cfg, seed, ms) {
+  evaluate(cfg, seed, ms, ref = 0) {
     const angle = this.angleAt(cfg, seed, ms);
-    const distance = angularDist3(angle, 0);
+    const distance = angularDist(angle, ref);
     return { hit: distance <= cfg.tolerance / 2, angle, distance, tolerance: cfg.tolerance };
   },
   // Press-time array: the gap faces the top on every beat; chain N of them in a row to clear.
   solveMoment(cfg, seed) {
     const { period, base, chain } = rhythmParams(cfg, seed);
     return Array.from({ length: chain }, (_, k) => Math.round(base + k * period));
-  },
-  render(cfg, seed, ms) {
-    return renderRing(this.angleAt(cfg, seed, ms), { gapWidth: cfg.tolerance });
   }
 };
 function stealthParams(cfg, seed) {
@@ -421,35 +279,29 @@ var stealth = {
   eyeAngle(cfg, seed, ms) {
     return ringAngle(`${seed}eye`, ms, stealthParams(cfg, seed).eyeSpeed);
   },
-  evaluate(cfg, seed, ms) {
+  evaluate(cfg, seed, ms, ref = 0) {
     const gap = this.gapAngle(cfg, seed, ms);
     const eye = this.eyeAngle(cfg, seed, ms);
-    const distance = angularDist3(gap, 0);
-    const watched = angularDist3(eye, 0) <= (cfg.blind || 60) / 2;
+    const distance = angularDist(gap, ref);
+    const watched = angularDist(eye, ref) <= (cfg.blind || 60) / 2;
     return { hit: distance <= cfg.tolerance / 2 && !watched, distance, gap, eye, watched, tolerance: cfg.tolerance };
   },
   solveMoment(cfg, seed) {
     for (let t = 0; t <= 6e4; t += 4) if (this.evaluate(cfg, seed, t).hit) return t;
     return 0;
-  },
-  render(cfg, seed, ms) {
-    return renderStealth(this.gapAngle(cfg, seed, ms), this.eyeAngle(cfg, seed, ms), { gapWidth: cfg.tolerance, blind: cfg.blind || 60 });
   }
 };
 var darkzone = {
   angleAt(cfg, seed, ms) {
     return ringAngle(seed, ms, ringSpeed(cfg, seed));
   },
-  evaluate(cfg, seed, ms) {
+  evaluate(cfg, seed, ms, ref = 0) {
     const angle = this.angleAt(cfg, seed, ms);
-    const distance = angularDist3(angle, 0);
+    const distance = angularDist(angle, ref);
     return { hit: distance <= cfg.tolerance / 2, angle, distance, tolerance: cfg.tolerance };
   },
   solveMoment(cfg, seed) {
     return simpleSolve(cfg, seed);
-  },
-  render(cfg, seed, ms) {
-    return renderRing(this.angleAt(cfg, seed, ms), { gapWidth: cfg.tolerance, darkZone: cfg.darkZone || { start: 320, end: 40 } });
   }
 };
 var MODES = { simple, oscillating, reversing, dual, multigap, ghostecho, rhythm, stealth, darkzone };
@@ -505,13 +357,13 @@ function movementForLevel(level) {
   return MOVEMENTS.find((m) => m.levels.includes(lvl)) || MOVEMENTS[0];
 }
 var MODE_HINTS = {
-  simple: "watch the gap; CROSS when it faces the top (12 o'clock).",
-  oscillating: "the rotation speed breathes in and out — CROSS as the gap reaches the top.",
+  simple: "watch the gap; steer your ship under it and CROSS when it lines up.",
+  oscillating: "the rotation speed breathes in and out — steer to meet the gap and CROSS as it arrives.",
   ghostecho: "faint ghosts mark your last two presses — read how early/late you were and correct.",
-  dual: "two rings now — CROSS only when BOTH gaps face the top at the same instant.",
-  stealth: "an eye sweeps the ring — CROSS only when the gap is up AND the eye is looking away.",
-  reversing: "the ring keeps flipping direction — track the flips and CROSS at the top.",
-  darkzone: "a blackout hides the top — extrapolate from the speed when the gap arrives there."
+  dual: "two rings now — steer to where BOTH gaps will align, and CROSS at that instant.",
+  stealth: "an eye sweeps the ring — CROSS only where the gap is AND the eye is looking away.",
+  reversing: "the ring keeps flipping direction — track the flips and CROSS where it lines up with your ship.",
+  darkzone: "a blackout always hides your own crossing point — extrapolate from the speed, not sight."
 };
 function modeHint(cfg) {
   if (!cfg) return MODE_HINTS.simple;
@@ -532,31 +384,22 @@ function crossOutcome(result) {
   const tol = Number(result.tolerance) || 0;
   return tol > 0 && Number(result.distance) <= tol / 4 ? "perfect" : "hit";
 }
-function crossAttempt({ seed, elapsedMs, level, toleranceMult = 1 }) {
+function crossAttempt({ seed, elapsedMs, level, toleranceMult = 1, shipAngle = 0 }) {
   let cfg = levelConfig(level);
   if (toleranceMult !== 1) cfg = { ...cfg, tolerance: cfg.tolerance * toleranceMult };
-  return { ...getMode(cfg.mode).evaluate(cfg, seed, Number(elapsedMs) || 0), level: cfg.level };
+  return { ...getMode(cfg.mode).evaluate(cfg, seed, Number(elapsedMs) || 0, Number(shipAngle) || 0), level: cfg.level };
 }
 function solveMoment(seed, level) {
   const cfg = levelConfig(level);
   return getMode(cfg.mode).solveMoment(cfg, seed);
 }
-function missDelta({ seed, elapsedMs, level }) {
-  const r = crossAttempt({ seed, elapsedMs, level });
+function missDelta({ seed, elapsedMs, level, shipAngle = 0 }) {
+  const ref = Number(shipAngle) || 0;
+  const r = crossAttempt({ seed, elapsedMs, level, shipAngle: ref });
   const speed = Math.abs(rotSpeedFor(seed, level)) || 30;
   const a = Number.isFinite(r.angle) ? r.angle : r.distance;
-  const signed = (a % 360 + 540) % 360 - 180;
+  const signed = ((a - ref) % 360 + 540) % 360 - 180;
   return { deltaMs: Math.round(Math.abs(signed) / speed * 1e3), dir: signed >= 0 ? "late" : "early", offsetDeg: signed };
-}
-function renderLevel(seed, level, elapsedMs, ctx = {}) {
-  const cfg = levelConfig(level);
-  return getMode(cfg.mode).render(cfg, seed, Number(elapsedMs) || 0, ctx);
-}
-function gapAngleAt(seed, level, elapsedMs) {
-  const cfg = levelConfig(level);
-  const mode = getMode(cfg.mode);
-  const fn = mode.angleAt || mode.gapAngle;
-  return typeof fn === "function" ? fn.call(mode, cfg, seed, Number(elapsedMs) || 0) : null;
 }
 function rotSpeedFor(seed, level) {
   return ringSpeed(levelConfig(level), seed);
@@ -638,11 +481,11 @@ function getBossLockState({ actions, state }) {
     hint: unlocked ? "the seed is fixed. cross using the learned rotation." : lockedHintLadder[hintIndex]
   };
 }
-function recordObserverBossAttempt({ state, actions, elapsedMs = 0, seed }) {
+function recordObserverBossAttempt({ state, actions, elapsedMs = 0, seed, shipAngle = 0 }) {
   state.boss.reached = true;
   const lock = getBossLockState({ actions, state });
   const activeSeed = lock.unlocked ? FIXED_OFFLINE_SEED : Number.isFinite(seed) ? seed : getBossSeed({ state, actions });
-  const result = crossAttempt({ seed: activeSeed, elapsedMs: Number(elapsedMs) || 0, level: BOSS_LEVEL });
+  const result = crossAttempt({ seed: activeSeed, elapsedMs: Number(elapsedMs) || 0, level: BOSS_LEVEL, shipAngle });
   state.boss.attempts = Number(state.boss.attempts || 0) + 1;
   if (!result.hit) {
     if (!lock.unlocked) {
@@ -796,14 +639,12 @@ function stage8Markup(AIDS2, BOSS_LEVEL2) {
     </header>
     <div class="s8-layout">
       <div class="s8-arena-wrap">
-        <div class="s8-marker" data-field="marker" aria-hidden="true">&#9660;</div>
-        <!-- Smoothly-ANIMATED ring (playtest: "the crossing needs at least some animation" — the
-             ASCII grid below is technically a continuous f(seed,elapsedMs), but character-cell
-             quantization reads as static/choppy). Pure CSS: a conic-gradient wheel rotated via
-             --s8-gap-angle every frame, driven by the SAME crossAttempt() angle the ASCII uses —
-             no simulation change, presentation only. See paintOverlays() in renderer.js. -->
-        <div class="s8-ring-wheel" data-field="ringWheel" aria-hidden="true"></div>
-        <pre class="s8-arena" data-field="arena" tabindex="0" role="button" aria-label="observer ring — tap or press Space to CROSS"></pre>
+        <!-- 2026-07-11: a single <canvas> replaces the old ASCII <pre> (rebuilt from scratch every
+             rAF frame) + CSS conic-gradient wheel (the actual visual) dual-rendering pipeline — one
+             draw call per frame, and a natural surface for the new steerable ship + path trail. See
+             canvas-ring.js / canvas-modes.js. Keyboard CROSS still works via Space/Enter (renderer.js
+             listens on document); tabindex/role/aria-label preserve the tap-to-CROSS affordance. -->
+        <canvas class="s8-canvas" data-field="arena" tabindex="0" role="button" aria-label="observer ring — steer with the arrow keys, tap or press Space to CROSS"></canvas>
         <span class="s8-beat" data-field="beat" hidden aria-hidden="true"></span>
         <span class="s8-streak" data-field="streak" hidden></span>
         <div class="s8-readout" data-field="readout" aria-live="polite"></div>
@@ -851,6 +692,8 @@ function installTestHook(api) {
     crossAt(ms) {
       api.crossAt(Number(ms) || 0);
     },
+    geometry: () => api.geometry(),
+    steerTo: (angleDeg) => api.steerTo(angleDeg),
     // CROSS the current level at its perfect moment(s) for the seed it actually uses right now.
     solveLevel() {
       const sol = solveMoment(api.activeSeed(), api.state.currentLevel);
@@ -947,12 +790,274 @@ function applyDevControl(id, state, { seed = 0 } = {}) {
   }
 }
 
+// ../../docs/games/metagame/stages/stage8/canvas-modes.js
+var RING_COLOR = "#5dcaa5";
+var RING_COLOR_DIM = "#2a2a2a";
+var GAP_BG = "#000";
+var DARKZONE_COLOR = "#f5a623";
+var GHOST_HIT = "#8ef7d1";
+var GHOST_MISS = "#666";
+var EYE_COLOR = "rgba(93, 202, 165, 0.28)";
+var EYE_DOT = "#dfffef";
+function toRad(deg) {
+  return (deg - 90) * Math.PI / 180;
+}
+function mod3603(a) {
+  return (a % 360 + 360) % 360;
+}
+function strokeFullRing(ctx, { cx, cy, r }, color, lineWidth) {
+  ctx.beginPath();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = lineWidth;
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.stroke();
+}
+function paintWedge(ctx, { cx, cy, r }, centerDeg, widthDeg, lineWidth, color) {
+  const half = Math.max(1, widthDeg) / 2;
+  ctx.beginPath();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = lineWidth + 2;
+  ctx.arc(cx, cy, r, toRad(centerDeg - half), toRad(centerDeg + half));
+  ctx.stroke();
+}
+function ringLineWidth(r) {
+  return Math.max(4, r * 0.13);
+}
+function drawSingleGap(ctx, geom, opts) {
+  const { angle, tolerance, darkZone, ghosts = [] } = opts;
+  const lw = ringLineWidth(geom.r);
+  strokeFullRing(ctx, geom, RING_COLOR, lw);
+  paintWedge(ctx, geom, angle, tolerance, lw, GAP_BG);
+  if (darkZone) {
+    const span = angularSpan(darkZone);
+    paintWedge(ctx, geom, span.center, span.width, lw, DARKZONE_COLOR);
+  }
+  for (const g of ghosts) {
+    const p = polarPoint(geom, g.angle, geom.r);
+    ctx.beginPath();
+    ctx.fillStyle = g.result === "hit" || g.hit ? GHOST_HIT : GHOST_MISS;
+    ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+function drawDualGap(ctx, geom, opts) {
+  const { inner, outer, tolerance } = opts;
+  const outerGeom = geom;
+  const innerGeom = { cx: geom.cx, cy: geom.cy, r: geom.r * 0.55 };
+  const lwOuter = ringLineWidth(outerGeom.r);
+  const lwInner = ringLineWidth(innerGeom.r);
+  strokeFullRing(ctx, outerGeom, RING_COLOR, lwOuter);
+  paintWedge(ctx, outerGeom, outer, tolerance, lwOuter, GAP_BG);
+  strokeFullRing(ctx, innerGeom, RING_COLOR_DIM, lwInner);
+  ctx.globalAlpha = 0.8;
+  strokeFullRing(ctx, innerGeom, RING_COLOR, lwInner * 0.7);
+  ctx.globalAlpha = 1;
+  paintWedge(ctx, innerGeom, inner, tolerance + 6, lwInner, GAP_BG);
+}
+function drawMultiGap(ctx, geom, opts) {
+  const { gaps, tolerance } = opts;
+  const lw = ringLineWidth(geom.r);
+  strokeFullRing(ctx, geom, RING_COLOR, lw);
+  for (const g of gaps) paintWedge(ctx, geom, g, tolerance, lw, GAP_BG);
+}
+function drawStealthGap(ctx, geom, opts) {
+  const { gap, eye, tolerance, blind } = opts;
+  const lw = ringLineWidth(geom.r);
+  strokeFullRing(ctx, geom, RING_COLOR, lw);
+  paintWedge(ctx, geom, gap, tolerance, lw, GAP_BG);
+  ctx.beginPath();
+  ctx.strokeStyle = EYE_COLOR;
+  ctx.lineWidth = lw + 6;
+  const half = blind / 2;
+  ctx.arc(geom.cx, geom.cy, geom.r, toRad(eye - half), toRad(eye + half));
+  ctx.stroke();
+  const p = polarPoint(geom, eye, geom.r);
+  ctx.beginPath();
+  ctx.fillStyle = EYE_DOT;
+  ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
+  ctx.fill();
+}
+function angularSpan(zone) {
+  const s = mod3603(zone.start);
+  const e = mod3603(zone.end);
+  const width = mod3603(e - s);
+  const center = mod3603(s + width / 2);
+  return { center, width: Math.max(width, 1) };
+}
+function polarPoint({ cx, cy, r }, deg, radius = r) {
+  const rad = toRad(deg);
+  return { x: cx + radius * Math.cos(rad), y: cy + radius * Math.sin(rad) };
+}
+
+// ../../docs/games/metagame/stages/stage8/canvas-ring.js
+var UNKNOWN_RING_COLOR = "#444";
+var SHIP_COLOR = "#8ef7d1";
+var SHIP_GLOW = "rgba(142, 247, 209, 0.9)";
+var TRAIL_COLOR = "142, 247, 209";
+var TRAIL_MS = 4e3;
+var LAUNCH_MS = 380;
+function prepCanvas(canvas) {
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return null;
+  const dpr = window.devicePixelRatio || 1;
+  const w = canvas.clientWidth, h = canvas.clientHeight;
+  if (w === 0 || h === 0) return null;
+  canvas.width = Math.round(w * dpr);
+  canvas.height = Math.round(h * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return { ctx, w, h };
+}
+function drawArena(canvas, frame) {
+  const prepped = prepCanvas(canvas);
+  if (!prepped) return;
+  const { ctx, w, h } = prepped;
+  ctx.clearRect(0, 0, w, h);
+  const cx = w / 2, cy = h / 2;
+  const r = Math.max(8, Math.min(w, h) / 2 - 10);
+  const geom = { cx, cy, r };
+  const { cfg, seed, ms, shipAngle = 0, shipPath = [], launchAnim = null, ghosts = [], shipIntensity = 0 } = frame;
+  if (cfg.display === "hidden") {
+    drawUnknownRing(ctx, geom);
+  } else {
+    drawGapGeometry(ctx, geom, cfg, seed, ms, shipAngle, ghosts);
+  }
+  drawTrail(ctx, geom, shipPath, ms);
+  drawShip(ctx, geom, shipAngle, shipIntensity);
+  if (launchAnim) drawLaunchAnim(ctx, geom, launchAnim, ms);
+}
+function drawGapGeometry(ctx, geom, cfg, seed, ms, shipAngle, ghosts) {
+  const mode = getMode(cfg.mode);
+  if (cfg.mode === "dual") {
+    const { inner, outer } = mode.anglesAt(cfg, seed, ms);
+    drawDualGap(ctx, geom, { inner, outer, tolerance: cfg.tolerance });
+    return;
+  }
+  if (cfg.mode === "multigap") {
+    drawMultiGap(ctx, geom, { gaps: mode.gapsAt(cfg, seed, ms), tolerance: cfg.tolerance });
+    return;
+  }
+  if (cfg.mode === "stealth") {
+    const gap = mode.gapAngle(cfg, seed, ms);
+    const eye = mode.eyeAngle(cfg, seed, ms);
+    drawStealthGap(ctx, geom, { gap, eye, tolerance: cfg.tolerance, blind: cfg.blind || 60 });
+    return;
+  }
+  const angle = mode.angleAt(cfg, seed, ms);
+  const darkZone = effectiveDarkZone(cfg, shipAngle);
+  drawSingleGap(ctx, geom, { angle, tolerance: cfg.tolerance, darkZone, ghosts });
+}
+function drawUnknownRing(ctx, { cx, cy, r }) {
+  ctx.beginPath();
+  ctx.strokeStyle = UNKNOWN_RING_COLOR;
+  ctx.lineWidth = Math.max(4, r * 0.13);
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.stroke();
+}
+function drawShip(ctx, geom, shipAngle, intensity) {
+  const p = polarPoint(geom, shipAngle, geom.r);
+  const rad = (shipAngle - 90) * Math.PI / 180;
+  const size = 9;
+  ctx.save();
+  ctx.translate(p.x, p.y);
+  ctx.rotate(rad + Math.PI / 2);
+  ctx.beginPath();
+  ctx.moveTo(0, -size);
+  ctx.lineTo(size * 0.7, size * 0.7);
+  ctx.lineTo(-size * 0.7, size * 0.7);
+  ctx.closePath();
+  const glow = Math.max(0, Math.min(1, Number(intensity) || 0));
+  ctx.fillStyle = glow > 0.05 ? SHIP_GLOW : SHIP_COLOR;
+  if (glow > 0.05) {
+    ctx.shadowColor = SHIP_GLOW;
+    ctx.shadowBlur = 6 + glow * 10;
+  }
+  ctx.fill();
+  ctx.restore();
+}
+function drawTrail(ctx, geom, shipPath, nowMs) {
+  for (const sample of shipPath) {
+    const age = nowMs - sample.ms;
+    if (age < 0 || age > TRAIL_MS) continue;
+    const alpha = 0.5 * (1 - age / TRAIL_MS);
+    if (alpha <= 0.01) continue;
+    const p = polarPoint(geom, sample.angle, geom.r);
+    ctx.beginPath();
+    ctx.fillStyle = `rgba(${TRAIL_COLOR}, ${alpha.toFixed(3)})`;
+    ctx.arc(p.x, p.y, 2.5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+function drawLaunchAnim(ctx, geom, launchAnim, nowMs) {
+  const t = nowMs - launchAnim.startMs;
+  if (t < 0 || t > LAUNCH_MS) return;
+  const progress = t / LAUNCH_MS;
+  const p = polarPoint(geom, launchAnim.fromAngle, geom.r);
+  const color = launchAnim.hit ? "142, 247, 209" : "192, 57, 43";
+  ctx.beginPath();
+  ctx.strokeStyle = `rgba(${color}, ${(1 - progress).toFixed(3)})`;
+  ctx.lineWidth = 2.5;
+  ctx.arc(p.x, p.y, 4 + progress * 22, 0, Math.PI * 2);
+  ctx.stroke();
+}
+function launchAnimExpired(launchAnim, nowMs) {
+  return !launchAnim || nowMs - launchAnim.startMs > LAUNCH_MS;
+}
+
+// ../../docs/games/metagame/stages/stage8/hud.js
+import { banner } from "../../shared/feedback.js";
+function paintBossPanel({ fields, arenaWrap, lock, state, bossLevel, revealLevel, bossRevealedRef }) {
+  const reveal = state.currentLevel >= revealLevel || state.boss.defeated;
+  fields.bossPanel.classList.toggle("s8-boss--chip", !reveal);
+  fields.bossChip.textContent = `OBSERVER — level ${bossLevel} · ${state.boss.defeated ? "defeated" : "locked"}`;
+  if (reveal && !bossRevealedRef.value) {
+    bossRevealedRef.value = true;
+    banner(arenaWrap, "THE OBSERVER STIRS");
+  }
+  if (state.boss.defeated) fields.boss.textContent = "defeated. BTS trace available.";
+  else if (state.currentLevel < bossLevel) fields.boss.textContent = `clear levels to reach the Observer (level ${bossLevel}).`;
+  else fields.boss.textContent = `${lock.unlocked ? "UNLOCKED — cross on the learned timing" : "reachable — read the live gap, or go offline to learn it"} / ${lock.seedMode}`;
+}
+function paintStreak({ fields, cfg, rhythmChain }) {
+  const isRhythm = cfg.mode === "rhythm";
+  fields.streak.hidden = !isRhythm;
+  if (isRhythm) fields.streak.textContent = `hits ${rhythmChain}/${Math.max(2, cfg.chain || 3)}`;
+}
+function paintTach({ fields, state, cfg, seed, elapsedMs, level, shipAngle }) {
+  const owned = Boolean(state.aids && state.aids.tachometer);
+  fields.tachWrap.hidden = !owned;
+  if (!owned) return;
+  const r = crossAttempt({ seed, elapsedMs, level, shipAngle });
+  const ang = Number.isFinite(r.angle) ? `${Math.round(r.angle)}deg` : `${Math.round(r.distance)}deg off`;
+  fields.tach.textContent = `${ang} @ ${Math.round(cfg.speed || cfg.speedInner || cfg.oscBase || 0)}deg/s`;
+}
+function paintAids({ root, fields, arenaWrap, state, offline, shouldRevealAids: shouldRevealAids2, shouldRevealPeek: shouldRevealPeek2 }) {
+  const reveal = shouldRevealAids2(state);
+  if (reveal && !state.aidsRevealed) {
+    state.aidsRevealed = true;
+    banner(arenaWrap, "clarity can be spent — calibration available");
+  }
+  fields.aids.hidden = !reveal;
+  const showPeek = shouldRevealPeek2(offline);
+  for (const aid of AIDS) {
+    const btn = root.querySelector(`[data-aid="${aid.id}"]`);
+    if (!btn) continue;
+    if (aid.offlineOnly) btn.hidden = !showPeek;
+    const ownedTach = aid.id === "tachometer" && state.aids && state.aids.tachometer;
+    const peekLocked = aid.id === "peek" && !offline;
+    btn.disabled = ownedTach || peekLocked || Number(state.clarity || 0) < aid.cost;
+    btn.classList.toggle("s8-aid-owned", Boolean(ownedTach));
+  }
+}
+
 // ../../docs/games/metagame/stages/stage8/renderer.js
-import { banner, floatNum } from "../../shared/feedback.js";
+import { banner as banner2, floatNum } from "../../shared/feedback.js";
 import { openModal } from "../../shared/modal.js";
 var MARKER_READY_DEG = 30;
 var BOSS_REVEAL_LEVEL = 13;
 var MISS_CLARITY_COST = 4;
+var SHIP_TURN_SPEED_DEG_PER_SEC = 150;
+var TRAIL_SAMPLE_MS = 40;
+var TRAIL_KEEP_MS = 4e3;
 function renderStage9({ host, state, actions, achievements, bell, bts, viewer, save, onStageComplete }) {
   const root = document.createElement("section");
   root.className = "stage8-observer-state";
@@ -962,9 +1067,9 @@ function renderStage9({ host, state, actions, achievements, bell, bts, viewer, s
   const log = fields.log;
   const hud = root.querySelector(".s8-hud");
   const arenaWrap = root.querySelector(".s8-arena-wrap");
-  const FLASH_CLASSES = ["s8-arena--perfect", "s8-arena--hit", "s8-arena--miss"];
+  const FLASH_CLASSES = ["s8-canvas--perfect", "s8-canvas--hit", "s8-canvas--miss"];
   let flashTimer = null;
-  let bossRevealed = state.currentLevel >= BOSS_REVEAL_LEVEL;
+  const bossRevealedRef = { value: state.currentLevel >= BOSS_REVEAL_LEVEL };
   const completeOnce = once((result) => {
     if (typeof onStageComplete === "function") onStageComplete(result);
   });
@@ -972,6 +1077,11 @@ function renderStage9({ host, state, actions, achievements, bell, bts, viewer, s
   let liveSeed = null;
   let rhythmChain = 0;
   let attempts = [];
+  let shipAngle = 0;
+  const keysHeld = { left: false, right: false };
+  let shipPath = [];
+  let launchAnim = null;
+  let lastTrailSampleMs = -Infinity;
   function offlineUnlocked() {
     return hasOfflineModeActivated(actions) || Boolean(state.offlineMode);
   }
@@ -988,6 +1098,7 @@ function renderStage9({ host, state, actions, achievements, bell, bts, viewer, s
     elapsedMs = 0;
     rhythmChain = 0;
     attempts = [];
+    resetShip();
     setReadout("", "");
     const cfg = levelConfig(state.currentLevel);
     if ((cfg.onlineUnstable || state.currentLevel >= BOSS_LEVEL) && !offlineUnlocked()) {
@@ -1001,13 +1112,20 @@ function renderStage9({ host, state, actions, achievements, bell, bts, viewer, s
     liveSeed = null;
     rhythmChain = 0;
     attempts = [];
+    resetShip();
     setReadout("", "");
     const cfg = levelConfig(state.currentLevel);
     if (cfg.mode !== prevMode && !state.boss.defeated) {
       const mv = movementForLevel(state.currentLevel);
-      banner(arenaWrap, `${mv.name.toUpperCase()} — ${mv.verb}`);
+      banner2(arenaWrap, `${mv.name.toUpperCase()} — ${mv.verb}`);
     }
     if (state.currentLevel >= BOSS_LEVEL) pushLog3(`level ${BOSS_LEVEL}: THE OBSERVER EFFECT. the gap will not hold still while live.`);
+  }
+  function resetShip() {
+    shipAngle = 0;
+    shipPath = [];
+    lastTrailSampleMs = -Infinity;
+    launchAnim = null;
   }
   function crossSublevel() {
     const level = state.currentLevel;
@@ -1022,7 +1140,7 @@ function renderStage9({ host, state, actions, achievements, bell, bts, viewer, s
     const seed = activeSeed();
     const toleranceMult = consumeStabilizer(state);
     if (toleranceMult > 1) pushLog3("stabilizer lens engaged (+tolerance for this cross).");
-    const result = crossAttempt({ seed, elapsedMs, level, toleranceMult });
+    const result = crossAttempt({ seed, elapsedMs, level, toleranceMult, shipAngle });
     if (cfg.mode === "ghostecho") attempts = [...attempts, { ms: elapsedMs, hit: result.hit }].slice(-2);
     if (cfg.mode === "rhythm") {
       const need = Math.max(2, cfg.chain || 3);
@@ -1053,7 +1171,7 @@ function renderStage9({ host, state, actions, achievements, bell, bts, viewer, s
     return "miss";
   }
   function challengeBoss() {
-    const result = recordObserverBossAttempt({ state, actions, elapsedMs, seed: activeSeed() });
+    const result = recordObserverBossAttempt({ state, actions, elapsedMs, seed: activeSeed(), shipAngle });
     if (!result.unlocked && !result.hit) liveSeed = state.boss.lastLockedSeed;
     if (result.defeated) completeOnce({ stage: 8, defeated: true, btsPath: BTS_PATH });
     return result.hit ? "perfect" : "miss";
@@ -1065,6 +1183,7 @@ function renderStage9({ host, state, actions, achievements, bell, bts, viewer, s
     const pressMs = elapsedMs;
     const clarityBefore = Number(state.clarity || 0);
     const outcome = level >= BOSS_LEVEL ? challengeBoss() : crossSublevel();
+    launchAnim = { startMs: elapsedMs, fromAngle: shipAngle, hit: outcome !== "miss" };
     flashArena(outcome);
     updateReadout(outcome, seed, level, pressMs);
     const gained = Number(state.clarity || 0) - clarityBefore;
@@ -1076,7 +1195,7 @@ function renderStage9({ host, state, actions, achievements, bell, bts, viewer, s
     if (outcome === "perfect") return setReadout("perfect — dead centre", "perfect");
     if (outcome === "hit") return setReadout("crossed", "hit");
     if (unstableLocked) return setReadout("live-random — nothing to time", "miss");
-    const { deltaMs, dir } = missDelta({ seed, elapsedMs: pressMs, level });
+    const { deltaMs, dir } = missDelta({ seed, elapsedMs: pressMs, level, shipAngle });
     setReadout(`${dir} by ${deltaMs}ms`, "miss");
   }
   function setReadout(text, kind) {
@@ -1088,7 +1207,7 @@ function renderStage9({ host, state, actions, achievements, bell, bts, viewer, s
     const el = fields.arena;
     el.classList.remove(...FLASH_CLASSES);
     void el.offsetWidth;
-    el.classList.add(`s8-arena--${outcome}`);
+    el.classList.add(`s8-canvas--${outcome}`);
     if (flashTimer) clearTimeout(flashTimer);
     flashTimer = setTimeout(() => {
       el.classList.remove(...FLASH_CLASSES);
@@ -1124,7 +1243,7 @@ function renderStage9({ host, state, actions, achievements, bell, bts, viewer, s
       persistAndPaint();
       return;
     }
-    if (event.target.closest(".s8-arena")) {
+    if (event.target.closest(".s8-canvas")) {
       doCross();
       persistAndPaint();
     }
@@ -1142,9 +1261,25 @@ function renderStage9({ host, state, actions, achievements, bell, bts, viewer, s
       event.preventDefault();
       reobserve();
       persistAndPaint();
+    } else if (event.key === "ArrowLeft") {
+      event.preventDefault();
+      keysHeld.left = true;
+    } else if (event.key === "ArrowRight") {
+      event.preventDefault();
+      keysHeld.right = true;
     }
   }
+  function onKeyUp(event) {
+    if (event.key === "ArrowLeft") keysHeld.left = false;
+    else if (event.key === "ArrowRight") keysHeld.right = false;
+  }
+  function onBlur() {
+    keysHeld.left = false;
+    keysHeld.right = false;
+  }
   document.addEventListener("keydown", onKey);
+  document.addEventListener("keyup", onKeyUp);
+  window.addEventListener("blur", onBlur);
   function buyAidAction(id) {
     const offline = offlineUnlocked();
     const res = buyAid(state, id, { offline });
@@ -1159,12 +1294,22 @@ function renderStage9({ host, state, actions, achievements, bell, bts, viewer, s
     return res;
   }
   function doPeek() {
-    const r = crossAttempt({ seed: activeSeed(), elapsedMs, level: state.currentLevel });
+    const r = crossAttempt({ seed: activeSeed(), elapsedMs, level: state.currentLevel, shipAngle });
     const ang = Number.isFinite(r.angle) ? `gap at ${Math.round(r.angle)}deg` : "two gaps to align";
-    pushLog3(`single-frame: ${ang} (${Math.round(r.distance)}deg from the top).`);
+    pushLog3(`single-frame: ${ang} (${Math.round(r.distance)}deg from your ship).`);
   }
   const loop = startLoop((dt) => {
     if (!state.boss.defeated) elapsedMs += dt;
+    if (!state.boss.defeated) {
+      if (keysHeld.left) shipAngle -= SHIP_TURN_SPEED_DEG_PER_SEC * dt / 1e3;
+      if (keysHeld.right) shipAngle += SHIP_TURN_SPEED_DEG_PER_SEC * dt / 1e3;
+      shipAngle = (shipAngle % 360 + 360) % 360;
+      if (elapsedMs - lastTrailSampleMs >= TRAIL_SAMPLE_MS) {
+        shipPath = [...shipPath, { angle: shipAngle, ms: elapsedMs }].filter((s) => elapsedMs - s.ms <= TRAIL_KEEP_MS);
+        lastTrailSampleMs = elapsedMs;
+      }
+    }
+    if (launchAnimExpired(launchAnim, elapsedMs)) launchAnim = null;
     paintArena();
   });
   repaint();
@@ -1178,6 +1323,10 @@ function renderStage9({ host, state, actions, achievements, bell, bts, viewer, s
       elapsedMs = Number(ms) || 0;
       doCross();
       persistAndPaint();
+    },
+    geometry: () => ({ shipAngle, elapsedMs, level: state.currentLevel }),
+    steerTo(angleDeg) {
+      shipAngle = ((Number(angleDeg) || 0) % 360 + 360) % 360;
     }
   });
   return {
@@ -1190,6 +1339,8 @@ function renderStage9({ host, state, actions, achievements, bell, bts, viewer, s
       loop.stop();
       if (flashTimer) clearTimeout(flashTimer);
       document.removeEventListener("keydown", onKey);
+      document.removeEventListener("keyup", onKeyUp);
+      window.removeEventListener("blur", onBlur);
       uninstallHook();
       root.remove();
     }
@@ -1219,26 +1370,10 @@ function renderStage9({ host, state, actions, achievements, bell, bts, viewer, s
     const seed = activeSeed();
     const level = state.currentLevel;
     const cfg = levelConfig(level);
-    const ctx = {};
-    if (cfg.mode === "ghostecho") {
-      ctx.ghosts = attempts.map((at) => ({ angle: crossAttempt({ seed, elapsedMs: at.ms, level }).angle, result: at.hit ? "hit" : "miss" }));
-    }
-    fields.arena.textContent = renderLevel(seed, level, elapsedMs, ctx);
-    paintOverlays(seed, level, cfg);
-  }
-  function paintOverlays(seed, level, cfg) {
-    const r = crossAttempt({ seed, elapsedMs, level });
+    const r = crossAttempt({ seed, elapsedMs, level, shipAngle });
     const intensity = markerIntensity(r.distance, MARKER_READY_DEG);
-    fields.marker.classList.toggle("s8-marker--ready", intensity > 1e-3);
-    fields.marker.style.opacity = (0.35 + 0.65 * intensity).toFixed(3);
-    const angle = gapAngleAt(seed, level, elapsedMs);
-    const hidden = cfg.display === "hidden" || angle == null;
-    fields.ringWheel.hidden = angle == null;
-    fields.ringWheel.classList.toggle("s8-ring-wheel--hidden", hidden);
-    if (!hidden) {
-      fields.ringWheel.style.setProperty("--s8-gap-angle", `${angle.toFixed(2)}deg`);
-      fields.ringWheel.style.setProperty("--s8-gap-deg", `${cfg.tolerance || 20}deg`);
-    }
+    const ghosts = cfg.mode === "ghostecho" ? attempts.map((at) => ({ angle: crossAttempt({ seed, elapsedMs: at.ms, level }).angle, result: at.hit ? "hit" : "miss" })) : [];
+    drawArena(fields.arena, { cfg, seed, ms: elapsedMs, shipAngle, shipPath, launchAnim, ghosts, shipIntensity: intensity });
     const isRhythm = cfg.mode === "rhythm";
     fields.beat.hidden = !isRhythm;
     if (isRhythm) {
@@ -1260,12 +1395,12 @@ function renderStage9({ host, state, actions, achievements, bell, bts, viewer, s
       fields.seed.textContent = lock.unlocked ? "seed 0 · fixed cache" : "live-random — unlearnable online";
     }
     hud.classList.toggle("s8-hud--unstable", unstable && !lock.unlocked);
-    fields.arena.classList.toggle("s8-arena--unstable", unstable && !lock.unlocked);
+    fields.arena.classList.toggle("s8-canvas--unstable", unstable && !lock.unlocked);
     fields.observeLabel.textContent = unstable ? "OBSERVE (reseeds online)" : "OBSERVE (reset rotation)";
-    paintBossPanel(lock, unstable, cfg);
-    paintStreak(cfg);
-    paintTach(cfg);
-    paintAids();
+    paintBossPanel({ fields, arenaWrap, lock, state, bossLevel: BOSS_LEVEL, revealLevel: BOSS_REVEAL_LEVEL, bossRevealedRef });
+    paintStreak({ fields, cfg, rhythmChain });
+    paintTach({ fields, state, cfg, seed: activeSeed(), elapsedMs, level: state.currentLevel, shipAngle });
+    paintAids({ root, fields, arenaWrap, state, offline: offlineUnlocked(), shouldRevealAids, shouldRevealPeek });
     paintArena();
     fields.hint.textContent = unstable && !lock.unlocked ? lock.hint : modeHint(cfg);
     root.querySelector('[data-action="offline"]').hidden = !state.offlineControlVisible;
@@ -1275,50 +1410,6 @@ function renderStage9({ host, state, actions, achievements, bell, bts, viewer, s
       li.textContent = line;
       return li;
     }));
-  }
-  function paintBossPanel(lock, unstable, cfg) {
-    const reveal = state.currentLevel >= BOSS_REVEAL_LEVEL || state.boss.defeated;
-    fields.bossPanel.classList.toggle("s8-boss--chip", !reveal);
-    fields.bossChip.textContent = `OBSERVER — level ${BOSS_LEVEL} · ${state.boss.defeated ? "defeated" : "locked"}`;
-    if (reveal && !bossRevealed) {
-      bossRevealed = true;
-      banner(arenaWrap, "THE OBSERVER STIRS");
-    }
-    if (state.boss.defeated) fields.boss.textContent = "defeated. BTS trace available.";
-    else if (state.currentLevel < BOSS_LEVEL) fields.boss.textContent = `clear levels to reach the Observer (level ${BOSS_LEVEL}).`;
-    else fields.boss.textContent = `${lock.unlocked ? "UNLOCKED — cross on the learned timing" : "reachable — read the live gap, or go offline to learn it"} / ${lock.seedMode}`;
-  }
-  function paintStreak(cfg) {
-    const isRhythm = cfg.mode === "rhythm";
-    fields.streak.hidden = !isRhythm;
-    if (isRhythm) fields.streak.textContent = `hits ${rhythmChain}/${Math.max(2, cfg.chain || 3)}`;
-  }
-  function paintTach(cfg) {
-    const owned = Boolean(state.aids && state.aids.tachometer);
-    fields.tachWrap.hidden = !owned;
-    if (!owned) return;
-    const r = crossAttempt({ seed: activeSeed(), elapsedMs, level: state.currentLevel });
-    const ang = Number.isFinite(r.angle) ? `${Math.round(r.angle)}deg` : `${Math.round(r.distance)}deg off`;
-    fields.tach.textContent = `${ang} @ ${Math.round(cfg.speed || cfg.speedInner || cfg.oscBase || 0)}deg/s`;
-  }
-  function paintAids() {
-    const offline = offlineUnlocked();
-    const reveal = shouldRevealAids(state);
-    if (reveal && !state.aidsRevealed) {
-      state.aidsRevealed = true;
-      banner(arenaWrap, "clarity can be spent — calibration available");
-    }
-    fields.aids.hidden = !reveal;
-    const showPeek = shouldRevealPeek(offline);
-    for (const aid of AIDS) {
-      const btn = root.querySelector(`[data-aid="${aid.id}"]`);
-      if (!btn) continue;
-      if (aid.offlineOnly) btn.hidden = !showPeek;
-      const ownedTach = aid.id === "tachometer" && state.aids && state.aids.tachometer;
-      const peekLocked = aid.id === "peek" && !offline;
-      btn.disabled = ownedTach || peekLocked || Number(state.clarity || 0) < aid.cost;
-      btn.classList.toggle("s8-aid-owned", Boolean(ownedTach));
-    }
   }
   function persistAndPaint() {
     if (typeof save === "function") save();

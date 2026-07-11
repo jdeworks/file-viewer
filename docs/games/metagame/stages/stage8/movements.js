@@ -77,14 +77,17 @@ export function movementForLevel(level) {
 // One-line, per-archetype briefing of the actual win condition (pure). Shown in the hint field so a
 // new verb (e.g. the Cadence chain at level 7 or the Surveillance eye at level 11) is announced before
 // the player guesses wrong — addresses the unmarked difficulty spikes. Chain/gap counts are inlined.
+//
+// 2026-07-11 (ship steering): reworded away from "the top (12 o'clock)" — the crossing point is now
+// wherever the player has steered their ship (arrow keys), not a fixed position.
 const MODE_HINTS = {
-  simple: "watch the gap; CROSS when it faces the top (12 o'clock).",
-  oscillating: "the rotation speed breathes in and out — CROSS as the gap reaches the top.",
+  simple: "watch the gap; steer your ship under it and CROSS when it lines up.",
+  oscillating: "the rotation speed breathes in and out — steer to meet the gap and CROSS as it arrives.",
   ghostecho: "faint ghosts mark your last two presses — read how early/late you were and correct.",
-  dual: "two rings now — CROSS only when BOTH gaps face the top at the same instant.",
-  stealth: "an eye sweeps the ring — CROSS only when the gap is up AND the eye is looking away.",
-  reversing: "the ring keeps flipping direction — track the flips and CROSS at the top.",
-  darkzone: "a blackout hides the top — extrapolate from the speed when the gap arrives there."
+  dual: "two rings now — steer to where BOTH gaps will align, and CROSS at that instant.",
+  stealth: "an eye sweeps the ring — CROSS only where the gap is AND the eye is looking away.",
+  reversing: "the ring keeps flipping direction — track the flips and CROSS where it lines up with your ship.",
+  darkzone: "a blackout always hides your own crossing point — extrapolate from the speed, not sight."
 };
 export function modeHint(cfg) {
   if (!cfg) return MODE_HINTS.simple;

@@ -1,7 +1,7 @@
 // modes.test.mjs — Stage 8: each archetype is deterministic, its solveMoment lands a real hit, and a
 // half-rotation away misses. This is what makes the bands LOAD-BEARING (real win conditions, not skins).
 import assert from "node:assert/strict";
-import { getMode, angularDist } from "../modes.js";
+import { getMode, angularDist, effectiveDarkZone } from "../modes.js";
 
 const CFGS = {
   simple: { mode: "simple", speed: 30, speedVar: 0, tolerance: 30 },
@@ -32,10 +32,15 @@ for (const [name, cfg] of Object.entries(CFGS)) {
     assert.equal(mode.evaluate(cfg, seed, t).hit, true, `${name}: solveMoment is a real hit`);
   }
 
-  // render is a non-empty deterministic ASCII block
-  const r1 = mode.render(cfg, seed, moments[0]);
-  assert.equal(r1, mode.render(cfg, seed, moments[0]), `${name}: render deterministic`);
-  assert.ok(r1.length > 8, `${name}: render draws something`);
+  // ship steering (2026-07-11): ref defaults to 0 (every assertion above omits it, so they're
+  // unaffected), but a non-zero ref genuinely shifts evaluate()'s hit window — the SAME solved
+  // moment now misses relative to the old (0) reference once a different ref is supplied, proving
+  // `ref` is really read, not silently ignored. multigap/dual/stealth are covered by their own
+  // dedicated blocks below (their hit test needs a real ref-shifted moment, not just "now misses").
+  if (!["multigap", "dual", "stealth"].includes(name)) {
+    assert.equal(mode.evaluate(cfg, seed, moments[0], 0).hit, true, `${name}: ref=0 matches the default solve`);
+    assert.equal(mode.evaluate(cfg, seed, moments[0], 90).hit, false, `${name}: a different ref misses the old solve moment`);
+  }
 }
 
 // rhythm: solveMoment is N evenly spaced beats (a metronome), each one rotation apart.
@@ -60,23 +65,40 @@ for (const [name, cfg] of Object.entries(CFGS)) {
     }
   }
   assert.ok(blocked, "stealth: the eye sometimes covers the crossing lane");
+  // 2026-07-11 ship steering: the eye's "watching the crossing lane" check moves with `ref` too — the
+  // eye watches near wherever the ship currently is, not a fixed lane (this is exactly the aim+time
+  // skill steering adds: the player must find a moment+place where the gap is there AND the eye isn't).
+  const t = s.solveMoment(cfg, seed);
+  assert.equal(s.evaluate(cfg, seed, t, 0).hit, true, "stealth: ref=0 still hits at the solved moment");
+  assert.equal(s.evaluate(cfg, seed, t, 90).hit, false, "stealth: steering away from the solved gap position misses it");
 }
 
-// ghostecho: attempt ghosts render as feedback marks without changing the win condition.
+// ghostecho: attempt ghosts are rendering-only feedback (canvas-modes.js draws them) — evaluate()
+// itself takes no ghosts param and the win condition is identical to `simple`'s.
 {
   const g = getMode("ghostecho");
-  const cfg = CFGS.ghostecho;
-  const withGhost = g.render(cfg, 2, 500, { ghosts: [{ angle: 180, result: "miss" }] });
-  assert.ok(withGhost.includes("·"), "ghostecho: a miss ghost renders");
+  const cfg = CFGS.ghostecho; const seed = 2;
+  const t = g.solveMoment(cfg, seed);
+  assert.equal(g.evaluate(cfg, seed, t).hit, true, "ghostecho: solveMoment is a real hit, unaffected by ghost history");
 }
 
-// darkzone: the blackout arc covers the top so the gap is hidden right when it must be crossed.
+// darkzone: the blackout arc covers the crossing point so the gap is hidden right when it must be
+// crossed. evaluate() doesn't reference cfg.darkZone at all (occlusion is a rendering-only concern —
+// see modes.js's header comment on darkzone); effectiveDarkZone() is the shared helper that computes
+// WHERE to draw the blackout, and — the 2026-07-11 ship-steering design fix — it must re-center on
+// whatever `ref` the player has steered to, not stay world-fixed (a world-fixed blackout would let a
+// player simply steer outside it and cross with full visibility, both at L15 and at the boss).
 {
   const d = getMode("darkzone");
   const cfg = CFGS.darkzone; const seed = 6;
   const t = d.solveMoment(cfg, seed);
   assert.equal(d.evaluate(cfg, seed, t).hit, true, "darkzone: the inferred moment is a real hit");
-  assert.ok(d.render(cfg, seed, t).includes("█"), "darkzone: blackout arc renders over the top");
+  const zoneAtDefault = effectiveDarkZone(cfg, 0);
+  assert.equal(angularDist(zoneAtDefault.start, cfg.darkZone.start), 0, "darkzone: ref=0 matches the authored world-fixed zone");
+  const zoneSteered = effectiveDarkZone(cfg, 90);
+  const halfSpan = angularDist(cfg.darkZone.end, 0);
+  assert.ok(angularDist(zoneSteered.start, 90 - halfSpan) < 1e-6, "darkzone: a steered ref re-centers the blackout on the ship, not the old world-fixed position");
+  assert.notEqual(zoneSteered.start, zoneAtDefault.start, "darkzone: the blackout genuinely MOVES when the player steers (the bug the plan review caught)");
 }
 
 // dual is genuinely an AND of two rings: at the solve moment BOTH gaps are at the top.
@@ -97,6 +119,10 @@ for (const [name, cfg] of Object.entries(CFGS)) {
     }
   }
   assert.ok(foundOnlyOuter, "dual: there exist moments where only one ring is aligned");
+  // 2026-07-11 ship steering: BOTH gaps are measured against the same `ref` — steering shifts the
+  // AND-window together, it doesn't decouple the two rings.
+  assert.equal(dual.evaluate(cfg, seed, t, 0).hit, true, "dual: ref=0 still hits at the solved moment");
+  assert.equal(dual.evaluate(cfg, seed, t, 90).hit, false, "dual: steering away from the solved alignment misses it");
 }
 
 // multigap: pressing when a PHANTOM gap (not the real one) is at the top is a miss.
@@ -114,6 +140,12 @@ for (const [name, cfg] of Object.entries(CFGS)) {
     }
   }
   assert.ok(foundPhantom, "multigap: phantom gaps reach the top");
+  // 2026-07-11 ship steering: only the REAL gap's distance is measured against `ref` — steering
+  // still can't distinguish real from phantom (that's the whole point of the decoys), it just moves
+  // where the player is trying to intercept the real one.
+  const t = mg.solveMoment(cfg, seed);
+  assert.equal(mg.evaluate(cfg, seed, t, 0).hit, true, "multigap: ref=0 still hits at the solved moment");
+  assert.equal(mg.evaluate(cfg, seed, t, 90).hit, false, "multigap: steering away from the real gap's solved position misses it");
 }
 
 console.log("stage8 modes tests passed");

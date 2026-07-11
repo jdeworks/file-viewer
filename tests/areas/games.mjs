@@ -1416,14 +1416,27 @@ export async function run(ctx) {
   // Awakening (the finale) moved 10→9. See docs/games/metagame/stage-manifest.js.
 
   await page.waitForSelector('.stage8-observer-state', { timeout: 8000 });
-  // The timing game is wired: a live rotating ASCII ring renders + OBSERVE/CROSS controls exist.
+  // 2026-07-11 canvas rewrite: the ring is now a <canvas> (the old ASCII glyph-scrape no longer
+  // applies — see docs/games/metagame/stages/stage8/canvas-ring.js). Confirm it actually has a
+  // real, non-zero backing size (a real draw happened) + OBSERVE/CROSS controls exist.
   await page.waitForSelector('.stage8-observer-state [data-action="observe"]', { timeout: 4000 });
   await page.waitForSelector('.stage8-observer-state [data-action="cross"]', { timeout: 4000 });
-  const s8Wired = await page.evaluate(() => Boolean(window.__fvStage8) && /[█▓]/.test(document.querySelector('.s8-arena')?.textContent || ''));
-  if (s8Wired) pass('Stage 8 timing game wired: rotating ring + OBSERVE/CROSS + engine hook'); else fail('Stage 8 ring not wired');
+  const s8Wired = await page.evaluate(() => {
+    const c = document.querySelector('.s8-canvas');
+    return Boolean(window.__fvStage8) && Boolean(c) && c.width > 0 && c.height > 0;
+  });
+  if (s8Wired) pass('Stage 8 timing game wired: canvas ring drawn + OBSERVE/CROSS + engine hook'); else fail('Stage 8 ring not wired');
   // The boss is gated behind the run: the player starts on movement 1, not at the Observer.
   const s8StartLevel = await page.evaluate(() => window.__fvStage8.state().currentLevel);
   if (s8StartLevel === 1) pass('Stage 8 starts on movement 1 (boss gated behind the full run)'); else fail(`Stage 8 started at level ${s8StartLevel}`);
+  // Ship steering (2026-07-11): steerTo() sets shipAngle deterministically (never a wall-clock
+  // key-hold simulation — see testhook.js) and it's genuinely read back through geometry().
+  const s8Steer = await page.evaluate(() => {
+    window.__fvStage8.steerTo(123);
+    return window.__fvStage8.geometry().shipAngle;
+  });
+  if (Math.abs(s8Steer - 123) < 1e-6) pass('Stage 8 ship steering: steerTo() sets a deterministic shipAngle'); else fail(`Stage 8 steerTo() wrong: ${s8Steer}`);
+  await page.evaluate(() => window.__fvStage8.steerTo(0)); // reset to the default (top) position before the run below
   // The learnable front movements clear ONLINE, but the run stalls at the onlineUnstable back third:
   // those gaps reseed on every commit while live, so the offline un-cheat is required to continue.
   const s8Stall = await page.evaluate(() => {

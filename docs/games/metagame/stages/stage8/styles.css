@@ -35,7 +35,6 @@
 .s8-actions { grid-area: actions; display: flex; flex-direction: column; gap: 8px; }
 .s8-side { grid-area: side; min-height: 0; overflow: auto; }
 
-.s8-arena,
 .s8-side,
 .s8-boss {
   border: 1px solid #fff;
@@ -43,62 +42,20 @@
   background: #000;
 }
 
-.s8-arena {
+/* 2026-07-11: a single <canvas> replaces the old ASCII <pre> (rebuilt from scratch every rAF frame,
+   the real CPU cost) + CSS conic-gradient wheel (the old dominant visual) dual-rendering pipeline —
+   see canvas-ring.js/canvas-modes.js. The ship marker, previously a separate absolutely-positioned
+   DOM element (#2), is now drawn directly on the canvas — one source of truth for what's on screen. */
+.s8-canvas {
   flex: 1;
-  display: grid;
-  place-items: center;
-  color: #fff;
-  font-size: 15px;
-  line-height: 1.05;
-  transition: border-color 90ms ease-out, box-shadow 90ms ease-out, color 90ms ease-out;
-  /* The ring visual is now the CSS wheel below (dominant, smoothly animated); this ASCII grid stays
-     rendered underneath (dim, not removed) — it's still a real f(seed,elapsedMs) fallback/detail
-     layer and existing test coverage checks its glyphs, so it keeps producing correct text output,
-     it's just no longer what the player's eye reads as "the ring". */
-  opacity: 0.22;
+  width: 100%;
+  height: 100%;
+  min-height: 260px;
+  display: block;
+  border: 1px solid #fff;
+  background: #000;
+  transition: border-color 90ms ease-out, box-shadow 90ms ease-out;
 }
-
-/* Smoothly-animated ring (playtest: "the crossing needs at least some animation"). A conic-gradient
-   wheel: the gap is a transparent wedge baked into the gradient at 12-o'clock, and --s8-gap-angle
-   (set every frame in renderer.js's paintOverlays, from the SAME crossAttempt() angle the ASCII ring
-   already uses) rotates the whole wheel via transform — real, continuous, GPU-driven motion, not
-   text-cell-quantized redraws. `hidden` (dark-zone/blind levels) removes the gap entirely: the wheel
-   renders as a solid ring, matching the ASCII's own '?' "can't see the gap" semantics. */
-.s8-ring-wheel {
-  position: absolute;
-  inset: 12px;
-  border-radius: 50%;
-  pointer-events: none;
-  z-index: 1;
-  --s8-gap-deg: 20deg;
-  background: conic-gradient(from 0deg,
-    #5dcaa5 0deg, #5dcaa5 calc(360deg - var(--s8-gap-deg)),
-    transparent calc(360deg - var(--s8-gap-deg)), transparent 360deg);
-  transform: rotate(var(--s8-gap-angle, 0deg));
-  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 14px), #000 calc(100% - 13px));
-  mask: radial-gradient(farthest-side, transparent calc(100% - 14px), #000 calc(100% - 13px));
-}
-.s8-ring-wheel.s8-ring-wheel--hidden {
-  background: #5dcaa5; /* solid — the gap position can't be seen, matching the ASCII '?' state */
-  transform: none;
-}
-@media (prefers-reduced-motion: reduce) {
-  .s8-ring-wheel { transition: none; }
-}
-
-/* #2 — fixed crossing marker (▼) pinned above the top of the ring; brightens as the gap approaches. */
-.s8-marker {
-  position: absolute;
-  top: -2px;
-  left: 50%;
-  transform: translateX(-50%);
-  color: #5dcaa5;
-  font-size: 18px;
-  pointer-events: none;
-  z-index: 3;
-  text-shadow: 0 0 2px #000;
-}
-.s8-marker--ready { color: #8ef7d1; text-shadow: 0 0 10px rgba(142, 247, 209, 0.9); }
 
 /* #4 — Cadence beat dot, mirrors the top-pass so the metronome is visible on rhythm levels. */
 .s8-beat {
@@ -142,24 +99,23 @@
 .s8-readout--miss { color: #f5a623; }
 
 /* Point-of-action CROSS feedback (toggled ~360ms by renderer.js, then fades back). */
-.s8-arena--hit {
+.s8-canvas--hit {
   border-color: #5dcaa5;
   box-shadow: 0 0 16px rgba(93, 202, 165, 0.65);
 }
 
-.s8-arena--perfect {
+.s8-canvas--perfect {
   border-color: #8ef7d1;
-  color: #d6fff2;
   box-shadow: 0 0 24px rgba(142, 247, 209, 0.9);
 }
 
-.s8-arena--miss {
+.s8-canvas--miss {
   border-color: #c0392b;
   box-shadow: 0 0 16px rgba(192, 57, 43, 0.65);
 }
 
 /* #4 — unstable (live-random) levels get a restless orange static border, reduced-motion-safe below. */
-.s8-arena--unstable { border-color: #f5a623; animation: s8-jitter 0.42s steps(2) infinite; }
+.s8-canvas--unstable { border-color: #f5a623; animation: s8-jitter 0.42s steps(2) infinite; }
 @keyframes s8-jitter {
   0% { box-shadow: 0 0 0 1px rgba(245, 166, 35, 0.5); }
   50% { box-shadow: 0 0 6px 1px rgba(245, 166, 35, 0.35); }
@@ -167,8 +123,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .s8-arena { transition: none; }
-  .s8-arena--unstable { animation: none; border-style: dashed; }
+  .s8-canvas { transition: none; }
+  .s8-canvas--unstable { animation: none; border-style: dashed; }
 }
 
 /* #1 — big CROSS / OBSERVE controls with keyboard hints (hints hidden on coarse pointers). */

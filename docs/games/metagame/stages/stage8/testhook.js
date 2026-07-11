@@ -3,6 +3,12 @@
 // that level actually uses right now. rhythm's solveMoment is a press-time ARRAY (one per beat) → each
 // is a genuine timed CROSS. The onlineUnstable back third + boss reseed while online, so solveOffline
 // only completes once Offline Mode is active (solveStableBody stalls at the first unstable level).
+//
+// 2026-07-11 (ship steering): geometry()/steerTo() expose the new player-steered ship state for
+// deterministic test coverage. steerTo(angleDeg) sets shipAngle DIRECTLY — it deliberately does NOT
+// simulate a timed key-hold (rAF dt-integration under CI jitter feeding an exact-value assertion is
+// a textbook flaky test); every test that needs a specific ship position should use steerTo(), never
+// a wall-clock hold simulation.
 import { levelConfig, solveMoment, BOSS_LEVEL } from "./game.js";
 import { FIXED_OFFLINE_SEED } from "./messages.js";
 
@@ -13,6 +19,8 @@ export function installTestHook(api) {
     aids: () => ({ clarity: api.state.clarity, ...api.getAids() }),
     buyAid: (id) => api.buyAid(id),
     crossAt(ms) { api.crossAt(Number(ms) || 0); },
+    geometry: () => api.geometry(),
+    steerTo: (angleDeg) => api.steerTo(angleDeg),
     // CROSS the current level at its perfect moment(s) for the seed it actually uses right now.
     solveLevel() {
       const sol = solveMoment(api.activeSeed(), api.state.currentLevel);
