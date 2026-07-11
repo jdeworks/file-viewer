@@ -76,10 +76,10 @@ finish with clean `dev` pushed safely to `origin`.
 
 ## Resume checkpoint — 2026-07-11, implementation and local validation complete
 
-- The implementation is split into recoverable commits: plan `8628bec2`; bounded APK browsing
-  `c3bd632e`; Media-only ASCII Studio `6127570b`; pinned EmulatorJS closure `91573769`; live
-  preference/runtime teardown `01f3b99f`; portable core/settings matrices `34a58dd6`; and fresh-page
-  core lifecycle isolation `97c1cbac`.
+- After rebasing onto the independently advanced `origin/dev`, the implementation is split into
+  recoverable commits: plan `20f1d0fc`; bounded APK browsing `83707038`; Media-only ASCII Studio
+  `bbf70f02`; pinned EmulatorJS closure `f7f3b9f7`; live preference/runtime teardown `1becf377`;
+  portable core/settings matrices `628d3abb`; and fresh-page core lifecycle isolation `d6429609`.
 - APK/AAB/XAPK keep their specialist structure and trust summary while exposing bounded contents
   through normal intake. ZIP and APK opening share caps of 10,000 entries, 64 MiB per entry,
   256 MiB per renderer/session, 1,000:1 expansion, depth three, one active extraction, and 15 seconds,
@@ -96,8 +96,9 @@ finish with clean `dev` pushed safely to `origin`.
   compression helpers, six reports, and normal plus legacy non-threaded data for fceumm, snes9x,
   gambatte, mgba, genesis_plus_gx, and stella2014, with the relevant licenses. BIOS, firmware, ROMs,
   threaded cores, localization, ads, and netplay are excluded. The fixed-point release manifest has
-  5,119 assets, 49 bundles, a 40-file/14,225,124-byte EmulatorJS bundle, and service-worker version
-  `568fc2189dd2`.
+  5,073 assets, 49 bundles, a 40-file/14,225,124-byte EmulatorJS bundle, and service-worker version
+  `faf66b2b3e18`. The lower total reflects the concurrently integrated metagame stage consolidation,
+  not removal from the EmulatorJS closure.
 - Preference-aware detection preserves the raw NES confidence scores (Game ROM 0.99, EmulatorJS
   0.92) but selects EmulatorJS when enabled, never promotes unsupported N64, applies changes live,
   and restores Game ROM Header on disable. The old reload affordance is removed. Runtime disables
@@ -106,7 +107,7 @@ finish with clean `dev` pushed safely to `origin`.
   fetch/wake guards, and ROM URL.
 - Portable browser coverage initializes all six real locked report/core/decompressor closures from
   generated non-copyrighted placeholder bytes. A full-gate run exposed that reloading a page with an
-  active Emscripten loop can abort navigation as the frame detaches; `97c1cbac` now gives every core
+  active Emscripten loop can abort navigation as the frame detaches; `d6429609` now gives every core
   a fresh page. The six-core matrix then passed three consecutive focused runs and the final full
   gate, always with HTTP 200 assets and zero localization/off-origin requests. This proves dependency
   closure and Module initialization, not gameplay.
@@ -127,14 +128,21 @@ finish with clean `dev` pushed safely to `origin`.
   and four-case responsive settings matrix, ending with `✓ all checks passed`. An earlier fresh
   Chromium process transiently SIGSEGVed before the embedded-privacy page opened; that suite passed
   immediately alone and twice in later full runs, so no privacy assertion was bypassed.
+- The pre-push fetch found that `origin/dev` had independently advanced from the original baseline to
+  `c1443574` with 15 metagame commits. The ancestry gate stopped the non-fast-forward push. All nine
+  unpushed task commits were rebased onto that remote tip; the only conflicts were the generated
+  asset manifest and service-worker stamp, both regenerated from combined sources at each affected
+  commit. Focused bounds/runtime/registry/vendor/manifest/six-core/settings checks, full
+  `./scripts/check.sh`, and the private online plus hard-offline NES gate then passed again on the
+  integrated tree. No remote metagame source was overwritten or manually conflict-edited.
 - YAMS CLI fallback captured the archive-bound, pinned-runtime, and preference/Media conventions,
   then completed a non-destructive repo rescan plus pointer, consolidation, temporal-graph, quality,
   and generalization maintenance. Four quality findings were repaired; no duplicate, contradiction,
   dead-pointer, or temporal-chain retirement was needed.
-- Final Git steps only: commit this handoff update; classify/remove task-owned temporary material;
-  require a clean worktree; fetch and prove `origin/dev` is an ancestor; push `dev` normally; fetch
-  again and verify local HEAD equals `origin/dev`. Do not force-push, tag, publish, or delete the
-  committed beta evidence.
+- Final Git steps only: commit this post-rebase handoff update; classify/remove task-owned
+  temporary material; require a clean worktree; fetch and prove `origin/dev` is an ancestor; push
+  `dev` normally; fetch again and verify local HEAD equals `origin/dev`. Do not force-push, tag,
+  publish, or delete the committed beta evidence.
 
 ## Open Questions
 
