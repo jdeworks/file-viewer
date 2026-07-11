@@ -671,4 +671,10 @@ run_phase "smoke test: known-file viewers (fresh browser process, avoids WSL2 OO
 run_phase "smoke test: binary/container types (fresh browser process, ~45 heavy WebGL/wasm opens)…" \
   node tests/smoke-binary.mjs
 
+run_phase "EmulatorJS six-core dependency closure (headless Chromium)…" \
+  node tests/emulatorjs-core-load.mjs
+
+run_phase "Emulator settings responsive matrix (headless Chromium)…" \
+  node tests/emulator-settings-responsive.mjs
+
 echo "✓ all checks passed"

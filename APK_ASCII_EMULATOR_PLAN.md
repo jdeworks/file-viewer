@@ -74,10 +74,11 @@ finish with clean `dev` pushed safely to `origin`.
 - Commercial ROM handling can contaminate evidence. Keep the fixture ignored, reselect it manually
   after reload/offline transitions, and delete emulator saves/browser contexts after each gate.
 
-## Resume checkpoint — 2026-07-11, live EmulatorJS runtime ready to commit
+## Resume checkpoint — 2026-07-11, EmulatorJS focused matrix complete
 
 - Baseline/plan `8628bec2`; bounded APK `c3bd632e`; Media ASCII Studio `6127570b`;
   pinned complete EmulatorJS vendor closure `91573769`.
+  Live preference/runtime/teardown commit: `01f3b99f`.
 - Private fixture exists at `.example-files-internet/Super Mario Bros. (World).nes`, is 40,976 bytes,
   and remains ignored; never stage or retain derived output from it.
 - APK/AAB/XAPK retain the specialist summary and expose central-directory contents through the
@@ -115,8 +116,16 @@ finish with clean `dev` pushed safely to `origin`.
   frames, nonblank rendered pixels, core-observed Start keydown/up, zero HTTP errors, zero
   localization/off-origin requests, zero console/page errors, and verified live teardown. No ROM or
   ROM-derived artifact was written or retained.
-- Next: commit this stage, add phone/light/dark settings assertions and six-core dependency request
-  coverage, then run broad offline/smoke/full gates and cleanup.
+- Portable six-core browser coverage now loads each real report, chosen normal/legacy core archive,
+  7z decompressor, and initialized Module using generated non-copyrighted placeholder bytes; all six
+  closures return HTTP 200 with zero localization or off-origin requests. This is dependency/load
+  validation only—the private NES gate remains the sole gameplay claim.
+- The settings matrix passes at 1100×800 and 390×844 in both light and dark themes: live switch,
+  drawer/row containment, zero horizontal overflow, contained toggle, ≥11 px/14 px hint typography,
+  ≥3:1 hint contrast, and no emulator reload box. The mobile test uses the real More-controls path.
+- Next: commit the focused matrices, run relevant aggregate browser/offline/privacy gates and full
+  `./scripts/check.sh`, inspect any changed visuals, reach generated fixed point, update final notes,
+  clean only task-owned temporary files, then safely fetch/push/verify.
 
 ## Open Questions
 
