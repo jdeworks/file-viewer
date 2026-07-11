@@ -372,8 +372,20 @@ alongside the game during the boss encounter.
 
 ## H. Prestige — Protocol Version
 
+**Implementation note (2026-07-11):** the card-upgrade mechanic below shipped, with two deviations
+from this spec worth knowing — see `../stages/stage6/research/prestige-upgrade-plan.md` for the
+full rationale: (1) the picker is triggered from the **hub** via a "reinforce protocol" button
+("run-end screen" below is the original framing; in practice the win screen has no direct path
+back to the hub, so prestige is a hub action, not a run-end one), and (2) the upgrade offer is
+drawn from the fixed 10-card `STARTING_DECK` constant, not literally "the current run's deck" —
+this keeps the picker's indexing stable across in-run card removal/upgrades and avoids penalizing
+a card the player already upgraded mid-run. `bonusHandshakes`/`cardOfferBonus` below were NOT
+shipped (deferred — see the plan doc); the existing ad hoc +5 max HP / +1 relic per version
+(pre-dating this doc, not spec'd here) were kept as-is alongside the new card upgrade.
+
 ### When available
-After any successful boss clear (all 3 acts). Prestige can be triggered from the run-end screen.
+After any successful boss clear (all 3 acts). Prestige can be triggered from the hub once a run has
+been attempted (see implementation note above for why "run-end screen" became a hub action).
 
 ### What resets
 - Deck (returns to base 10 cards)
@@ -468,7 +480,7 @@ the player's base deck is meaningfully stronger than the default (3 cards perman
 - [ ] Boss fight: 3-phase with fresh HP pools, phase transition animations, Protocol Rebuild draw
 - [ ] Protocol Rebuild pool: 12 cards specific to boss; draw 5 at each transition, choose 2
 - [ ] Handshakes meta-currency: earn/spend across the run
-- [ ] Protocol Version prestige: one card permanently upgraded, carried to next run
+- [x] Protocol Version prestige: one card permanently upgraded, carried to next run (2026-07-11, hub-triggered — see §H implementation note)
 - [ ] Bell messages (`messages6.js`)
 - [ ] Card upgrade system: rest site upgrade + "Protocol Version" permanent upgrades
 - [ ] Potions: single-use combat items bought at shop

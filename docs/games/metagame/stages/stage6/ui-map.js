@@ -21,16 +21,23 @@ const KEY_INFO = {
   sacrifice:   { name: "Sacrifice",   hint: "spend a rest thinning a card" }
 };
 
-// Progressive disclosure (M1): a 0-runs player sees only title + flavor + begin/codex. Each meta
-// cluster is gated on state.meta.disclosed (set at the event that makes it meaningful; backfilled
-// for existing saves in normalizeState so nothing regresses). prestige appears at ≥75% of its cost.
+// Progressive disclosure (M1): a 0-runs player sees only title + flavor + begin/codex. Most meta
+// clusters stay gated on state.meta.disclosed (set at the event that makes them meaningful;
+// backfilled for existing saves in normalizeState so nothing regresses). The prestige cluster
+// (banked total, Protocol Version, the "reinforce protocol" button) is the ONE exception, gated
+// on runsStarted > 0 instead: it's visible from a player's very first run attempt — shown but
+// disabled below cost, not hidden — because a first-time player otherwise has no way to discover
+// the prestige system exists until after finishing (dying or winning) a run. This was previously a
+// silent bug: the button was ALSO gated by a separate 75%-of-cost banked threshold on top of the
+// disclosure gate, so un-gating disclosure alone (an earlier fix attempt) would not have surfaced
+// the button any sooner.
 export function hubView(state, lock, asc = null) {
   const el = document.createElement("div");
   el.className = "s6db-hub";
   const m = state.meta;
   const d = m.disclosed || {};
   const hasRun = Boolean(state.run);
-  const prestigeReady = (m.banked || 0) >= prestigeCost(m.protocolVersion) * 0.75;
+  const canReinforce = (m.runsStarted || 0) > 0;
   el.innerHTML = `
     <h2 class="s6db-hub-title">Protocol Codex</h2>
     <p class="s6db-hub-sub">A refused handshake at the edge of the archive. Build a deck of signals
@@ -43,18 +50,21 @@ export function hubView(state, lock, asc = null) {
       <button type="button" data-action="epub">open the codex</button>
       ${lock.defeated ? `<button type="button" data-action="bts">open trace.bts</button>` : ""}
     </div>
-    ${d.stats ? `<dl class="s6db-meta-grid">
+    ${canReinforce ? `<dl class="s6db-meta-grid">
       <div><dt>Banked handshakes</dt><dd>${m.banked}</dd></div>
       <div><dt>Protocol Version</dt><dd>v${m.protocolVersion}</dd></div>
+    </dl>` : ""}
+    ${d.stats ? `<dl class="s6db-meta-grid">
       <div><dt>Runs cleared</dt><dd>${m.runsCleared}</dd></div>
       <div><dt>Best score</dt><dd>${m.bestScore || 0}</dd></div>
       <div><dt>The Refused Connection</dt><dd>${lock.defeated ? "answered" : lock.unlocked ? "negotiable" : "refusing"}</dd></div>
     </dl>` : ""}
     ${d.meta ? seedModes(hasRun) : ""}
-    ${prestigeReady ? `<div class="s6db-prestige">
+    ${canReinforce ? `<div class="s6db-prestige">
       <button type="button" data-action="prestige"${m.banked < prestigeCost(m.protocolVersion) ? " disabled" : ""}>
         reinforce protocol → v${m.protocolVersion + 1}</button>
-      <span>cost ${prestigeCost(m.protocolVersion)} banked · each version: +5 max HP, +1 starting relic &amp; one harder rule</span>
+      <span>cost ${prestigeCost(m.protocolVersion)} banked · each version: +5 max HP, +1 starting relic,
+        permanently upgrade one starting card &amp; one harder rule</span>
     </div>` : ""}
     ${d.meta ? ascensionPicker(asc, hasRun) : ""}
     ${d.stats ? `<p class="s6db-hint">${esc(lock.unlocked
@@ -270,6 +280,7 @@ export function wonView(state, run) {
     <dl class="s6db-meta-grid">
       <div><dt>Score</dt><dd>${run ? runScore(run) : 0}</dd></div>
       <div><dt>Ascension</dt><dd>${run?.ascension || 0}</dd></div>
+      <div><dt>Banked total</dt><dd>${state.meta.banked}</dd></div>
     </dl>
     ${scoreLine(state, run)}
     <div class="s6db-hub-actions">

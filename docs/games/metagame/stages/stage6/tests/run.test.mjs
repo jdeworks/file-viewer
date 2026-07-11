@@ -6,8 +6,10 @@ import {
   buyRelic,
   buyRemoval,
   buyUpgrade,
+  canPrestige,
   closeNode,
   createRun,
+  eligiblePrestigeUpgrades,
   enemyForCurrentNode,
   moveTo,
   prestigeCost,
@@ -200,6 +202,44 @@ function autoRun(seed, finalAct = FINAL_BOSS_ACT) {
   assert.equal(v2.hp, 70, "starts at full HP");
   assert.equal(v2.relics.length, 2, "version grants one starting relic each");
   assert.equal(new Set(v2.relics).size, 2, "starting relics are distinct");
+}
+
+// ── prestige: permanent card upgrade (STARTING_DECK-sourced, never the live run.deck) ──────────────
+{
+  // Fresh economy: every eligible starting slot is offered (all 10 are upgradable base ids).
+  const fresh = eligiblePrestigeUpgrades([]);
+  assert.equal(fresh.length, STARTING_DECK.length, "no prior prestige upgrades ⇒ all slots eligible");
+
+  // A spent index is excluded from future offers.
+  const afterOne = eligiblePrestigeUpgrades([0]);
+  assert.ok(!afterOne.includes(0), "already-upgraded slot 0 is no longer offered");
+  assert.equal(afterOne.length, STARTING_DECK.length - 1);
+
+  // createRun folds permanentUpgrades into the STARTING_DECK slots at the given indices — and
+  // ONLY those indices — leaving every other starting card at its base id.
+  const upgraded = createRun({ seed: 1, permanentUpgrades: [0, 6] });
+  assert.equal(upgraded.deck[0], `${STARTING_DECK[0]}+`, "slot 0 starts pre-upgraded");
+  assert.equal(upgraded.deck[6], `${STARTING_DECK[6]}+`, "slot 6 starts pre-upgraded");
+  assert.equal(upgraded.deck[1], STARTING_DECK[1], "other slots are untouched base ids");
+  assert.equal(upgraded.deck.length, STARTING_DECK.length, "deck size is unaffected");
+
+  // canPrestige is a pure affordability check, independent of any upgrade choice.
+  assert.equal(canPrestige({ banked: 39, protocolVersion: 0 }), false, "just under cost");
+  assert.equal(canPrestige({ banked: 40, protocolVersion: 0 }), true, "meets cost exactly");
+
+  // The scenario the plan review flagged as highest-risk: a starting card upgraded DURING a run
+  // (via rest/shop) must NOT become ineligible for the permanent prestige upgrade — eligibility is
+  // read from the static STARTING_DECK/permanentUpgrades, never from the run's live, mutable deck.
+  const midRun = createRun({ seed: 1 });
+  const r = upgradeDeckCard(midRun, 0); // in-run rest-site upgrade of the first starting SYN
+  assert.equal(r.ok, true);
+  assert.equal(midRun.deck[0], `${STARTING_DECK[0]}+`, "run.deck now holds the in-run-upgraded id");
+  const stillEligible = eligiblePrestigeUpgrades([]); // unaffected by midRun's live deck mutation
+  assert.ok(stillEligible.includes(0), "slot 0 is still offered for a PERMANENT prestige upgrade");
+  // Prestiging into that same slot upgrades the NEXT run's starting deck — independent of whatever
+  // happened to this run's (now-discarded) live deck.
+  const nextRun = createRun({ seed: 2, permanentUpgrades: [0] });
+  assert.equal(nextRun.deck[0], `${STARTING_DECK[0]}+`, "next run starts with the permanent upgrade");
 }
 
 // ── A1: enemy picks are deterministic from seed (no Math.random leak) ─────────────────────────────

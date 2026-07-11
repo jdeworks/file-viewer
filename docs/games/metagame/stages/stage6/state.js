@@ -16,6 +16,11 @@ export function defaultState() {
     meta: {
       banked: 0,            // handshakes banked toward prestige (Protocol Version)
       protocolVersion: 0,   // prestige tier
+      // Permanent per-prestige card upgrades: STARTING_DECK indices upgraded for good (persist
+      // into every future run's starting deck). One entry per prestige level spent on a card (see
+      // run.js eligiblePrestigeUpgrades). A flat array on meta — no dedicated normalizeState
+      // backfill needed beyond the existing top-level meta merge (see normalizeState below).
+      permanentUpgrades: [],
       runsStarted: 0,
       runsCleared: 0,
       bestAct: 0,

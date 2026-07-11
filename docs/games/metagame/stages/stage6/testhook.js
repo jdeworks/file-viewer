@@ -54,6 +54,17 @@ export function installStage6TestHook(api) {
     },
     // Pin the daily-seed clock so a daily run is reproducible in the harness.
     setDailyKey(key) { setDailyKeyOverride(key ? String(key) : null); },
+    // TEST seam: directly bank handshakes (bypasses playing out the run economy) so the harness can
+    // reach the prestige cost threshold deterministically, the same way markVeteran() seeds runsCleared.
+    grantBanked(n) {
+      state.meta.banked = Math.max(0, Number(n) || 0);
+      commit();
+      return { banked: state.meta.banked };
+    },
+    // Read-only meta snapshot for prestige/meta-progression assertions.
+    meta() { return { ...state.meta }; },
+    // Read-only run snapshot (deck, hp, status, etc.) for test assertions.
+    run() { return state.run ? { ...state.run } : null; },
     // The current run's self-competition score, plus the meta high-water marks.
     score() {
       return {

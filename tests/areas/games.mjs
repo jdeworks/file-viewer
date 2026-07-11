@@ -1105,6 +1105,13 @@ export async function run(ctx) {
   // Return to the hub for the rest of the flow (the seed checks left a run active).
   await page.click('.s6db-map [data-action="abandon"]');
   await page.waitForSelector('.s6db-hub [data-action="begin-run"]', { timeout: 4000 });
+  // Prestige hub-visibility gating fix: banked total / Protocol Version / the "reinforce protocol"
+  // button are visible from a player's very first run attempt — BEFORE any run has finished (no
+  // death or win has happened yet at this point in the test). Previously this cluster was gated
+  // behind BOTH state.meta.disclosed.stats (first finish) AND a separate 75%-of-cost banked
+  // threshold, so a new player had no way to discover the prestige system existed.
+  const s6PrestigeVisible = await page.$('.s6db-hub .s6db-prestige');
+  if (s6PrestigeVisible) pass('Stage 6 prestige cluster visible on hub before any run has finished'); else fail('Stage 6 prestige cluster still hidden pre-finish');
   // A run is the game body; verify the act-map loop is live.
   await page.click('.s6db-hub [data-action="begin-run"]');
   await page.waitForSelector('.s6db-map .s6db-node.is-available[data-node]', { timeout: 4000 });
@@ -1207,6 +1214,60 @@ export async function run(ctx) {
   }, null, { timeout: 5000 });
   pass('Stage 6 cleared via real-deck negotiation + key-gated true-ending superboss');
 
+  await page.waitForSelector('.stage7-identity-arbiter', { timeout: 8000 });
+  // A stage clear auto-advances currentStage (metagame.js completeStage), so wonView was never
+  // observable in the flow above — the win auto-navigated straight to Stage 7. Navigate BACK into
+  // the now-defeated Stage 6 via the nav bar (defeated stages stay clickable) to observe it: the
+  // persisted run is still status "won", so route() renders wonView fresh, unrelated to any
+  // finishCombat/completeOnce timing.
+  await page.click('.mg-v3-stage[data-stage="6"]');
+  await page.waitForSelector('.s6db-end--won', { timeout: 4000 });
+  const s6won = await page.evaluate(() => {
+    const dt = [...document.querySelectorAll('.s6db-end--won .s6db-meta-grid dt')]
+      .find((el) => el.textContent === 'Banked total');
+    return { hasBankedLine: Boolean(dt), bankedShown: dt ? Number(dt.nextElementSibling?.textContent) : null, meta: window.__fvStage6.meta() };
+  });
+  if (s6won.hasBankedLine && s6won.bankedShown === s6won.meta.banked) {
+    pass('Stage 6 win screen shows the banked total (previously only the death screen did)');
+  } else {
+    fail(`Stage 6 win screen missing/mismatched banked total: ${JSON.stringify(s6won)}`);
+  }
+  // Prestige upgrade flow: bank enough for the cost (test seam — bypasses playing out the run
+  // economy), open the "reinforce protocol" picker from the hub, choose a starting-deck slot, and
+  // confirm the NEXT run's starting deck carries that permanent upgrade. wonView has no direct
+  // "back to hub" button (unlike deathView) — reach the hub via "run again" → "abandon", both
+  // already-verified UI actions.
+  await page.click('.s6db-end--won [data-action="new-run"]');
+  await page.waitForSelector('.s6db-map [data-action="abandon"]', { timeout: 4000 });
+  await page.click('.s6db-map [data-action="abandon"]');
+  await page.waitForSelector('.s6db-hub [data-action="prestige"]', { timeout: 4000 });
+  await page.evaluate(() => window.__fvStage6.grantBanked(9999));
+  await page.click('.s6db-hub [data-action="prestige"]');
+  await page.waitForSelector('.mg-modal .s6db-card[data-prestige-upgrade]', { timeout: 4000 });
+  const chosenIndex = await page.evaluate(() => {
+    const el = document.querySelector('.mg-modal .s6db-card[data-prestige-upgrade]');
+    return Number(el.dataset.prestigeUpgrade);
+  });
+  await page.click('.mg-modal .s6db-card[data-prestige-upgrade]');
+  await page.waitForSelector('.s6db-hub [data-action="begin-run"]', { timeout: 4000 }); // modal closed, back on hub
+  const s6prestiged = await page.evaluate(() => window.__fvStage6.meta());
+  if ((s6prestiged.permanentUpgrades || []).includes(chosenIndex) && s6prestiged.protocolVersion >= 1) {
+    pass('Stage 6 prestige upgrade picker spends the cost and records the chosen starting-card slot');
+  } else {
+    fail(`Stage 6 prestige upgrade not recorded: chosenIndex=${chosenIndex} meta=${JSON.stringify(s6prestiged)}`);
+  }
+  await page.click('.s6db-hub [data-action="begin-run"]');
+  await page.waitForSelector('.s6db-map [data-node]', { timeout: 4000 });
+  const s6nextDeck = await page.evaluate(() => window.__fvStage6.run().deck);
+  if (s6nextDeck[chosenIndex]?.endsWith('+')) {
+    pass('Stage 6 permanent prestige upgrade carries into the next run\'s starting deck');
+  } else {
+    fail(`Stage 6 next run's starting deck missing the permanent upgrade at slot ${chosenIndex}: ${JSON.stringify(s6nextDeck)}`);
+  }
+  await page.click('.s6db-map [data-action="abandon"]');
+  await page.waitForSelector('.s6db-hub [data-action="begin-run"]', { timeout: 4000 });
+  // Navigate back to Stage 7 so the flow below continues where it left off.
+  await page.click('.mg-v3-stage[data-stage="7"]');
   await page.waitForSelector('.stage7-identity-arbiter', { timeout: 8000 });
   // The thin-gate bypass is gone: no in-game "inspect GPSInfo" button, and the investigation hook exists.
   const s7Start = await page.evaluate(() => ({

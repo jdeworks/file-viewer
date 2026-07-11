@@ -16,7 +16,7 @@ import {
   createRun, moveTo, enemyForCurrentNode, resolveCombat,
   takeReward, takePotion, usePotion, buyPotion, takeBossRelic, rest, removeCard, closeNode,
   buyCard, buyRemoval, buyUpgrade, buyRelic,
-  prestigeCost, seatAtFinalBoss, runScore,
+  prestigeCost, canPrestige, eligiblePrestigeUpgrades, seatAtFinalBoss, runScore,
   finalActForWins, finalActOf, isVeteranRun
 } from "./run.js";
 import { banner } from "../../shared/feedback.js";
@@ -31,7 +31,7 @@ import { createAscension } from "../../shared/ascension.js";
 import { ASCENSION_MODS } from "./ascension-mods.js";
 import { combatView } from "./ui-combat.js";
 import { applyCombatFx } from "./combat-fx.js";
-import { openPileModal, openLogModal, openDeckModal } from "./combat-modals.js";
+import { openPileModal, openLogModal, openDeckModal, openPrestigeModal } from "./combat-modals.js";
 import { installCombatHover } from "./combat-hover.js";
 import { hubView, mapView, paintMapEdges, deathView, wonView } from "./ui-map.js";
 import { rewardView, restView, shopView, eventView, bossRewardView } from "./ui-rewards.js";
@@ -308,11 +308,25 @@ export function renderStage6({ host, state, actions, achievements, bell, bts, vi
     pendingBanner = "the archive descends further — acts 5 and 6 unlocked";
   }
 
+  // Prestige is a two-step action (UX audit follow-up: previously fired instantly with no reward
+  // choice). "reinforce protocol" opens a picker of the player's still-upgradable starting-deck
+  // slots (see run.js eligiblePrestigeUpgrades — sourced from the STATIC STARTING_DECK, never the
+  // run's live deck); picking one, or explicitly skipping, spends the cost and bumps the version.
   function doPrestige() {
-    const cost = prestigeCost(state.meta.protocolVersion || 0);
-    if ((state.meta.banked || 0) < cost) return;
-    state.meta.banked -= cost;
+    if (!canPrestige(state.meta)) return;
+    openPrestigeModal({
+      eligibleIndices: eligiblePrestigeUpgrades(state.meta.permanentUpgrades || []),
+      onPick: (index) => applyPrestige(index),
+      onSkip: () => applyPrestige(null)
+    });
+  }
+
+  function applyPrestige(index) {
+    if (!canPrestige(state.meta)) return; // defensive re-check (mirrors buy*/rest guards elsewhere)
+    state.meta.banked -= prestigeCost(state.meta.protocolVersion || 0);
     state.meta.protocolVersion = (state.meta.protocolVersion || 0) + 1;
+    if (index != null) state.meta.permanentUpgrades = [...(state.meta.permanentUpgrades || []), index];
+    commit();
   }
 
   // ── run lifecycle ────────────────────────────────────────────────────────────────────────────
@@ -337,7 +351,8 @@ export function renderStage6({ host, state, actions, achievements, bell, bts, vi
       mode,
       dailyKey,
       // First-ever run (0 wins) ends at the act-4 story boss; ≥1 win restores the full six acts.
-      finalAct: finalActForWins(state.meta.runsCleared || 0)
+      finalAct: finalActForWins(state.meta.runsCleared || 0),
+      permanentUpgrades: state.meta.permanentUpgrades || []
     });
     state.ui.screen = "run";
     if (combatRun) combatRun.reset(); // drop any stale combat snapshot from a previous run

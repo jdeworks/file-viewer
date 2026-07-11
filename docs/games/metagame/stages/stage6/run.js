@@ -8,7 +8,7 @@
 import { generateRun, nodeById, enemyForNode } from "./mapgen.js";
 import { makeRng, hashSeed, strHash } from "./combat.js";
 import { STARTING_DECK, REWARD_POOL, draftRewardCards } from "./cards.js";
-import { upgradeIdFor } from "./card-upgrades.js";
+import { canUpgrade, upgradeIdFor } from "./card-upgrades.js";
 import { baseRunConfig, foldAscension, activeAscensionMods, MAX_ASCENSION } from "./ascension-mods.js";
 import { rollRelic, rollRelics, relicById } from "./relics.js";
 import { rollPotion, POTION_DROP_CHANCE } from "./potions.js";
@@ -59,6 +59,27 @@ export function prestigeCost(version) {
   return (Number(version || 0) + 1) * 40;
 }
 
+// Whether the meta economy can afford the next prestige (pure predicate — no mutation).
+export function canPrestige(meta) {
+  return (Number(meta?.banked) || 0) >= prestigeCost(meta?.protocolVersion || 0);
+}
+
+// The STARTING_DECK indices eligible for a permanent prestige upgrade: not already permanently
+// upgraded (by index) and still upgradable (canUpgrade rejects already-"+"-suffixed base ids, but
+// every STARTING_DECK slot starts as a plain base id so this only excludes indices already spent).
+// Deliberately sourced from the STATIC STARTING_DECK constant, never the run's live `run.deck` —
+// run.deck shifts under removeCard/shop purge (splice, see removeCard below) so index-based
+// addressing into it isn't stable, and a starting card the player already rest/shop-upgraded
+// in-run would show as "<ID>+" there, wrongly excluding the exact card a player most wants to
+// lock in permanently (canUpgrade("<ID>+") is false). The static array has neither problem.
+export function eligiblePrestigeUpgrades(permanentUpgrades = []) {
+  const spent = new Set(permanentUpgrades);
+  return STARTING_DECK
+    .map((id, i) => ({ id, i }))
+    .filter(({ id, i }) => !spent.has(i) && canUpgrade(id))
+    .map(({ i }) => i);
+}
+
 // runScore(run) — a simple, deterministic self-competition score for a finished run (local-only):
 //   handshakes earned + (acts fully cleared × 50) + HP remaining, all bonused ×(1 + ascension/10).
 // A won run counts all FINAL_BOSS_ACT acts; a death counts the acts before the one it died in.
@@ -78,7 +99,7 @@ export function effectiveAscension(version = 0, ascension = 0) {
   return Math.max(0, Math.min(MAX_ASCENSION, Math.max(Number(version) || 0, Number(ascension) || 0)));
 }
 
-export function createRun({ seed = 1, version = 0, handshakes = 0, ascension = 0, dailyKey = null, mode = "standard", finalAct = FINAL_BOSS_ACT } = {}) {
+export function createRun({ seed = 1, version = 0, handshakes = 0, ascension = 0, dailyKey = null, mode = "standard", finalAct = FINAL_BOSS_ACT, permanentUpgrades = [] } = {}) {
   const maxHp = PLAYER_MAX_HP + Number(version || 0) * PRESTIGE_HP_PER_VERSION;
   const ascensionLevel = effectiveAscension(version, ascension);
   // The number of acts this run generates AND terminates at (see finalActForWins). Clamped to [1,6].
@@ -98,7 +119,10 @@ export function createRun({ seed = 1, version = 0, handshakes = 0, ascension = 0
     act: 1,
     currentNodeId: null,
     clearedIds: [],
-    deck: [...STARTING_DECK],
+    // Permanent prestige upgrades (STARTING_DECK indices) are folded in here — the ONLY place they
+    // apply. Every run after this point works with plain card ids again (upgraded or not); nothing
+    // downstream needs to know a card started upgraded because of prestige vs. an in-run choice.
+    deck: STARTING_DECK.map((id, i) => (permanentUpgrades.includes(i) ? upgradeIdFor(id) || id : id)),
     relics: [],
     potions: [], // the 2-slot consumable belt (potions.js); persisted with the run
     keys: [],    // true-ending keys earned this run (3 ⇒ the hidden superboss opens after the boss)

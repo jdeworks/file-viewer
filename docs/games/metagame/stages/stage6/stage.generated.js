@@ -2816,6 +2816,13 @@ function isVeteranRun(run) {
 function prestigeCost(version) {
   return (Number(version || 0) + 1) * 40;
 }
+function canPrestige(meta) {
+  return (Number(meta?.banked) || 0) >= prestigeCost(meta?.protocolVersion || 0);
+}
+function eligiblePrestigeUpgrades(permanentUpgrades = []) {
+  const spent = new Set(permanentUpgrades);
+  return STARTING_DECK.map((id, i) => ({ id, i })).filter(({ id, i }) => !spent.has(i) && canUpgrade(id)).map(({ i }) => i);
+}
 function runScore(run) {
   if (!run) return 0;
   const won = run.status === "won";
@@ -2826,7 +2833,7 @@ function runScore(run) {
 function effectiveAscension(version = 0, ascension = 0) {
   return Math.max(0, Math.min(MAX_ASCENSION, Math.max(Number(version) || 0, Number(ascension) || 0)));
 }
-function createRun({ seed = 1, version = 0, handshakes = 0, ascension = 0, dailyKey = null, mode = "standard", finalAct = FINAL_BOSS_ACT } = {}) {
+function createRun({ seed = 1, version = 0, handshakes = 0, ascension = 0, dailyKey = null, mode = "standard", finalAct = FINAL_BOSS_ACT, permanentUpgrades = [] } = {}) {
   const maxHp = PLAYER_MAX_HP + Number(version || 0) * PRESTIGE_HP_PER_VERSION;
   const ascensionLevel = effectiveAscension(version, ascension);
   const acts = Math.max(1, Math.min(FINAL_BOSS_ACT, Number(finalAct) || FINAL_BOSS_ACT));
@@ -2846,7 +2853,10 @@ function createRun({ seed = 1, version = 0, handshakes = 0, ascension = 0, daily
     act: 1,
     currentNodeId: null,
     clearedIds: [],
-    deck: [...STARTING_DECK],
+    // Permanent prestige upgrades (STARTING_DECK indices) are folded in here — the ONLY place they
+    // apply. Every run after this point works with plain card ids again (upgraded or not); nothing
+    // downstream needs to know a card started upgraded because of prestige vs. an in-run choice.
+    deck: STARTING_DECK.map((id, i) => permanentUpgrades.includes(i) ? upgradeIdFor(id) || id : id),
     relics: [],
     potions: [],
     // the 2-slot consumable belt (potions.js); persisted with the run
@@ -3487,6 +3497,21 @@ function installStage6TestHook(api) {
     setDailyKey(key) {
       setDailyKeyOverride(key ? String(key) : null);
     },
+    // TEST seam: directly bank handshakes (bypasses playing out the run economy) so the harness can
+    // reach the prestige cost threshold deterministically, the same way markVeteran() seeds runsCleared.
+    grantBanked(n) {
+      state.meta.banked = Math.max(0, Number(n) || 0);
+      commit();
+      return { banked: state.meta.banked };
+    },
+    // Read-only meta snapshot for prestige/meta-progression assertions.
+    meta() {
+      return { ...state.meta };
+    },
+    // Read-only run snapshot (deck, hp, status, etc.) for test assertions.
+    run() {
+      return state.run ? { ...state.run } : null;
+    },
     // The current run's self-competition score, plus the meta high-water marks.
     score() {
       return {
@@ -3971,6 +3996,245 @@ function flyCard({ rect, faceHTML }, arena) {
   setTimeout(() => clone2.remove(), 240);
 }
 
+// ../../docs/games/metagame/stages/stage6/ui-rewards.js
+var PRICE = { common: 25, uncommon: 40, rare: 60, starter: 20 };
+function rewardView(run) {
+  const el = document.createElement("div");
+  el.className = "s6db-reward";
+  const cards = run.pendingReward?.cards || [];
+  const relic = run.pendingReward?.relic ? relicById(run.pendingReward.relic) : null;
+  el.innerHTML = `<h2>Signal recovered</h2>
+    ${relic ? `<p class="s6db-relic-won">⬢ Relic acquired — <strong>${esc3(relic.name)}</strong>: ${esc3(relic.text)}</p>` : ""}
+    <p>Add one card to your deck.</p>
+    ${keyTelegraph(run, "ascetic", "skip everything to stay ascetic ⚷")}`;
+  const row = document.createElement("div");
+  row.className = "s6db-card-row";
+  row.replaceChildren(...cards.map((id) => cardOption(id, "take", id)));
+  el.appendChild(row);
+  const potionId = run.pendingReward?.potion;
+  if (potionId) el.appendChild(potionOffer(run, potionId));
+  el.insertAdjacentHTML(
+    "beforeend",
+    `<div class="s6db-hub-actions"><button type="button" data-take="skip" class="s6db-ghost">skip</button></div>`
+  );
+  return el;
+}
+function potionOffer(run, potionId) {
+  const p = potionById(potionId);
+  const wrap = document.createElement("div");
+  wrap.className = "s6db-potion-offer";
+  const belt = run.potions || [];
+  if (belt.length < POTION_SLOTS) {
+    wrap.innerHTML = `<p>Potion found — <strong>${esc3(p?.name || potionId)}</strong>: ${esc3(p?.text || "")}</p>
+      <button type="button" data-take-potion="">grab potion ⚗</button>`;
+  } else {
+    wrap.innerHTML = `<p>Potion found — <strong>${esc3(p?.name || potionId)}</strong>: ${esc3(p?.text || "")}. Belt full — replace one:</p>`;
+    const actions = document.createElement("div");
+    actions.className = "s6db-hub-actions";
+    actions.replaceChildren(...belt.map((id, i) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.dataset.takePotion = String(i);
+      b.textContent = `replace ${potionById(id)?.name || id}`;
+      return b;
+    }));
+    wrap.appendChild(actions);
+  }
+  return wrap;
+}
+function bossRewardView(run) {
+  const el = document.createElement("div");
+  el.className = "s6db-reward s6db-boss-reward";
+  const offered = (run.pendingReward?.relics || []).map(relicById).filter(Boolean);
+  el.innerHTML = `<h2>Protocol negotiated</h2>
+    <p>${offered.length ? "Claim one relic to carry into the next act." : "No new relics remain."}</p>`;
+  const row = document.createElement("div");
+  row.className = "s6db-card-row";
+  row.replaceChildren(...offered.map((relic) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = `s6db-relic-choice${relic.cursed ? " is-cursed" : ""}`;
+    b.dataset.bossRelic = relic.id;
+    b.innerHTML = `<strong>⬢ ${esc3(relic.name)}</strong><small class="s6db-card-text">${esc3(relic.text)}</small>`;
+    return b;
+  }));
+  el.appendChild(row);
+  el.insertAdjacentHTML(
+    "beforeend",
+    `<div class="s6db-hub-actions"><button type="button" data-boss-relic="skip" class="s6db-ghost">${offered.length ? "skip relic ▸" : "continue ▸"}</button></div>`
+  );
+  return el;
+}
+function restView(run) {
+  const el = document.createElement("div");
+  el.className = "s6db-rest";
+  const heal2 = Math.round(run.maxHp * 0.3);
+  el.innerHTML = `
+    <h2>Keepalive</h2>
+    <p>A quiet socket. Choose ONE: recover ${heal2} HP, upgrade a card, or thin your deck.</p>
+    ${keyTelegraph(run, "sacrifice", "spend this rest thinning a card to earn the sacrifice key ⚷")}
+    <div class="s6db-hub-actions">
+      <button type="button" data-rest="heal">rest — heal ${heal2} HP ▸</button>
+    </div>
+    <div class="s6db-rest-upgrade"><h3>…or upgrade a card</h3></div>
+    <div class="s6db-rest-thin"><h3>…or remove a card</h3></div>`;
+  const upgradeable = run.deck.map((id, i) => ({ id, i })).filter(({ id }) => canUpgrade(id));
+  const up = el.querySelector(".s6db-rest-upgrade");
+  if (upgradeable.length) {
+    const upList = document.createElement("div");
+    upList.className = "s6db-card-row";
+    upList.replaceChildren(...upgradeable.map(({ id, i }) => cardOption(upgradeIdFor(id), "upgrade", String(i))));
+    up.appendChild(upList);
+  } else {
+    up.insertAdjacentHTML("beforeend", `<p class="s6db-hint">Every card is already upgraded.</p>`);
+  }
+  const thin = el.querySelector(".s6db-rest-thin");
+  const list = document.createElement("div");
+  list.className = "s6db-card-row";
+  list.replaceChildren(...run.deck.map((id, i) => cardOption(id, "remove", String(i))));
+  thin.appendChild(list);
+  return el;
+}
+function shopView(run) {
+  const el = document.createElement("div");
+  el.className = "s6db-shop";
+  const offers = shopOffers(run);
+  el.innerHTML = `<h2>Open port</h2><p>Handshakes: <strong>${run.handshakes}</strong>. Buy what you can afford.</p>`;
+  const row = document.createElement("div");
+  row.className = "s6db-card-row";
+  row.replaceChildren(...offers.map(({ id, price }) => {
+    const chip = cardOption(id, "buy", id);
+    chip.dataset.price = String(price);
+    chip.disabled = run.handshakes < price;
+    chip.insertAdjacentHTML("beforeend", `<span class="s6db-price">${price} ✋</span>`);
+    return chip;
+  }));
+  el.appendChild(row);
+  const cost = removalCost(run);
+  const affordable = run.handshakes >= cost && run.deck.length > 1;
+  el.insertAdjacentHTML(
+    "beforeend",
+    `<div class="s6db-shop-remove"><h3>Purge a card — ${cost} ✋ <small>(price rises each purchase)</small></h3></div>`
+  );
+  const purge = el.querySelector(".s6db-shop-remove");
+  const purgeRow = document.createElement("div");
+  purgeRow.className = "s6db-card-row";
+  purgeRow.replaceChildren(...run.deck.map((id, i) => {
+    const chip = cardOption(id, "buy-remove", String(i));
+    chip.disabled = !affordable;
+    return chip;
+  }));
+  purge.appendChild(purgeRow);
+  const upgradeable = run.deck.map((id, i) => ({ id, i })).filter(({ id }) => canUpgrade(id));
+  if (upgradeable.length) {
+    el.insertAdjacentHTML(
+      "beforeend",
+      `<div class="s6db-shop-upgrade"><h3>Sharpen a card — ${UPGRADE_COST} ✋ each</h3></div>`
+    );
+    const upRow = document.createElement("div");
+    upRow.className = "s6db-card-row";
+    upRow.replaceChildren(...upgradeable.map(({ id, i }) => {
+      const chip = cardOption(upgradeIdFor(id), "buy-upgrade", String(i));
+      chip.dataset.price = String(UPGRADE_COST);
+      chip.disabled = run.handshakes < UPGRADE_COST;
+      return chip;
+    }));
+    el.querySelector(".s6db-shop-upgrade").appendChild(upRow);
+  }
+  const potionOffers = shopPotionOffers(run);
+  const beltFull = (run.potions || []).length >= POTION_SLOTS;
+  el.insertAdjacentHTML(
+    "beforeend",
+    `<div class="s6db-shop-potions"><h3>Consumables — ${POTION_COST} ✋ each${beltFull ? " <small>(belt full)</small>" : ""}</h3></div>`
+  );
+  const potRow = document.createElement("div");
+  potRow.className = "s6db-card-row";
+  potRow.replaceChildren(...potionOffers.map((id) => {
+    const p = potionById(id);
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "s6db-potion s6db-potion--shop";
+    b.dataset.buyPotion = id;
+    b.dataset.price = String(POTION_COST);
+    b.disabled = beltFull || run.handshakes < POTION_COST;
+    b.innerHTML = `<strong>⚗ ${esc3(p?.name || id)}</strong><small class="s6db-card-text">${esc3(p?.text || "")}</small><span class="s6db-price">${POTION_COST} ✋</span>`;
+    return b;
+  }));
+  el.querySelector(".s6db-shop-potions").appendChild(potRow);
+  const relicAffordable = run.handshakes >= RELIC_COST;
+  el.insertAdjacentHTML(
+    "beforeend",
+    `<div class="s6db-shop-relic"><h3>Acquire a relic — ${RELIC_COST} ✋</h3>
+       <button type="button" data-buy-relic="1" data-price="${RELIC_COST}"${relicAffordable ? "" : " disabled"}>buy a relic ⬢</button></div>`
+  );
+  el.insertAdjacentHTML(
+    "beforeend",
+    `<div class="s6db-hub-actions"><button type="button" data-action="to-map">leave ▸</button></div>`
+  );
+  return el;
+}
+function eventView(run, event) {
+  const el = document.createElement("div");
+  el.className = "s6db-event";
+  el.innerHTML = `
+    <h2>${esc3(event?.title || "An anomaly idles in the corridor")}</h2>
+    <p>${esc3(event?.text || "")}</p>
+    ${run.notice ? `<p class="s6db-hint">${esc3(run.notice)}</p>` : ""}`;
+  const actions = document.createElement("div");
+  actions.className = "s6db-hub-actions";
+  const buttons = (event?.choices || []).map((c) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.dataset.event = c.id;
+    b.textContent = `${c.label} ▸`;
+    return b;
+  });
+  const leave = document.createElement("button");
+  leave.type = "button";
+  leave.className = "s6db-ghost";
+  leave.dataset.action = "to-map";
+  leave.textContent = "walk past";
+  actions.replaceChildren(...buttons, leave);
+  el.appendChild(actions);
+  return el;
+}
+function shopOffers(run) {
+  const rng = makeRng(strHash(`${run.seed}:${run.currentNodeId}:shop`));
+  const pool = [...REWARD_POOL];
+  const out = [];
+  while (out.length < 4 && pool.length) {
+    const id = pool.splice(Math.floor(rng() * pool.length), 1)[0];
+    const card = cardById(id);
+    out.push({ id, price: PRICE[card?.rarity] || 30 });
+  }
+  return out;
+}
+function shopPotionOffers(run) {
+  const out = [];
+  let salt = 0;
+  while (out.length < 2 && salt < 24) {
+    const id = rollPotion(strHash(`${run.seed}:${run.currentNodeId}:potion:${salt++}`));
+    if (!out.includes(id)) out.push(id);
+  }
+  return out;
+}
+function keyTelegraph(run, keyId, text) {
+  if (!isVeteranRun(run) || (run?.keys || []).includes(keyId)) return "";
+  return `<p class="s6db-telegraph">${esc3(text)}</p>`;
+}
+function cardOption(id, attr, value) {
+  const card = cardById(id);
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = `s6db-card ${cardTypeClass(card)}`;
+  button.dataset[attr] = value;
+  button.innerHTML = cardFaceInner(id);
+  return button;
+}
+function esc3(value) {
+  return String(value).replace(/[&<>"]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[ch]);
+}
+
 // ../../docs/games/metagame/stages/stage6/combat-modals.js
 import { openModal } from "../../shared/modal.js";
 function cardGrid(ids) {
@@ -3999,6 +4263,42 @@ function openPileModal(combat, kind) {
 function openDeckModal(deck) {
   const ids = [...deck || []].sort((a, b) => (cardById(a)?.type || "").localeCompare(cardById(b)?.type || "") || String(a).localeCompare(String(b)));
   openModal({ title: `your deck (${ids.length})`, contentEl: cardGrid(ids), className: "s6db-modal" });
+}
+function openPrestigeModal({ eligibleIndices, onPick, onSkip }) {
+  const wrap = document.createElement("div");
+  const grid = document.createElement("div");
+  grid.className = "mg-modal-grid";
+  if (eligibleIndices.length) {
+    grid.replaceChildren(...eligibleIndices.map((i) => {
+      const button = cardOption(upgradeIdFor(STARTING_DECK[i]), "prestigeUpgrade", String(i));
+      button.addEventListener("click", () => {
+        handle.close();
+        onPick(i);
+      });
+      return button;
+    }));
+  } else {
+    const p = document.createElement("p");
+    p.className = "mg-modal-empty";
+    p.textContent = "every starting card is already permanently upgraded.";
+    grid.appendChild(p);
+  }
+  wrap.appendChild(grid);
+  const skip = document.createElement("button");
+  skip.type = "button";
+  skip.className = "s6db-ghost";
+  skip.textContent = "skip — keep the version anyway ▸";
+  skip.addEventListener("click", () => {
+    handle.close();
+    onSkip();
+  });
+  wrap.appendChild(skip);
+  const handle = openModal({
+    title: "reinforce protocol — permanently upgrade a starting card",
+    contentEl: wrap,
+    className: "s6db-modal"
+  });
+  return handle;
 }
 function openLogModal(combat) {
   if (!combat) return;
@@ -4104,9 +4404,9 @@ function installCombatHover(root, getCombat) {
     }
     if (isAttack(id)) root.querySelector(".s6db-enemy")?.classList.add("s6db-enemy--targeted");
     const card = cardById(id);
-    const kw = keywordsFor(id).map((k) => `<b>${esc3(k)}</b> — ${esc3(KEYWORDS[k] || "")}`).join("<br>");
+    const kw = keywordsFor(id).map((k) => `<b>${esc4(k)}</b> — ${esc4(KEYWORDS[k] || "")}`).join("<br>");
     const t = ensureTip();
-    t.innerHTML = `<strong>${esc3(card?.name || id)}</strong><span>${esc3(card?.text || "")}</span>` + (kw ? `<em class="s6db-tooltip-keys">${kw}</em>` : "");
+    t.innerHTML = `<strong>${esc4(card?.name || id)}</strong><span>${esc4(card?.text || "")}</span>` + (kw ? `<em class="s6db-tooltip-keys">${kw}</em>` : "");
     const r = cardEl.getBoundingClientRect();
     t.style.left = `${Math.round(r.left + r.width / 2)}px`;
     t.style.top = `${Math.round(r.top - 8)}px`;
@@ -4118,7 +4418,7 @@ function installCombatHover(root, getCombat) {
     clear();
   });
 }
-function esc3(value) {
+function esc4(value) {
   return String(value).replace(/[&<>"]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[ch]);
 }
 
@@ -4143,7 +4443,7 @@ function hubView(state, lock, asc = null) {
   const m = state.meta;
   const d = m.disclosed || {};
   const hasRun = Boolean(state.run);
-  const prestigeReady = (m.banked || 0) >= prestigeCost(m.protocolVersion) * 0.75;
+  const canReinforce = (m.runsStarted || 0) > 0;
   el.innerHTML = `
     <h2 class="s6db-hub-title">Protocol Codex</h2>
     <p class="s6db-hub-sub">A refused handshake at the edge of the archive. Build a deck of signals
@@ -4154,21 +4454,24 @@ function hubView(state, lock, asc = null) {
       <button type="button" data-action="epub">open the codex</button>
       ${lock.defeated ? `<button type="button" data-action="bts">open trace.bts</button>` : ""}
     </div>
-    ${d.stats ? `<dl class="s6db-meta-grid">
+    ${canReinforce ? `<dl class="s6db-meta-grid">
       <div><dt>Banked handshakes</dt><dd>${m.banked}</dd></div>
       <div><dt>Protocol Version</dt><dd>v${m.protocolVersion}</dd></div>
+    </dl>` : ""}
+    ${d.stats ? `<dl class="s6db-meta-grid">
       <div><dt>Runs cleared</dt><dd>${m.runsCleared}</dd></div>
       <div><dt>Best score</dt><dd>${m.bestScore || 0}</dd></div>
       <div><dt>The Refused Connection</dt><dd>${lock.defeated ? "answered" : lock.unlocked ? "negotiable" : "refusing"}</dd></div>
     </dl>` : ""}
     ${d.meta ? seedModes(hasRun) : ""}
-    ${prestigeReady ? `<div class="s6db-prestige">
+    ${canReinforce ? `<div class="s6db-prestige">
       <button type="button" data-action="prestige"${m.banked < prestigeCost(m.protocolVersion) ? " disabled" : ""}>
         reinforce protocol → v${m.protocolVersion + 1}</button>
-      <span>cost ${prestigeCost(m.protocolVersion)} banked · each version: +5 max HP, +1 starting relic &amp; one harder rule</span>
+      <span>cost ${prestigeCost(m.protocolVersion)} banked · each version: +5 max HP, +1 starting relic,
+        permanently upgrade one starting card &amp; one harder rule</span>
     </div>` : ""}
     ${d.meta ? ascensionPicker(asc, hasRun) : ""}
-    ${d.stats ? `<p class="s6db-hint">${esc4(lock.unlocked ? "Chapter 9 is read. The connection can be negotiated." : "The connection refuses everything you send. The codex explains why.")}</p>` : ""}
+    ${d.stats ? `<p class="s6db-hint">${esc5(lock.unlocked ? "Chapter 9 is read. The connection can be negotiated." : "The connection refuses everything you send. The codex explains why.")}</p>` : ""}
   `;
   return el;
 }
@@ -4205,7 +4508,7 @@ function ascensionPicker(asc, hasRun) {
 function activeRules(level) {
   const active = activeAscensionMods(level);
   if (!active.length) return "";
-  return `<ul class="s6db-modifiers" aria-label="active rules">${active.map((mod) => `<li>⚠ <strong>${esc4(mod.label)}</strong> — ${esc4(mod.desc)}</li>`).join("")}</ul>`;
+  return `<ul class="s6db-modifiers" aria-label="active rules">${active.map((mod) => `<li>⚠ <strong>${esc5(mod.label)}</strong> — ${esc5(mod.desc)}</li>`).join("")}</ul>`;
 }
 function mapView(run) {
   const el = document.createElement("div");
@@ -4219,7 +4522,7 @@ function mapView(run) {
       <span>Act ${run.act} / ${total} — choose your route</span>
       <span class="s6db-act-track" aria-label="act ${run.act} of ${total}">${dots}</span>
     </div>
-    ${run.notice ? `<div class="s6db-notice">${esc4(run.notice)}</div>` : ""}`;
+    ${run.notice ? `<div class="s6db-notice">${esc5(run.notice)}</div>` : ""}`;
   const grid = document.createElement("div");
   grid.className = "s6db-map-grid";
   for (const layer of act.layers) {
@@ -4243,10 +4546,10 @@ function inventoryStrip(run) {
   const relics = (run.relics || []).map(relicById).filter(Boolean);
   const keys = run.keys || [];
   const vet = isVeteranRun(run);
-  const rItems = relics.length ? relics.map((r) => `<li><strong>⬢ ${esc4(r.name)}</strong> — ${esc4(r.text)}</li>`).join("") : `<li class="s6db-inv-none">No relics yet — clear elites and act bosses to earn them.</li>`;
+  const rItems = relics.length ? relics.map((r) => `<li><strong>⬢ ${esc5(r.name)}</strong> — ${esc5(r.text)}</li>`).join("") : `<li class="s6db-inv-none">No relics yet — clear elites and act bosses to earn them.</li>`;
   const keyRows = KEY_ORDER.filter((id) => vet || keys.includes(id)).map((id) => {
     const got = keys.includes(id);
-    return `<li class="${got ? "is-earned" : ""}"><strong>${got ? "⚷" : "○"} ${esc4(KEY_INFO[id].name)}</strong> — ${esc4(KEY_INFO[id].hint)}</li>`;
+    return `<li class="${got ? "is-earned" : ""}"><strong>${got ? "⚷" : "○"} ${esc5(KEY_INFO[id].name)}</strong> — ${esc5(KEY_INFO[id].hint)}</li>`;
   }).join("");
   const keySection = keyRows ? `<div class="s6db-inv-keys"><h4>True-ending keys ${keys.length}/3</h4><ul>${keyRows}</ul></div>` : "";
   return `<details class="s6db-inv"><summary>relics ${relics.length} · keys ${keys.length}/3</summary>
@@ -4308,7 +4611,7 @@ function nodeChip(node, run, available, cleared) {
   }
   chip.dataset.nodeId = node.id;
   chip.innerHTML = `<span class="s6db-node-icon">${NODE_ICON[node.type] || "?"}</span>
-    <span class="s6db-node-type">${esc4(node.type)}</span>`;
+    <span class="s6db-node-type">${esc5(node.type)}</span>`;
   return chip;
 }
 function deathView(state, run) {
@@ -4339,6 +4642,7 @@ function wonView(state, run) {
     <dl class="s6db-meta-grid">
       <div><dt>Score</dt><dd>${run ? runScore(run) : 0}</dd></div>
       <div><dt>Ascension</dt><dd>${run?.ascension || 0}</dd></div>
+      <div><dt>Banked total</dt><dd>${state.meta.banked}</dd></div>
     </dl>
     ${scoreLine(state, run)}
     <div class="s6db-hub-actions">
@@ -4353,248 +4657,9 @@ function scoreLine(state, run) {
   if (run?.dailyKey) {
     const seedBest = state.meta.dailyBest && state.meta.dailyBest[run.dailyKey] || 0;
     const label = run.mode === "daily" ? "daily" : "seed";
-    parts.push(`<span>${esc4(label)} <code>${esc4(run.dailyKey)}</code> best: <strong>${seedBest}</strong></span>`);
+    parts.push(`<span>${esc5(label)} <code>${esc5(run.dailyKey)}</code> best: <strong>${seedBest}</strong></span>`);
   }
   return `<p class="s6db-score-line">${parts.join(" · ")}</p>`;
-}
-function esc4(value) {
-  return String(value).replace(/[&<>"]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[ch]);
-}
-
-// ../../docs/games/metagame/stages/stage6/ui-rewards.js
-var PRICE = { common: 25, uncommon: 40, rare: 60, starter: 20 };
-function rewardView(run) {
-  const el = document.createElement("div");
-  el.className = "s6db-reward";
-  const cards = run.pendingReward?.cards || [];
-  const relic = run.pendingReward?.relic ? relicById(run.pendingReward.relic) : null;
-  el.innerHTML = `<h2>Signal recovered</h2>
-    ${relic ? `<p class="s6db-relic-won">⬢ Relic acquired — <strong>${esc5(relic.name)}</strong>: ${esc5(relic.text)}</p>` : ""}
-    <p>Add one card to your deck.</p>
-    ${keyTelegraph(run, "ascetic", "skip everything to stay ascetic ⚷")}`;
-  const row = document.createElement("div");
-  row.className = "s6db-card-row";
-  row.replaceChildren(...cards.map((id) => cardOption(id, "take", id)));
-  el.appendChild(row);
-  const potionId = run.pendingReward?.potion;
-  if (potionId) el.appendChild(potionOffer(run, potionId));
-  el.insertAdjacentHTML(
-    "beforeend",
-    `<div class="s6db-hub-actions"><button type="button" data-take="skip" class="s6db-ghost">skip</button></div>`
-  );
-  return el;
-}
-function potionOffer(run, potionId) {
-  const p = potionById(potionId);
-  const wrap = document.createElement("div");
-  wrap.className = "s6db-potion-offer";
-  const belt = run.potions || [];
-  if (belt.length < POTION_SLOTS) {
-    wrap.innerHTML = `<p>Potion found — <strong>${esc5(p?.name || potionId)}</strong>: ${esc5(p?.text || "")}</p>
-      <button type="button" data-take-potion="">grab potion ⚗</button>`;
-  } else {
-    wrap.innerHTML = `<p>Potion found — <strong>${esc5(p?.name || potionId)}</strong>: ${esc5(p?.text || "")}. Belt full — replace one:</p>`;
-    const actions = document.createElement("div");
-    actions.className = "s6db-hub-actions";
-    actions.replaceChildren(...belt.map((id, i) => {
-      const b = document.createElement("button");
-      b.type = "button";
-      b.dataset.takePotion = String(i);
-      b.textContent = `replace ${potionById(id)?.name || id}`;
-      return b;
-    }));
-    wrap.appendChild(actions);
-  }
-  return wrap;
-}
-function bossRewardView(run) {
-  const el = document.createElement("div");
-  el.className = "s6db-reward s6db-boss-reward";
-  const offered = (run.pendingReward?.relics || []).map(relicById).filter(Boolean);
-  el.innerHTML = `<h2>Protocol negotiated</h2>
-    <p>${offered.length ? "Claim one relic to carry into the next act." : "No new relics remain."}</p>`;
-  const row = document.createElement("div");
-  row.className = "s6db-card-row";
-  row.replaceChildren(...offered.map((relic) => {
-    const b = document.createElement("button");
-    b.type = "button";
-    b.className = `s6db-relic-choice${relic.cursed ? " is-cursed" : ""}`;
-    b.dataset.bossRelic = relic.id;
-    b.innerHTML = `<strong>⬢ ${esc5(relic.name)}</strong><small class="s6db-card-text">${esc5(relic.text)}</small>`;
-    return b;
-  }));
-  el.appendChild(row);
-  el.insertAdjacentHTML(
-    "beforeend",
-    `<div class="s6db-hub-actions"><button type="button" data-boss-relic="skip" class="s6db-ghost">${offered.length ? "skip relic ▸" : "continue ▸"}</button></div>`
-  );
-  return el;
-}
-function restView(run) {
-  const el = document.createElement("div");
-  el.className = "s6db-rest";
-  const heal2 = Math.round(run.maxHp * 0.3);
-  el.innerHTML = `
-    <h2>Keepalive</h2>
-    <p>A quiet socket. Choose ONE: recover ${heal2} HP, upgrade a card, or thin your deck.</p>
-    ${keyTelegraph(run, "sacrifice", "spend this rest thinning a card to earn the sacrifice key ⚷")}
-    <div class="s6db-hub-actions">
-      <button type="button" data-rest="heal">rest — heal ${heal2} HP ▸</button>
-    </div>
-    <div class="s6db-rest-upgrade"><h3>…or upgrade a card</h3></div>
-    <div class="s6db-rest-thin"><h3>…or remove a card</h3></div>`;
-  const upgradeable = run.deck.map((id, i) => ({ id, i })).filter(({ id }) => canUpgrade(id));
-  const up = el.querySelector(".s6db-rest-upgrade");
-  if (upgradeable.length) {
-    const upList = document.createElement("div");
-    upList.className = "s6db-card-row";
-    upList.replaceChildren(...upgradeable.map(({ id, i }) => cardOption(upgradeIdFor(id), "upgrade", String(i))));
-    up.appendChild(upList);
-  } else {
-    up.insertAdjacentHTML("beforeend", `<p class="s6db-hint">Every card is already upgraded.</p>`);
-  }
-  const thin = el.querySelector(".s6db-rest-thin");
-  const list = document.createElement("div");
-  list.className = "s6db-card-row";
-  list.replaceChildren(...run.deck.map((id, i) => cardOption(id, "remove", String(i))));
-  thin.appendChild(list);
-  return el;
-}
-function shopView(run) {
-  const el = document.createElement("div");
-  el.className = "s6db-shop";
-  const offers = shopOffers(run);
-  el.innerHTML = `<h2>Open port</h2><p>Handshakes: <strong>${run.handshakes}</strong>. Buy what you can afford.</p>`;
-  const row = document.createElement("div");
-  row.className = "s6db-card-row";
-  row.replaceChildren(...offers.map(({ id, price }) => {
-    const chip = cardOption(id, "buy", id);
-    chip.dataset.price = String(price);
-    chip.disabled = run.handshakes < price;
-    chip.insertAdjacentHTML("beforeend", `<span class="s6db-price">${price} ✋</span>`);
-    return chip;
-  }));
-  el.appendChild(row);
-  const cost = removalCost(run);
-  const affordable = run.handshakes >= cost && run.deck.length > 1;
-  el.insertAdjacentHTML(
-    "beforeend",
-    `<div class="s6db-shop-remove"><h3>Purge a card — ${cost} ✋ <small>(price rises each purchase)</small></h3></div>`
-  );
-  const purge = el.querySelector(".s6db-shop-remove");
-  const purgeRow = document.createElement("div");
-  purgeRow.className = "s6db-card-row";
-  purgeRow.replaceChildren(...run.deck.map((id, i) => {
-    const chip = cardOption(id, "buy-remove", String(i));
-    chip.disabled = !affordable;
-    return chip;
-  }));
-  purge.appendChild(purgeRow);
-  const upgradeable = run.deck.map((id, i) => ({ id, i })).filter(({ id }) => canUpgrade(id));
-  if (upgradeable.length) {
-    el.insertAdjacentHTML(
-      "beforeend",
-      `<div class="s6db-shop-upgrade"><h3>Sharpen a card — ${UPGRADE_COST} ✋ each</h3></div>`
-    );
-    const upRow = document.createElement("div");
-    upRow.className = "s6db-card-row";
-    upRow.replaceChildren(...upgradeable.map(({ id, i }) => {
-      const chip = cardOption(upgradeIdFor(id), "buy-upgrade", String(i));
-      chip.dataset.price = String(UPGRADE_COST);
-      chip.disabled = run.handshakes < UPGRADE_COST;
-      return chip;
-    }));
-    el.querySelector(".s6db-shop-upgrade").appendChild(upRow);
-  }
-  const potionOffers = shopPotionOffers(run);
-  const beltFull = (run.potions || []).length >= POTION_SLOTS;
-  el.insertAdjacentHTML(
-    "beforeend",
-    `<div class="s6db-shop-potions"><h3>Consumables — ${POTION_COST} ✋ each${beltFull ? " <small>(belt full)</small>" : ""}</h3></div>`
-  );
-  const potRow = document.createElement("div");
-  potRow.className = "s6db-card-row";
-  potRow.replaceChildren(...potionOffers.map((id) => {
-    const p = potionById(id);
-    const b = document.createElement("button");
-    b.type = "button";
-    b.className = "s6db-potion s6db-potion--shop";
-    b.dataset.buyPotion = id;
-    b.dataset.price = String(POTION_COST);
-    b.disabled = beltFull || run.handshakes < POTION_COST;
-    b.innerHTML = `<strong>⚗ ${esc5(p?.name || id)}</strong><small class="s6db-card-text">${esc5(p?.text || "")}</small><span class="s6db-price">${POTION_COST} ✋</span>`;
-    return b;
-  }));
-  el.querySelector(".s6db-shop-potions").appendChild(potRow);
-  const relicAffordable = run.handshakes >= RELIC_COST;
-  el.insertAdjacentHTML(
-    "beforeend",
-    `<div class="s6db-shop-relic"><h3>Acquire a relic — ${RELIC_COST} ✋</h3>
-       <button type="button" data-buy-relic="1" data-price="${RELIC_COST}"${relicAffordable ? "" : " disabled"}>buy a relic ⬢</button></div>`
-  );
-  el.insertAdjacentHTML(
-    "beforeend",
-    `<div class="s6db-hub-actions"><button type="button" data-action="to-map">leave ▸</button></div>`
-  );
-  return el;
-}
-function eventView(run, event) {
-  const el = document.createElement("div");
-  el.className = "s6db-event";
-  el.innerHTML = `
-    <h2>${esc5(event?.title || "An anomaly idles in the corridor")}</h2>
-    <p>${esc5(event?.text || "")}</p>
-    ${run.notice ? `<p class="s6db-hint">${esc5(run.notice)}</p>` : ""}`;
-  const actions = document.createElement("div");
-  actions.className = "s6db-hub-actions";
-  const buttons = (event?.choices || []).map((c) => {
-    const b = document.createElement("button");
-    b.type = "button";
-    b.dataset.event = c.id;
-    b.textContent = `${c.label} ▸`;
-    return b;
-  });
-  const leave = document.createElement("button");
-  leave.type = "button";
-  leave.className = "s6db-ghost";
-  leave.dataset.action = "to-map";
-  leave.textContent = "walk past";
-  actions.replaceChildren(...buttons, leave);
-  el.appendChild(actions);
-  return el;
-}
-function shopOffers(run) {
-  const rng = makeRng(strHash(`${run.seed}:${run.currentNodeId}:shop`));
-  const pool = [...REWARD_POOL];
-  const out = [];
-  while (out.length < 4 && pool.length) {
-    const id = pool.splice(Math.floor(rng() * pool.length), 1)[0];
-    const card = cardById(id);
-    out.push({ id, price: PRICE[card?.rarity] || 30 });
-  }
-  return out;
-}
-function shopPotionOffers(run) {
-  const out = [];
-  let salt = 0;
-  while (out.length < 2 && salt < 24) {
-    const id = rollPotion(strHash(`${run.seed}:${run.currentNodeId}:potion:${salt++}`));
-    if (!out.includes(id)) out.push(id);
-  }
-  return out;
-}
-function keyTelegraph(run, keyId, text) {
-  if (!isVeteranRun(run) || (run?.keys || []).includes(keyId)) return "";
-  return `<p class="s6db-telegraph">${esc5(text)}</p>`;
-}
-function cardOption(id, attr, value) {
-  const card = cardById(id);
-  const button = document.createElement("button");
-  button.type = "button";
-  button.className = `s6db-card ${cardTypeClass(card)}`;
-  button.dataset[attr] = value;
-  button.innerHTML = cardFaceInner(id);
-  return button;
 }
 function esc5(value) {
   return String(value).replace(/[&<>"]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[ch]);
@@ -4943,10 +5008,19 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
     pendingBanner = "the archive descends further — acts 5 and 6 unlocked";
   }
   function doPrestige() {
-    const cost = prestigeCost(state.meta.protocolVersion || 0);
-    if ((state.meta.banked || 0) < cost) return;
-    state.meta.banked -= cost;
+    if (!canPrestige(state.meta)) return;
+    openPrestigeModal({
+      eligibleIndices: eligiblePrestigeUpgrades(state.meta.permanentUpgrades || []),
+      onPick: (index) => applyPrestige(index),
+      onSkip: () => applyPrestige(null)
+    });
+  }
+  function applyPrestige(index) {
+    if (!canPrestige(state.meta)) return;
+    state.meta.banked -= prestigeCost(state.meta.protocolVersion || 0);
     state.meta.protocolVersion = (state.meta.protocolVersion || 0) + 1;
+    if (index != null) state.meta.permanentUpgrades = [...state.meta.permanentUpgrades || [], index];
+    commit();
   }
   function beginRun({ mode = "standard", seedText = null } = {}) {
     state.meta.runsStarted = (state.meta.runsStarted || 0) + 1;
@@ -4969,7 +5043,8 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
       mode,
       dailyKey,
       // First-ever run (0 wins) ends at the act-4 story boss; ≥1 win restores the full six acts.
-      finalAct: finalActForWins(state.meta.runsCleared || 0)
+      finalAct: finalActForWins(state.meta.runsCleared || 0),
+      permanentUpgrades: state.meta.permanentUpgrades || []
     });
     state.ui.screen = "run";
     if (combatRun) combatRun.reset();
@@ -5187,6 +5262,11 @@ function defaultState() {
       // handshakes banked toward prestige (Protocol Version)
       protocolVersion: 0,
       // prestige tier
+      // Permanent per-prestige card upgrades: STARTING_DECK indices upgraded for good (persist
+      // into every future run's starting deck). One entry per prestige level spent on a card (see
+      // run.js eligiblePrestigeUpgrades). A flat array on meta — no dedicated normalizeState
+      // backfill needed beyond the existing top-level meta merge (see normalizeState below).
+      permanentUpgrades: [],
       runsStarted: 0,
       runsCleared: 0,
       bestAct: 0,
@@ -5285,7 +5365,7 @@ function defaultState2(context) {
 function mountStage(ctx) {
   const state = normalizeState(ctx.state);
   let view = null;
-  ensureStyles();
+  const pendingStylesheets = ensureStyles();
   if (hasProtocolChapter9(ctx.actions)) {
     applyProtocolChapter9Unlock({ state, achievements: ctx.achievements, bell: ctx.bell });
   }
@@ -5295,6 +5375,11 @@ function mountStage(ctx) {
     if (view && typeof view.repaint === "function") view.repaint();
   });
   view = renderStage6({ ...ctx, state });
+  pendingStylesheets.forEach((link) => {
+    link.addEventListener("load", () => {
+      if (view && typeof view.repaint === "function") view.repaint();
+    }, { once: true });
+  });
   return {
     devControls: stageMeta.devControls,
     dev(id) {
@@ -5323,16 +5408,19 @@ function isProtocolChapter9Detail(detail) {
   return Boolean(detail && Number(detail.stage) === 6 && detail.action === ACTION_NAME);
 }
 function ensureStyles() {
-  ensureStylesheet("stage6-protocol-codex-styles", new URL("./styles.css", import.meta.url).href);
-  ensureStylesheet("stage6-protocol-codex-combat-styles", new URL("./styles-combat.css", import.meta.url).href);
+  return [
+    ensureStylesheet("stage6-protocol-codex-styles", new URL("./styles.css", import.meta.url).href),
+    ensureStylesheet("stage6-protocol-codex-combat-styles", new URL("./styles-combat.css", import.meta.url).href)
+  ].filter(Boolean);
 }
 function ensureStylesheet(id, href) {
-  if (document.getElementById(id)) return;
+  if (document.getElementById(id)) return null;
   const link = document.createElement("link");
   link.id = id;
   link.rel = "stylesheet";
   link.href = href;
   document.head.append(link);
+  return link;
 }
 export {
   applyProtocolChapter9Unlock,

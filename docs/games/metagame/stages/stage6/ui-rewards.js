@@ -262,7 +262,10 @@ function keyTelegraph(run, keyId, text) {
   return `<p class="s6db-telegraph">${esc(text)}</p>`;
 }
 
-function cardOption(id, attr, value) {
+// Exported for reuse by combat-modals.js's prestige upgrade picker (a hub-only modal, not an
+// in-run reward/rest/shop screen, so it can't reuse the delegated data-attr click wiring those use
+// — the caller attaches its own listener directly to the returned button).
+export function cardOption(id, attr, value) {
   const card = cardById(id);
   const button = document.createElement("button");
   button.type = "button";
