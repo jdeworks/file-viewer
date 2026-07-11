@@ -172,6 +172,9 @@ run_phase_unit_tests() {
   done
 }
 
+run_phase "verifying pinned EmulatorJS vendor closure…" \
+  node scripts/verify-emulatorjs-vendor.mjs
+
 FULL_UNIT_TESTS=(
   tests/media-parsers.test.mjs
   tests/media-mixer-model.test.mjs

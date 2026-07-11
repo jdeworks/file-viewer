@@ -3,7 +3,7 @@
   "ag-psd": "30.1.1",
   "dejavu-sans-mono": "2.37",
   "gifenc": "1.0.3",
-  "emulatorjs": "stable-2026-06-17",
+  "emulatorjs": "4.2.3 (release commit e150dc0491ae747028919fb82d6598954976ede6)",
   "ruffle": "0.3.0",
   "v86": "0.5.372",
   "chart.js": "4.4.7",

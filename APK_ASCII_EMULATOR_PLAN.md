@@ -74,9 +74,9 @@ finish with clean `dev` pushed safely to `origin`.
 - Commercial ROM handling can contaminate evidence. Keep the fixture ignored, reselect it manually
   after reload/offline transitions, and delete emulator saves/browser contexts after each gate.
 
-## Resume checkpoint — 2026-07-11, ASCII Studio scope ready to commit
+## Resume checkpoint — 2026-07-11, EmulatorJS vendor closure ready to commit
 
-- Baseline/plan commit: `8628bec2`; bounded APK browsing commit: `c3bd632e`.
+- Baseline/plan `8628bec2`; bounded APK browsing `c3bd632e`; Media-only ASCII Studio `6127570b`.
 - Private fixture exists at `.example-files-internet/Super Mario Bros. (World).nes`, is 40,976 bytes,
   and remains ignored; never stage or retain derived output from it.
 - APK/AAB/XAPK retain the specialist summary and expose central-directory contents through the
@@ -90,7 +90,18 @@ finish with clean `dev` pushed safely to `origin`.
   `examples-catalog` browser area passed all 1,115 samples, all 144 registered types, Media search
   and kind-filter transitions, standalone image/JPEG conversion, zero console errors, and zero
   off-origin requests.
-- Next: commit this stage, then repair and lock the EmulatorJS runtime dependency closure.
+- The mutable stable label is resolved to official EmulatorJS 4.2.3 tag/commit `e150dc04` and the
+  published 303,554,683-byte release archive SHA-256. A deterministic staged installer and strict
+  verifier lock 39 retained files: frontend, all compression helpers, six reports, normal+legacy
+  non-threaded variants for all six advertised cores, full frontend/core/helper licenses, and exact
+  source snapshots. BIOS, firmware, ROMs, threaded cores, localization, ads, and netplay files are
+  excluded. The regenerated manifest contains a 40-file/14,225,124-byte EmulatorJS offline bundle,
+  5,119 total assets, and service-worker version `a458340be7a2`.
+- Green validation: release-asset hash matched GitHub's published digest; current frontend hashes
+  matched that release; staged install and independent vendor verifier pass; asset-manifest tests
+  pass and enumerate the complete bundle.
+- Next: commit the vendor closure, then configure runtime origin/language/core behavior and live
+  preference/settings transitions before the private NES boot gate.
 
 ## Open Questions
 
