@@ -18,10 +18,10 @@
 |------------|--------|-------|
 | MIDI format | ✅ | Type 0 / 1 / 2 shown |
 | Track count | ✅ | Declared tracks from header |
-| PPQN | ✅ | Pulses per quarter note |
-| BPM | ✅ | From tempo meta-events (range shown if variable) |
+| PPQN / SMPTE timing | ✅ | Pulses per quarter note, or frame rate and ticks per frame |
+| BPM | ✅ | From tempo meta-events (range shown if variable); no invented default for SMPTE timing |
 | Time signature | ✅ | From time signature meta-events |
-| Duration | ✅ | Estimated total duration in seconds |
+| Duration | ✅ | Tempo-integrated for PPQN; absolute tick timing for SMPTE; longest independent Type 2 track |
 | Total notes | ✅ | NoteOn events across all tracks |
 | Unique pitches | ✅ | Number of distinct MIDI pitches used |
 | Track table | ✅ | Name, channel, GM instrument name, note count |

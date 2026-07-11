@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import { Archive } from 'libarchive.js/dist/libarchive-node.mjs';
 
 import { imageEntryCount, listCentralDirectory, verifyZipCryptoPassword } from '../docs/types/zip/ziplib.js';
 import { detect as detectArchive } from '../docs/types/archive/detect.js';
@@ -65,6 +66,13 @@ assert.equal(risky.entries[1].level, 'caution');
 const sevenZip = inspectArchive(await readFile(new URL('Sample.7z', root)), 'Sample.7z');
 assert.equal(sevenZip.format, '7z');
 assert.equal(sevenZip.version, '0.4');
+const sevenZipArchive = await Archive.open(new Blob([await readFile(new URL('Sample.7z', root))]));
+const sevenZipFiles = await sevenZipArchive.getFilesArray();
+const sevenZipNames = sevenZipFiles.map(({ path, file }) => `${path}${file.name}`);
+assert.deepEqual(sevenZipNames, ['README.md', 'docs/guide.txt', 'data/people.csv', 'src/example.js']);
+const sevenZipReadme = sevenZipFiles.find(({ path, file }) => `${path}${file.name}` === 'README.md');
+assert.match(await (await sevenZipReadme.file.extract()).text(), /deterministic nested 7z fixture/);
+await sevenZipArchive.close();
 
 const body = new Uint8Array(512);
 const tar = inspectArchive(concat(tarHeader('docs/', 0, '5'), tarHeader('docs/readme.txt', 5), body, new Uint8Array(1024)), 'sample.tar');

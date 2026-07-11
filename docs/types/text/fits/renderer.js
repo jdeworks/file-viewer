@@ -9,48 +9,10 @@
 // OBJECT = '<img src=http://evil.tld/x>') injects markup into the sandboxed preview iframe,
 // which can still issue a live off-origin request even though scripts there can't reach the
 // parent (violates the zero-off-origin-at-runtime rule).
+import { parseFitsHeader } from './parser.js';
+
 function esc(s) {
   return String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-}
-
-function parseCard(rec) {
-  const kw = rec.slice(0, 8).trim();
-  if (!kw || kw === 'END') return kw === 'END' ? null : undefined;
-  const valueComment = rec.slice(10).trimEnd();
-  let value = valueComment;
-  let comment = '';
-  const slashIdx = valueComment.search(/(?<!')\s*\/\s*/);
-  if (slashIdx >= 0) {
-    value = valueComment.slice(0, slashIdx).trim();
-    comment = valueComment.slice(slashIdx).replace(/^\s*\/\s*/, '').trim();
-  }
-  if (value.startsWith('=')) value = value.slice(1).trim();
-  value = value.replace(/^'(.*?)'$/, (_, s) => s.trim());
-  return { kw, value, comment };
-}
-
-function parseFitsHeader(intake) {
-  const cards = [];
-
-  if (intake.isBinary && intake.bytes) {
-    // Binary FITS: fixed 80-char records in 2880-byte blocks
-    const text = String.fromCharCode(...intake.bytes.slice(0, 46080));
-    for (let i = 0; i < text.length; i += 80) {
-      const result = parseCard(text.slice(i, i + 80).padEnd(80, ' '));
-      if (result === null) break;  // END
-      if (result) cards.push(result);
-    }
-  } else {
-    // Text FITS: newline-delimited records (our sample and many distributed headers)
-    const lines = (intake.text || '').split('\n').slice(0, 600);
-    for (const line of lines) {
-      // Pad to 80 chars for consistent slicing
-      const result = parseCard(line.padEnd(80, ' '));
-      if (result === null) break;  // END
-      if (result) cards.push(result);
-    }
-  }
-  return cards;
 }
 
 function val(cards, kw) {
@@ -112,6 +74,7 @@ export function render(intake) {
   const bodyHtml = `<div class="fits-preview">
   <div class="fits-header"><span class="fits-badge">FITS</span><span class="fits-subhead">${esc(val(cards, 'OBJECT')) || 'Flexible Image Transport System'}</span></div>
   ${statsHtml}
+  <p class="fits-note fits-capability-note">Header metadata only — image pixel data is not decoded or rendered.</p>
   ${keyRows ? `<table class="fits-table">${keyRows}</table>` : ''}
   <details class="fits-all"><summary>${cards.length} header cards</summary><table class="fits-table">${allRows}</table></details>
 </div>`;

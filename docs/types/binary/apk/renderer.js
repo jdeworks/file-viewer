@@ -1,5 +1,7 @@
 import { loadGlobal, vendor } from '../../../core/script-loader.js';
-function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+import { analyzeAndroidPackage } from './layout.js';
+
+function esc(s) { return String(s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c])); }
 
 export async function render(intake) {
   const bytes = intake.bytes;
@@ -11,47 +13,43 @@ export async function render(intake) {
   let zip;
   try {
     zip = await JSZip.loadAsync(bytes);
-  } catch (e) {
-    return { bodyHtml: `<div class="apk-preview"><p class="apk-note">Could not open APK: ${esc(e.message)}</p></div>` };
+  } catch (error) {
+    return { bodyHtml: `<div class="apk-preview"><p class="apk-note">Could not open package: ${esc(error.message)}</p></div>` };
   }
 
-  const files = Object.keys(zip.files);
-  const hasManifest = files.includes('AndroidManifest.xml');
-  const dexFiles = files.filter((f) => /^classes\d*\.dex$/.test(f));
-  const libFiles = files.filter((f) => f.startsWith('lib/')).slice(0, 12);
-  const abiDirs = [...new Set(libFiles.map((f) => f.split('/')[1]).filter(Boolean))];
-  const hasResources = files.includes('resources.arsc');
-  const hasSigning = files.some((f) => f.startsWith('META-INF/'));
-  const assetCount = files.filter((f) => f.startsWith('assets/')).length;
-
-  // Try to read META-INF/MANIFEST.MF
-  let signerInfo = null;
-  const manifestMf = zip.file('META-INF/MANIFEST.MF');
-  if (manifestMf) {
-    const mfText = await manifestMf.async('string');
-    signerInfo = mfText.split('\n').slice(0, 3).map((l) => l.trim()).filter(Boolean).join('; ');
+  const ext = (intake.filename || '').match(/\.(apk|aab|xapk)$/i)?.[1]?.toLowerCase() || 'apk';
+  const files = Object.values(zip.files).filter((entry) => !entry.dir).map((entry) => entry.name);
+  const layout = analyzeAndroidPackage(files, bytes, ext);
+  let jarManifestInfo = null;
+  if (layout.jarManifestPath) {
+    const text = await zip.file(layout.jarManifestPath)?.async('string');
+    jarManifestInfo = text?.split('\n').slice(0, 3).map((line) => line.trim()).filter(Boolean).join('; ') || null;
   }
 
-  // Try to detect package name from filename
-  const pkgGuess = (intake.filename || '').replace(/\.(apk|aab|xapk)$/i, '').replace(/[_-]/g, '.') || null;
-  const ext = (intake.filename || '').match(/\.(apk|aab|xapk)$/i)?.[1]?.toUpperCase() || 'APK';
-
-  const rows = [
-    hasManifest ? '' : '<tr><td colspan="2" style="color:var(--fg-2);font-size:.8em">⚠ AndroidManifest.xml not found</td></tr>',
-    `<tr><td class="apk-key">DEX files</td><td>${dexFiles.length} (${dexFiles.join(', ')})</td></tr>`,
-    abiDirs.length ? `<tr><td class="apk-key">Native ABIs</td><td>${esc(abiDirs.join(', '))}</td></tr>` : '',
-    `<tr><td class="apk-key">Resources</td><td>${hasResources ? 'resources.arsc present' : 'none'}</td></tr>`,
-    assetCount > 0 ? `<tr><td class="apk-key">Assets</td><td>${assetCount} files</td></tr>` : '',
-    `<tr><td class="apk-key">Total files</td><td>${files.length}</td></tr>`,
-    hasSigning ? `<tr><td class="apk-key">Signed</td><td>META-INF/ present</td></tr>` : '',
-  ].filter(Boolean).join('');
+  const rows = [];
+  if (layout.kind === 'xapk') {
+    if (!layout.embeddedApks.length) rows.push('<tr><td colspan="2" style="color:var(--fg-2);font-size:.8em">⚠ No embedded APK files found</td></tr>');
+    rows.push(`<tr><td class="apk-key">Embedded APKs</td><td>${layout.embeddedApks.length}${layout.embeddedApks.length ? ` (${esc(layout.embeddedApks.join(', '))})` : ''}</td></tr>`);
+    rows.push(`<tr><td class="apk-key">Descriptor</td><td>${layout.descriptor ? esc(layout.descriptor) : 'manifest.json not found'}</td></tr>`);
+  } else {
+    if (!layout.manifestFiles.length) {
+      rows.push(`<tr><td colspan="2" style="color:var(--fg-2);font-size:.8em">⚠ ${layout.kind === 'aab' ? 'Module AndroidManifest.xml' : 'AndroidManifest.xml'} not found</td></tr>`);
+    }
+    rows.push(`<tr><td class="apk-key">Manifest files</td><td>${layout.manifestFiles.length}${layout.manifestFiles.length ? ` (${esc(layout.manifestFiles.join(', '))})` : ''}</td></tr>`);
+    rows.push(`<tr><td class="apk-key">DEX files</td><td>${layout.dexFiles.length}${layout.dexFiles.length ? ` (${esc(layout.dexFiles.join(', '))})` : ''}</td></tr>`);
+    if (layout.abiDirs.length) rows.push(`<tr><td class="apk-key">Native ABIs</td><td>${esc(layout.abiDirs.join(', '))}</td></tr>`);
+    rows.push(`<tr><td class="apk-key">Resources</td><td>${layout.resources.length ? esc(layout.resources.join(', ')) : 'none detected'}</td></tr>`);
+    if (layout.assetCount) rows.push(`<tr><td class="apk-key">Assets</td><td>${layout.assetCount} files</td></tr>`);
+  }
+  rows.push(`<tr><td class="apk-key">Total files</td><td>${layout.entries.length}</td></tr>`);
+  rows.push(`<tr><td class="apk-key">Signature evidence</td><td>${esc(layout.signatureEvidence)}</td></tr>`);
 
   return { bodyHtml: `<div class="apk-preview">
   <div class="apk-header">
-    <span class="apk-badge">${esc(ext)}</span>
+    <span class="apk-badge">${esc(layout.kind.toUpperCase())}</span>
     <span class="apk-title">${esc(intake.filename || 'Android Package')}</span>
   </div>
-  <table class="apk-table">${rows}</table>
-  ${signerInfo ? `<p class="apk-note apk-signer">${esc(signerInfo)}</p>` : ''}
+  <table class="apk-table">${rows.join('')}</table>
+  ${jarManifestInfo ? `<p class="apk-note apk-signer">JAR manifest metadata (not signer identity): ${esc(jarManifestInfo)}</p>` : ''}
 </div>` };
 }

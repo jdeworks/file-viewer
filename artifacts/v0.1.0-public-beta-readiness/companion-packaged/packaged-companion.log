@@ -1,0 +1,9 @@
+2026-07-10T15:00:22.753267548Z INFO companion (desktop) started on 127.0.0.1:7700
+2026-07-10T15:01:07.550557273Z INFO viewer connected
+2026-07-10T15:01:51.563828493Z INFO companion not started: 127.0.0.1:7700 is unavailable (Address already in use (os error 98))
+2026-07-10T15:02:59.495363558Z INFO companion (desktop) started on 127.0.0.1:7700
+2026-07-10T15:14:13.133226537Z INFO file create on disk: /tmp/fv-companion-packaged-enzmkA/picker-added/native-picker-event.txt
+2026-07-10T15:14:13.133328489Z INFO file modify on disk: /tmp/fv-companion-packaged-enzmkA/picker-added/native-picker-event.txt
+2026-07-10T15:15:12.654222563Z INFO viewer connected
+2026-07-10T15:24:01.449967319Z INFO file create on disk: /tmp/fv-companion-packaged-enzmkA/tray-added/tray-event.txt
+2026-07-10T15:24:01.450036975Z INFO file modify on disk: /tmp/fv-companion-packaged-enzmkA/tray-added/tray-event.txt

@@ -1,3 +1,8 @@
+import { createRequire } from 'node:module';
+
+const require = createRequire(import.meta.url);
+const JSZip = require('jszip');
+
 export async function run(ctx) {
   const { page, origin, frameOf, pass, fail, openExample } = ctx;
 
@@ -74,11 +79,37 @@ export async function run(ctx) {
   const apkText = await apkf.$eval('.apk-preview', (el) => el.textContent);
   if (/classes\.dex/i.test(apkText)) pass('APK classes.dex shown'); else fail('apk content: ' + apkText.slice(0, 200));
   if (/arm64-v8a|x86_64/i.test(apkText)) pass('APK native ABI shown'); else fail('apk abi: ' + apkText.slice(0, 200));
+  if (/Signature evidence\s*No recognized signature material/i.test(apkText) && !/\bSigned\b/.test(apkText)) pass('unsigned APK is not presented as signed'); else fail('apk signature label: ' + apkText.slice(0, 300));
   await page.click('#metaBtn');
   await page.waitForSelector('#metaBody .meta-row', { timeout: 6000 });
   const apkMeta = await page.$eval('#metaBody', (e) => e.textContent);
   if (/Format\s*APK/.test(apkMeta)) pass('APK metadata includes format'); else fail('apk meta: ' + apkMeta.replace(/\s+/g, ' ').slice(0, 160));
   await page.click('#metaDrawer [data-close]');
+
+  const openSyntheticPackage = async (filename, entries) => {
+    const zip = new JSZip();
+    for (const name of entries) zip.file(name, name.endsWith('.json') ? '{}' : 'fixture');
+    const data = await zip.generateAsync({ type: 'uint8array' });
+    await page.evaluate(async ({ filename: name, bytes }) => {
+      await window.__fv.openBlobFile(new Blob([new Uint8Array(bytes)], { type: 'application/octet-stream' }), name);
+    }, { filename, bytes: [...data] });
+    await page.waitForFunction((name) => window.__fv?.state?.intake?.filename === name && window.__fv?.state?.type?.id === 'apk', filename, { timeout: 12000 });
+    const frame = await frameOf('iframe.fv-preview-frame');
+    await frame.waitForSelector('.apk-preview', { timeout: 12000 });
+    return frame.$eval('.apk-preview', (element) => element.textContent);
+  };
+  const aabText = await openSyntheticPackage('bundle.aab', [
+    'base/manifest/AndroidManifest.xml', 'base/dex/classes.dex', 'base/lib/arm64-v8a/libdemo.so',
+    'base/resources.pb', 'base/assets/config.json',
+  ]);
+  if (/AAB/.test(aabText) && /base\/manifest\/AndroidManifest\.xml/.test(aabText)
+      && /base\/dex\/classes\.dex/.test(aabText) && /arm64-v8a/.test(aabText)
+      && /base\/resources\.pb/.test(aabText)) pass('AAB module layout is inventoried'); else fail('aab layout: ' + aabText.slice(0, 400));
+  const xapkText = await openSyntheticPackage('bundle.xapk', [
+    'manifest.json', 'base.apk', 'config.arm64_v8a.apk',
+  ]);
+  if (/XAPK/.test(xapkText) && /Embedded APKs\s*2/.test(xapkText) && /base\.apk/.test(xapkText)
+      && /manifest\.json/.test(xapkText) && /signatures not inspected/.test(xapkText)) pass('XAPK outer layout is honestly inventoried'); else fail('xapk layout: ' + xapkText.slice(0, 400));
 
   // ── ISO 9660 ─────────────────────────────────────────────────────────────────
   await page.goto(origin, { waitUntil: 'load' });
@@ -188,12 +219,12 @@ export async function run(ctx) {
   const dcmText = await dcmf.$eval('body', (el) => el.textContent);
   if (/DICOM/i.test(dcmText)) pass('DICOM badge shown'); else fail('dcm badge missing');
   if (/CT|Computed Tomography/i.test(dcmText)) pass('DICOM modality CT shown'); else fail('dcm mod: ' + dcmText.slice(0, 300));
-  if (/512|Demo Hospital/i.test(dcmText)) pass('DICOM image info shown'); else fail('dcm info: ' + dcmText.slice(0, 300));
+  if (/64|Demo Hospital/i.test(dcmText)) pass('DICOM image info shown'); else fail('dcm info: ' + dcmText.slice(0, 300));
   await page.click('#metaBtn');
   await page.waitForSelector('#metaBody .meta-row', { timeout: 6000 });
   const dcmMeta = await page.$eval('#metaBody', (e) => e.textContent);
   if (/Format\s*DICOM/.test(dcmMeta)) pass('DICOM metadata includes format'); else fail('dcm meta format: ' + dcmMeta.replace(/\s+/g, ' ').slice(0, 180));
-  if (/Dimensions\s*512 x 512/.test(dcmMeta)) pass('DICOM metadata includes image dimensions'); else fail('dcm meta dimensions: ' + dcmMeta.replace(/\s+/g, ' ').slice(0, 180));
+  if (/Dimensions\s*64 x 64/.test(dcmMeta)) pass('DICOM metadata includes image dimensions'); else fail('dcm meta dimensions: ' + dcmMeta.replace(/\s+/g, ' ').slice(0, 180));
   await page.click('#metaDrawer [data-close]');
 
   // ── NetCDF Scientific Data ────────────────────────────────────────────────────
@@ -244,7 +275,7 @@ export async function run(ctx) {
   const pdbText = await page.$eval('#previewHost .pdb-doc', (el) => el.textContent);
   if (/PDB/i.test(pdbText)) pass('PDB badge shown'); else fail('pdb badge missing');
   if (/DEMO/i.test(pdbText)) pass('PDB ID shown'); else fail('pdb id: ' + pdbText.slice(0, 300));
-  if (/Homo sapiens|HYDROLASE/i.test(pdbText)) pass('PDB organism/type shown'); else fail('pdb org: ' + pdbText.slice(0, 300));
+  if (/SYNTHETIC CONSTRUCT|DEMO PEPTIDE/i.test(pdbText)) pass('PDB organism/type shown'); else fail('pdb org: ' + pdbText.slice(0, 300));
   if (/Chain|chain|1\.80|Residue|residue/i.test(pdbText)) pass('PDB structure info shown'); else fail('pdb struct: ' + pdbText.slice(0, 300));
   await checkMol3d('PDB');
 

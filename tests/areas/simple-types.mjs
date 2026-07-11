@@ -345,7 +345,7 @@ export async function run(ctx) {
   if (/480/.test(acfText)) pass('sample.acf: App ID shown'); else fail('acf appid: ' + acfText.slice(0, 300));
 
   // ── FITS astronomy image viewer ──
-  await openExample('Helix Nebula (FITS)');
+  await openExample('Synthetic Gradient (FITS)');
   const fitsf = await frameOf('iframe.fv-preview-frame');
   await fitsf.waitForSelector('.fits-preview', { timeout: 8000 });
   const fitsTypeId = await page.$eval('#typeSelect', (s) => s.value);
@@ -353,7 +353,9 @@ export async function run(ctx) {
   const fitsBadge = await fitsf.$eval('.fits-badge', (e) => e.textContent);
   if (fitsBadge === 'FITS') pass('FITS badge shown'); else fail('fits badge: ' + fitsBadge);
   const fitsSubhead = await fitsf.$eval('.fits-subhead', (e) => e.textContent);
-  if (/NGC.?7293|Helix/i.test(fitsSubhead)) pass('FITS object name shown'); else fail('fits subhead: ' + fitsSubhead);
+  if (/FV-GRADIENT/i.test(fitsSubhead)) pass('FITS object name shown'); else fail('fits subhead: ' + fitsSubhead);
+  const fitsCapabilityNote = await fitsf.$eval('.fits-capability-note', (e) => e.textContent);
+  if (/Header metadata only.+pixel data is not decoded or rendered/i.test(fitsCapabilityNote)) pass('FITS pixel-rendering limitation shown'); else fail('fits capability note: ' + fitsCapabilityNote);
 
   // ── KML map viewer ──
   await openExample('Silicon Valley Map (KML)');

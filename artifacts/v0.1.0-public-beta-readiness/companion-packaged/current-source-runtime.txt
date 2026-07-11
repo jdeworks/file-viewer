@@ -1,0 +1,7 @@
+deb_sha256=e8b0fdbc098967f61c908462fde4c49aca3f422c41cf6e9ee46d1a18edb2c24e
+deb_bytes=4275052
+payload_sha256=a63bf06d41007f49394dc0371ca561ebe182dc2cbb4b96c92667594b07fea4d1
+listener=LISTEN 0      128        127.0.0.1:7700      0.0.0.0:*    users:(("file-viewer-com",pid=5603,fd=3))
+ping={"ok":true,"version":"0.1.0","token":"fvpackaged-current","capabilities":["file-read","file-write","file-delete","file-watch","find-file","find-folder"]}
+watch_event=data: {"path":"/tmp/fv-companion-packaged-current.inrAh9/watched/current-event.txt","kind":"create"}
+config={"watched_paths":["/tmp/fv-companion-packaged-current.inrAh9/watched"]}

@@ -1,0 +1,48 @@
+✓ 01-markdown welcome.md → markdown; {"headings":2,"bullets":4,"characters":456}
+✓ 02-csv sample.csv → csv; {"rows":5,"columns":4}
+✓ 03-json sample.json → json; {"topLevelKeys":["name","private","mobileFirst","trust","types","counts","tags"],"characters":332}
+✓ 04-yaml stack.yaml → yaml + stack-yaml; {"topLevelKeys":["resolver","packages","extra-deps","system-ghc","install-ghc","ghc-options"],"lines":21}
+✓ 05-xml build.xml → xml + ant-build; {"elements":30,"distinctElements":17}
+✓ 06-jsonl sample.jsonl → jsonl; {"records":5,"levels":["INFO","WARN","ERROR"]}
+✓ 07-sqlite sample.sqlite → sqlite; {"bytes":12288,"pageSize":4096}
+✓ 08-ipynb sample.ipynb → ipynb; {"cells":4,"kinds":["markdown","code"],"outputs":3}
+✓ 09-image sample.png → image; {"width":313,"height":313}
+✓ 10-svg example.svg → svg; {"drawableElements":4,"characters":395}
+✓ 11-tiff sample.tiff → tiff; {"bytes":18346,"byteOrder":"II"}
+✓ 12-layered sample.psd → layered; {"width":100,"height":100,"channels":3}
+Warning: UnknownErrorException: Ensure that the `standardFontDataUrl` API parameter is provided.
+✓ 13-pdf sample-pages.pdf → pdf; {"pages":3,"textItems":3}
+✓ 14-xlsx sample.xlsx → xlsx; {"sheets":["People","Totals"],"cells":22}
+✓ 15-docx sample.docx → docx; {"entries":3,"firstEntries":["[Content_Types].xml","_rels/.rels","word/document.xml"],"extractedCharacters":1120,"specialized":null}
+✓ 16-pptx sample.pptx → pptx; {"entries":24,"firstEntries":["[Content_Types].xml","_rels/.rels","docProps/app.xml","docProps/core.xml","ppt/_rels/presentation.xml.rels","ppt/theme/theme1.xml","ppt/presentation.xml","ppt/presProps.xml","ppt/tableStyles.xml","ppt/viewProps.xml","ppt/slideLayouts/slideLayout1.xml","ppt/slideLayouts/_rels/slideLayout1.xml.rels"],"extractedCharacters":42063,"specialized":null}
+✓ 17-odf sample.odt → odf; {"entries":3,"firstEntries":["mimetype","content.xml","META-INF/manifest.xml"],"extractedCharacters":1055,"specialized":null}
+✓ 18-rtf sample.rtf → rtf; {"wordsIncludingControls":252,"characters":1884}
+✓ 19-archive Sample.7z → archive; {"entries":["README.md","docs/guide.txt","data/people.csv","src/example.js"],"extractedReadmeCharacters":92}
+✓ 20-zip sample.zip → zip; {"entries":4,"firstEntries":["README.txt","src/app.js","src/util.py","data/rows.csv"],"extractedCharacters":517,"specialized":null}
+✓ 21-epub sample.epub → epub; {"entries":10,"firstEntries":["mimetype","META-INF/container.xml","OEBPS/5830164920110942888_7256-cover.png","OEBPS/pgepub.css","OEBPS/0.css","OEBPS/594943342615218554_7256-h-0.htm.html","OEBPS/594943342615218554_7256-h-1.htm.html","OEBPS/toc.ncx","OEBPS/wrap0000.html","OEBPS/content.opf"],"extractedCharacters":34539,"specialized":null}
+✓ 22-comic sample.cbz → comic; {"entries":3,"firstEntries":["page-01.png","page-02.png","page-10.png"],"extractedCharacters":0,"specialized":{"valid":true,"pages":[{"name":"page-01.png","bytes":163265,"width":600,"height":900,"sha256":"98ce89ec61f22f2f7119ad620bb413b19cbc19b9c56e00769539897c37796af5"},{"name":"page-02.png","bytes":181394,"width":600,"height":900,"sha256":"e0ab515f49c556df398885ef854b8ea4e8fa54380a1c615df1a4c5b3e20893bc"},{"name":"page-10.png","bytes":152002,"width":600,"height":900,"sha256":"c19797b936ce08bde9b51f589e34d15d0d3a713c2f81503a97a0f0a0e9844a7a"}]}}
+✓ 23-media sample.mp4 → media; {"bytes":47764,"container":"ISO BMFF","brand":"isom","video":{"codec":"avc1","width":320,"height":180}}
+✓ 24-midi sample.mid → midi; {"format":1,"tracks":3,"division":480,"notes":48,"uniquePitches":15,"durationSeconds":8,"musicalPrograms":[0,32]}
+✓ 25-font sample.ttf → font; {"tables":17,"bytes":205748}
+✓ 26-stl sample.stl → stl; {"triangles":8}
+✓ 27-gltf sample.glb → gltf; {"version":2,"declaredLength":728,"bytes":728}
+✓ 28-dxf sample.dxf → dxf; {"entities":11,"lines":409}
+✓ 29-geojson representative.topojson → geojson; {"objects":["districts","transit"],"arcs":3,"geometryTypes":["GeometryCollection","LineString"]}
+✓ 30-kml sample.kml → kml; {"placemarks":5,"characters":2312}
+✓ 31-dicom sample.dcm → dicom; {"bytes":9246,"pixelBytes":8192,"hasRequiredIdentity":true,"syntheticPixelFixture":true}
+✓ 32-netcdf sample.nc → netcdf; {"version":1,"bytes":1560,"containsTemperature":true,"containsPressure":true,"nonzeroTail":true}
+✓ 33-pdb sample.pdb → pdb; {"atoms":124,"chains":2,"residues":25,"completeBackbones":25,"ligandAtoms":12,"lines":159}
+✓ 34-fits sample.fits → fits; {"cards":19,"bytes":11520,"headerBytes":2880,"width":64,"height":48,"bitpix":16,"pixelBytes":6144,"nonzeroPixels":3071}
+✓ 35-wasm sample.wasm → wasm; {"sections":4,"bytes":36}
+✓ 36-npy sample.npy → npy; {"header":"{'descr': '<f4', 'fortran_order': False, 'shape': (3, 4), }","dataBytes":48}
+✓ 37-exe sample.elf → exe; {"class":"64-bit","machine":62,"bytes":704,"entry":4194560,"programHeaders":2,"sectionHeaders":5,"completeSectionTable":true}
+✓ 38-apk sample.apk → apk; {"entries":5,"firstEntries":["AndroidManifest.xml","classes.dex","lib/arm64-v8a/libexample.so","lib/x86_64/libexample.so","assets/config.json"],"extractedCharacters":529,"specialized":{"valid":true,"manifestBytes":460,"dexBytes":140,"libraries":[{"name":"lib/arm64-v8a/libexample.so","bytes":704,"machine":183},{"name":"lib/x86_64/libexample.so","bytes":704,"machine":62}],"unsigned":true}}
+✓ 39-torrent sample.torrent → torrent; {"bytes":553,"hasAnnounce":true,"hasPieces":true,"fileCount":3,"pieceSize":64,"totalSize":214}
+✓ 40-dockerfile Dockerfile → dockerfile + dockerfile; {"stages":2,"instructions":17,"lines":25}
+✓ 41-docker-compose docker-compose.yml → docker-compose + docker-compose; {"services":["web","api","db","cache"],"lines":48}
+✓ 42-sarif sample.sarif → sarif; {"runs":1,"results":62,"rules":10}
+✓ 43-pem sample.pem → pem; {"blockType":"CERTIFICATE","derBytes":1391,"subject":"C=US\nO=Internet Security Research Group\nCN=ISRG Root X1","keyType":"rsa","keyBits":4096,"selfVerified":true}
+✓ 44-patch sample.patch → patch; {"files":2,"hunks":3,"lines":23}
+✓ 45-code App.swift → code + swift-lang; {"lines":12,"characters":260}
+
+Fixture preflight passed: 45 meaningful candidates, 45/144 distinct registered base types.

@@ -1,0 +1,5 @@
+HTTP/1.1 200 OK
+content-type: application/json
+vary: origin, access-control-request-method, access-control-request-headers
+content-length: 172
+date: Fri, 10 Jul 2026 15:13:09 GMT

@@ -43,7 +43,7 @@
 | Export tag list as JSON | ❌ | Not yet implemented |
 
 ## Example Files
-- [`sample.dcm`](../examples/sample.dcm) — DICOM metadata summary sample
+- [`sample.dcm`](../examples/sample.dcm) — deterministic 64 × 64 Explicit VR Little Endian metadata-and-pixel fixture (the current viewer intentionally shows metadata only)
 
 ## Gaps / Planned Improvements
 | Feature | Priority | Notes |

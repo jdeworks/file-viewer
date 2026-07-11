@@ -179,6 +179,8 @@ FULL_UNIT_TESTS=(
   tests/media-mixer-capabilities.test.mjs
   tests/media-mixer-hit-test.test.mjs
   tests/movediff.test.mjs
+  tests/comic-resource-bounds.test.mjs
+  tests/harness-origin.test.mjs
   tests/markdown-edit-actions.test.mjs
   tests/image-fill.test.mjs
   tests/image-geometry.test.mjs
@@ -186,6 +188,19 @@ FULL_UNIT_TESTS=(
   tests/image-curves.test.mjs
   tests/image-convolve.test.mjs
   tests/image-gif.test.mjs
+  tests/layered-psd.test.mjs
+  tests/molview.test.mjs
+  tests/mobile-renderer-layout.test.mjs
+  tests/core-layout-regressions.mjs
+  tests/archivelib-paths.test.mjs
+  tests/archive-metadata.test.mjs
+  tests/example-fixture-quality.test.mjs
+  tests/rich-example-fixtures.test.mjs
+  tests/format-parser-hardening.test.mjs
+  tests/torrent-v2-semantics.test.mjs
+  tests/format-semantic-correctness.test.mjs
+  tests/package-trust-labels.test.mjs
+  tests/asset-manifest.test.mjs
   tests/settings-defaults.test.mjs
   tests/registry-runtime.test.mjs
   tests/example-compatibility.test.mjs
@@ -396,8 +411,14 @@ run_fast_unit_tests() {
       docs/types/media/*|docs/assets/preview-media.css|tests/media-parsers.test.mjs|tests/areas/media-studio.mjs|tests/areas/media-studio-*.mjs)
         add_unit_test tests/media-parsers.test.mjs
         ;;
+      docs/types/ebook/comic/*|docs/readme/comic.md|tests/comic-resource-bounds.test.mjs)
+        add_unit_test tests/comic-resource-bounds.test.mjs
+        ;;
       docs/types/ebook/*|tests/areas/ebook-git.mjs|tests/movediff.test.mjs)
         add_unit_test tests/movediff.test.mjs
+        ;;
+      docs/types/binary/torrent/*|tests/torrent-v2-semantics.test.mjs)
+        add_unit_test tests/torrent-v2-semantics.test.mjs
         ;;
       docs/types/image/*|tests/image-*.test.mjs|tests/areas/media-3d.mjs)
         add_image_unit_tests
@@ -541,6 +562,9 @@ run_smoke_core() {
       tests/areas/media-3d.mjs|docs/types/3d/*|docs/types/image/*|docs/types/binary/midi/*|docs/types/binary/gamerom/*)
         add_smoke_area media-3d
         ;;
+      docs/types/ebook/comic/*|docs/readme/comic.md|tests/comic-resource-bounds.test.mjs)
+        add_smoke_area email-archives
+        ;;
       docs/types/ebook/*)
         add_smoke_area ebook-git
         ;;
@@ -613,6 +637,18 @@ fi
 
 run_phase "smoke test: core areas (headless Chromium, zero off-origin)…" \
   run_smoke_core
+
+run_phase "Markdown remote-resource privacy (headless Chromium)…" \
+  node tests/markdown-remote-resources.test.mjs
+
+run_phase "HTML remote-resource privacy (headless Chromium)…" \
+  node tests/html-remote-resources.test.mjs
+
+run_phase "Embedded SVG/email/EPUB remote-resource privacy (headless Chromium)…" \
+  node tests/embedded-remote-resources.test.mjs
+
+run_phase "Offline save/update readiness (headless Chromium)…" \
+  node tests/release-readiness-offline.mjs
 
 if [ "$FAST" = 1 ]; then
   echo "→ fast mode: SKIPPING known-file + binary smoke suites + exhaustive Sokoban replay suite (the heaviest)."

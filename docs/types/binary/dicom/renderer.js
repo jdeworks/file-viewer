@@ -177,7 +177,7 @@ export function render(intake) {
   const bitsAlloc   = g(tags, '00280100');
   const bitsStored  = g(tags, '00280101');
   const pixelSpacing = g(tags, '00280030');
-  const sliceThick  = g(tags, '00500004') ?? g(tags, '00180050');
+  const sliceThick  = g(tags, '00180050');
   const kvp         = g(tags, '00180060');
   const seriesDesc  = g(tags, '0008103e');
   const studyDesc   = g(tags, '00081030');
@@ -247,10 +247,6 @@ export function render(intake) {
     html += `</dl></div></div>`;
   }
 
-  const noPixel = !b.slice(132).some((_, i, a) => {
-    const off = i;
-    return a[off] === 0xE0 && a[off+1] === 0x7F;
-  });
   if (rows && cols) {
     html += `<div class="no-px">Image pixel data not rendered — use a dedicated DICOM viewer (e.g. RadiAnt, OsiriX, 3D Slicer) to view the actual image.</div>`;
   }

@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "entries": [
+    {
+      "slug": "__boot__",
+      "type": "serviceworker",
+      "text": "registered http://127.0.0.1:41799/sw.js"
+    },
+    {
+      "slug": "__boot__",
+      "type": "serviceworker",
+      "text": "registered http://127.0.0.1:41799/sw.js"
+    },
+    {
+      "slug": "__boot__",
+      "type": "serviceworker",
+      "text": "registered http://127.0.0.1:41799/sw.js"
+    },
+    {
+      "slug": "__boot__",
+      "type": "serviceworker",
+      "text": "registered http://127.0.0.1:41799/sw.js"
+    },
+    {
+      "slug": "__boot__",
+      "type": "serviceworker",
+      "text": "registered http://127.0.0.1:41799/sw.js"
+    },
+    {
+      "slug": "__boot__",
+      "type": "serviceworker",
+      "text": "registered http://127.0.0.1:41799/sw.js"
+    }
+  ]
+}

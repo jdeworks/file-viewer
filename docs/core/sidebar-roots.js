@@ -1,17 +1,26 @@
 import { buildTree, renderTree } from './filetree.js';
 import { intakeFromText } from './intake.js';
-import { $, state, toast } from './state.js';
+import { $, isMobile, state, toast } from './state.js';
 
 let loadIntake = null;
+let onTreeDelete = null;
+let onTreeReveal = null;
+let onRootActivate = null;
 let nextId = 1;
 
 function setSidebar(open) {
   $('fileTree').hidden = !open;
-  $('ftResize').hidden = !open || window.matchMedia('(max-width: 760px)').matches;
+  $('ftResize').hidden = !open || isMobile();
+  if (isMobile()) $('scrim').hidden = !open;
 }
 
-export function initSidebarRoots({ loadIntake: loader }) {
+export function initSidebarRoots({
+  loadIntake: loader, onDelete = null, onReveal = null, onActivate = null,
+}) {
   loadIntake = loader;
+  onTreeDelete = onDelete;
+  onTreeReveal = onReveal;
+  onRootActivate = onActivate;
 }
 
 function roots() {
@@ -54,6 +63,24 @@ export function captureActiveSidebarRoot() {
     root.folderExported = false;
     capturedDirtyFileRoot = true;
   }
+  // Folder files use the same editor as standalone files, but their edit is keyed by the
+  // root-relative tree path. Capture it before a different sidebar root becomes active; otherwise
+  // an async open of the new root can accidentally stash the old editor bytes under the new root.
+  if (root.kind === 'folder' && state.currentFolderPath && state.rawview?.isDirty?.()) {
+    const edits = state.folderEdits || root.folderEdits || new Map();
+    edits.set(state.currentFolderPath, state.rawview.getValue());
+    state.folderEdits = edits;
+    root.folderEdits = edits;
+    root.folderExported = false;
+  }
+  if ((root.kind === 'folder' || root.kind === 'archive')
+    && state.currentFolderPath && state.binaryEdit?.dirty) {
+    const edits = state.binaryEdits || root.binaryEdits || new Map();
+    edits.set(state.currentFolderPath, state.binaryEdit);
+    state.binaryEdits = edits;
+    root.binaryEdits = edits;
+    root.folderExported = false;
+  }
   if (!capturedDirtyFileRoot) {
     root.treeEntries = state.treeEntries || root.treeEntries || [];
     root.folderEdits = state.folderEdits || new Map();
@@ -91,6 +118,7 @@ export function activateSidebarRoot(root, { skipCapture = false } = {}) {
   $('ftSearch').hidden = !!root.git || root.kind === 'file';
   $('ftSearchInput').value = '';
   $('ftSearchCount').textContent = '';
+  onRootActivate?.(root);
 }
 
 function displayEntries() {
@@ -129,6 +157,7 @@ function rootForPath(path) {
 }
 
 export function removeActiveSidebarRoot() {
+  if (state.sidebarNavigationPending || state.companionOperationToken) return;
   const root = roots().find((item) => item.id === state.activeSidebarRootId);
   if (!root) return;
   const next = roots().filter((item) => item.id !== root.id);
@@ -139,15 +168,20 @@ export function removeActiveSidebarRoot() {
   toast('Removed from sidebar. Nothing was deleted from disk.');
 }
 
-export function renderSidebarRoots(activeRoot = null, activeInnerPath = null, { skipCapture = false } = {}) {
+export function renderSidebarRoots(activeRoot = null, activeInnerPath = null, { skipCapture = false, openSidebar = true } = {}) {
   const list = roots();
   if (!list.length) {
     state.treeApi?.stop?.();
     state.treeApi = null;
     state.treeEntries = null;
+    $('ftBody').innerHTML = '';
     state.activeSidebarRootId = null;
+    state.sidebarNavigationPending = false;
+    state.sidebarNavigationToken = null;
     $('ftRemoveRootBtn').hidden = true;
     setSidebar(false);
+    // Clearing the last root must also tear down the active Companion folder association/watch.
+    onRootActivate?.(null);
     return;
   }
   const active = activeRoot || list.find((root) => root.id === state.activeSidebarRootId) || list[list.length - 1];
@@ -157,34 +191,67 @@ export function renderSidebarRoots(activeRoot = null, activeInnerPath = null, { 
     onOpen: async (node) => {
       const root = roots().find((item) => item.id === node.sidebarRootId);
       if (!root || !loadIntake) return;
-      activateSidebarRoot(root);
-      // A child frame of a file-with-children root (split GIF): open the frame PNG via the
-      // provider, but leave the root a 'file' so its own row keeps opening the running GIF.
-      if (node.sidebarChild && root.getChildIntake) {
-        const intake = await root.getChildIntake(node.sidebarInnerPath);
-        if (intake) {
-          state._skipDiscardGuard = true;
-          state._skipSidebarRoot = true;
-          await loadIntake(intake);
+      // Keep one navigation transaction in flight. During it the visible editor can still show
+      // the previous root, so Companion disk actions must remain unavailable until the new intake
+      // has either committed or rolled back.
+      if (state.sidebarNavigationPending || state.companionOperationToken) return;
+      const previousRoot = roots().find((item) => item.id === state.activeSidebarRootId) || null;
+      const navigationToken = {};
+      state.sidebarNavigationPending = true;
+      state.sidebarNavigationToken = navigationToken;
+      activateSidebarRoot(root); // captures the previous root (including a dirty folder editor)
+      let loaded = false;
+      let activeInnerPath = null;
+      try {
+        // A child frame of a file-with-children root (split GIF): open the frame PNG via the
+        // provider, but leave the root a 'file' so its own row keeps opening the running GIF.
+        if (node.sidebarChild && root.getChildIntake) {
+          const intake = await root.getChildIntake(node.sidebarInnerPath);
+          if (intake) {
+            state._skipDiscardGuard = true;
+            state._skipSidebarRoot = true;
+            loaded = (await loadIntake(intake, { sidebarNavigationToken: navigationToken })) !== false;
+          }
+          activeInnerPath = node.sidebarInnerPath;
+        } else {
+          const innerPath = node.sidebarInnerPath || node.path.slice(root.label.length + 1);
+          const entry = (root.treeEntries || []).find((item) => item.path === innerPath);
+          if (!entry) return;
+          if (root.openNode) {
+            loaded = (await root.openNode(entry, innerPath, {
+              skipFolderFlush: true,
+              sidebarNavigationToken: navigationToken,
+            })) !== false;
+          } else {
+            const edited = root.folderEdits?.get(innerPath);
+            state._skipDiscardGuard = true;
+            state._skipSidebarRoot = true;
+            loaded = (await loadIntake(edited != null
+              ? intakeFromText(edited, innerPath.split('/').pop())
+              : entry.intake, { sidebarNavigationToken: navigationToken })) !== false;
+          }
+          if (loaded) {
+            state.currentFolderPath = root.kind === 'file' ? null : innerPath;
+            root.currentFolderPath = state.currentFolderPath;
+            activeInnerPath = innerPath;
+          }
         }
-        renderSidebarRoots(root, node.sidebarInnerPath);
-        return;
+      } finally {
+        const rootStillPresent = roots().includes(root);
+        const finalRoot = loaded && rootStillPresent
+          ? root
+          : (previousRoot && roots().includes(previousRoot) ? previousRoot : roots().at(-1));
+        state.sidebarNavigationPending = false;
+        state.sidebarNavigationToken = null;
+        if (finalRoot) {
+          renderSidebarRoots(finalRoot, loaded ? activeInnerPath : finalRoot.currentFolderPath, {
+            skipCapture: true,
+          });
+        } else {
+          renderSidebarRoots();
+        }
+        if (isMobile() && loaded) setSidebar(false);
       }
-      const innerPath = node.sidebarInnerPath || node.path.slice(root.label.length + 1);
-      const entry = (root.treeEntries || []).find((item) => item.path === innerPath);
-      if (!entry) return;
-      root.currentFolderPath = innerPath;
-      if (root.openNode) {
-        await root.openNode(entry, innerPath);
-      } else {
-        const edited = root.folderEdits?.get(innerPath);
-        state._skipDiscardGuard = true;
-        state._skipSidebarRoot = true;
-        await loadIntake(edited != null ? intakeFromText(edited, innerPath.split('/').pop()) : entry.intake);
-      }
-      state.currentFolderPath = root.kind === 'file' ? null : innerPath;
-      root.currentFolderPath = state.currentFolderPath;
-      renderSidebarRoots(root, innerPath);
     },
     onMove: (srcPath, destFolderPath) => {
       const root = rootForPath(srcPath);
@@ -197,6 +264,17 @@ export function renderSidebarRoots(activeRoot = null, activeInnerPath = null, { 
       root.onMove(src, dest);
       root.treeEntries = state.treeEntries || root.treeEntries;
       renderSidebarRoots(root, state.currentFolderPath);
+    },
+    onDelete: onTreeDelete ? (target) => onTreeDelete(target) : null,
+    onReveal: onTreeReveal ? (target) => onTreeReveal(target) : null,
+    canDiskAction: (target) => {
+      const root = rootForPath(target.path);
+      return root?.id === state.activeSidebarRootId
+        && root.kind === 'folder'
+        && !!root.companionFolderRoot
+        && !state.sidebarNavigationPending
+        && !state.companionOperationToken
+        && document.body.classList.contains('companion-folder-active');
     },
     initialOpenDepth: Infinity,
   });
@@ -225,7 +303,7 @@ export function renderSidebarRoots(activeRoot = null, activeInnerPath = null, { 
   $('ftRemoveRootBtn').hidden = false;
   $('ftExpandBtn').hidden = false;
   $('ftCollapseBtn').hidden = false;
-  setSidebar(true);
+  setSidebar(openSidebar);
 }
 
 export function addFileRoot(intake) {
@@ -243,7 +321,9 @@ export function addFileRoot(intake) {
     }],
   };
   roots().push(root);
-  renderSidebarRoots(root, label, { skipCapture: true });
+  // Register every standalone file in the append-only tree, but do not cover a phone-sized
+  // viewer with the drawer merely because intake completed. The tree button remains available.
+  renderSidebarRoots(root, label, { skipCapture: true, openSidebar: !isMobile() });
 }
 
 // Make the ACTIVE single-file root (an open GIF) ACT LIKE a folder WITHOUT ceasing to be a
@@ -263,8 +343,11 @@ export function expandActiveFileRootToFolder({ entries, getIntake }) {
 
 export function addFolderRoot({ label, entries, git = false, openNode = null, alreadyCaptured = false }) {
   if (!alreadyCaptured) captureActiveSidebarRoot();
-  const rootLabel = uniqueLabel(label || 'Folder');
-  const prefix = rootLabel + '/';
+  const sourceLabel = label || 'Folder';
+  const rootLabel = uniqueLabel(sourceLabel);
+  // Incoming webkit/drop paths retain the folder's original basename. A duplicate sidebar label
+  // may be displayed as "project 2", but normalization must still strip the original "project/".
+  const prefix = sourceLabel + '/';
   const normalizedEntries = (entries || []).map((entry) => {
     if (!entry.path?.startsWith(prefix)) return entry;
     const originalPath = entry.originalPath || entry.path;

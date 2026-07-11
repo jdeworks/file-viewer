@@ -44,6 +44,9 @@ export async function run(ctx) {
   // The extracted CSV is re-detected and rendered in a fresh preview iframe (as a CSV table).
   // Wait for the new intake to load (filename swaps to the entry's own name) before asserting.
   await page.waitForFunction(() => document.getElementById('fileName').textContent === 'rows.csv', null, { timeout: 12000 });
+  // loadIntake updates the filename before the archive navigation transaction commits its active
+  // tree row. Wait for that transaction instead of sampling the previous README row mid-flight.
+  await page.waitForSelector('#ftBody .ft-row.active[data-path="data/rows.csv"]', { timeout: 8000 });
   const innerType = await page.$eval('#typeSelect', (s) => s.value);
   if (innerType === 'csv') pass('zip entry opened + re-detected (rows.csv → CSV)'); else fail('inner type: ' + innerType);
   pass('opened entry shows its own filename (rows.csv)');
@@ -80,10 +83,15 @@ export async function run(ctx) {
   const removedRoot = await page.evaluate(() => {
     const rows = [...document.querySelectorAll('#ftBody .ft-file')];
     const row = rows.find((el) => /Welcome\.md/i.test(el.querySelector('.ft-name')?.textContent || ''));
-    row?.click();
-    document.getElementById('ftRemoveRootBtn')?.click();
-    return !!row && !document.getElementById('ftRemoveRootBtn')?.hidden;
+    const remove = document.getElementById('ftRemoveRootBtn');
+    // openBlobFile already activates the new standalone root. Clicking its row again starts an
+    // asynchronous navigation transaction, during which removal is intentionally refused.
+    if (!row?.classList.contains('active') || !remove || remove.hidden) return false;
+    remove.click();
+    return true;
   });
+  await page.waitForFunction(() => ![...document.querySelectorAll('#ftBody .ft-file .ft-name')]
+    .some((element) => /Welcome\.md/i.test(element.textContent || '')), null, { timeout: 8000 });
   const foldersAfterRemove = await page.$$eval('#ftBody .ft-folder', (els) => els.map((e) => e.querySelector('.ft-name')?.textContent || ''));
   const filesAfterRemove = await page.$$eval('#ftBody .ft-file', (els) => els.map((e) => e.querySelector('.ft-name')?.textContent || ''));
   if (removedRoot && foldersAfterRemove.some((name) => /sample\.zip/i.test(name)) && !filesAfterRemove.some((name) => /Welcome\.md/i.test(name))) {

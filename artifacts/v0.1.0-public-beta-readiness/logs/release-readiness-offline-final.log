@@ -1,0 +1,13 @@
+✓ cache-on-use works before opt-in and does not claim a full save
+✓ first-visit save queues until the initial controller claims the page
+✓ concurrent tab saves are queued, correlated, and both selections are persisted
+✓ modal controls, exact presets, totals, focus, and responsive layout are correct
+✓ offline modal fits phone, tablet, and desktop in both themes
+✓ limited Office selection is honest; selected dependencies work and omitted viewer misses offline
+✓ production full save caches every release-manifest asset with exact source bytes
+✓ real Office preset reopens an actual XLSX viewer after a hard offline reload
+✓ failed and interrupted saves never report ready and resume to an exact full cache
+✓ cache eviction overrides stale localStorage readiness
+✓ v1 to v2 update prompts, cleans only stale app caches, and reevaluates saved state
+
+OFFLINE READINESS PASSED — 11 scenarios

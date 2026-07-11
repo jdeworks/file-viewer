@@ -10,8 +10,9 @@
 use axum::{extract::State, middleware, routing::post, Json, Router};
 use file_viewer_companion::{
     auth::require_token,
-    config::{config_path, load_config, save_config},
-    kill_other_companion_processes, logging, router_with,
+    bind_server_listener,
+    config::{config_path, load_config, save_config_to},
+    logging, router_with,
     watcher::FileWatcher,
     AppState,
 };
@@ -60,7 +61,11 @@ fn status_icon(connected: bool) -> tauri::image::Image<'static> {
     }
     // Status dot (bottom-right) with a white ring so it reads on any background.
     let (sx, sy, sr) = (24.0f32, 24.0f32, 7.0f32);
-    let dot = if connected { [0x2f, 0x9e, 0x44, 0xff] } else { [0xd9, 0x36, 0x2b, 0xff] };
+    let dot = if connected {
+        [0x2f, 0x9e, 0x44, 0xff]
+    } else {
+        [0xd9, 0x36, 0x2b, 0xff]
+    };
     for y in 0..S {
         for x in 0..S {
             let dx = x as f32 + 0.5 - sx;
@@ -94,7 +99,14 @@ fn register_url_scheme() {
     };
     reg(&["add", base, "/ve", "/d", "URL:File Viewer Companion", "/f"]);
     reg(&["add", base, "/v", "URL Protocol", "/d", "", "/f"]);
-    reg(&["add", &format!(r"{base}\shell\open\command"), "/ve", "/d", &cmd, "/f"]);
+    reg(&[
+        "add",
+        &format!(r"{base}\shell\open\command"),
+        "/ve",
+        "/d",
+        &cmd,
+        "/f",
+    ]);
     logging::info("registered fvcompanion:// URL scheme");
 }
 
@@ -104,20 +116,25 @@ fn open_url(url: &str) {
     #[cfg(target_os = "macos")]
     let _ = std::process::Command::new("open").arg(url).spawn();
     #[cfg(target_os = "windows")]
-    let _ = std::process::Command::new("cmd").args(["/C", "start", "", url]).spawn();
+    let _ = std::process::Command::new("cmd")
+        .args(["/C", "start", "", url])
+        .spawn();
 }
 
-// Add a folder to the watched set + persist; returns the updated list as display strings.
-fn add_watched(paths: &Arc<Mutex<Vec<std::path::PathBuf>>>, pb: std::path::PathBuf) -> Vec<String> {
-    let updated = {
-        let mut locked = paths.lock().unwrap();
-        if !locked.contains(&pb) {
-            locked.push(pb);
-        }
-        locked.clone()
-    };
-    let _ = save_config(&updated);
-    updated.iter().map(|p| p.display().to_string()).collect()
+// Add a folder transactionally: persistence must succeed before the in-memory set changes.
+fn add_watched(
+    paths: &Arc<Mutex<Vec<std::path::PathBuf>>>,
+    config_path: &std::path::Path,
+    pb: std::path::PathBuf,
+) -> std::io::Result<Vec<String>> {
+    let mut locked = paths.lock().unwrap();
+    if !locked.contains(&pb) {
+        let mut updated = locked.clone();
+        updated.push(pb);
+        save_config_to(config_path, &updated)?;
+        *locked = updated;
+    }
+    Ok(locked.iter().map(|p| p.display().to_string()).collect())
 }
 
 // POST /path-picker — browser-initiated native folder picker. Shows the OS dialog on the GTK/main
@@ -142,19 +159,41 @@ async fn path_picker(handle: tauri::AppHandle, state: AppState) -> Json<serde_js
         .and_then(|fp| fp.as_path().map(|p| p.to_path_buf()))
         .filter(|p| p.is_dir());
     match chosen {
-        Some(pb) => {
-            let paths = add_watched(&state.watched_paths, pb.clone());
-            Json(json!({ "ok": true, "chosen": pb.display().to_string(), "paths": paths }))
-        }
+        Some(pb) => match add_watched(&state.watched_paths, &state.config_path, pb.clone()) {
+            Ok(paths) => {
+                Json(json!({ "ok": true, "chosen": pb.display().to_string(), "paths": paths }))
+            }
+            Err(error) => {
+                logging::error(format!(
+                    "native picker could not persist watched folder: {error}"
+                ));
+                Json(json!({
+                    "ok": false,
+                    "chosen": serde_json::Value::Null,
+                    "error": "could not persist watched folder configuration"
+                }))
+            }
+        },
         None => Json(json!({ "ok": false, "chosen": serde_json::Value::Null })),
     }
 }
 
 fn main() {
-    logging::init(Some(config_path()));
-    // Take over from any old instance still sitting in the tray, or a console server (frees :7700).
-    kill_other_companion_processes();
-    std::thread::sleep(std::time::Duration::from_millis(400));
+    let app_config_path = config_path();
+    logging::init(Some(app_config_path.clone()));
+
+    // The listening socket is the cross-platform single-instance claim shared with the standalone
+    // server. Reserve it before creating the watcher or tray so a second launch exits cleanly.
+    let server_listener = match bind_server_listener(PORT) {
+        Ok(listener) => listener,
+        Err(e) => {
+            logging::info(format!(
+                "companion not started: 127.0.0.1:{PORT} is unavailable ({e})"
+            ));
+            return;
+        }
+    };
+
     let token =
         std::env::var("COMPANION_TOKEN").unwrap_or_else(|_| uuid::Uuid::new_v4().to_string());
     let watched_paths = Arc::new(Mutex::new(load_config()));
@@ -174,19 +213,23 @@ fn main() {
     let state = AppState {
         token: token.clone(),
         watched_paths: Arc::clone(&watched_paths),
+        config_path: app_config_path.clone(),
         debug: false,
         watcher_tx,
     };
 
     // Make the session token discoverable without a console: write it next to the config file.
     // (The viewer also auto-reads it from /ping; this is a fallback.)
-    let token_file = config_path().with_file_name("token");
+    let token_file = app_config_path.with_file_name("token");
     if let Some(parent) = token_file.parent() {
         let _ = std::fs::create_dir_all(parent);
     }
     let _ = std::fs::write(&token_file, &token);
     println!("File Viewer Companion (desktop) — server on 127.0.0.1:{PORT}");
-    println!("  token: {token}  (also written to {})", token_file.display());
+    println!(
+        "  token: {token}  (also written to {})",
+        token_file.display()
+    );
     logging::info(format!("companion (desktop) started on 127.0.0.1:{PORT}"));
 
     // Let the browser launch us on demand via the fvcompanion:// scheme (one-click "start it").
@@ -197,7 +240,8 @@ fn main() {
     // auto-delivered to the viewer via /ping, but the tray makes it discoverable without a console.
     let menu_token = token.clone();
     let menu_token_file = token_file.display().to_string();
-    let menu_logs_dir = config_path()
+    let menu_config_path = app_config_path.clone();
+    let menu_logs_dir = app_config_path
         .parent()
         .map(|p| p.join("logs"))
         .unwrap_or_else(|| std::path::PathBuf::from("logs"))
@@ -235,11 +279,17 @@ fn main() {
                         )
                         .route_layer(middleware::from_fn_with_state(mw_state, require_token));
                     let app = router_with(server_state, PAGES_ORIGIN.to_string(), extra);
-                    match tokio::net::TcpListener::bind(("127.0.0.1", PORT)).await {
-                        Ok(listener) => {
-                            let _ = axum::serve(listener, app).await;
+                    let listener = match tokio::net::TcpListener::from_std(server_listener) {
+                        Ok(listener) => listener,
+                        Err(e) => {
+                            logging::error(format!("cannot start companion server: {e}"));
+                            handle.exit(1);
+                            return;
                         }
-                        Err(e) => eprintln!("companion: cannot bind 127.0.0.1:{PORT}: {e}"),
+                    };
+                    if let Err(e) = axum::serve(listener, app).await {
+                        logging::error(format!("companion server stopped: {e}"));
+                        handle.exit(1);
                     }
                 });
             });
@@ -260,6 +310,7 @@ fn main() {
             let tok = menu_token.clone();
             let tokf = menu_token_file.clone();
             let logsd = menu_logs_dir.clone();
+            let config = menu_config_path.clone();
             TrayIconBuilder::with_id("main")
                 .icon(status_icon(false))
                 .tooltip("File Viewer Companion — idle (no viewer connected)")
@@ -277,12 +328,23 @@ fn main() {
                     "logs" => open_url(&logsd),
                     "addpath" => {
                         let wp2 = Arc::clone(&wp);
+                        let config2 = config.clone();
+                        let error_dialog = app.clone();
                         app.dialog().file().pick_folder(move |folder| {
                             let Some(fp) = folder else { return };
                             let Some(p) = fp.as_path() else { return };
                             let pb = p.to_path_buf();
                             if pb.is_dir() {
-                                add_watched(&wp2, pb);
+                                if let Err(error) = add_watched(&wp2, &config2, pb) {
+                                    logging::error(format!(
+                                        "tray picker could not persist watched folder: {error}"
+                                    ));
+                                    error_dialog
+                                        .dialog()
+                                        .message("The folder was not added because the Companion could not save its configuration.")
+                                        .title("File Viewer Companion")
+                                        .show(|_| {});
+                                }
                             }
                         });
                     }
@@ -330,4 +392,27 @@ fn main() {
                 }
             }
         });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::add_watched;
+    use std::sync::{Arc, Mutex};
+
+    #[test]
+    fn native_add_rolls_back_memory_when_persistence_fails() {
+        let base =
+            std::env::temp_dir().join(format!("fv-companion-tauri-test-{}", uuid::Uuid::new_v4()));
+        let watched = base.join("watched");
+        let impossible_config = base.join("config-dir");
+        std::fs::create_dir_all(&watched).unwrap();
+        std::fs::create_dir(&impossible_config).unwrap();
+        let paths = Arc::new(Mutex::new(Vec::new()));
+
+        let result = add_watched(&paths, &impossible_config, watched);
+
+        assert!(result.is_err());
+        assert!(paths.lock().unwrap().is_empty());
+        std::fs::remove_dir_all(base).unwrap();
+    }
 }

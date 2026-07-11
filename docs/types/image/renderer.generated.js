@@ -4978,18 +4978,144 @@ function injectStyle3() {
   document.head.appendChild(s);
 }
 
+// ../../docs/types/image/svg-sanitize.js
+function isLocalResourceUrl(value) {
+  const raw = String(value || "").trim();
+  if (/^(?:data|blob):/i.test(raw)) return true;
+  try {
+    const appUrl = new URL(window.location.href);
+    const resourceUrl = new URL(raw, appUrl);
+    if (appUrl.protocol === "file:" && resourceUrl.protocol === "file:") return true;
+    return /^(?:https?):$/.test(resourceUrl.protocol) && resourceUrl.origin === appUrl.origin;
+  } catch {
+    return false;
+  }
+}
+function neutralizeCssUrls(value) {
+  let blocked = false;
+  const css = String(value || "").replace(
+    /url\(\s*(?:"((?:\\.|[^"])*)"|'((?:\\.|[^'])*)'|([^)]*))\s*\)/gi,
+    (token, doubleQuoted, singleQuoted, bare) => {
+      const raw = doubleQuoted ?? singleQuoted ?? bare ?? "";
+      const decoded = raw.replace(/\\([0-9a-f]{1,6})(?:\s)?|\\([^\r\n\f])/gi, (_match, hex, char) => {
+        if (hex) return String.fromCodePoint(Math.min(parseInt(hex, 16) || 65533, 1114111));
+        return char || "";
+      });
+      if (isLocalResourceUrl(decoded)) return token;
+      blocked = true;
+      return 'url("data:,")';
+    }
+  );
+  return { css, blocked };
+}
+function neutralizePresentationUrl(property, value) {
+  const probe = document.createElement("div");
+  probe.style.setProperty(property, value);
+  return neutralizeCssUrls(probe.style.getPropertyValue(property) || value);
+}
+function sanitizeDeclaration(style) {
+  for (const property of [...style]) {
+    const priority = style.getPropertyPriority(property);
+    const value = style.getPropertyValue(property);
+    if (property.startsWith("--")) {
+      const inspected = value.replace(/\\([0-9a-f]{1,6})(?:\s)?|\\([^\r\n\f])/gi, (_match, hex, char) => hex ? String.fromCodePoint(Math.min(parseInt(hex, 16) || 65533, 1114111)) : char || "");
+      const urls = inspected.match(/(?:https?:)?\/\/[^\s"'()]*/gi) || [];
+      if (urls.some((url) => !isLocalResourceUrl(url))) {
+        style.removeProperty(property);
+        continue;
+      }
+    }
+    const result = neutralizeCssUrls(value);
+    if (result.blocked) style.setProperty(property, result.css, priority);
+  }
+}
+function sanitizeStylesheet(cssText) {
+  const detached = document.implementation.createHTMLDocument("");
+  const style = detached.createElement("style");
+  style.textContent = cssText || "";
+  detached.head.appendChild(style);
+  function visit(owner) {
+    if (!owner.cssRules) return;
+    for (let index = owner.cssRules.length - 1; index >= 0; index--) {
+      const rule = owner.cssRules[index];
+      if (rule.type === CSSRule.IMPORT_RULE) {
+        if (!isLocalResourceUrl(rule.href)) owner.deleteRule(index);
+        continue;
+      }
+      if (rule.style) sanitizeDeclaration(rule.style);
+      if (rule.cssRules) visit(rule);
+    }
+  }
+  visit(style.sheet);
+  return [...style.sheet.cssRules].map((rule) => rule.cssText).join("\n");
+}
+function parseSvg(source) {
+  const parsed = new DOMParser().parseFromString(source || "", "image/svg+xml");
+  if (!parsed.querySelector("parsererror") && parsed.documentElement?.localName.toLowerCase() === "svg") return parsed.documentElement;
+  const template = document.createElement("template");
+  template.innerHTML = source || "";
+  return template.content.querySelector("svg") || document.createElementNS("http://www.w3.org/2000/svg", "svg");
+}
+function sanitizeSvg(source) {
+  const root = parseSvg(source);
+  root.querySelectorAll("script,iframe,object,embed,video,audio,source,track,link,meta,base,form,animate,animateMotion,animateTransform,set").forEach((element) => element.remove());
+  for (const element of [root, ...root.querySelectorAll("*")]) {
+    for (const attribute of [...element.attributes]) {
+      if (/^on/i.test(attribute.name) || ["srcset", "poster", "background"].includes(attribute.name.toLowerCase())) {
+        element.removeAttribute(attribute.name);
+      }
+    }
+  }
+  for (const element of [root, ...root.querySelectorAll("[src]")]) {
+    if (!element.hasAttribute("src")) continue;
+    if (!isLocalResourceUrl(element.getAttribute("src"))) element.removeAttribute("src");
+  }
+  for (const element of [root, ...root.querySelectorAll("*")]) {
+    if (element.localName.toLowerCase() === "a") continue;
+    for (const attribute of [...element.attributes]) {
+      if (attribute.localName.toLowerCase() !== "href") continue;
+      if (!isLocalResourceUrl(attribute.value)) element.removeAttributeNode(attribute);
+    }
+  }
+  for (const style of root.querySelectorAll("style")) style.textContent = sanitizeStylesheet(style.textContent);
+  for (const element of [root, ...root.querySelectorAll("[style]")]) {
+    if (element.hasAttribute("style")) sanitizeDeclaration(element.style);
+  }
+  const presentationUrls = [
+    "fill",
+    "stroke",
+    "filter",
+    "clip-path",
+    "mask",
+    "marker",
+    "marker-start",
+    "marker-mid",
+    "marker-end",
+    "cursor",
+    "color-profile"
+  ];
+  for (const element of [root, ...root.querySelectorAll(presentationUrls.map((name) => `[${name}]`).join(","))]) {
+    for (const attribute of presentationUrls) {
+      if (!element.hasAttribute(attribute)) continue;
+      const result = neutralizePresentationUrl(attribute, element.getAttribute(attribute));
+      if (result.blocked) element.setAttribute(attribute, result.css);
+    }
+  }
+  return new XMLSerializer().serializeToString(root);
+}
+
 // ../../docs/types/image/renderer.js
 var DOC_TPL = new URL("./doc.html", import.meta.url);
 var EDIT_TOOLS_TPL = new URL("./edit-tools.html", import.meta.url);
 var EDITABLE_MIME = /* @__PURE__ */ new Set(["image/png", "image/jpeg", "image/webp", "image/avif", "image/bmp", "image/gif"]);
-function stripOffOriginSvgRefs(svg) {
-  return svg.replace(/(<(?:image|use|feimage)\b[^>]*?\s)(?:xlink:)?href\s*=\s*(?:"https?:[^"]*"|'https?:[^']*')/gi, '$1href=""').replace(/url\(\s*(?:"https?:[^")]*"|'https?:[^')]*'|https?:[^)\s'"]*)\s*\)/gi, "url()").replace(/@import\s+(?:url\([^)]*\)|"https?:[^"]*"|'https?:[^']*')\s*;?/gi, "");
-}
 async function render(intake, ctx = {}) {
   if (isSvg(intake)) {
     const DOMPurify = await loadGlobal4(vendor4("dompurify/purify.min.js"), "DOMPurify");
     DOMPurify.removed = [];
-    const clean = stripOffOriginSvgRefs(DOMPurify.sanitize(intake.text || "", { USE_PROFILES: { svg: true, svgFilters: true } }));
+    const clean = sanitizeSvg(DOMPurify.sanitize(intake.text || "", {
+      USE_PROFILES: { svg: true, svgFilters: true },
+      ALLOWED_URI_REGEXP: /^(?:(?:(?:f|ht)tps?|blob):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i
+    }));
     return { bodyHtml: '<div class="img-doc">' + clean + "</div>", hadUnsafe: DOMPurify.removed.length > 0 };
   }
   if (mimeFor(intake) === "image/gif") {

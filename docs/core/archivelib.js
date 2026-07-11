@@ -5,6 +5,8 @@
 
 import { vendor } from './script-loader.js';
 
+export const OFFLINE_DEPENDENCY_ERROR = 'FV_OFFLINE_DEPENDENCY_MISS';
+
 // Resolved URL of the vendor directory sibling.
 const workerUrl = vendor('libarchive/worker-bundle.js');
 const libUrl    = new URL('../vendor/libarchive/libarchive.js', import.meta.url).href;
@@ -16,7 +18,18 @@ let _archiveModule = null;
 // it from the ORIGINAL src path via import.meta.url.
 async function loadLib() {
   if (_archiveModule) return _archiveModule;
-  const mod = await import(/* @vite-ignore */ libUrl);
+  let mod;
+  try {
+    mod = await import(/* @vite-ignore */ libUrl);
+  } catch (error) {
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      const miss = new Error(error?.message || 'Archive viewer dependency is not cached.');
+      miss.code = OFFLINE_DEPENDENCY_ERROR;
+      miss.cause = error;
+      throw miss;
+    }
+    throw error;
+  }
   mod.Archive.init({ workerUrl });
   _archiveModule = mod;
   return mod;
@@ -44,6 +57,17 @@ export function fmtSize(n) {
   return (n / 1048576).toFixed(2) + ' MB';
 }
 
+// libarchive.js flattens its file object as `{ file, path }`, where `path` is the containing
+// directory (with a trailing slash) and `file.name` is the basename. Some upstream versions may
+// instead return a full path, so avoid duplicating an already-present basename.
+export function archiveEntryName(file, path = '') {
+  const parent = String(path || '').replace(/\\/g, '/');
+  const basename = typeof file?.name === 'string' ? file.name.replace(/\\/g, '/') : '';
+  if (!basename) return parent.replace(/\/$/, '');
+  if (parent === basename || parent.endsWith('/' + basename)) return parent;
+  return parent && !parent.endsWith('/') ? parent + '/' + basename : parent + basename;
+}
+
 // Build a File from intake bytes so libarchive can accept it.
 function intakeToFile(intake) {
   const name = intake.filename || 'archive';
@@ -62,7 +86,7 @@ export async function listArchive(intake, { password = null } = {}) {
   await arch.close();
 
   const files = arr.map(({ file: f, path }) => ({
-    name: path,
+    name: archiveEntryName(f, path),
     size: f ? f.size : 0,
     isDir: !f,
     compressedSize: null, // libarchive does not expose compressed size

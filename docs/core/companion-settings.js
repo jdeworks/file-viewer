@@ -7,7 +7,7 @@ import {
   detectCompanion, isEnabled as companionEnabled, setEnabled as setCompanionEnabled,
   getToken, setToken, getWatchedPaths, addWatchedPath, removeWatchedPath, pickFolder, getLogs, isMobileDevice,
 } from './companion.js';
-import { isCompanionAvailable, setCompanionAvailable, syncSaveBtn, stopWatching, showCompanionIndicator, updateConnButton } from './companion-ui.js';
+import { isCompanionAvailable, setCompanionAvailable, syncSaveBtn, showCompanionIndicator, updateConnButton } from './companion-ui.js';
 
 // Heuristic guard: flag watched folders that are a whole drive / system root / very large tree.
 // Watching one forces a recursive scan on every find/save and exposes a lot of files. Returns a
@@ -34,17 +34,19 @@ export function looksLikeRiskyPath(p) {
 // it opens, every endpoint and what flows through it, the source link, and a checksum reminder,
 // and ONLY THEN the download link. (Transparency requirement; mirrors companion/README.md.)
 const COMPANION_ENDPOINTS = [
-  ['GET /ping', 'nothing sent; version + capabilities back'],
+  ['GET /ping', 'nothing sent; version + capabilities + session token back'],
   ['GET /watched-paths', 'nothing sent; your configured folder paths back'],
   ['POST/DELETE /watched-paths', 'a folder path to add/remove'],
   ['GET /find-file', 'filename + size (no content); matching absolute paths back'],
   ['GET /find-folder', 'a relative path; matching root folders back'],
   ['GET /file', 'an absolute path; file bytes back'],
   ['POST /file', 'an absolute path + new bytes (save-back / create)'],
-  ['DELETE /file', 'an absolute path (delete on disk)'],
+  ['DELETE /file', 'an absolute path; deletes a file or recursive subfolder, never a watched root'],
   ['GET /files', 'a folder path; its directory listing back'],
-  ['GET /watch', 'an absolute path; change/delete events streamed (SSE)'],
+  ['GET /tree', 'a watched root path; its recursive file listing back'],
+  ['GET /watch', 'nothing sent; change/delete paths streamed (SSE)'],
   ['GET /logs', 'optional filters; the companion’s own activity log back'],
+  ['POST /reveal', 'an absolute path; opens it in the OS file manager'],
   ['POST /path-picker', 'nothing; desktop app shows the native folder dialog, adds the choice'],
 ];
 
@@ -57,12 +59,12 @@ function appendCompanionDownloadPanel(panel) {
   title.textContent = 'Get the Companion';
 
   const description = document.createElement('p');
-  description.textContent = 'The Companion is an optional local app that lets this viewer save (and delete) the files you open, back to disk. The viewer works fully without it.';
+  description.textContent = 'The Companion is an optional local app that lets this viewer save files and delete files or subfolders inside folders you choose. It never deletes a watched root. The viewer works fully without it.';
 
   // What network access it opens — the key disclosure.
   const net = document.createElement('p');
   net.className = 'companion-net';
-  net.innerHTML = 'It runs a local server on <code>127.0.0.1:7700</code> only — never any external network. Requests are CORS-locked to localhost and this site, and every file action is restricted to folders you explicitly add. Mutating actions also require a per-session token.';
+  net.innerHTML = 'It listens only on loopback at <code>127.0.0.1:7700</code>, so it is not exposed to the LAN or internet. Loopback is machine-wide, not per account: any local process or OS account able to reach it can use the Companion’s permissions to act inside watched roots. CORS and the session token do not authenticate local processes. The browser CORS barrier allows this deployed viewer and pages served from <code>localhost</code> or <code>127.0.0.1</code> on any port; those pages can read <code>/ping</code>, including its session token. File reads and mutations are restricted to watched roots you explicitly add, and only mutating requests require the token.';
 
   // Endpoint table — exactly what flows through the companion.
   const tableLabel = document.createElement('p');
@@ -81,19 +83,19 @@ function appendCompanionDownloadPanel(panel) {
   }
 
   const source = document.createElement('a');
-  source.href = 'https://github.com/jdeworks/file-viewer/tree/dev/companion';
+  source.href = 'https://github.com/jdeworks/file-viewer/tree/v0.1.0/companion';
   source.target = '_blank';
   source.rel = 'noopener noreferrer';
-  source.textContent = 'Review the companion source code →';
+  source.textContent = 'Review the companion source code before building →';
 
   const checksum = document.createElement('p');
   checksum.className = 'companion-checksum';
-  checksum.textContent = 'Before running a downloaded binary, compare its SHA-256 against the checksum on the release page (or build from source above).';
+  checksum.textContent = 'Compare a download’s SHA-256 with the published checksum. This checks transfer integrity; it is not proof of publisher identity or software safety.';
 
-  // Honest disclosure: builds are unsigned, so AV/SmartScreen may false-positive.
+  // Honest disclosure: unsigned warnings are signals to investigate, not verdicts either way.
   const signing = document.createElement('p');
   signing.className = 'companion-checksum';
-  signing.textContent = 'Builds are unsigned, so antivirus or SmartScreen may flag a fresh binary that opens a local port and touches files (e.g. "IDP.Generic") — a false positive, not malware. Building from source and trusting your own build is the most reliable path.';
+  signing.textContent = 'Builds are unsigned, so antivirus or SmartScreen may warn about a new binary that opens a loopback port and accesses files. A warning alone proves neither malware nor safety. Building from reviewed source with a toolchain and dependencies you trust gives you more control, but is not a guarantee.';
 
   const download = document.createElement('a');
   download.className = 'companion-download-btn';
@@ -215,18 +217,20 @@ export function renderCompanionSettings(container) {
     setCompanionEnabled(enableToggle.checked);
     if (enableToggle.checked) {
       const ok = await detectCompanion();
+      if (!companionEnabled()) return; // the user opted out while /ping was in flight
       setCompanionAvailable(ok);
-      document.body.classList.toggle('companion-active', ok);
-      summary.innerHTML = `Companion <span class="companion-status-dot ${ok ? 'connected' : ''}">${ok ? '● connected' : '○ not found'}</span>`;
+      tokenEl.value = getToken() || ''; // /ping may have auto-delivered a new session token
+      const connected = isCompanionAvailable();
+      document.body.classList.toggle('companion-active', connected);
+      summary.innerHTML = `Companion <span class="companion-status-dot ${connected ? 'connected' : ''}">${connected ? '● connected' : '○ not found'}</span>`;
       syncSaveBtn();
-      updateConnButton(ok);
-      if (ok) showCompanionIndicator();
+      updateConnButton(connected);
+      if (connected) showCompanionIndicator();
       else toast('Companion not found — is it running on :7700?');
-      if (ok) refreshFolders();
+      if (connected) refreshFolders();
       else foldersList.innerHTML = '<span class="companion-folders-empty">Start the Companion app to manage folders.</span>';
     } else {
       setCompanionAvailable(false);
-      stopWatching();
       document.body.classList.remove('companion-active');
       summary.innerHTML = `Companion <span class="companion-status-dot">○ not found</span>`;
       syncSaveBtn();
@@ -242,12 +246,15 @@ export function renderCompanionSettings(container) {
     testBtn.disabled = true;
     const ok = await detectCompanion();
     testBtn.disabled = false;
+    if (!companionEnabled()) return; // ignore a stale result after opt-out
     setCompanionAvailable(ok);
-    document.body.classList.toggle('companion-active', ok);
-    summary.innerHTML = `Companion <span class="companion-status-dot ${ok ? 'connected' : ''}">${ok ? '● connected' : '○ not found'}</span>`;
+    tokenEl.value = getToken() || '';
+    const connected = isCompanionAvailable();
+    document.body.classList.toggle('companion-active', connected);
+    summary.innerHTML = `Companion <span class="companion-status-dot ${connected ? 'connected' : ''}">${connected ? '● connected' : '○ not found'}</span>`;
     syncSaveBtn();
-    updateConnButton(ok);
-    toast(ok ? 'Companion connected ✓' : 'Companion not found — is it running?');
+    updateConnButton(connected);
+    toast(connected ? 'Companion connected ✓' : 'Companion not found — is it running?');
   });
 
   const enableControls = document.createElement('div');
@@ -354,7 +361,7 @@ export function renderCompanionSettings(container) {
         // The native dialog already added it server-side, so warn (don't block) if it's risky.
         const risk = looksLikeRiskyPath(res.chosen || '');
         if (risk) toast(`Heads up: that folder looks like ${risk} — watching it may be slow.`, 5000);
-      }
+      } else if (res.error) toast('Pick failed: ' + res.error);
     } catch (err) { toast('Pick failed: ' + err.message); }
     finally { pickBtn.disabled = false; }
   });

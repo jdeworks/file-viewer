@@ -6,6 +6,7 @@
 // Falls back to a <textarea> if Monaco doesn't load (offline / slow network).
 
 import { loadMonaco } from '../../../core/monaco-loader.js';
+import { sanitizeSvg } from '../svg-sanitize.js';
 
 // Extract width × height from an SVG string (viewBox / width / height attributes).
 function svgDimensions(svg) {
@@ -26,43 +27,6 @@ function svgDimensions(svg) {
     if (wv > 0 && hv > 0) return `${Math.round(wv)}×${Math.round(hv)}`;
   }
   return null;
-}
-
-// Even after <script>/on* are stripped, an SVG can still carry <image>/<use>/<feImage>
-// href="http://…"> or a CSS url()/@import (in <style> or style="") — none of that needs a
-// script to execute, so the iframe's `sandbox="allow-same-origin"` (no allow-scripts) doesn't
-// stop it. The moment the file is opened the browser would fire a real off-origin request —
-// a classic tracking-pixel leak, and a violation of this app's "zero off-origin at runtime"
-// rule. Neutralize absolute http(s) references only; same-origin/relative/data: URLs still work.
-function stripOffOriginSvgRefs(svg) {
-  return svg
-    .replace(/(<(?:image|use|feimage)\b[^>]*?\s)(?:xlink:)?href\s*=\s*(?:"https?:[^"]*"|'https?:[^']*')/gi, '$1href=""')
-    .replace(/url\(\s*(?:"https?:[^")]*"|'https?:[^')]*'|https?:[^)\s'"]*)\s*\)/gi, 'url()')
-    .replace(/@import\s+(?:url\([^)]*\)|"https?:[^"]*"|'https?:[^']*')\s*;?/gi, '');
-}
-
-// Strip <script> elements (open + close tags with content) and on* attributes.
-// DOMParser approach: safe because we parse, mutate, then serialise — no eval.
-function sanitizeSvg(svg) {
-  let out;
-  try {
-    const doc = new DOMParser().parseFromString(svg, 'image/svg+xml');
-    // Remove all <script> elements
-    doc.querySelectorAll('script').forEach((el) => el.remove());
-    // Strip on* event handlers from all elements
-    doc.querySelectorAll('*').forEach((el) => {
-      for (const attr of [...el.attributes]) {
-        if (/^on/i.test(attr.name)) el.removeAttribute(attr.name);
-      }
-    });
-    out = new XMLSerializer().serializeToString(doc);
-  } catch {
-    // Fallback: regex strip (crude but safe)
-    out = svg
-      .replace(/<script[\s\S]*?<\/script>/gi, '')
-      .replace(/\s+on\w+\s*=\s*(?:"[^"]*"|'[^']*')/gi, '');
-  }
-  return stripOffOriginSvgRefs(out);
 }
 
 // Wrap SVG in a minimal HTML shell for iframe srcdoc.

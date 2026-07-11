@@ -92,17 +92,24 @@ function formatPemForDisplay(type, bytes) {
 
 function renderCertInfo(cert, type, block, badgeClass, badgeLabel, isCSR) {
   const now = Date.now();
-  const expiredMs = cert.notAfter ? cert.notAfter.getTime() : null;
-  const expiringSoonMs = expiredMs ? expiredMs - 30 * 24 * 60 * 60 * 1000 : null;
+  const notBeforeMs = cert.notBefore?.getTime();
+  const notAfterMs = cert.notAfter?.getTime();
+  const hasValidWindow = Number.isFinite(notBeforeMs) && Number.isFinite(notAfterMs)
+    && notBeforeMs <= notAfterMs;
+  const expiringSoonMs = hasValidWindow ? notAfterMs - 30 * 24 * 60 * 60 * 1000 : null;
 
   let validityBadge = '';
-  if (!isCSR && expiredMs !== null) {
-    if (now > expiredMs) {
-      validityBadge = '<span class="badge badge-expired">EXPIRED</span>';
+  if (!isCSR) {
+    if (!hasValidWindow) {
+      validityBadge = '<span class="badge badge-other">Invalid/unknown validity dates</span>';
+    } else if (now < notBeforeMs) {
+      validityBadge = '<span class="badge badge-expiring">Not yet within validity dates</span>';
+    } else if (now > notAfterMs) {
+      validityBadge = '<span class="badge badge-expired">Expired (date)</span>';
     } else if (expiringSoonMs !== null && now > expiringSoonMs) {
-      validityBadge = '<span class="badge badge-expiring">EXPIRING SOON</span>';
+      validityBadge = '<span class="badge badge-expiring">Expires soon</span>';
     } else {
-      validityBadge = '<span class="badge badge-valid">Valid</span>';
+      validityBadge = '<span class="badge badge-valid">Within validity dates</span>';
     }
   }
 
@@ -110,7 +117,7 @@ function renderCertInfo(cert, type, block, badgeClass, badgeLabel, isCSR) {
 
   const subjectStr = rdnToString(cert.subject);
   const issuerStr = rdnToString(cert.issuer);
-  const isSelfSigned = subjectStr === issuerStr;
+  const isSelfIssued = cert.selfIssued === true;
 
   let keyStr = '';
   if (cert.keyInfo) {
@@ -152,7 +159,7 @@ function renderCertInfo(cert, type, block, badgeClass, badgeLabel, isCSR) {
     <h3>Issuer</h3>
     <div class="row"><span class="k">Common Name</span><span class="v">${esc(cert.issuer.CN || rdnToString(cert.issuer) || '—')}</span></div>
     ${cert.issuer.O ? `<div class="row"><span class="k">Organization</span><span class="v">${esc(cert.issuer.O)}</span></div>` : ''}
-    ${isSelfSigned ? '<div class="row"><span class="k"></span><span class="v" style="color:#6b7280;font-style:italic">Self-signed</span></div>' : ''}
+    ${isSelfIssued ? '<div class="row"><span class="k"></span><span class="v" style="color:#6b7280;font-style:italic">Self-issued (signature not verified)</span></div>' : ''}
   </div>` : ''}
   ${!isCSR ? `<div class="section">
     <h3>Validity</h3>
@@ -165,6 +172,7 @@ function renderCertInfo(cert, type, block, badgeClass, badgeLabel, isCSR) {
     ${cert.sigAlgName ? `<div class="row"><span class="k">Algorithm</span><span class="v">${esc(cert.sigAlgName)}</span></div>` : ''}
     ${!isCSR && cert.serial ? `<div class="row"><span class="k">Serial</span><span class="v mono">${esc(cert.serial)}</span></div>` : ''}
     ${!isCSR ? `<div class="row"><span class="k">Version</span><span class="v">v${cert.version}</span></div>` : ''}
+    ${!isCSR ? '<div class="row"><span class="k">Verification</span><span class="v">Signature and trust chain are not verified.</span></div>' : ''}
     ${ekusHtml}
   </div>
   ${sansHtml}

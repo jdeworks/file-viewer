@@ -3,6 +3,8 @@ name = "file-viewer-companion"
 version = "0.1.0"
 edition = "2021"
 description = "Local companion server for file-viewer — enables save-back to disk"
+license = "MIT"
+repository = "https://github.com/jdeworks/file-viewer"
 
 [[bin]]
 name = "companion"
@@ -26,6 +28,9 @@ tokio-stream = { version = "0.1", features = ["sync"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 time = { version = "0.3", features = ["formatting", "parsing", "macros"] }
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.61", features = ["Win32_Storage_FileSystem"] }
 
 [dev-dependencies]
 axum-test = "14"

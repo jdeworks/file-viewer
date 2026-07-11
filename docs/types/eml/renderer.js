@@ -5,6 +5,22 @@
 // CSS lives in docs/assets/preview.css (.eml-* classes).
 import { extractMessage } from './mime.js';
 import { loadGlobal, vendor } from '../../core/script-loader.js';
+import { sanitizeSvg } from '../image/svg-sanitize.js';
+
+const MAIL_ALLOWED_URI = /^(?:(?:(?:f|ht)tps?|blob|mailto|tel|callto|sms|cid|xmpp):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i;
+
+function isLocalResourceUrl(value) {
+  const raw = String(value || '').trim();
+  if (/^(?:data|blob):/i.test(raw)) return true;
+  try {
+    const appUrl = new URL(window.location.href);
+    const resourceUrl = new URL(raw, appUrl);
+    if (appUrl.protocol === 'file:' && resourceUrl.protocol === 'file:') return true;
+    return /^(?:https?):$/.test(resourceUrl.protocol) && resourceUrl.origin === appUrl.origin;
+  } catch {
+    return false;
+  }
+}
 
 // Sanitize an untrusted HTML mail body for display in the sandboxed srcdoc iframe. The iframe's
 // `sandbox="allow-same-origin"` (no allow-scripts) already blocks script execution, but resource
@@ -16,19 +32,29 @@ import { loadGlobal, vendor } from '../../core/script-loader.js';
 //    <img src> into an off-origin request), and <iframe>/<video>/<audio>/<source>/<track>/
 //    <object>/<embed>/<form> (all DOMPurify-allowed by default, all capable of an eager
 //    off-origin request or off-origin form POST).
-//  - The only fetch-capable element DOMPurify still allows by default is <img src> (we don't
-//    resolve cid: attachment references to blob URLs, so there's no legitimate reason for an
-//    external image to load) — any absolute http(s) src is blanked afterward.
+// The sanitized result is parsed into an inert template before it is assigned to srcdoc. That
+// second pass covers every surviving `src`, SVG resource href, and SVG presentation url().
 async function sanitizeMailHtml(html) {
   const DOMPurify = await loadGlobal(vendor('dompurify/purify.min.js'), 'DOMPurify');
   const clean = DOMPurify.sanitize(html, {
-    FORBID_TAGS: ['script', 'style', 'link', 'iframe', 'object', 'embed', 'video', 'audio', 'source', 'track', 'form', 'meta', 'base'],
+    ALLOWED_URI_REGEXP: MAIL_ALLOWED_URI,
+    FORBID_TAGS: ['script', 'style', 'link', 'iframe', 'object', 'embed', 'video', 'audio', 'source', 'track', 'form', 'meta', 'base', 'animate', 'animateMotion', 'animateTransform', 'set'],
     FORBID_ATTR: ['srcset', 'style', 'background', 'poster', 'onerror', 'onload', 'onclick'],
   });
-  return clean.replace(
-    /(<img[^>]*\s)src\s*=\s*(?:"https?:[^"]*"|'https?:[^']*'|https?:\S+)/gi,
-    '$1src=""',
-  );
+  const template = document.createElement('template');
+  template.innerHTML = clean;
+  // The shared SVG pass covers CSS escapes/imports, presentation url(), external hrefs, and
+  // declarative animation before the surrounding mail fragment is ever mounted.
+  for (const svg of [...template.content.querySelectorAll('svg')]) {
+    const holder = document.createElement('template');
+    holder.innerHTML = sanitizeSvg(svg.outerHTML);
+    const replacement = holder.content.querySelector('svg');
+    if (replacement) svg.replaceWith(replacement); else svg.remove();
+  }
+  for (const element of template.content.querySelectorAll('[src]')) {
+    if (!isLocalResourceUrl(element.getAttribute('src'))) element.removeAttribute('src');
+  }
+  return template.innerHTML;
 }
 
 function fmtBytes(n) {

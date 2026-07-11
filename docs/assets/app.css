@@ -631,9 +631,28 @@ body.fv-dragging .intake::after {
 .type-info-used-card a { font-size: 13px; color: var(--accent, #2563eb); }
 
 /* Offline-cache status pill */
-.offline-status { position: fixed; left: 12px; bottom: 12px; z-index: 45; display: flex; align-items: center; gap: 8px;
-  background: var(--bg-2); border: 1px solid var(--border); border-radius: 20px; padding: 6px 12px;
-  font-size: 12px; color: var(--fg-2); box-shadow: 0 4px 16px rgba(0,0,0,.2); max-width: 86vw; }
+.offline-status { position: relative; display: inline-flex; flex: 0 1 auto; align-items: center; gap: 8px;
+  min-width: 0; max-width: min(220px, 32vw); height: 32px; overflow: hidden; white-space: nowrap;
+  background: var(--bg); border: 1px solid var(--border); border-radius: 18px; padding: 5px 10px;
+  font-size: 12px; color: var(--fg-2); cursor: pointer; }
+.offline-status:hover { background: var(--bg-3); }
+.offline-status:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* Workspace topbars are dense: keep the persistent state/control to one icon there. Its full
+   accessible name and current-state title remain available, and phones expose the full label in ⋯. */
+#app:has(#intake[hidden]) .topbar > .offline-status {
+  flex: 0 0 34px; width: 34px; max-width: 34px; justify-content: center; gap: 0; padding-inline: 0; font-size: 0;
+}
+#app:has(#intake[hidden]) .topbar > .offline-status > * { font-size: 12px; }
+.more-menu > .offline-status {
+  flex: 1 0 100%; width: 100%; max-width: none; min-height: 42px; height: auto; overflow: visible;
+  justify-content: flex-start; gap: 8px; padding: 8px 10px; border-radius: 8px; white-space: normal; font-size: 12px;
+}
+.more-menu > .offline-status > * { font-size: inherit; }
+/* Floating status controls must not peek through or cover modal/drawer content. */
+#app:has(#scrim:not([hidden])) .offline-status,
+#app:has(#scrim:not([hidden])) .construction-badge,
+body:has(.cache-modal-backdrop) .offline-status,
+body:has(.cache-modal-backdrop) .construction-badge { visibility: hidden; }
 /* Side-by-side: two files rendered next to each other in a full-screen overlay. */
 .sbs-overlay { position: fixed; inset: 0; z-index: 60; background: var(--bg); display: flex; flex-direction: column; }
 .sbs-head { display: flex; align-items: center; gap: 10px; padding: 8px 14px; border-bottom: 1px solid var(--border); background: var(--bg-2); }
@@ -720,38 +739,47 @@ body.fv-dragging .intake::after {
 .kv-kept { color: var(--fg-2); font-size: 11px; }
 @media (max-width: 700px) { .kv-row { grid-template-columns: 1fr 1fr; } }
 /* Cache-download modal: pick offline bundles with sizes. */
+.cache-modal-open { overflow: hidden; }
 .cache-modal-backdrop { position: fixed; inset: 0; z-index: 70; background: rgba(0,0,0,.5);
-  display: flex; align-items: center; justify-content: center; padding: 16px; }
+  display: flex; align-items: center; justify-content: center; padding: 16px; overflow: hidden; }
 .cache-modal { background: var(--bg); color: var(--fg); border: 1px solid var(--border); border-radius: 14px;
-  width: min(460px, 100%); max-height: 88vh; display: flex; flex-direction: column; box-shadow: 0 12px 48px rgba(0,0,0,.4); }
-.cm-head { display: flex; align-items: center; padding: 14px 16px; border-bottom: 1px solid var(--border); }
+  width: min(520px, 100%); max-height: min(88vh, calc(100dvh - 32px)); min-height: 0;
+  display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 12px 48px rgba(0,0,0,.4); }
+.cm-head { display: flex; flex: 0 0 auto; align-items: center; padding: 14px 16px; border-bottom: 1px solid var(--border); }
 .cm-head h2 { font-size: 16px; margin: 0; flex: 1; }
 .cm-close { background: var(--bg-2); border: 1px solid var(--border); color: var(--fg); border-radius: 8px; padding: 4px 10px; cursor: pointer; }
-.cm-intro { padding: 12px 16px 4px; margin: 0; font-size: 12px; color: var(--fg-2); }
-.cm-toolbar { display: flex; align-items: center; gap: 8px; padding: 8px 16px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.cm-intro { flex: 0 0 auto; padding: 12px 16px 4px; margin: 0; font-size: 12px; color: var(--fg-2); }
+.cm-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 8px 16px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
 .cm-all, .cm-none, .cm-preset { font-size: 12px; padding: 3px 8px; background: var(--btn-bg, var(--bg-2)); border: 1px solid var(--border); border-radius: 4px; cursor: pointer; color: var(--fg); }
 .cm-all:hover, .cm-none:hover, .cm-preset:hover { background: var(--hover); }
-.cm-grand-total { margin-left: auto; font-size: 12px; color: var(--fg-2); }
-.cm-groups { flex: 1 1 auto; overflow-y: auto; }
+.cm-preset[aria-pressed="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.cm-grand-total { margin-left: auto; font-size: 12px; color: var(--fg-2); white-space: nowrap; }
+.cm-groups { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
 .cm-group { border-bottom: 1px solid var(--border); }
 .cm-group:last-child { border-bottom: 0; }
-.cm-group-head { display: flex; align-items: center; gap: 8px; padding: 8px 16px; cursor: pointer; user-select: none; }
+.cm-group-head { display: flex; align-items: center; gap: 8px; width: 100%; padding: 8px 16px;
+  border: 0; background: transparent; color: var(--fg); text-align: left; cursor: pointer; user-select: none; }
 .cm-group-head:hover { background: var(--hover); }
-.cm-toggle { background: none; border: none; cursor: pointer; font-size: 12px; color: var(--fg-2); padding: 0; width: 14px; flex-shrink: 0; }
+.cm-toggle { font-size: 12px; color: var(--fg-2); width: 14px; flex-shrink: 0; }
 .cm-group-label { font-size: 12px; font-weight: 600; color: var(--fg); }
-.cm-group-meta { margin-left: auto; font-size: 11px; color: var(--fg-2); }
+.cm-group-meta { margin-left: auto; min-width: 0; font-size: 11px; color: var(--fg-2); text-align: right; }
 .cm-group-body { padding: 0 16px; }
 .cm-group-body.cm-collapsed { display: none; }
 .cm-list { overflow: auto; padding: 6px 16px; }
 .cm-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); cursor: pointer; }
 .cm-row:last-child { border-bottom: 0; }
-.cm-label { flex: 1; font-size: 13px; }
+.cm-label { flex: 1; min-width: 0; overflow-wrap: anywhere; font-size: 13px; }
 .cm-req { color: var(--fg-2); font-size: 11px; }
-.cm-heavy { font-size: 10px; padding: 1px 6px; border-radius: 8px; background: #e8590c22; color: #e8590c; }
+.cm-heavy { flex: 0 0 auto; font-size: 10px; padding: 1px 6px; border-radius: 8px; background: #e8590c22; color: #e8590c; }
 .cm-size { font: 12px ui-monospace, monospace; color: var(--fg-2); min-width: 56px; text-align: right; }
-.cm-foot { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-top: 1px solid var(--border); }
+.cm-foot { display: flex; flex: 0 0 auto; align-items: center; gap: 10px; padding: 12px 16px;
+  border-top: 1px solid var(--border); background: var(--bg); }
 .cm-total { flex: 1; font-size: 13px; font-weight: 600; }
 .cm-save { background: var(--accent); color: var(--accent-fg); border: 0; border-radius: 8px; padding: 8px 16px; cursor: pointer; font-size: 13px; }
+.cache-modal button:focus-visible, .cache-modal input:focus-visible { outline: 3px solid color-mix(in srgb, var(--accent) 75%, white); outline-offset: 2px; }
+.offline-status.checking, .offline-status.preparing { color: var(--fg-2); }
+.offline-status.partial { color: #2ea043; border-color: #2ea04366; }
+.offline-status.error { color: var(--danger, #d1242f); border-color: color-mix(in srgb, var(--danger, #d1242f) 45%, transparent); }
 .offline-status.idle { color: var(--fg-2); }
 .offline-status.ready { color: #2ea043; border-color: #2ea04366; }
 .offline-status.update { color: #d29922; border-color: #d2992266; }
@@ -762,6 +790,15 @@ body.fv-dragging .intake::after {
 .off-spin { width: 12px; height: 12px; border: 2px solid var(--border); border-top-color: var(--accent);
   border-radius: 50%; display: inline-block; animation: off-spin .7s linear infinite; }
 @keyframes off-spin { to { transform: rotate(360deg); } }
+@media (max-width: 520px) {
+  .cache-modal-backdrop { padding: 10px; }
+  .cache-modal { max-height: calc(100dvh - 20px); }
+  .cm-toolbar { gap: 6px; padding-inline: 12px; }
+  .cm-grand-total { flex: 1 0 100%; margin-left: 0; text-align: right; }
+  .cm-group-head, .cm-group-body { padding-inline: 12px; }
+  .cm-row { gap: 7px; }
+  .cm-size { min-width: 50px; }
+}
 
 /* iOS-only "Add to Home Screen for background audio" hint (opt-in, dismissible). */
 .ios-hint { position: fixed; left: 12px; right: 12px; bottom: 12px; z-index: 60; max-width: 460px;
@@ -1031,7 +1068,9 @@ body.fv-dragging .intake::after {
   position: fixed;
   right: max(12px, env(safe-area-inset-right));
   bottom: max(42px, calc(env(safe-area-inset-bottom) + 30px));
-  z-index: 180;
+  /* Decorative status stays below the scrim/drawers/modals so it never obscures controls or
+     long disclosure text while an overlay is open. */
+  z-index: 19;
   padding: 7px 10px;
   border: 1px solid color-mix(in srgb, var(--accent, #0969da) 45%, var(--border, #e0e0e0));
   border-radius: 8px;
@@ -1045,6 +1084,9 @@ body.fv-dragging .intake::after {
   cursor: help;
   pointer-events: none;   /* decorative marker — never intercept clicks on content beneath it (e.g. bottom-right controls like the GIF "Split frames" button) */
 }
+/* Keep the beta marker on the landing screen, where it communicates status without covering a
+   renderer, pagination control, or media tab. The working viewer exposes status through About. */
+#app:has(#workspace:not([hidden])) .construction-badge { visibility: hidden; }
 .construction-badge::after {
   content: attr(data-hover);
   position: absolute;

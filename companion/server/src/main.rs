@@ -1,6 +1,7 @@
 use file_viewer_companion::{
+    bind_server_listener,
     config::{config_path, load_config},
-    kill_other_companion_processes, logging, router,
+    logging, router,
     watcher::FileWatcher,
     AppState,
 };
@@ -16,11 +17,21 @@ async fn main() {
 
     // Logging writes to stdout + a daily file next to config.json (logs/companion-YYYY-MM-DD.log),
     // kept for 7 days. Always on — running the bare server now shows live activity.
-    logging::init(Some(config_path()));
+    let app_config_path = config_path();
+    logging::init(Some(app_config_path.clone()));
 
-    // Reclaim the port from any leftover/other companion so we can actually start after a restart.
-    kill_other_companion_processes();
-    std::thread::sleep(std::time::Duration::from_millis(400)); // let the OS release :7700
+    // The listening socket is the single-instance claim shared with the desktop tray app.
+    let server_listener = match bind_server_listener(7700) {
+        Ok(listener) => listener,
+        Err(e) => {
+            eprintln!("ERROR: could not start — 127.0.0.1:7700 is already in use ({e}).");
+            eprintln!(
+                "Another companion (the tray app or another console server) is already running."
+            );
+            logging::error(format!("cannot bind 127.0.0.1:7700: {e}"));
+            return;
+        }
+    };
 
     let token =
         std::env::var("COMPANION_TOKEN").unwrap_or_else(|_| uuid::Uuid::new_v4().to_string());
@@ -31,7 +42,7 @@ async fn main() {
     let watched = load_config();
 
     println!("═══════════════════════════════════");
-    println!("  file-viewer companion v0.1.0");
+    println!("  file-viewer companion v{}", env!("CARGO_PKG_VERSION"));
     println!("  Listening on http://127.0.0.1:7700");
     println!("  Token: {token}");
     println!("  (set COMPANION_TOKEN env var to use a fixed token)");
@@ -60,6 +71,7 @@ async fn main() {
     let state = AppState {
         token,
         watched_paths,
+        config_path: app_config_path,
         debug,
         watcher_tx,
     };
@@ -69,21 +81,12 @@ async fn main() {
     // Keep _watcher alive for the lifetime of main so FS events keep flowing.
     let _keep = _watcher;
 
-    let listener = match tokio::net::TcpListener::bind("127.0.0.1:7700").await {
+    let listener = match tokio::net::TcpListener::from_std(server_listener) {
         Ok(l) => l,
         Err(e) => {
-            eprintln!();
-            eprintln!("ERROR: could not start — 127.0.0.1:7700 is already in use ({e}).");
-            eprintln!("Another companion (the tray app or another console server) is already");
-            eprintln!("running. Quit it first (tray → Quit, or end it in Task Manager), then");
-            eprintln!("run this again.");
-            logging::error(format!("cannot bind 127.0.0.1:7700: {e}"));
-            // Keep the console window open so the message is readable (Windows closes it on exit).
-            eprintln!();
-            eprint!("Press Enter to close…");
-            let mut _line = String::new();
-            let _ = std::io::stdin().read_line(&mut _line);
-            std::process::exit(1);
+            eprintln!("ERROR: could not adopt the reserved listener ({e}).");
+            logging::error(format!("cannot adopt companion listener: {e}"));
+            return;
         }
     };
     if let Err(e) = axum::serve(listener, app).await {

@@ -51,6 +51,13 @@ export async function runVideoStudioChecks(ctx) {
   }
   await openExample('Sample.webm');
   await page.waitForSelector('#previewHost video.media-view', { timeout: 12000 });
+  await page.waitForFunction(() => {
+    const media = document.querySelector('#previewHost video.media-view');
+    return media?.readyState >= 1 && Number.isFinite(media.duration) && media.duration > 0;
+  }, null, { timeout: 12000 });
+  const workspaceTime = await page.$eval('#previewHost .media-workspace-time', (el) => el.textContent.trim());
+  if (/^0:00 \/ 0:01$/.test(workspaceTime)) pass('video workspace duration synchronizes even when metadata loads during async panel setup');
+  else fail('video workspace duration is stale after metadata readiness: ' + workspaceTime);
   // Video compare is disabled (coming soon) — tab must show a note, not the full compare surface.
   const absentBeforeCompare = await page.$('#previewHost .mmx-compare-source');
   if (!absentBeforeCompare) pass('video Compare: compare surface absent before tab click');

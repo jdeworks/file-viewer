@@ -38,7 +38,7 @@
 
 ## Real-World Examples
 
-- [`sample.fits`](../examples/sample.fits) — example FITS image
+- [`sample.fits`](../examples/sample.fits) — deterministic 64 × 48 synthetic gradient and star-field image with real 16-bit pixel data
 
 ## Known Limitations
 

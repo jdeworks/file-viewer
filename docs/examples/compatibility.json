@@ -3576,7 +3576,7 @@
       "needsRealWorldSample": true
     },
     "apk": {
-      "label": "Android Package (APK/AAB)",
+      "label": "Android Package / Bundle",
       "support": "supported",
       "sampleFiles": [
         "sample.apk"
@@ -3599,16 +3599,19 @@
       },
       "partialSamples": [],
       "realWorldQuality": "synthetic",
-      "notes": "Shows DEX count, native ABIs, asset count, resource and signing status from ZIP structure.",
+      "notes": "Shows format-aware APK/AAB/XAPK inventory and explicitly unverified signature-artifact evidence from ZIP structure.",
       "fileExamplesSlug": null,
       "previewDepth": "structure-only",
       "metadataDepth": "basic",
       "editCapability": "none",
       "exportCapability": "download",
-      "securityLimitations": [],
+      "securityLimitations": [
+        "Signature artifacts are not cryptographically verified and no trust verdict is provided"
+      ],
       "knownParserGaps": [
         "No AndroidManifest.xml parsing (AXML binary format)",
-        "No permission listing"
+        "No permission listing",
+        "XAPK embedded APKs are listed but not recursively inspected"
       ],
       "testCoverage": "smoke",
       "sampleSource": "synthetic",

@@ -1,28 +1,121 @@
-use std::path::{Path, PathBuf};
+use std::collections::HashSet;
+use std::path::{Component, Path, PathBuf};
+
+pub const FIND_MAX_ENTRIES: usize = 50_000;
+pub const FIND_MAX_DEPTH: usize = 64;
+pub const FIND_MAX_MATCHES: usize = 128;
+
+pub struct FindFileResult {
+    pub matches: Vec<PathBuf>,
+    pub truncated: bool,
+}
 
 /// Walk all watched directories and return every file whose name and byte-size
 /// match the given arguments.
-pub fn find_file(name: &str, size: u64, watched: &[PathBuf]) -> Vec<PathBuf> {
-    let mut results = Vec::new();
-    for root in watched {
-        walk_for_file(root, name, size, &mut results);
-    }
-    results
+pub fn find_file(name: &str, size: u64, watched: &[PathBuf]) -> FindFileResult {
+    find_file_with_limits(
+        name,
+        size,
+        watched,
+        FIND_MAX_ENTRIES,
+        FIND_MAX_DEPTH,
+        FIND_MAX_MATCHES,
+    )
 }
 
-fn walk_for_file(dir: &Path, name: &str, size: u64, out: &mut Vec<PathBuf>) {
+fn find_file_with_limits(
+    name: &str,
+    size: u64,
+    watched: &[PathBuf],
+    max_entries: usize,
+    max_depth: usize,
+    max_matches: usize,
+) -> FindFileResult {
+    let mut result = FindFileResult {
+        matches: Vec::new(),
+        truncated: false,
+    };
+    let mut visited = 0usize;
+    let mut seen_roots = HashSet::new();
+    for root in watched {
+        let Ok(root) = std::fs::canonicalize(root) else {
+            continue;
+        };
+        if !seen_roots.insert(root.clone()) {
+            continue;
+        }
+        walk_for_file(
+            &root,
+            name,
+            size,
+            0,
+            max_entries,
+            max_depth,
+            max_matches,
+            &mut visited,
+            &mut result,
+        );
+        if result.truncated {
+            break;
+        }
+    }
+    result
+}
+
+#[allow(clippy::too_many_arguments)]
+fn walk_for_file(
+    dir: &Path,
+    name: &str,
+    size: u64,
+    depth: usize,
+    max_entries: usize,
+    max_depth: usize,
+    max_matches: usize,
+    visited: &mut usize,
+    result: &mut FindFileResult,
+) {
+    if depth > max_depth {
+        result.truncated = true;
+        return;
+    }
     let entries = match std::fs::read_dir(dir) {
         Ok(e) => e,
         Err(_) => return,
     };
     for entry in entries.flatten() {
+        if *visited >= max_entries || result.matches.len() >= max_matches {
+            result.truncated = true;
+            return;
+        }
+        *visited += 1;
         let path = entry.path();
-        if path.is_dir() {
-            walk_for_file(&path, name, size, out);
-        } else if path.file_name().and_then(|n| n.to_str()) == Some(name) {
+        let Ok(file_type) = entry.file_type() else {
+            continue;
+        };
+        // Recursive symlinks can leave the watched tree or form cycles. Content routes still
+        // canonicalize independently, but the unauthenticated finder must remain bounded itself.
+        if file_type.is_symlink() {
+            continue;
+        }
+        if file_type.is_dir() {
+            walk_for_file(
+                &path,
+                name,
+                size,
+                depth + 1,
+                max_entries,
+                max_depth,
+                max_matches,
+                visited,
+                result,
+            );
+            if result.truncated {
+                return;
+            }
+        } else if file_type.is_file() && path.file_name().and_then(|n| n.to_str()) == Some(name) {
             if let Ok(meta) = std::fs::metadata(&path) {
                 if meta.len() == size {
-                    out.push(path);
+                    result.matches.push(path);
                 }
             }
         }
@@ -40,6 +133,13 @@ fn walk_for_file(dir: &Path, name: &str, size: u64, out: &mut Vec<PathBuf>) {
 ///   2. the dropped folder sits directly inside the watched root.
 pub fn find_folder(rel_path: &str, watched: &[PathBuf]) -> Vec<PathBuf> {
     let rel = Path::new(rel_path);
+    if rel.is_absolute()
+        || rel
+            .components()
+            .any(|component| !matches!(component, Component::Normal(_)))
+    {
+        return vec![];
+    }
     let mut comps = rel.components();
     let first = match comps.next() {
         Some(std::path::Component::Normal(s)) => s.to_owned(),
@@ -49,14 +149,30 @@ pub fn find_folder(rel_path: &str, watched: &[PathBuf]) -> Vec<PathBuf> {
 
     let mut out = Vec::new();
     for root in watched {
+        let Ok(canonical_root) = std::fs::canonicalize(root) else {
+            continue;
+        };
         // 1. Watched root IS the dropped folder.
-        if root.file_name() == Some(first.as_os_str()) && root.join(rest).exists() {
+        let root_target = root.join(rest);
+        if root.file_name() == Some(first.as_os_str())
+            && std::fs::canonicalize(&root_target)
+                .map(|target| target.starts_with(&canonical_root))
+                .unwrap_or(false)
+        {
             out.push(root.clone());
             continue;
         }
         // 2. Dropped folder sits directly inside the watched root.
         let candidate = root.join(&first);
-        if candidate.join(rest).exists() {
+        let Ok(canonical_candidate) = std::fs::canonicalize(&candidate) else {
+            continue;
+        };
+        if canonical_candidate.starts_with(&canonical_root)
+            && canonical_candidate.is_dir()
+            && std::fs::canonicalize(candidate.join(rest))
+                .map(|target| target.starts_with(&canonical_candidate))
+                .unwrap_or(false)
+        {
             out.push(candidate);
         }
     }
@@ -82,8 +198,9 @@ mod tests {
         let dir = setup_temp_tree();
         let watched = vec![dir.path().to_path_buf()];
         let results = find_file("hello.txt", 11, &watched); // "hello world" = 11 bytes
-        assert_eq!(results.len(), 1);
-        assert_eq!(results[0], dir.path().join("hello.txt"));
+        assert_eq!(results.matches.len(), 1);
+        assert_eq!(results.matches[0], dir.path().join("hello.txt"));
+        assert!(!results.truncated);
     }
 
     #[test]
@@ -91,7 +208,7 @@ mod tests {
         let dir = setup_temp_tree();
         let watched = vec![dir.path().to_path_buf()];
         let results = find_file("hello.txt", 999, &watched);
-        assert!(results.is_empty());
+        assert!(results.matches.is_empty());
     }
 
     #[test]
@@ -108,11 +225,20 @@ mod tests {
         // Watched folder == the dropped folder: webkitRelativePath starts with the folder's OWN name.
         let dir = setup_temp_tree();
         let watched = vec![dir.path().to_path_buf()];
-        let base = dir.path().file_name().unwrap().to_string_lossy().into_owned();
+        let base = dir
+            .path()
+            .file_name()
+            .unwrap()
+            .to_string_lossy()
+            .into_owned();
         let rel = format!("{base}/sub/hello.txt");
         let results = find_folder(&rel, &watched);
         assert_eq!(results.len(), 1);
-        assert_eq!(results[0], dir.path().to_path_buf(), "returns the dropped folder's own abs path");
+        assert_eq!(
+            results[0],
+            dir.path().to_path_buf(),
+            "returns the dropped folder's own abs path"
+        );
     }
 
     #[test]
@@ -122,7 +248,11 @@ mod tests {
         let watched = vec![dir.path().to_path_buf()];
         let results = find_folder("sub/hello.txt", &watched);
         assert_eq!(results.len(), 1);
-        assert_eq!(results[0], dir.path().join("sub"), "returns the dropped folder's abs path (root/sub)");
+        assert_eq!(
+            results[0],
+            dir.path().join("sub"),
+            "returns the dropped folder's abs path (root/sub)"
+        );
     }
 
     #[test]
@@ -131,5 +261,47 @@ mod tests {
         let watched = vec![dir.path().to_path_buf()];
         let results = find_folder("nonexistent/path.txt", &watched);
         assert!(results.is_empty());
+    }
+
+    #[test]
+    fn test_find_folder_rejects_parent_traversal() {
+        let dir = setup_temp_tree();
+        let watched = vec![dir.path().to_path_buf()];
+        assert!(find_folder("sub/../hello.txt", &watched).is_empty());
+    }
+
+    #[test]
+    fn test_find_file_stops_at_configured_entry_budget() {
+        let dir = setup_temp_tree();
+        let watched = vec![dir.path().to_path_buf()];
+        let result = find_file_with_limits("missing", 0, &watched, 1, 64, 128);
+        assert!(result.truncated);
+    }
+
+    #[test]
+    fn test_find_file_stops_at_match_budget() {
+        let dir = tempfile::tempdir().unwrap();
+        for name in ["a", "b", "c"] {
+            let sub = dir.path().join(name);
+            fs::create_dir(&sub).unwrap();
+            fs::write(sub.join("same.txt"), b"x").unwrap();
+        }
+        let result = find_file_with_limits("same.txt", 1, &[dir.path().to_path_buf()], 100, 64, 2);
+        assert_eq!(result.matches.len(), 2);
+        assert!(result.truncated);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn test_find_file_does_not_follow_directory_symlinks() {
+        use std::os::unix::fs::symlink;
+        let watched = tempfile::tempdir().unwrap();
+        let outside = tempfile::tempdir().unwrap();
+        fs::write(outside.path().join("secret.txt"), b"secret").unwrap();
+        symlink(outside.path(), watched.path().join("escape")).unwrap();
+
+        let result = find_file("secret.txt", 6, &[watched.path().to_path_buf()]);
+        assert!(result.matches.is_empty());
+        assert!(!result.truncated);
     }
 }

@@ -1,0 +1,729 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-07-11T08:20:47.924Z",
+  "summary": {
+    "rows": 45,
+    "passes": 45,
+    "failures": 0,
+    "screenshotsInspected": 107
+  },
+  "rows": [
+    {
+      "slug": "01-markdown",
+      "screenshotSha256": {
+        "shell": "39e5a4913a134fc1b0ec5ac52f815fe5191e0b928a42d0b377189725d12b7f50",
+        "primarySurface": "9153e3bddd8e035420751ae65612292c1f1376b441c28b869e2364d0b1dce2b6"
+      },
+      "verdict": "pass",
+      "observations": [
+        "shell: Balanced desktop tree, source, and rendered panes are visible together; the first split is no longer compressed and no beta/offline overlay covers content.",
+        "primarySurface: The Welcome heading, explanatory prose, list, and emphasis are crisp, nonblank, and fully contained."
+      ],
+      "defects": [],
+      "reviewer": "Codex format visual lane — individual original-resolution pixel inspection",
+      "reviewedAt": "2026-07-11T08:20:47.924Z"
+    },
+    {
+      "slug": "07-sqlite",
+      "screenshotSha256": {
+        "shell": "6224873abafc364b7bf03ad8a9ef80af3610880ba583445c9b96163d52547833",
+        "primarySurface": "bdb6e3ac9368f5f24582be638c6164037361d4c2b9bfda442674520eb4203c37"
+      },
+      "verdict": "pass",
+      "observations": [
+        "shell: Table navigation, SQL input, actions, and populated query grid are all visible without overlap in the light desktop shell.",
+        "primarySurface: Albums and artists navigation plus the five-row result table are nonblank and comfortably legible."
+      ],
+      "defects": [],
+      "reviewer": "Codex format visual lane — individual original-resolution pixel inspection",
+      "reviewedAt": "2026-07-11T08:20:47.924Z"
+    },
+    {
+      "slug": "13-pdf",
+      "screenshotSha256": {
+        "shell": "b79e478ad837f3491c62792884a67aa526bdca69d2d53dc7d8bf84b6aeda6e14",
+        "primarySurface": "21d5bb824a8a0d55d390dc824b7d259bb60fd79d0bb399bd04fa1d5603766560"
+      },
+      "verdict": "pass",
+      "observations": [
+        "shell: A real rendered first page, the start of page two, page count, zoom, layout, and Edit controls are all visible.",
+        "primarySurface: Rendered page canvases contain readable text and vertical continuation rather than blank sheets."
+      ],
+      "defects": [],
+      "reviewer": "Codex format visual lane — individual original-resolution pixel inspection",
+      "reviewedAt": "2026-07-11T08:20:47.924Z"
+    },
+    {
+      "slug": "19-archive",
+      "screenshotSha256": {
+        "shell": "6b022126d9f646129a045acb83151e61930116abf915cd05234e1254f1dec07a",
+        "primarySurface": "b3a90c733b642075302dcc663c0118aaf93e2cc4bc3486b53a825e29934afd38"
+      },
+      "verdict": "pass",
+      "observations": [
+        "shell: The real 7z shell reports four files and 296 bytes, with complete nested paths and individual sizes.",
+        "primarySurface: data/people.csv, docs/guide.txt, README.md, and src/example.js are all present in a clean, nonempty table."
+      ],
+      "defects": [],
+      "reviewer": "Codex format visual lane — individual original-resolution pixel inspection",
+      "reviewedAt": "2026-07-11T08:20:47.924Z"
+    },
+    {
+      "slug": "25-font",
+      "screenshotSha256": {
+        "shell": "2dbdc50475efc3247e2b4fe60c919ea35f3bfbe98574cd6ee13597b03def2b45",
+        "primarySurface": "f1cce7d7700b464924beee0a00cf4c036188c578b54f55f8adb30fa6181285a5"
+      },
+      "verdict": "pass",
+      "observations": [
+        "shell: The font specimen input, size/color controls, large sample, alphabet, symbols, and size ramp form a coherent light page.",
+        "primarySurface: Ubuntu Mono glyphs render distinctly across sizes; the nested font document provides its own scroll path to lower weights and metadata."
+      ],
+      "defects": [],
+      "reviewer": "Codex format visual lane — individual original-resolution pixel inspection",
+      "reviewedAt": "2026-07-11T08:20:47.924Z"
+    },
+    {
+      "slug": "31-dicom",
+      "screenshotSha256": {
+        "shell": "22aaf9d6f58312dbd0df1deab81716090082647477ebdd47bcf943098b122e22",
+        "primarySurface": "67da16aa7660e7c660962a01c005367990acb7bfd649caf87281584a2cc8659a",
+        "previewBottom": "df61fd0809c1e0e0c92ad490d70db2a76e71c8de8ffefd903d2deeb2137aaa1a"
+      },
+      "verdict": "pass",
+      "observations": [
+        "shell: DICOM modality, PHI warning, study, patient, equipment, and image fields are clearly grouped in the light shell.",
+        "primarySurface: The structured metadata is readable and explicitly identifies this as computed tomography rather than presenting a blank image.",
+        "previewBottom: The bottom capture reaches dimensions, bit depth, spacing, thickness, and the honest notice that pixel data is not rendered."
+      ],
+      "defects": [],
+      "reviewer": "Codex format visual lane — individual original-resolution pixel inspection",
+      "reviewedAt": "2026-07-11T08:20:47.924Z"
+    },
+    {
+      "slug": "37-exe",
+      "screenshotSha256": {
+        "shell": "04f86d72e8584f3a1a96c8a344656aaa5694cfff48350b21512a6395a5c21535",
+        "primarySurface": "359fcb28a19381b6ec74e0c83fa83fc335179279b0a5f1eae69f273cdbf3c164"
+      },
+      "verdict": "pass",
+      "observations": [
+        "shell: Raw ELF bytes and the structured executable summary use a balanced light split and intact type controls.",
+        "primarySurface: The styled ELF badge, architecture, width, endian, ABI, headers, and entry point are separated and readable."
+      ],
+      "defects": [],
+      "reviewer": "Codex format visual lane — individual original-resolution pixel inspection",
+      "reviewedAt": "2026-07-11T08:20:47.924Z"
+    },
+    {
+      "slug": "43-pem",
+      "screenshotSha256": {
+        "shell": "8157e61dae13b3765fe1a1e8a7f0bec006ada8405767ec590f13f5ca0a9a3d35",
+        "primarySurface": "ff2c25b327db3796f4c3bf78442faa72ede111f6779e89a5d26c147cfeb9abae"
+      },
+      "verdict": "pass",
+      "observations": [
+        "shell: Certificate source and the ISRG Root X1 summary form a balanced split; the date-window badge is visible alongside explicit signature caveats.",
+        "primarySurface: Subject, issuer, 2015–2035 validity, RSA 4096-bit key, algorithm, serial, and version are legible; Self-issued (signature not verified) and Signature and trust chain are not verified prevent a false trust verdict."
+      ],
+      "defects": [],
+      "reviewer": "Codex format visual lane — individual original-resolution pixel inspection",
+      "reviewedAt": "2026-07-11T08:20:47.924Z"
+    },
+    {
+      "slug": "02-csv",
+      "screenshotSha256": {
+        "shell": "1275fcede61b65dc8664ab67997682259c66c55686354cefb80733d25296b0d9",
+        "primarySurface": "08098f21f428327d1d44c006445d4864e3c14378cb5b1dc929f86e0d9e8addd7"
+      },
+      "verdict": "pass",
+      "observations": [
+        "shell: Dark desktop split keeps a practical source width while the six-row table and all toolbar actions remain unobscured.",
+        "primarySurface: Headers and five populated data rows are legible with stable column alignment and usable contrast."
+      ],
+      "defects": [],
+      "reviewer": "Codex format visual lane — individual original-resolution pixel inspection",
+      "reviewedAt": "2026-07-11T08:20:47.924Z"
+    },
+    {
+      "slug": "08-ipynb",
+      "screenshotSha256": {
+        "shell": "5e32f54a11ca8e4fa06827dbaa7da428912ccdd47e38781779daac4cd8aefb07",
+        "primarySurface": "5d03d3ab940153414e3fe23b3d5bc8f2de0429a68c41451ce209d3cc1a018c23"
+      },
+      "verdict": "pass",
+      "observations": [
+        "shell: The notebook source and rendered cells form a balanced dark split with saved output and error content visible.",
+        "primarySurface: Markdown, code, tabular output, stdout, and the intentional ZeroDivisionError retain clear notebook hierarchy and contrast."
+      ],
+      "defects": [],
+      "reviewer": "Codex format visual lane — individual original-resolution pixel inspection",
+      "reviewedAt": "2026-07-11T08:20:47.924Z"
+    },
+    {
+      "slug": "14-xlsx",
+      "screenshotSha256": {
+        "shell": "db55a716b1f489c4752dd2c48eadc370e923e841ac3a2838a3d6ed17407907d6",
+        "primarySurface": "13837972126ce6dfa4f11922eaac98961a98338fa803d690199ce793c4a04851"
+      },
+      "verdict": "pass",
+      "observations": [
+        "shell: The exercised Totals sheet is selected and its populated grid is visible with workbook navigation intact.",
+        "primarySurface: People and Totals tabs remain available and the quarter/value cells are aligned and legible."
+      ],
+      "defects": [],
+      "reviewer": "Codex format visual lane — individual original-resolution pixel inspection",
+      "reviewedAt": "2026-07-11T08:20:47.924Z"
+    },
+    {
+      "slug": "20-zip",
+      "screenshotSha256": {
+        "shell": "6559456820184271befa53f3e2836ff4734f1449fed7cafc7060bd2039d6dfe3",
+        "primarySurface": "9fabe2c61e2a8b3e507b4ef5b82a7c1dd04adb11d0503e29dbc4dfe71bc53b7a"
+      },
+      "verdict": "pass",
+      "observations": [
+        "shell: The dark ZIP tree and four-file listing agree, with selected entry, sizes, packed sizes, and dates visible.",
+        "primarySurface: All actionable archive paths are readable in a structured table without blank names."
+      ],
+      "defects": [],
+      "reviewer": "Codex format visual lane — individual original-resolution pixel inspection",
+      "reviewedAt": "2026-07-11T08:20:47.924Z"
+    },
+    {
+      "slug": "26-stl",
+      "screenshotSha256": {
+        "shell": "9b805e95675e8a97a0535e3b955cf9c688dedfea0df59dcc60fb62d551e147df",
+        "primarySurface": "1d47254afacc4773dd8a80ec237cec870a30a0afe3dbb2ed77ec389f0e732dbc"
+      },
+      "verdict": "pass",
+      "observations": [
+        "shell: The dark STL stage centers a visibly faceted eight-triangle solid with all model controls in view.",
+        "primarySurface: The shaded 3D geometry is nonblank, well contrasted, and paired with region, face, group, export, color, and reset controls."
+      ],
+      "defects": [],
+      "reviewer": "Codex format visual lane — individual original-resolution pixel inspection",
+      "reviewedAt": "2026-07-11T08:20:47.924Z"
+    },
+    {
+      "slug": "32-netcdf",
+      "screenshotSha256": {
+        "shell": "d3a6e7abc8a9726ff4eadf61a866e3a38d1ff5345ee7060e53e5bcde02ca6364",
+        "primarySurface": "59202f8d1a4d48025551750de68807ef6a40c60624932d541ef656a97e88545e",
+        "previewBottom": "f61253d93c329844552d05aa68b1c09027ebd811b32602dc2f1750da7639f608"
+      },
+      "verdict": "pass",
+      "observations": [
+        "shell: The repaired NetCDF dark view shows global attributes, dimensions, and variables with strong contrast and no badge overlap.",
+        "primarySurface: The five global attributes, fixed time=3, latitude=4, and longitude=6 dimensions, and five typed variable rows are visually distinguishable.",
+        "previewBottom: The lower table remains readable through temperature and pressure, with their (time, latitude, longitude) shapes and long attributes contained inside stable columns."
+      ],
+      "defects": [],
+      "reviewer": "Codex format visual lane — individual original-resolution pixel inspection",
+      "reviewedAt": "2026-07-11T08:20:47.924Z"
+    },
+    {
+      "slug": "38-apk",
+      "screenshotSha256": {
+        "shell": "c5276483e38d925f42688beb5b4975281f849758c09f2e567c8285de3d69ff85",
+        "primarySurface": "8bb016351013c1014bf5f838a419d093947a5deed36cb7c12ed2c847366e572a"
+      },
+      "verdict": "pass",
+      "observations": [
+        "shell: The dark APK shell shows one manifest, one DEX, arm64-v8a and x86_64 native ABIs, one asset, and five total entries without clipping.",
+        "primarySurface: The aligned inventory explicitly says No recognized signature material (package may be unsigned), avoiding an unsupported signing or trust claim."
+      ],
+      "defects": [],
+      "reviewer": "Codex format visual lane — individual original-resolution pixel inspection",
+      "reviewedAt": "2026-07-11T08:20:47.924Z"
+    },
+    {
+      "slug": "44-patch",
+      "screenshotSha256": {
+        "shell": "5f97e755447d09db8b8dbbe50ba9cee6ccfceb57e4a4a0507cebc6a561b33b2e",
+        "primarySurface": "0cf0763e072a26a743a10e427798f08e1b86ea39b8b56a8a43b60ef478a42b32",
+        "previewBottom": "1ff04d8ddf4074bde27eec5868a2e3f04cd0e25a90b094eb1fd44d4c1cf7fa23"
+      },
+      "verdict": "pass",
+      "observations": [
+        "shell: The dark patch split shows readable source and three selectable, color-coded hunks without corner-overlay interference.",
+        "primarySurface: File headers, include checkboxes, hunk coordinates, removals, and additions retain clear contrast.",
+        "previewBottom: The bottom capture reaches the README hunk and filtered-patch textarea, proving the long preview is scrollable."
+      ],
+      "defects": [],
+      "reviewer": "Codex format visual lane — individual original-resolution pixel inspection",
+      "reviewedAt": "2026-07-11T08:20:47.924Z"
+    },
+    {
+      "slug": "03-json",
+      "screenshotSha256": {
+        "shell": "3a9350e46cd2faea772517ea0c43177f389955ce10ba91240ce240a1b6962384",
+        "primarySurface": "8ae04b9d257d6572b98471809deb2c74757880345348f91632cd114c6ddc96d2"
+      },
+      "verdict": "pass",
+      "observations": [
+        "shell: Standalone mobile intake opens directly on the preview rather than under a sidebar, and the Raw/Preview tabs and search controls fit 390 px.",
+        "primarySurface: The expanded JSON hierarchy, paths, scalar colors, and nested arrays are readable without horizontal shell overflow."
+      ],
+      "defects": [],
+      "reviewer": "Codex format visual lane — individual original-resolution pixel inspection",
+      "reviewedAt": "2026-07-11T08:20:47.924Z"
+    },
+    {
+      "slug": "09-image",
+      "screenshotSha256": {
+        "shell": "d2a5e181c4dd8385dc141fdd0e0cfd9ec2c7a29a7cc765936a5414a283907b26",
+        "primarySurface": "9f6e920636faaa440c71ba66ac1f78d937508830e82654f5687edccdbb8fda10"
+      },
+      "verdict": "pass",
+      "observations": [
+        "shell: The mobile image toolbar wraps into two usable rows while the flower remains centered and fully visible.",
+        "primarySurface: Decoded raster pixels are colorful, sharp, nonblank, and contained with no overlay obstruction."
+      ],
+      "defects": [],
+      "reviewer": "Codex format visual lane — individual original-resolution pixel inspection",
+      "reviewedAt": "2026-07-11T08:20:47.924Z"
+    },
+    {
+      "slug": "15-docx",
+      "screenshotSha256": {
+        "shell": "16ffa1f2efe9a846f493259538f113c2edd93af1af9f5c402526f2044c80c52a",
+        "primarySurface": "65ada3d6e2f6341e28b65b5f2af296f384d012b66dbda51a560dcd4505682f15"
+      },
+      "verdict": "pass",
+      "observations": [
+        "shell: The mobile Word preview, Edit action, and download action fit without a sidebar or overlay covering the document.",
+        "primarySurface: Heading, paragraph, bold run, and subheading render with clear document spacing and no blank page."
+      ],
+      "defects": [],
+      "reviewer": "Codex format visual lane — individual original-resolution pixel inspection",
+      "reviewedAt": "2026-07-11T08:20:47.924Z"
+    },
+    {
+      "slug": "21-epub",
+      "screenshotSha256": {
+        "shell": "506e3e01c3b0a03c109d4521939cf2900302f86d06789cc928661200f8bc7fe0",
+        "primarySurface": "398ff1116855aefc428074f9f23abceaadb1b24a33d2190b4db921e656ab5225"
+      },
+      "verdict": "pass",
+      "observations": [
+        "shell: Mobile EPUB navigation, 1 of 3 status, title, author, and cover fit without sidebar obstruction.",
+        "primarySurface: The Gift of the Magi cover page is nonblank, legible, and contained at 390 px."
+      ],
+      "defects": [],
+      "reviewer": "Codex format visual lane — individual original-resolution pixel inspection",
+      "reviewedAt": "2026-07-11T08:20:47.924Z"
+    },
+    {
+      "slug": "27-gltf",
+      "screenshotSha256": {
+        "shell": "ca9915b1f653320225b3cf5629911753c19ae75b578f3382aa5f68d71ba9f6ba",
+        "primarySurface": "0239c74cbe43e4eb1399505a5516d6cb730c5628644e89e9c281170656111524"
+      },
+      "verdict": "pass",
+      "observations": [
+        "shell: The mobile 3D toolbar wraps cleanly into two rows and the shaded 12-triangle model remains centered.",
+        "primarySurface: Model dimensions, export actions, color, reset, and discernible facets fit the 390 px light viewport without overlap."
+      ],
+      "defects": [],
+      "reviewer": "Codex format visual lane — individual original-resolution pixel inspection",
+      "reviewedAt": "2026-07-11T08:20:47.924Z"
+    },
+    {
+      "slug": "33-pdb",
+      "screenshotSha256": {
+        "shell": "501772f99ff04e30542a994d6fd9bf66084987c1216dacbb5ae8800f35de0465",
+        "primarySurface": "7feb594dc8a0afc8663dc03dcc81c415973617db94b4599132442be7e9d97fbb",
+        "nestedBottom": "7e5ace72407f54d2a60004ccd6b243a2179e0d91d11ac30f227355910207c29b"
+      },
+      "verdict": "pass",
+      "observations": [
+        "shell: The mobile PDB metadata, chain and ligand sections, and representation controls are styled, readable, and vertically reachable.",
+        "primarySurface: Protein identity, statistics, metadata, chains, ligand count, and the start of the 3D controls fit without horizontal overflow.",
+        "nestedBottom: At scrollTop 488 of 488, the loaded 366 by 360 stage visibly frames both polymer chains at useful scale after excluding distant HETATM coordinates from the default camera."
+      ],
+      "defects": [],
+      "reviewer": "Codex format visual lane — individual original-resolution pixel inspection",
+      "reviewedAt": "2026-07-11T08:20:47.924Z"
+    },
+    {
+      "slug": "39-torrent",
+      "screenshotSha256": {
+        "shell": "0fbe16dc3e7042317704dc678242e67278fb68478442d206126a5e984e990a68",
+        "primarySurface": "00737b7d08985e6f67a25d25847c80864f604170d180e5b5e804075dda54f50a"
+      },
+      "verdict": "pass",
+      "observations": [
+        "shell: The mobile v1 torrent summary fits the light shell and wraps its exact SHA-1 info hash and magnet link within the viewport.",
+        "primarySurface: The 214-byte total, three file paths and sizes, 64-byte piece size, magnet, and both HTTPS and UDP trackers are complete and selectable."
+      ],
+      "defects": [],
+      "reviewer": "Codex format visual lane — individual original-resolution pixel inspection",
+      "reviewedAt": "2026-07-11T08:20:47.924Z"
+    },
+    {
+      "slug": "45-code",
+      "screenshotSha256": {
+        "shell": "dfa5489a8911fc4a0851e62e7db75ff2660f6a14bb95274f2bb1bd2475230670",
+        "primarySurface": "cdf5b32ff1c6209d8fe821fdb31cd9c3c9b199dc5f59c6cb87ec514f149adecb",
+        "base": "158399d8f2a5b5be3d2ec12729ac70e620e27910e9a0977c07e89c35cbe32063"
+      },
+      "verdict": "pass",
+      "observations": [
+        "shell: The mobile Swift enhancement is nonblank and the repaired Show default view control remains accessible above the Raw/Preview tabs.",
+        "primarySurface: Import and type summaries, statistics, Foundation, Release, Codable, String, and Date landmarks fit cleanly.",
+        "base: The default raw Monaco view now appears after the toggle, with readable Swift source and a reachable horizontal scrollbar instead of a blank body."
+      ],
+      "defects": [],
+      "reviewer": "Codex format visual lane — individual original-resolution pixel inspection",
+      "reviewedAt": "2026-07-11T08:20:47.924Z"
+    },
+    {
+      "slug": "04-yaml",
+      "screenshotSha256": {
+        "shell": "6e4be0b2cb34330f8c343d1422344c128a001340f7d0de012c3d06de0183b497",
+        "primarySurface": "cf1fb6320969ad3407b087c0e89ba6680d61d5dfa2a4ea5a2b3f3b590fb5c439",
+        "base": "187c5663e187a360733e176318e24f60cb97b3a2195a778e44b38cc512f14ae2"
+      },
+      "verdict": "pass",
+      "observations": [
+        "shell: The dark enhanced Stack summary and source share a well-sized desktop split with intact controls.",
+        "primarySurface: Resolver, packages, dependencies, settings, and options have clear grouping and strong dark-theme contrast.",
+        "base: The default YAML tree remains nonblank, searchable, and legible after disabling the enhancement."
+      ],
+      "defects": [],
+      "reviewer": "Codex format visual lane — individual original-resolution pixel inspection",
+      "reviewedAt": "2026-07-11T08:20:47.924Z"
+    },
+    {
+      "slug": "10-svg",
+      "screenshotSha256": {
+        "shell": "6591fc1f2ac419abdbb042cc64deb411d345a0ca60cd8a7703b4c987a1332af6",
+        "primarySurface": "55c5cb8725650dfa5897febfd736e728eee393f826f6b921b1528098f156c624"
+      },
+      "verdict": "pass",
+      "observations": [
+        "shell: Source, SVG editor preview, dimensions, copy action, and zoom control all remain visible in the dark desktop layout.",
+        "primarySurface: The sanitized vector produces the expected colored shapes and label rather than fallback text or a blank canvas."
+      ],
+      "defects": [],
+      "reviewer": "Codex format visual lane — individual original-resolution pixel inspection",
+      "reviewedAt": "2026-07-11T08:20:47.924Z"
+    },
+    {
+      "slug": "16-pptx",
+      "screenshotSha256": {
+        "shell": "69ba1c3a2a3640737ed138e62da4e5e7891073879dc4a0084c961c1672e08e89",
+        "primarySurface": "7cc75670b8a514ff5cf3c55225a479ae67528207fd8a99235403311fa7a1c00e"
+      },
+      "verdict": "pass",
+      "observations": [
+        "shell: The exercised second slide fills the dark presentation stage while navigation and 2 of 2 status remain visible.",
+        "primarySurface: Title, three bullet lines, and blue shape are readable and fully framed as actual slide pixels."
+      ],
+      "defects": [],
+      "reviewer": "Codex format visual lane — individual original-resolution pixel inspection",
+      "reviewedAt": "2026-07-11T08:20:47.924Z"
+    },
+    {
+      "slug": "22-comic",
+      "screenshotSha256": {
+        "shell": "69da8238b758f642a1daffa0eed75a4421858ca0ab0ff01cfb4c0b0baa723cb6",
+        "primarySurface": "c5b1e1192557d7b75c137f379028b028242f01d28752e91614776295a63af4ef",
+        "nestedBottom": "392aabc06973df494ce738b4913b2e55ff4a34944ef65395ce53e8984a08579c"
+      },
+      "verdict": "pass",
+      "observations": [
+        "shell: Spread mode shows two detailed illustrated pages with panel borders and large lettering; the header reports three pages plus the on-demand, concurrency, URL, and byte caps.",
+        "primarySurface: Pages 01 and 02 are crisp, distinct, fully colored comic layouts with readable OPEN, INSPECT, OFFLINE, COMPARE, LIGHT, and DARK lettering.",
+        "nestedBottom: The nested scroller reaches the separately loaded PAGE 10 artwork, whose THE END and KEEP EXPLORING lettering proves natural page ordering and lower-page rendering."
+      ],
+      "defects": [],
+      "reviewer": "Codex format visual lane — individual original-resolution pixel inspection",
+      "reviewedAt": "2026-07-11T08:20:47.924Z"
+    },
+    {
+      "slug": "28-dxf",
+      "screenshotSha256": {
+        "shell": "053a6f4ef36a353cde8acd5d484dcf5d11a0429153ede2c768dd8ae939a16c4c",
+        "primarySurface": "593a02956691b32b2c0028ef5fc9ffc4d8596eb09086e2a108eda99adb64e109",
+        "previewBottom": "8bbababcd49c4444d630e92bf3d68e59829596c281797f8760ea96708249d4e0"
+      },
+      "verdict": "pass",
+      "observations": [
+        "shell: The repaired dark DXF shell shows high-contrast badges, drawing geometry, section chips, and entity rows without the prior washout.",
+        "primarySurface: Drawing lines, labels, zoom controls, section state, and entity counts are legible on the dark canvas.",
+        "previewBottom: The lower capture reaches all entity types, layers, named block, and header variables with usable dark-theme contrast."
+      ],
+      "defects": [],
+      "reviewer": "Codex format visual lane — individual original-resolution pixel inspection",
+      "reviewedAt": "2026-07-11T08:20:47.924Z"
+    },
+    {
+      "slug": "34-fits",
+      "screenshotSha256": {
+        "shell": "9f409029b61cce339107fee4473b15cda7358e5f6d3a173a641519944d476c70",
+        "primarySurface": "ee258a641223566ab70440c2726b6b622c2a00523df31ab920ee1600ccf8294d"
+      },
+      "verdict": "pass",
+      "observations": [
+        "shell: The FITS dark shell balances raw cards with the FV-GRADIENT summary and visibly states that image pixels are not decoded or rendered.",
+        "primarySurface: The 64 by 48 dimensions, two axes, 16-bit integer type, FileViewer telescope, DemoCam instrument, observation fields, and 18 header cards are legible."
+      ],
+      "defects": [
+        "The fixture contains a valid nonzero 16-bit image plane, but this renderer intentionally exposes only header metadata and does not render astronomy pixels."
+      ],
+      "reviewer": "Codex format visual lane — individual original-resolution pixel inspection",
+      "reviewedAt": "2026-07-11T08:20:47.924Z"
+    },
+    {
+      "slug": "40-dockerfile",
+      "screenshotSha256": {
+        "shell": "75693ddfda39ba43af923e40ffc1dbdceef7d4ec0db272374bf73d55feb37a52",
+        "primarySurface": "a8e3135889a6299afd2bdb662ccc583576e8c6d2f16fed55239306865968d7fb",
+        "previewBottom": "dd06b23e8242464c239d32a2c08cc2eb8b625a4a132c3fc2725c85a3eda73d71",
+        "base": "ab57e5a563bf9d09ac912f8ad50201831873544ffbc6661b2d6fccd5bd5ebf89"
+      },
+      "verdict": "pass",
+      "observations": [
+        "shell: The enhanced dark Dockerfile split shows source and a complete, high-contrast instruction explanation without corner overlays.",
+        "primarySurface: Twenty instructions and two stages render with distinct directive badges and readable explanations.",
+        "previewBottom: The bottom capture reaches ports, environment, user, healthcheck, and command instructions, proving full vertical access.",
+        "base: The default overview remains meaningful with stages, images, ports, variables, labels, and RUN commands, despite compact label/value spacing."
+      ],
+      "defects": [
+        "The optional default Dockerfile overview still concatenates several labels and values, such as Stages2, Base imagenode:20-alpine, and maintainerdemo@example.com."
+      ],
+      "reviewer": "Codex format visual lane — individual original-resolution pixel inspection",
+      "reviewedAt": "2026-07-11T08:20:47.924Z"
+    },
+    {
+      "slug": "05-xml",
+      "screenshotSha256": {
+        "shell": "2132d24aedbb36eb115162ef1babdafe0d772299c9282fdb8e841427ee11a4ce",
+        "primarySurface": "6fbf34bee422fa895d552b04d8031ed6ce410546fde144bec33b26c2384dbdf0",
+        "base": "56adfd184d0b3d5d3a925f16d975a6c81782fcec68e0b9108d291200308bdae2"
+      },
+      "verdict": "pass",
+      "observations": [
+        "shell: The Ant enhancement and XML source use a balanced desktop split; the project and target cards are not clipped.",
+        "primarySurface: MyApp metadata and all five target rows are visually distinct and readable.",
+        "base: The default XML tree exposes attributes, nested targets, and source landmarks with usable indentation."
+      ],
+      "defects": [],
+      "reviewer": "Codex format visual lane — individual original-resolution pixel inspection",
+      "reviewedAt": "2026-07-11T08:20:47.924Z"
+    },
+    {
+      "slug": "11-tiff",
+      "screenshotSha256": {
+        "shell": "24d29a0bdf8dd3e9f6356589d3c6e22abcee623af63603cb60018f4a852f58e2",
+        "primarySurface": "3b75a9904e7e360b88867d6de0563a22a84d3c9238c10184e32256a79d8e5342"
+      },
+      "verdict": "pass",
+      "observations": [
+        "shell: The TIFF flower is decoded and centered beneath a complete light-theme image toolbar.",
+        "primarySurface: The pixel-bearing preview is colorful, sharp, nonblank, and fully contained."
+      ],
+      "defects": [],
+      "reviewer": "Codex format visual lane — individual original-resolution pixel inspection",
+      "reviewedAt": "2026-07-11T08:20:47.924Z"
+    },
+    {
+      "slug": "17-odf",
+      "screenshotSha256": {
+        "shell": "ef95751429374097e16c903442cc6af20b39434ecb4bf897c0523a4c2c12a7ab",
+        "primarySurface": "ac5966951cc5a7bba58badd7ffd46fc0bf172de4a9005680b1ea923c693bab23"
+      },
+      "verdict": "pass",
+      "observations": [
+        "shell: The OpenDocument page is centered in the light shell with the selected file state intact.",
+        "primarySurface: Title, explanatory paragraph, two-item list, and closing line are crisp and unclipped."
+      ],
+      "defects": [],
+      "reviewer": "Codex format visual lane — individual original-resolution pixel inspection",
+      "reviewedAt": "2026-07-11T08:20:47.924Z"
+    },
+    {
+      "slug": "23-media",
+      "screenshotSha256": {
+        "shell": "5953b5f7a95cce2cbbad25303770d834768f9af072434673ad91499a91f1ef70",
+        "primarySurface": "3fec96750716534648569aa71c0bfc7f8cb040b803c85843582a6385308acdab",
+        "previewBottom": "5cc0c6f1952f17f228a68b85b0653ad3effa6ffe7bfdc3d4671328d44da05776"
+      },
+      "verdict": "pass",
+      "observations": [
+        "shell: The final light shell shows a decoded video frame, native controls, workspace tabs, and matching 0:00 / 0:01 duration after the metadata-race repair.",
+        "primarySurface: A real 320 by 180 animal frame is visible; native and workspace duration readouts agree and no beta badge covers Compare.",
+        "previewBottom: The scrolled view exposes Download, speed presets, picture-in-picture, and frame-step controls, proving lower actions are reachable."
+      ],
+      "defects": [],
+      "reviewer": "Codex format visual lane — individual original-resolution pixel inspection",
+      "reviewedAt": "2026-07-11T08:20:47.924Z"
+    },
+    {
+      "slug": "29-geojson",
+      "screenshotSha256": {
+        "shell": "efa62ec475a0e44db2780bdfb37608138d35435e369625a82aa236b3db7a9d33",
+        "primarySurface": "ed5bfa6eb1931cf2cdc14a77e3b504cb8662caa6a4746a325bfa05a62669e483"
+      },
+      "verdict": "pass",
+      "observations": [
+        "shell: The repaired TopoJSON enhancement has styled badges, stat cards, and object chips beside a balanced source pane.",
+        "primarySurface: TopoJSON identity, three geometries, two objects, districts, and transit are separated into a clear nonblank hierarchy."
+      ],
+      "defects": [],
+      "reviewer": "Codex format visual lane — individual original-resolution pixel inspection",
+      "reviewedAt": "2026-07-11T08:20:47.924Z"
+    },
+    {
+      "slug": "35-wasm",
+      "screenshotSha256": {
+        "shell": "d9da32da9f5ff9e2a5008361a25b09df7c45fecdac0e5b6368c92e5207a1b9e8",
+        "primarySurface": "24172aafa41918d6076fea6a8337f13a4837683f28655f9ce9c51e0eb83c7b9d"
+      },
+      "verdict": "pass",
+      "observations": [
+        "shell: The light WebAssembly summary has clear module, section, import, export, and size groupings.",
+        "primarySurface: Version, four sections, no-import state, exported add function, and summary values are nonblank and readable."
+      ],
+      "defects": [],
+      "reviewer": "Codex format visual lane — individual original-resolution pixel inspection",
+      "reviewedAt": "2026-07-11T08:20:47.924Z"
+    },
+    {
+      "slug": "41-docker-compose",
+      "screenshotSha256": {
+        "shell": "03f2876561d1b05e82096d716e57812d202e066ab1745ebf9aa39188289f882d",
+        "primarySurface": "42d200f6bb6beb983695062de8e1a7e9d5c8d3cfa733b566883b1547c4073dbb",
+        "previewBottom": "8dd83e2ce52d287f9f9fd6abec4b82c064267f98258d9780f4c039ac7be04ebe",
+        "base": "b6ee1e7b155c1141dad45ae568d5892f0fd348b6a3ac9ff64079771a7c5a131b"
+      },
+      "verdict": "pass",
+      "observations": [
+        "shell: The light enhanced Compose split presents source and structured service cards without badge or secret-text overlap.",
+        "primarySurface: Web, API, database, and cache configuration, ports, dependencies, masked secrets, and hints are readable.",
+        "previewBottom: The lower capture reaches all ten review findings and the Source disclosure with no obstruction.",
+        "base: The default overview shows all four services, host ports, images, volumes, and dependency arrows in coherent cards."
+      ],
+      "defects": [
+        "The optional default Compose overview still joins a few summary labels and values, notably Services4 and Compose version3.9."
+      ],
+      "reviewer": "Codex format visual lane — individual original-resolution pixel inspection",
+      "reviewedAt": "2026-07-11T08:20:47.924Z"
+    },
+    {
+      "slug": "06-jsonl",
+      "screenshotSha256": {
+        "shell": "c0efa376bfb790ee6a6d4b700184a19b8eda3c8906c12b8a3fd561927e6ddd62",
+        "primarySurface": "0bb316f7b42c2ad13b529d7e19bf2120f75fb013e79f7fc4ca142a299ed0399e"
+      },
+      "verdict": "pass",
+      "observations": [
+        "shell: The new mobile record-card layout fits the dark 390 px shell with no standalone sidebar or right-edge table loss.",
+        "primarySurface: Record totals plus timestamp, level, service, and message fields wrap cleanly across the meaningful log entries."
+      ],
+      "defects": [],
+      "reviewer": "Codex format visual lane — individual original-resolution pixel inspection",
+      "reviewedAt": "2026-07-11T08:20:47.924Z"
+    },
+    {
+      "slug": "12-layered",
+      "screenshotSha256": {
+        "shell": "b0db71b116ed93c2d2482808771ebbc8a5f859dcba4f6a1b128ff4b0bb78845c",
+        "primarySurface": "e5dac8e125da0b0867100e612ba5447c2f9c64e7f4bfacbfae95d51f280fb8a5"
+      },
+      "verdict": "pass",
+      "observations": [
+        "shell: The repaired PSD view composites the white, green, and red layers on the main checkerboard stage and exposes all layer toggles.",
+        "primarySurface: The composite and three layer rows are meaningful and usable on mobile; only the trailing dimension readout is hidden by the Layers pane."
+      ],
+      "defects": [
+        "At 390 px, the 100 by 100 dimension/status readout is clipped where the fixed Layers pane begins, although the fit/zoom controls and composite remain usable."
+      ],
+      "reviewer": "Codex format visual lane — individual original-resolution pixel inspection",
+      "reviewedAt": "2026-07-11T08:20:47.924Z"
+    },
+    {
+      "slug": "18-rtf",
+      "screenshotSha256": {
+        "shell": "768ddff60ebaa81b493753f65b3f5c906be7d24e46c3d99f3b0074c5e2ac13a0",
+        "primarySurface": "70ecf1321478b9408b3aa94aa74c3e68efd0e7d9ee77cdfbc9a938ba381cf9a8",
+        "previewBottom": "42f007638a9863a6d98675d7fb3257dc7a19a66098b4cc12dcac66c111c5b4d9"
+      },
+      "verdict": "pass",
+      "observations": [
+        "shell: The mobile dark WYSIWYG toolbar wraps into usable rows and the formatted paper remains readable beneath it.",
+        "primarySurface: Headings, bold and italic spans, accented text, and long prose keep coherent typography and contrast.",
+        "previewBottom: The bottom capture reaches the longer passage, author credit, and support note, proving the document can be scrolled end to end; the sticky toolbar state is also represented."
+      ],
+      "defects": [],
+      "reviewer": "Codex format visual lane — individual original-resolution pixel inspection",
+      "reviewedAt": "2026-07-11T08:20:47.924Z"
+    },
+    {
+      "slug": "24-midi",
+      "screenshotSha256": {
+        "shell": "612a8f174a3daa2bc0c76d10236514b5e089aa9bf07de54fcffeb8cfeccac564",
+        "primarySurface": "438e26dd002dd88900d1de49df099e626e16a44194e31b5447a7330c37a593ef",
+        "previewBottom": "aedc75484b34c476fe7759ad96f9ae76d70ea0673c24523682dbc868855ce4b8"
+      },
+      "verdict": "pass",
+      "observations": [
+        "shell: The corrected dark mobile cards fit 390 px; the Instruments used label wraps only at the word boundary and stays separate from the program value.",
+        "primarySurface: Type 1, three tracks, 480 PPQN, 120 BPM, 8.00-second duration, 48 notes, and the conductor and piano rows remain readable without horizontal overlap.",
+        "previewBottom: The bottom capture reaches all three track cards and cleanly shows Acoustic Grand Piano (ch 1), Acoustic Bass (ch 2), and their 32/16 note counts."
+      ],
+      "defects": [],
+      "reviewer": "Codex format visual lane — individual original-resolution pixel inspection",
+      "reviewedAt": "2026-07-11T08:20:47.924Z"
+    },
+    {
+      "slug": "30-kml",
+      "screenshotSha256": {
+        "shell": "a94e485b36b9b47067e506d49f9dfe25adfaccd3da3fec980426cf84f42e88bd",
+        "primarySurface": "7af8d3eebff92748f85b8b7df5503d0344a494057d3b809a81586060a7a71f48"
+      },
+      "verdict": "pass",
+      "observations": [
+        "shell: The repaired mobile KML view fits the title, description, statistic cards, and full placemark table inside 390 px.",
+        "primarySurface: All five geometry rows and wrapped descriptions are legible in dark mode with no lost right-hand column."
+      ],
+      "defects": [],
+      "reviewer": "Codex format visual lane — individual original-resolution pixel inspection",
+      "reviewedAt": "2026-07-11T08:20:47.924Z"
+    },
+    {
+      "slug": "36-npy",
+      "screenshotSha256": {
+        "shell": "c3ece301a67ddd89a41aced11d2090a9d30b762a62b42a58599d8daf5aac748a",
+        "primarySurface": "6b7ba96d6c102b157b4c1ade31b5b0a0e3ff5021dd07e76853a6df265e46b184"
+      },
+      "verdict": "pass",
+      "observations": [
+        "shell: The repaired dark NumPy cards, array metadata, and 12-value grid fit the mobile viewport with strong contrast.",
+        "primarySurface: Shape, dtype, version, order, size, and every float value are legible without the former white-on-white metadata."
+      ],
+      "defects": [],
+      "reviewer": "Codex format visual lane — individual original-resolution pixel inspection",
+      "reviewedAt": "2026-07-11T08:20:47.924Z"
+    },
+    {
+      "slug": "42-sarif",
+      "screenshotSha256": {
+        "shell": "2339fb7e1a4e243b1e430beada80643268514252917fcffb1958bb22bfc5ad33",
+        "primarySurface": "598efb8f25688c80f2c24702d89e318007788f38b37a70b9ba5e9e85ea82efa9",
+        "previewBottom": "5e766d59638703cca7b8cf6c2bae0540cb3e11edc8792bb1050c48a067dfcd9f"
+      },
+      "verdict": "pass",
+      "observations": [
+        "shell: The dark SARIF shell exposes overview counts, filters, pagination, and labeled severity cards without fixed badges or right-edge clipping.",
+        "primarySurface: All severity chips and the first findings cards are readable at 390 px; level, rule, wrapped message, and location remain visible without horizontal scrolling.",
+        "previewBottom: The lower capture reaches additional labeled findings with consistent red, amber, and blue contrast while pagination stays visible above the cards."
+      ],
+      "defects": [],
+      "reviewer": "Codex format visual lane — individual original-resolution pixel inspection",
+      "reviewedAt": "2026-07-11T08:20:47.924Z"
+    }
+  ]
+}

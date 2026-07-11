@@ -375,6 +375,26 @@ export async function run(ctx) {
   await page.fill('#ftSearchInput', '');
   await page.waitForTimeout(100);
 
+  // Regression: dropped-directory entries arrive with a shared root prefix (project/...). The
+  // sidebar strips that prefix for active-root state but renders it again in the append-only tree;
+  // content search must bridge those two path spellings instead of reporting zero results.
+  await page.evaluate(async () => {
+    window.__fv.state._skipDiscardGuard = true;
+    await window.__fv.loadFolder([
+      { file: new File(['needle in body'], 'README.md', { type: 'text/markdown' }), path: 'project/README.md' },
+      { file: new File(['no match'], 'app.js', { type: 'text/javascript' }), path: 'project/src/app.js' },
+    ]);
+  });
+  await page.fill('#ftSearchInput', 'needle');
+  await page.keyboard.press('Enter');
+  await page.waitForFunction(() => /1 file/.test(document.getElementById('ftSearchCount').textContent), null, { timeout: 5000 });
+  const prefixedReadme = await page.$('#fileTree .ft-file[data-full-path="project/README.md"]') !== null;
+  const prefixedCount = await page.$eval('#ftSearchCount', (e) => e.textContent);
+  if (prefixedReadme && /1 file/.test(prefixedCount)) pass('folder search: shared-root content match survives sidebar path normalization');
+  else fail('shared-root content search: readme=' + prefixedReadme + ' count=' + prefixedCount);
+  await page.fill('#ftSearchInput', '');
+  await page.waitForTimeout(100);
+
   // ── Huge-folder virtual scroll: all 20 010 entries load; only a viewport slice is in the DOM ──
   const loadingSeen = await page.evaluate(() => {
     const entries = [];

@@ -17,11 +17,11 @@
 #   server  -> companion/.win-target/x86_64-pc-windows-msvc/release/companion.exe
 #   desktop -> companion/.win-target-tauri/x86_64-pc-windows-msvc/release/file-viewer-companion-desktop.exe
 #
-# NOTE: these binaries are UNSIGNED. Reputation-based AV (e.g. Avast/AVG's
-# "IDP.Generic") and SmartScreen may flag a brand-new unsigned binary that opens a
-# socket + touches files. That is a false positive — clear it by code-signing
-# (Authenticode) for real distribution, or build from source and trust your own
-# build. See companion/README.md ("Cross-compiling for Windows").
+# NOTE: these binaries are UNSIGNED. Reputation-based AV and SmartScreen may warn
+# about a new unsigned binary that opens a loopback socket and accesses files. A
+# warning alone proves neither that the binary is malicious nor that it is safe.
+# Review the source and build inputs; see companion/README.md for the full trust
+# and checksum guidance.
 set -euo pipefail
 
 what="${1:-all}"
@@ -44,7 +44,7 @@ run_build() { # $1 = workdir under /work   $2 = CARGO_TARGET_DIR under /work
     --user "$uid:$gid" \
     -w "/work/$1" \
     fv-xwin \
-    cargo xwin build --release --target x86_64-pc-windows-msvc
+    cargo xwin build --locked --release --target x86_64-pc-windows-msvc
 }
 
 if [[ "$what" == "server" || "$what" == "all" ]]; then

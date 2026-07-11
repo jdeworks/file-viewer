@@ -5,28 +5,50 @@ const TAG = {
   CTX0: 0xA0, CTX1: 0xA1, CTX2: 0xA2, CTX3: 0xA3,
 };
 
-function readLength(bytes, offset) {
+const MAX_LENGTH_OCTETS = 4;
+const MAX_SEQUENCE_CHILDREN = 10000;
+
+function readLength(bytes, offset, limit) {
+  if (offset >= limit) throw new Error('Missing length at offset ' + offset);
   const first = bytes[offset++];
   if (first < 0x80) return { len: first, next: offset };
   const numBytes = first & 0x7F;
+  if (numBytes === 0) throw new Error('Indefinite lengths are not supported');
+  if (numBytes > MAX_LENGTH_OCTETS) throw new Error('Length field is too large');
+  if (offset + numBytes > limit) throw new Error('Truncated length at offset ' + offset);
+  if (bytes[offset] === 0) throw new Error('Non-minimal length encoding');
   let len = 0;
-  for (let i = 0; i < numBytes; i++) len = (len << 8) | bytes[offset++];
+  for (let i = 0; i < numBytes; i++) len = len * 256 + bytes[offset++];
+  if (!Number.isSafeInteger(len) || len < 0x80) throw new Error('Invalid long-form length');
   return { len, next: offset };
 }
 
-function readTLV(bytes, offset) {
-  if (offset >= bytes.length) throw new Error('Unexpected end of data at offset ' + offset);
+function readTLV(bytes, offset, limit = bytes.length) {
+  if (!Number.isSafeInteger(offset) || !Number.isSafeInteger(limit)
+      || offset < 0 || limit < offset || limit > bytes.length) {
+    throw new Error('Invalid ASN.1 bounds');
+  }
+  if (offset >= limit) throw new Error('Unexpected end of data at offset ' + offset);
   const tag = bytes[offset++];
-  const { len, next } = readLength(bytes, offset);
-  if (next + len > bytes.length) throw new Error('Length exceeds data at offset ' + offset);
-  return { tag, len, start: next, end: next + len, raw: bytes.slice(next, next + len) };
+  const { len, next } = readLength(bytes, offset, limit);
+  const end = next + len;
+  if (!Number.isSafeInteger(end) || end < next || end > limit) {
+    throw new Error('Length exceeds enclosing data at offset ' + offset);
+  }
+  return { tag, len, start: next, end, raw: bytes.slice(next, end) };
 }
 
 function readSeqChildren(bytes, start, end) {
+  if (!Number.isSafeInteger(start) || !Number.isSafeInteger(end)
+      || start < 0 || end < start || end > bytes.length) {
+    throw new Error('Invalid sequence bounds');
+  }
   const children = [];
   let pos = start;
   while (pos < end) {
-    const tlv = readTLV(bytes, pos);
+    if (children.length >= MAX_SEQUENCE_CHILDREN) throw new Error('Too many ASN.1 children');
+    const tlv = readTLV(bytes, pos, end);
+    if (tlv.end <= pos) throw new Error('ASN.1 parser made no progress');
     children.push(tlv);
     pos = tlv.end;
   }
@@ -84,19 +106,23 @@ function decodeString(tlv) {
 
 function parseTime(tlv) {
   const s = String.fromCharCode(...tlv.raw);
-  if (tlv.tag === TAG.UTC) {
-    let year = parseInt(s.slice(0, 2), 10);
+  let year, month, day, hour, minute, second;
+  if (tlv.tag === TAG.UTC && /^\d{12}Z$/.test(s)) {
+    year = Number(s.slice(0, 2));
     year = year < 50 ? 2000 + year : 1900 + year;
-    const mo = s.slice(2, 4), dy = s.slice(4, 6);
-    const hh = s.slice(6, 8), mm = s.slice(8, 10), ss = s.slice(10, 12);
-    return new Date(`${year}-${mo}-${dy}T${hh}:${mm}:${ss}Z`);
+    [month, day, hour, minute, second] = [2, 4, 6, 8, 10].map((start) => Number(s.slice(start, start + 2)));
+  } else if (tlv.tag === TAG.GEN && /^\d{14}Z$/.test(s)) {
+    year = Number(s.slice(0, 4));
+    [month, day, hour, minute, second] = [4, 6, 8, 10, 12].map((start) => Number(s.slice(start, start + 2)));
+  } else {
+    return null;
   }
-  if (tlv.tag === TAG.GEN) {
-    const year = s.slice(0, 4), mo = s.slice(4, 6), dy = s.slice(6, 8);
-    const hh = s.slice(8, 10), mm = s.slice(10, 12), ss = s.slice(12, 14);
-    return new Date(`${year}-${mo}-${dy}T${hh}:${mm}:${ss}Z`);
-  }
-  return null;
+
+  const leap = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
+  const days = [31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  if (year < 1 || month < 1 || month > 12 || day < 1 || day > days[month - 1]
+      || hour > 23 || minute > 59 || second > 59) return null;
+  return new Date(Date.UTC(year, month - 1, day, hour, minute, second));
 }
 
 export function fmtDate(d) {
@@ -142,13 +168,21 @@ function toHex(bytes, maxBytes) {
   return s;
 }
 
+function equalBytes(left, right) {
+  if (!left || !right || left.length !== right.length) return false;
+  for (let index = 0; index < left.length; index++) {
+    if (left[index] !== right[index]) return false;
+  }
+  return true;
+}
+
 function parseSAN(extValueBytes) {
   const outer = readTLV(extValueBytes, 0);
   if (outer.tag !== TAG.SEQ) return [];
   const sans = [];
   let pos = outer.start;
   while (pos < outer.end) {
-    const item = readTLV(extValueBytes, pos);
+    const item = readTLV(extValueBytes, pos, outer.end);
     pos = item.end;
     const ctxTag = item.tag & 0x1F;
     if (ctxTag === 2) {
@@ -175,7 +209,7 @@ function parseBasicConstraints(extValueBytes) {
     const outer = readTLV(extValueBytes, 0);
     if (outer.tag !== TAG.SEQ) return { isCA: false };
     if (outer.len === 0) return { isCA: false };
-    const boolTlv = readTLV(extValueBytes, outer.start);
+    const boolTlv = readTLV(extValueBytes, outer.start, outer.end);
     if (boolTlv.tag === TAG.BOOL) {
       return { isCA: boolTlv.raw[0] !== 0x00 };
     }
@@ -192,7 +226,7 @@ function parseExtKeyUsage(extValueBytes) {
     const ekus = [];
     let pos = outer.start;
     while (pos < outer.end) {
-      const oidTlv = readTLV(extValueBytes, pos);
+      const oidTlv = readTLV(extValueBytes, pos, outer.end);
       pos = oidTlv.end;
       if (oidTlv.tag === TAG.OID) {
         ekus.push(oidName(oidTlv.raw));
@@ -223,7 +257,7 @@ function getKeyInfo(spkiBytes, start, end) {
       try {
         const rsaSeq = readTLV(rsaBytes, 0);
         if (rsaSeq.tag !== TAG.SEQ) return { type: 'RSA', bits: null };
-        const modTlv = readTLV(rsaBytes, rsaSeq.start);
+        const modTlv = readTLV(rsaBytes, rsaSeq.start, rsaSeq.end);
         if (modTlv.tag !== TAG.INT) return { type: 'RSA', bits: null };
         const modLen = modTlv.raw[0] === 0x00 ? modTlv.raw.length - 1 : modTlv.raw.length;
         return { type: 'RSA', bits: modLen * 8 };
@@ -260,7 +294,7 @@ function parseExtensions(bytes, start, end) {
   try {
     let pos = start;
     while (pos < end) {
-      const extSeq = readTLV(bytes, pos);
+      const extSeq = readTLV(bytes, pos, end);
       pos = extSeq.end;
       if (extSeq.tag !== TAG.SEQ) continue;
       const extChildren = readSeqChildren(bytes, extSeq.start, extSeq.end);
@@ -287,6 +321,7 @@ function parseExtensions(bytes, start, end) {
 export function parseCertificate(der) {
   const certSeq = readTLV(der, 0);
   if (certSeq.tag !== TAG.SEQ) throw new Error('Expected SEQUENCE at root');
+  if (certSeq.end !== der.length) throw new Error('Trailing data after certificate');
 
   const [tbs, sigAlgTlv] = readSeqChildren(der, certSeq.start, certSeq.end);
   if (!tbs || tbs.tag !== TAG.SEQ) throw new Error('Expected TBSCertificate');
@@ -296,7 +331,7 @@ export function parseCertificate(der) {
 
   let version = 1;
   if (tbsChildren[idx] && tbsChildren[idx].tag === TAG.CTX0) {
-    const vTlv = readTLV(der, tbsChildren[idx].start);
+    const vTlv = readTLV(der, tbsChildren[idx].start, tbsChildren[idx].end);
     version = (vTlv.raw[0] || 0) + 1;
     idx++;
   }
@@ -340,14 +375,16 @@ export function parseCertificate(der) {
   let exts = { sans: [], isCA: null, ekus: [] };
   for (let i = idx; i < tbsChildren.length; i++) {
     if (tbsChildren[i].tag === TAG.CTX3) {
-      const innerSeq = readTLV(der, tbsChildren[i].start);
+      const innerSeq = readTLV(der, tbsChildren[i].start, tbsChildren[i].end);
       if (innerSeq.tag === TAG.SEQ) {
         exts = parseExtensions(der, innerSeq.start, innerSeq.end);
       }
     }
   }
 
-  return { version, serial, sigAlgName, issuer, notBefore, notAfter, subject, keyInfo, exts };
+  const selfIssued = issuerTlv?.tag === TAG.SEQ && subjectTlv?.tag === TAG.SEQ
+    && equalBytes(issuerTlv.raw, subjectTlv.raw);
+  return { version, serial, sigAlgName, issuer, notBefore, notAfter, subject, selfIssued, keyInfo, exts };
 }
 
 export function parsePemFile(text) {

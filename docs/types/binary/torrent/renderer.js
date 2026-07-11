@@ -1,3 +1,6 @@
+import { decodeBencode, isBencodeDictionary } from './bencode.js';
+import { inspectTorrentInfo } from './semantics.js';
+
 function esc(s) {
   return String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 }
@@ -10,52 +13,12 @@ function fmtBytes(n) {
   return (n / 1073741824).toFixed(2) + ' GB';
 }
 
-const td = new TextDecoder();
-const tdStrict = new TextDecoder('utf-8', { fatal: true });
-
-function parseBencode(bytes, off) {
-  const b = bytes[off];
-  if (b === 105) { // 'i'
-    let e = off + 1; while (bytes[e] !== 101) e++;
-    return { v: parseInt(td.decode(bytes.slice(off + 1, e)), 10), end: e + 1 };
-  }
-  if (b === 108) { // 'l'
-    const list = []; let p = off + 1;
-    while (bytes[p] !== 101) { const r = parseBencode(bytes, p); list.push(r.v); p = r.end; }
-    return { v: list, end: p + 1 };
-  }
-  if (b === 100) { // 'd'
-    const obj = {}; let p = off + 1;
-    while (bytes[p] !== 101) {
-      const kr = parseBencode(bytes, p); p = kr.end;
-      const vr = parseBencode(bytes, p); p = vr.end;
-      if (typeof kr.v === 'string') obj[kr.v] = vr.v;
-    }
-    return { v: obj, end: p + 1 };
-  }
-  // string: N:data
-  let c = off; while (bytes[c] !== 58) c++; // ':'
-  const len = parseInt(td.decode(bytes.slice(off, c)), 10);
-  const data = bytes.slice(c + 1, c + 1 + len);
-  let str; try { str = tdStrict.decode(data); } catch { str = null; }
-  return { v: str !== null ? str : data, end: c + 1 + len };
-}
-
-// Find raw bytes of the info dict value for SHA-1 infohash computation.
-async function computeInfoHash(bytes) {
-  // Search for "4:info" marker [0x34,0x3a,0x69,0x6e,0x66,0x6f]
-  for (let i = 1; i < bytes.length - 6; i++) {
-    if (bytes[i] === 52 && bytes[i+1] === 58 && bytes[i+2] === 105 &&
-        bytes[i+3] === 110 && bytes[i+4] === 102 && bytes[i+5] === 111) {
-      try {
-        const infoStart = i + 6;
-        const { end } = parseBencode(bytes, infoStart);
-        const hashBuf = await crypto.subtle.digest('SHA-1', bytes.slice(infoStart, end));
-        return Array.from(new Uint8Array(hashBuf)).map((b) => b.toString(16).padStart(2, '0')).join('');
-      } catch { return null; }
-    }
-  }
-  return null;
+async function computeDigest(bytes, infoRange, algorithm) {
+  if (!infoRange) return null;
+  try {
+    const hashBuf = await crypto.subtle.digest(algorithm, bytes.slice(infoRange.start, infoRange.end));
+    return Array.from(new Uint8Array(hashBuf)).map((b) => b.toString(16).padStart(2, '0')).join('');
+  } catch { return null; }
 }
 
 const STYLE = `
@@ -77,26 +40,21 @@ ul.fl li:last-child{border-bottom:none}
 `;
 
 export async function render(intake, _ctx) {
-  let torrent;
+  let decoded;
   try {
-    torrent = parseBencode(intake.bytes, 0).v;
+    decoded = decodeBencode(intake.bytes);
   } catch (e) {
     return { bodyHtml: `<p style="color:var(--fg);padding:16px">Parse error: ${esc(e.message)}</p>`, hadUnsafe: false };
   }
-  if (typeof torrent !== 'object' || !torrent) {
+  const torrent = decoded.value;
+  if (!isBencodeDictionary(torrent)) {
     return { bodyHtml: '<p style="color:var(--fg);padding:16px">Not a valid torrent file.</p>', hadUnsafe: false };
   }
 
-  const info = (typeof torrent.info === 'object' && torrent.info) ? torrent.info : {};
+  const info = isBencodeDictionary(torrent.info) ? torrent.info : Object.create(null);
   const name = typeof info.name === 'string' ? info.name : (intake.name || '—');
-
-  let totalSize = 0, fileCount = 0;
-  if (Array.isArray(info.files)) {
-    fileCount = info.files.length;
-    totalSize = info.files.reduce((s, f) => s + (typeof f.length === 'number' ? f.length : 0), 0);
-  } else if (typeof info.length === 'number') {
-    fileCount = 1; totalSize = info.length;
-  }
+  const semantics = inspectTorrentInfo(info, torrent['piece layers']);
+  const inventory = semantics.inventory;
 
   const trackers = new Set();
   if (typeof torrent.announce === 'string') trackers.add(torrent.announce);
@@ -104,24 +62,38 @@ export async function render(intake, _ctx) {
     torrent['announce-list'].flat().forEach((t) => { if (typeof t === 'string') trackers.add(t); });
   }
 
-  const infoHash = await computeInfoHash(intake.bytes);
+  const [v1Hash, v2Hash] = await Promise.all([
+    semantics.hasV1 ? computeDigest(intake.bytes, decoded.infoRange, 'SHA-1') : null,
+    semantics.hasV2 ? computeDigest(intake.bytes, decoded.infoRange, 'SHA-256') : null,
+  ]);
+  const v2Multihash = v2Hash ? `1220${v2Hash}` : null;
 
   let html = `<style>${STYLE}</style><h2>${esc(name)}</h2>`;
 
   html += `<div class="sec"><div class="sec-title">Info</div><dl>`;
-  html += `<dt>Size</dt><dd>${esc(fmtBytes(totalSize))}</dd>`;
-  html += `<dt>Files</dt><dd>${fileCount}</dd>`;
+  html += `<dt>Size</dt><dd>${inventory.totalSizeComplete === false ? 'At least ' : ''}${esc(fmtBytes(inventory.totalSize))}</dd>`;
+  html += `<dt>Files</dt><dd>${inventory.truncated ? 'At least ' : ''}${inventory.fileCount}</dd>`;
+  if (semantics.declaresV2 && semantics.hasV1) html += '<dt>Version</dt><dd>BitTorrent v1 + v2 hybrid</dd>';
+  else if (semantics.declaresV2) html += '<dt>Version</dt><dd>BitTorrent v2</dd>';
   if (typeof info['piece length'] === 'number') html += `<dt>Piece size</dt><dd>${esc(fmtBytes(info['piece length']))}</dd>`;
   if (typeof torrent.comment === 'string') html += `<dt>Comment</dt><dd>${esc(torrent.comment)}</dd>`;
   if (typeof torrent['created by'] === 'string') html += `<dt>Created by</dt><dd>${esc(torrent['created by'])}</dd>`;
   if (typeof torrent['creation date'] === 'number') {
-    html += `<dt>Created</dt><dd>${esc(new Date(torrent['creation date'] * 1000).toISOString().slice(0, 10))}</dd>`;
+    const created = new Date(torrent['creation date'] * 1000);
+    if (Number.isFinite(created.getTime())) html += `<dt>Created</dt><dd>${esc(created.toISOString().slice(0, 10))}</dd>`;
   }
-  if (infoHash) html += `<dt>Info hash</dt><dd class="mono" title="Magnet info hash (SHA-1)">${esc(infoHash)}</dd>`;
+  if (v1Hash) {
+    const label = v2Hash ? 'SHA-1 info hash' : 'Info hash';
+    html += `<dt>${label}</dt><dd class="mono" title="Magnet info hash (SHA-1)">${esc(v1Hash)}</dd>`;
+  }
+  if (v2Hash) html += `<dt>SHA-256 info hash</dt><dd class="mono" title="BitTorrent v2 info hash">${esc(v2Hash)}</dd>`;
   html += `</dl></div>`;
 
-  if (infoHash) {
-    const params = [`xt=urn:btih:${infoHash}`];
+  const exactTopics = [];
+  if (v2Multihash) exactTopics.push(`xt=urn:btmh:${v2Multihash}`);
+  if (v1Hash) exactTopics.push(`xt=urn:btih:${v1Hash}`);
+  if (exactTopics.length) {
+    const params = [...exactTopics];
     if (typeof info.name === 'string') params.push(`dn=${encodeURIComponent(info.name)}`);
     for (const t of trackers) params.push(`tr=${encodeURIComponent(t)}`);
     const magnet = `magnet:?${params.join('&')}`;
@@ -130,17 +102,32 @@ export async function render(intake, _ctx) {
     html += `</div>`;
   }
 
-  if (Array.isArray(info.files) && info.files.length > 0) {
-    const MAX = 200;
-    html += `<div class="sec"><div class="sec-title">Files (${info.files.length})</div><ul class="fl">`;
-    for (const f of info.files.slice(0, MAX)) {
-      const path = Array.isArray(f.path)
-        ? f.path.map((p) => (typeof p === 'string' ? p : '?')).join('/')
-        : '?';
-      html += `<li><span class="fn">${esc(path)}</span><span class="fs">${esc(fmtBytes(typeof f.length === 'number' ? f.length : null))}</span></li>`;
+  if (inventory.files.length > 0) {
+    const countLabel = inventory.truncated ? `at least ${inventory.fileCount}` : inventory.fileCount;
+    html += `<div class="sec"><div class="sec-title">Files (${countLabel})</div><ul class="fl">`;
+    for (const file of inventory.files) {
+      html += `<li><span class="fn">${esc(file.path)}</span><span class="fs">${esc(fmtBytes(file.length))}</span></li>`;
     }
-    if (info.files.length > MAX) html += `<div class="more">… and ${info.files.length - MAX} more files</div>`;
+    if (inventory.inventoryTruncated && !inventory.truncated) {
+      html += `<div class="more">… and ${inventory.fileCount - inventory.files.length} more files</div>`;
+    }
     html += `</ul></div>`;
+  }
+
+  if (semantics.declaresV2 && inventory.truncated) {
+    html += '<div class="more">File tree traversal limit reached; counts and size are partial.</div>';
+  }
+  if (semantics.declaresV2 && inventory.overflow) {
+    html += '<div class="more">File sizes exceed the supported total-size range.</div>';
+  }
+  if (semantics.declaresV2 && inventory.malformed) {
+    html += '<div class="more">The BitTorrent v2 file tree is malformed; totals may be incomplete.</div>';
+  }
+  if (semantics.declaresV2 && semantics.v2.pieceLayers.missing) {
+    html += '<div class="more">Required BitTorrent v2 piece layers are missing; no v2 magnet was generated.</div>';
+  } else if (semantics.declaresV2
+    && (semantics.v2.pieceLayers.malformed || semantics.v2.pieceLayers.inconsistent)) {
+    html += '<div class="more">The BitTorrent v2 piece layers are malformed or inconsistent; no v2 magnet was generated.</div>';
   }
 
   if (trackers.size > 0) {

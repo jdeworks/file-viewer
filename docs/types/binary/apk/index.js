@@ -2,7 +2,7 @@ import { detect } from './detect.js';
 
 export default {
   id: 'apk',
-  label: 'Android Package (APK/AAB)',
+  label: 'Android Package / Bundle',
   detect,
   capabilities: { rawView: false, preview: true, diff: false, magicSelector: false, screenshot: true },
   loadRenderer: () => import('./renderer.js'),

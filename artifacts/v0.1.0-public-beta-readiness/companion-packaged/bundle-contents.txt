@@ -1,0 +1,17 @@
+drwxr-xr-x 0/0               0 2026-07-10 18:20 usr
+drwxr-xr-x 0/0               0 2026-07-10 18:20 usr/share
+drwxr-xr-x 0/0               0 2026-07-10 18:20 usr/share/applications
+-rw-r--r-- 0/0             305 2026-07-10 18:20 usr/share/applications/File Viewer Companion.desktop
+drwxr-xr-x 0/0               0 2026-07-10 18:20 usr/share/icons
+drwxr-xr-x 0/0               0 2026-07-10 18:20 usr/share/icons/hicolor
+drwxr-xr-x 0/0               0 2026-07-10 18:20 usr/share/icons/hicolor/128x128
+drwxr-xr-x 0/0               0 2026-07-10 18:20 usr/share/icons/hicolor/128x128/apps
+-rw-r--r-- 0/0             380 2026-07-10 18:20 usr/share/icons/hicolor/128x128/apps/file-viewer-companion-desktop.png
+drwxr-xr-x 0/0               0 2026-07-10 18:20 usr/share/icons/hicolor/32x32
+drwxr-xr-x 0/0               0 2026-07-10 18:20 usr/share/icons/hicolor/32x32/apps
+-rw-r--r-- 0/0             111 2026-07-10 18:20 usr/share/icons/hicolor/32x32/apps/file-viewer-companion-desktop.png
+drwxr-xr-x 0/0               0 2026-07-10 18:20 usr/share/icons/hicolor/512x512
+drwxr-xr-x 0/0               0 2026-07-10 18:20 usr/share/icons/hicolor/512x512/apps
+-rw-r--r-- 0/0            3629 2026-07-10 18:20 usr/share/icons/hicolor/512x512/apps/file-viewer-companion-desktop.png
+drwxr-xr-x 0/0               0 2026-07-10 18:20 usr/bin
+-rwxr-xr-x 0/0        13666144 2026-07-10 18:20 usr/bin/file-viewer-companion-desktop

@@ -1,139 +1,6 @@
+import { parseNetcdfHeader } from './parser.js';
+
 function esc(s) { return String(s ?? '').replace(/[&<>"]/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
-
-// NetCDF-3 (CDF\x01 / CDF\x02) binary header parser
-// Spec: https://docs.unidata.ucar.edu/nug/current/file_format_specifications.html
-
-function readU32BE(b, off) {
-  return ((b[off] << 24) | (b[off+1] << 16) | (b[off+2] << 8) | b[off+3]) >>> 0;
-}
-function readI32BE(b, off) {
-  return (b[off] << 24) | (b[off+1] << 16) | (b[off+2] << 8) | b[off+3];
-}
-function readF32BE(b, off) {
-  const dv = new DataView(b.buffer ?? b.slice(off, off+4).buffer);
-  return dv.getFloat32(off + (b.buffer ? b.byteOffset : 0), false);
-}
-function readF64BE(b, off) {
-  const dv = new DataView(b.buffer ?? b.slice(off, off+8).buffer);
-  return dv.getFloat64(off + (b.buffer ? b.byteOffset : 0), false);
-}
-
-const NC_TYPE_NAMES = {1:'byte', 2:'char', 3:'short', 4:'int', 5:'float', 6:'double'};
-const NC_TYPE_SIZES = {1:1, 2:1, 3:2, 4:4, 5:4, 6:8};
-
-function pad4(n) { return n + (4 - n % 4) % 4; }
-
-function parseName(b, pos) {
-  const len = readU32BE(b, pos); pos += 4;
-  const str = new TextDecoder().decode(b.slice(pos, pos + len));
-  pos += pad4(len);
-  return { str, pos };
-}
-
-function parseValues(b, pos, ncType, nelems) {
-  const typeSize = NC_TYPE_SIZES[ncType] || 1;
-  const totalBytes = nelems * typeSize;
-  const values = [];
-  for (let i = 0; i < nelems; i++) {
-    const vpos = pos + i * typeSize;
-    switch (ncType) {
-      case 1: values.push(b[vpos]); break;
-      case 2: values.push(String.fromCharCode(b[vpos])); break;
-      case 3: values.push(readI32BE(b, vpos) << 16 >> 16); break;
-      case 4: values.push(readI32BE(b, vpos)); break;
-      case 5: try { values.push(readF32BE(b, vpos)); } catch { values.push(0); } break;
-      case 6: try { values.push(readF64BE(b, vpos)); } catch { values.push(0); } break;
-      default: values.push(0);
-    }
-  }
-  pos += pad4(totalBytes);
-  // For char type, join into string
-  const displayValue = ncType === 2
-    ? values.join('').replace(/\0/g, '').trim()
-    : values.slice(0, 8).map((v) => typeof v === 'number' ? Number(v.toPrecision(6)) : v).join(', ')
-      + (values.length > 8 ? ', …' : '');
-  return { displayValue, pos };
-}
-
-function parseAttList(b, pos) {
-  const attrs = [];
-  if (pos + 8 > b.length) return { attrs, pos };
-  const tag = readU32BE(b, pos); pos += 4;
-  if (tag === 0) { pos += 4; return { attrs, pos }; } // ABSENT: 0x00000000 0x00000000
-  if (tag !== 0x0C) return { attrs, pos: pos - 4 };  // NC_ATTRIBUTE = 0x0C
-  const nelems = readU32BE(b, pos); pos += 4;
-  for (let i = 0; i < nelems && pos < b.length - 8; i++) {
-    const { str: name, pos: p1 } = parseName(b, pos); pos = p1;
-    if (pos + 8 > b.length) break;
-    const ncType = readU32BE(b, pos); pos += 4;
-    const count  = readU32BE(b, pos); pos += 4;
-    const { displayValue, pos: p2 } = parseValues(b, pos, ncType, count); pos = p2;
-    attrs.push({ name, type: NC_TYPE_NAMES[ncType] || String(ncType), value: displayValue });
-  }
-  return { attrs, pos };
-}
-
-function parseHeader(bytes) {
-  if (bytes.length < 8) throw new Error('Too short');
-  const version = bytes[3]; // 1=classic, 2=64-bit
-  const is64 = version === 2;
-  const result = { version, dimensions: [], globalAttrs: [], variables: [] };
-
-  let pos = 4;
-  result.numRecs = readU32BE(bytes, pos); pos += 4;
-
-  // dim_list
-  if (pos + 8 > bytes.length) return result;
-  const dimTag = readU32BE(bytes, pos); pos += 4;
-  if (dimTag !== 0) {
-    const ndims = readU32BE(bytes, pos); pos += 4;
-    for (let i = 0; i < ndims && pos < bytes.length - 8; i++) {
-      const { str: name, pos: p1 } = parseName(bytes, pos); pos = p1;
-      const size = readU32BE(bytes, pos); pos += 4;
-      result.dimensions.push({ name, size: size === 0 ? 'UNLIMITED' : size });
-    }
-  } else {
-    pos += 4; // skip ABSENT second word
-  }
-
-  // att_list (global)
-  const { attrs, pos: p2 } = parseAttList(bytes, pos); pos = p2;
-  result.globalAttrs = attrs;
-
-  // var_list
-  if (pos + 8 > bytes.length) return result;
-  const varTag = readU32BE(bytes, pos); pos += 4;
-  if (varTag !== 0) {
-    const nvars = readU32BE(bytes, pos); pos += 4;
-    for (let i = 0; i < nvars && pos < bytes.length - 8 && i < 100; i++) {
-      const { str: name, pos: p1 } = parseName(bytes, pos); pos = p1;
-      if (pos + 4 > bytes.length) break;
-      const ndimids = readU32BE(bytes, pos); pos += 4;
-      const dimids = [];
-      for (let d = 0; d < ndimids; d++) {
-        if (pos + 4 > bytes.length) break;
-        dimids.push(readU32BE(bytes, pos)); pos += 4;
-      }
-      // Variable attributes
-      const { attrs: varAttrs, pos: p3 } = parseAttList(bytes, pos); pos = p3;
-      if (pos + 4 > bytes.length) break;
-      const ncType = readU32BE(bytes, pos); pos += 4;
-      const vsize  = readU32BE(bytes, pos); pos += 4;
-      // begin offset: 4 bytes (classic) or 8 bytes (64-bit)
-      pos += is64 ? 8 : 4;
-
-      const dimNames = dimids.map((id) => result.dimensions[id]?.name ?? String(id));
-      result.variables.push({
-        name,
-        type: NC_TYPE_NAMES[ncType] || String(ncType),
-        dims: dimNames,
-        attrs: varAttrs,
-      });
-    }
-  }
-
-  return result;
-}
 
 const STYLE = `
 *{box-sizing:border-box;margin:0;padding:0}
@@ -162,7 +29,15 @@ dl.kv dd{padding:6px 12px;word-break:break-all}
 .empty{padding:10px 12px;color:var(--fg2,#999);font-style:italic}
 .err{background:#fff3f3;border:1px solid #f5c6c6;border-radius:6px;padding:10px 14px;color:#b00020;font-size:12px;margin-bottom:12px}
 .nc4-note{background:#e8f5e9;border:1px solid #a5d6a7;border-radius:6px;padding:10px 14px;color:#1b5e20;font-size:12px;margin-bottom:12px}
+body.fv-dark{--fg:#e6e6e6;--fg2:#aeb7c2;--bg:#1e1e1e;--bg2:#2d2d30;--panel:#252526;--border:#45464a;--th-bg:#2d2d30;--hover:#333438}
+body.fv-dark .badge-ver{background:#122b45;color:#9dccff;border-color:#315b80}
+body.fv-dark .td-type{color:#79c0ff}
+body.fv-dark .err{background:#35171a;color:#ff938a;border-color:#7d3439}
+body.fv-dark .nc4-note{background:#16351f;color:#a7e3b5;border-color:#397249}
+.nc-limit-note{padding:8px 12px;color:var(--fg2,#666);font-size:12px;border-bottom:1px solid var(--border,#e8e8e8)}
 `;
+
+const MAX_DISPLAY_VARIABLES = 100;
 
 export function render(intake) {
   const b = intake.bytes;
@@ -192,7 +67,7 @@ export function render(intake) {
   let parsed;
   let parseError = null;
   try {
-    parsed = parseHeader(b);
+    parsed = parseNetcdfHeader(b);
   } catch (e) {
     parseError = e.message;
     parsed = { version: b[3], dimensions: [], globalAttrs: [], variables: [] };
@@ -239,7 +114,10 @@ export function render(intake) {
     html += `<div class="sec"><div class="sec-title">Dimensions (${parsed.dimensions.length})</div><div class="card">`;
     html += `<table><thead><tr><th>Name</th><th style="text-align:right">Size</th></tr></thead><tbody>`;
     for (const d of parsed.dimensions) {
-      const sizeLabel = d.size === 'UNLIMITED' ? `<em>UNLIMITED</em>${parsed.numRecs > 0 ? ` (${parsed.numRecs} records)` : ''}` : String(d.size);
+      const recordLabel = parsed.streamingRecords
+        ? ' (streaming record count)'
+        : (parsed.numRecs > 0 ? ` (${parsed.numRecs} records)` : '');
+      const sizeLabel = d.size === 'UNLIMITED' ? `<em>UNLIMITED</em>${recordLabel}` : String(d.size);
       html += `<tr><td>${esc(d.name)}</td><td class="td-size">${sizeLabel}</td></tr>`;
     }
     html += `</tbody></table></div></div>`;
@@ -248,8 +126,11 @@ export function render(intake) {
   // Variables
   if (parsed.variables.length > 0) {
     html += `<div class="sec"><div class="sec-title">Variables (${parsed.variables.length})</div><div class="card">`;
+    if (parsed.variables.length > MAX_DISPLAY_VARIABLES) {
+      html += `<div class="nc-limit-note">Showing first ${MAX_DISPLAY_VARIABLES} of ${parsed.variables.length} variables.</div>`;
+    }
     html += `<table><thead><tr><th>Name</th><th>Type</th><th>Shape</th><th>Attributes</th></tr></thead><tbody>`;
-    for (const v of parsed.variables) {
+    for (const v of parsed.variables.slice(0, MAX_DISPLAY_VARIABLES)) {
       const shape = v.dims.length > 0 ? `(${v.dims.join(', ')})` : 'scalar';
       const attrSummary = v.attrs.map((a) => `${a.name}: ${a.value.slice(0, 30)}`).join('; ').slice(0, 80) || '—';
       html += `<tr>`;

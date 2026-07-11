@@ -10,37 +10,79 @@
 // keep whichever) and decide.
 import { state, toast } from './state.js';
 import { getTree, fetchFileBlob, watchFolder } from './companion.js';
-import { renderFolderTree } from './folder.js';
+import { renderSidebarRoots } from './sidebar-roots.js';
 
 const MAX_SYNC_FILES = 1000;
 const DEBOUNCE_MS = 1200;
 const LS_AUTO = 'fv:companion:autorefresh';
 
-let getFolderRoot = () => null;
+let getFolderContext = () => null;
 let autoRefresh = false;
 let _watchCleanup = null;
 let _debounce = null;
 let _refreshBtn = null;
 let _autoBtn = null;
-let _busy = false;
-let _known = new Map(); // relPath -> { size, mtime }
+let _spinnerOwner = null;
+const _busyRoots = new WeakSet();
 
-export function setupFolderRefresh({ getFolderRoot: getter }) {
-  getFolderRoot = getter || getFolderRoot;
+export function setupFolderRefresh({ getFolderContext: getter }) {
+  getFolderContext = getter || getFolderContext;
   autoRefresh = localStorage.getItem(LS_AUTO) === 'true';
 }
 
-function rootInfo() {
-  const root = getFolderRoot();
-  if (!root) return null;
+function rootInfo(context = getFolderContext()) {
+  const sidebarRoot = context?.sidebarRoot;
+  const root = context?.root;
+  if (!sidebarRoot || !root || sidebarRoot.companionFolderRoot !== root) return null;
   const sep = (root.includes('\\') && !root.includes('/')) ? '\\' : '/';
   const base = root.endsWith(sep) ? root.slice(0, -1) : root;
-  return { root, sep, base, rootName: base.split(/[\\/]/).pop() || 'Folder' };
+  return {
+    sidebarRoot,
+    root,
+    sep,
+    base,
+    linkGeneration: sidebarRoot._companionLinkGeneration || 0,
+    authorizationGeneration: context.authorizationGeneration,
+  };
 }
 
-const relOf = (treePath) => treePath.split('/').slice(1).join('/');   // drop the root-folder segment
-const treeOf = (rootName, rel) => rootName + '/' + rel;
 const absOf = (ri, rel) => ri.base + ri.sep + rel.split('/').join(ri.sep);
+
+function contextStillLinked(ri) {
+  const current = getFolderContext();
+  return !!ri
+    && current?.authorizationGeneration === ri.authorizationGeneration
+    && state.sidebarRoots?.includes(ri.sidebarRoot)
+    && ri.sidebarRoot.companionFolderRoot === ri.root
+    && (ri.sidebarRoot._companionLinkGeneration || 0) === ri.linkGeneration;
+}
+
+function contextStillActive(ri) {
+  const current = rootInfo();
+  return contextStillLinked(ri)
+    && current?.sidebarRoot === ri.sidebarRoot
+    && current.root === ri.root
+    && current.linkGeneration === ri.linkGeneration;
+}
+
+function knownFor(ri) {
+  const root = ri.sidebarRoot;
+  if (root._companionKnownRoot !== ri.root
+    || root._companionKnownGeneration !== ri.linkGeneration) {
+    root._companionKnownRoot = ri.root;
+    root._companionKnownGeneration = ri.linkGeneration;
+    root._companionKnown = new Map();
+    root._companionSeedGeneration = (root._companionSeedGeneration || 0) + 1;
+  }
+  return root._companionKnown;
+}
+
+function commitKnown(ri, known) {
+  if (!contextStillLinked(ri)) return false;
+  ri.sidebarRoot._companionSeedGeneration = (ri.sidebarRoot._companionSeedGeneration || 0) + 1;
+  ri.sidebarRoot._companionKnown = known;
+  return true;
+}
 
 // "dir/name.ext" -> "dir/name (online).ext" (the kept disk version of a conflicted file).
 function onlineName(rel) {
@@ -54,13 +96,19 @@ function onlineName(rel) {
 }
 
 // Seed the known-state baseline from the companion (metadata only — no byte downloads).
-async function seedKnown() {
-  const ri = rootInfo();
+async function seedKnown(ri = rootInfo()) {
   if (!ri) return;
+  const seedGeneration = (ri.sidebarRoot._companionSeedGeneration || 0) + 1;
+  ri.sidebarRoot._companionSeedGeneration = seedGeneration;
   try {
     const t = await getTree(ri.root);
-    _known = new Map((t.files || []).map((f) => [f.path, { size: f.size, mtime: f.mtime || 0 }]));
-  } catch { /* offline — leave baseline, refresh will seed lazily */ }
+    if (!contextStillLinked(ri)
+      || ri.sidebarRoot._companionSeedGeneration !== seedGeneration) return;
+    ri.sidebarRoot._companionKnown = new Map(
+      (t.files || []).map((f) => [f.path, { size: f.size, mtime: f.mtime || 0 }]),
+    );
+    return true;
+  } catch { return false; }
 }
 
 function ensureButtons() {
@@ -105,9 +153,9 @@ function setAuto(on) {
 
 function startWatch() {
   stopWatch();
-  const root = getFolderRoot();
-  if (!root || !autoRefresh) return;
-  _watchCleanup = watchFolder(root, () => onDiskChange());
+  const ri = rootInfo();
+  if (!ri || !autoRefresh) return;
+  _watchCleanup = watchFolder(ri.root, () => onDiskChange(ri));
 }
 
 function stopWatch() {
@@ -115,23 +163,28 @@ function stopWatch() {
   clearTimeout(_debounce);
 }
 
-function onDiskChange() {
+function onDiskChange(ri) {
+  if (!contextStillActive(ri)) return;
   clearTimeout(_debounce);
-  _debounce = setTimeout(() => refreshFolderFromDisk({ silent: true }), DEBOUNCE_MS);
+  _debounce = setTimeout(() => {
+    if (contextStillActive(ri)) refreshFolderFromDisk({ silent: true });
+  }, DEBOUNCE_MS);
 }
 
 export function onFolderRootResolved() {
+  const ri = rootInfo();
+  if (!ri) { onFolderRootCleared(); return; }
+  stopWatch();
   ensureButtons();
   if (_refreshBtn) _refreshBtn.hidden = false;
   if (_autoBtn) _autoBtn.hidden = false;
   document.body.classList.add('companion-folder-active'); // reveals per-row 🗑 in the tree
-  seedKnown();                                            // baseline for incremental diffs
+  if (!knownFor(ri).size) seedKnown(ri);                  // root-scoped, stale-result guarded
   if (autoRefresh) startWatch();
 }
 
 export function onFolderRootCleared() {
   stopWatch();
-  _known = new Map();
   if (_refreshBtn) _refreshBtn.hidden = true;
   if (_autoBtn) _autoBtn.hidden = true;
   document.body.classList.remove('companion-folder-active');
@@ -140,71 +193,97 @@ export function onFolderRootCleared() {
 export async function refreshFolderFromDisk({ manual = false, silent = false } = {}) {
   const ri = rootInfo();
   if (!ri) { if (manual) toast('No companion folder linked.'); return; }
-  if (_busy) return;
-  _busy = true;
-  if (_refreshBtn) _refreshBtn.classList.add('ft-spin');
+  const root = ri.sidebarRoot;
+  if (_busyRoots.has(root)) return;
+  _busyRoots.add(root);
+  let spinnerToken = null;
+  if (_refreshBtn && contextStillActive(ri)) {
+    spinnerToken = {};
+    _spinnerOwner = spinnerToken;
+    _refreshBtn.classList.add('ft-spin');
+  }
   try {
-    if (!_known.size) await seedKnown();   // ensure a baseline so we don't treat everything as new
+    if (!knownFor(ri).size) {
+      await seedKnown(ri);   // ensure a baseline so we don't treat everything as new
+      if (!contextStillLinked(ri)) return;
+    }
+    const known = new Map(knownFor(ri));
 
     let tree;
     try { tree = await getTree(ri.root); }
     catch (e) { if (!silent) toast('Sync failed: ' + e.message); return; }
+    if (!contextStillLinked(ri)) return;
 
     const now = new Map((tree.files || []).map((f) => [f.path, { size: f.size, mtime: f.mtime || 0 }]));
     const added = [], modified = [], removed = [];
     for (const [p, m] of now) {
-      const prev = _known.get(p);
+      const prev = known.get(p);
       if (!prev) added.push(p);
       else if (prev.size !== m.size || prev.mtime !== m.mtime) modified.push(p);
     }
-    for (const p of _known.keys()) if (!now.has(p)) removed.push(p);
-    _known = now;
+    for (const p of known.keys()) if (!now.has(p)) removed.push(p);
 
-    if (!added.length && !modified.length && !removed.length) { if (manual) toast('No changes on disk.'); return; }
+    if (!added.length && !modified.length && !removed.length) {
+      commitKnown(ri, now);
+      if (manual && contextStillActive(ri)) toast('No changes on disk.');
+      return;
+    }
     if (added.length + modified.length > MAX_SYNC_FILES) { toast(`Too many changes (${added.length + modified.length}) to sync at once.`, 5000); return; }
 
-    // Index current entries by their relative path.
+    // Work exclusively against the captured sidebar root. Global state may point at another root
+    // by the time these requests resolve, and must never be used as the refresh target.
     const byRel = new Map();
-    for (const e of state.treeEntries || []) byRel.set(relOf(e.path), e);
+    for (const e of root.treeEntries || []) byRel.set(e.path, e);
+    const folderEdits = root.folderEdits || new Map();
 
     const conflicts = [];
     // Removals — but keep files you have unsaved edits for (don't silently drop your work).
     for (const rel of removed) {
-      if (state.folderEdits.has(treeOf(ri.rootName, rel))) { conflicts.push({ name: rel.split('/').pop(), kind: 'removed' }); continue; }
+      if (folderEdits.has(rel)) { conflicts.push({ name: rel.split('/').pop(), kind: 'removed' }); continue; }
       byRel.delete(rel);
     }
     // Added + modified — fetch ONLY these.
     for (const rel of [...added, ...modified]) {
       let blob;
-      try { blob = await fetchFileBlob(absOf(ri, rel)); } catch { continue; }
+      try { blob = await fetchFileBlob(absOf(ri, rel)); }
+      catch (e) { if (!silent) toast('Sync failed: ' + e.message); return; }
+      if (!contextStillLinked(ri)) return;
       const file = new File([blob], rel.split('/').pop());
-      const treePath = treeOf(ri.rootName, rel);
-      if (modified.includes(rel) && state.folderEdits.has(treePath)) {
+      if (modified.includes(rel) && folderEdits.has(rel)) {
         // Conflict: keep the local edit, add the disk version as a "(online)" sibling.
         const onlineRel = onlineName(rel);
-        byRel.set(onlineRel, { file, path: treeOf(ri.rootName, onlineRel) });
+        byRel.set(onlineRel, { file, path: onlineRel, originalPath: onlineRel });
         conflicts.push({ name: rel.split('/').pop(), kind: 'modified' });
       } else {
         const existing = byRel.get(rel);
-        if (existing) existing.file = file; else byRel.set(rel, { file, path: treePath });
+        if (existing) byRel.set(rel, { ...existing, file });
+        else byRel.set(rel, { file, path: rel, originalPath: rel });
       }
     }
 
-    state.treeEntries = [...byRel.values()];
-    const openFolders = state.treeApi?.getOpenFolders?.() || [];
-    renderFolderTree({ openFolders, activePath: state.currentFolderPath });
+    if (!contextStillLinked(ri)) return;
+    root.treeEntries = [...byRel.values()];
+    commitKnown(ri, now);
+    if (contextStillActive(ri)) {
+      state.treeEntries = root.treeEntries;
+      state.folderEdits = folderEdits;
+      renderSidebarRoots(root, root.currentFolderPath, { skipCapture: true });
+    }
 
     const parts = [];
     if (added.length) parts.push(added.length + ' added');
     if (modified.length) parts.push(modified.length + ' changed');
     if (removed.length) parts.push(removed.length + ' removed');
-    if (manual || !silent) toast('Folder synced: ' + parts.join(', '));
-    if (conflicts.length) {
+    if (contextStillActive(ri) && (manual || !silent)) toast('Folder synced: ' + parts.join(', '));
+    if (contextStillActive(ri) && conflicts.length) {
       const names = conflicts.map((c) => c.name).join(', ');
       toast(`Heads up: you have local edits in ${names}, and they also changed on disk. Your version is kept; the disk copy was added as "(online)" — open both to compare and decide.`, 9000);
     }
   } finally {
-    _busy = false;
-    if (_refreshBtn) _refreshBtn.classList.remove('ft-spin');
+    _busyRoots.delete(root);
+    if (_refreshBtn && _spinnerOwner === spinnerToken) {
+      _spinnerOwner = null;
+      _refreshBtn.classList.remove('ft-spin');
+    }
   }
 }
