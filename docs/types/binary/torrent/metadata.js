@@ -6,7 +6,7 @@ export function extract(intake) {
     const torrent = decodeBencode(intake.bytes).value;
     if (!isBencodeDictionary(torrent)) return {};
     const info = isBencodeDictionary(torrent.info) ? torrent.info : Object.create(null);
-    const semantics = inspectTorrentInfo(info);
+    const semantics = inspectTorrentInfo(info, torrent['piece layers']);
     const inventory = semantics.inventory;
     const trackers = new Set();
     if (typeof torrent.announce === 'string') trackers.add(torrent.announce);

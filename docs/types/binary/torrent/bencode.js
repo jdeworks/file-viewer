@@ -1,5 +1,7 @@
 const td = new TextDecoder();
-const tdStrict = new TextDecoder('utf-8', { fatal: true });
+// Preserve a leading UTF-8 BOM as U+FEFF so decoding and re-encoding a byte string is lossless.
+const tdStrict = new TextDecoder('utf-8', { fatal: true, ignoreBOM: true });
+const dictionaryEntries = new WeakMap();
 
 const MAX_DEPTH = 64;
 const MAX_ITEMS = 100000;
@@ -19,6 +21,13 @@ function isDigit(value) {
 export function isBencodeDictionary(value) {
   return value !== null && typeof value === 'object' && !Array.isArray(value)
     && !(value instanceof Uint8Array);
+}
+
+// Ordinary UTF-8 dictionary keys remain available as null-prototype object properties. Bencode
+// also permits arbitrary byte-string keys (notably BEP 52 piece-layer roots), so retain every raw
+// key separately without coercing attacker-controlled bytes into JavaScript property names.
+export function bencodeDictionaryEntries(value) {
+  return dictionaryEntries.get(value) || null;
 }
 
 // Strict, bounded decoder for untrusted metainfo. Besides avoiding unbounded scans on truncated
@@ -51,8 +60,8 @@ export function decodeBencode(bytes) {
     if (!Number.isSafeInteger(end) || end > bytes.length) throw new Error('Byte string exceeds input bounds');
     const data = bytes.slice(start, end);
     if (key) {
-      try { return { value: tdStrict.decode(data), raw: data, end }; }
-      catch { throw new Error('Dictionary key is not valid UTF-8'); }
+      try { return { text: tdStrict.decode(data), raw: data, end }; }
+      catch { return { text: null, raw: data, end }; }
     }
     try { return { value: tdStrict.decode(data), raw: data, end }; }
     catch { return { value: data, raw: data, end }; }
@@ -91,11 +100,15 @@ export function decodeBencode(bytes) {
 
     if (marker === 0x64) { // d
       const value = Object.create(null);
+      const entries = [];
       let pos = off + 1;
       let previousKey = null;
       while (true) {
         if (pos >= bytes.length) throw new Error(`Unterminated dictionary at offset ${off}`);
-        if (bytes[pos] === 0x65) return { value, end: pos + 1 };
+        if (bytes[pos] === 0x65) {
+          dictionaryEntries.set(value, Object.freeze(entries));
+          return { value, end: pos + 1 };
+        }
         const key = parseString(pos, true);
         if (previousKey && compareBytes(previousKey, key.raw) >= 0) {
           throw new Error('Dictionary keys are duplicated or not in canonical byte order');
@@ -105,8 +118,10 @@ export function decodeBencode(bytes) {
         const valueStart = pos;
         const child = parseValue(pos, depth + 1);
         if (child.end <= pos) throw new Error('Bencode parser made no progress');
-        value[key.value] = child.value;
-        if (depth === 0 && key.value === 'info') infoRange = { start: valueStart, end: child.end };
+        const entry = Object.freeze({ key: key.raw, text: key.text, value: child.value });
+        entries.push(entry);
+        if (key.text !== null) value[key.text] = child.value;
+        if (depth === 0 && key.text === 'info') infoRange = { start: valueStart, end: child.end };
         pos = child.end;
       }
     }

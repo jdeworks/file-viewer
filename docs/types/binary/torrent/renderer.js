@@ -53,7 +53,7 @@ export async function render(intake, _ctx) {
 
   const info = isBencodeDictionary(torrent.info) ? torrent.info : Object.create(null);
   const name = typeof info.name === 'string' ? info.name : (intake.name || '—');
-  const semantics = inspectTorrentInfo(info);
+  const semantics = inspectTorrentInfo(info, torrent['piece layers']);
   const inventory = semantics.inventory;
 
   const trackers = new Set();
@@ -122,6 +122,12 @@ export async function render(intake, _ctx) {
   }
   if (semantics.declaresV2 && inventory.malformed) {
     html += '<div class="more">The BitTorrent v2 file tree is malformed; totals may be incomplete.</div>';
+  }
+  if (semantics.declaresV2 && semantics.v2.pieceLayers.missing) {
+    html += '<div class="more">Required BitTorrent v2 piece layers are missing; no v2 magnet was generated.</div>';
+  } else if (semantics.declaresV2
+    && (semantics.v2.pieceLayers.malformed || semantics.v2.pieceLayers.inconsistent)) {
+    html += '<div class="more">The BitTorrent v2 piece layers are malformed or inconsistent; no v2 magnet was generated.</div>';
   }
 
   if (trackers.size > 0) {
