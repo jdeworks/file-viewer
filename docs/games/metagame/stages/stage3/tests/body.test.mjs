@@ -34,10 +34,12 @@ assert.equal(tutorial, 5, "5 pure-tutorial snapshots before any mechanic");
 assert.equal(volatileSolo, 3, "volatile gets 3 snapshots alone before aliased stacks");
 assert.equal(twoColour, 5, "two-colour gets a 5-snapshot window before the boss");
 
-// Size still ramps 5 → 12 across the longer body and clamps.
+// Size ramps 5 → 20 (reaching its cap by solve 14, before two-colour takes over at solve 15 — see
+// SIZE_RAMP_SOLVES in board.js) and clamps for the rest of the body, including the boss gate.
 assert.equal(sizeForRun({ solvedCount: 0 }), 5, "size starts at 5");
-assert.equal(sizeForRun({ solvedCount: BODY_SOLVES }), 12, "size reaches 12 by the gate");
-assert(sizeForRun({ solvedCount: 100 }) === 12, "size clamps at 12");
+assert.equal(sizeForRun({ solvedCount: 14 }), 20, "size reaches its 20 cap by solve 14 (before two-colour takes over)");
+assert.equal(sizeForRun({ solvedCount: BODY_SOLVES }), 20, "size stays at 20 through the boss gate");
+assert(sizeForRun({ solvedCount: 100 }) === 20, "size clamps at 20");
 
 // EVERY body snapshot is deterministic AND uniquely solvable (the Leiden line-solve-to-completion
 // guarantee), across both mono/aliased and two-colour tiers.

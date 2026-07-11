@@ -29,11 +29,20 @@ export const fillColor = (v) => (v === FILLED ? FILLED : v === COLOR_B ? COLOR_B
 // reshape the curve. (Tier-arrival messaging in s3tiers.js is keyed off the same thresholds.)
 export const BODY_SOLVES = 20;
 
-// Grid size grows with snapshots cleared this run, reaching 12 by the end of the body; the Overclock
-// upgrade lifts the cap (deeper, richer snapshots). Clamped to a comfortable line-solvable range.
+// Grid size grows with snapshots cleared this run, reaching its cap by solve 14 — mono puzzles only
+// run through solve 14; two-colour snapshots take over at solve 15 (TWOCOLOR_AT in s3twocolor.js)
+// and are separately hard-capped at 9×9 regardless of this ramp (an enumeration-cost constraint,
+// not something this ramp can affect). The base cap is 20 with zero shop investment; the Overclock
+// upgrade (shop.js) raises it further — up to 25×25 fully upgraded — for players who want deeper,
+// richer snapshots. The ramp's own target tracks the (possibly Overclock-boosted) cap, not a fixed
+// number, so a maxed Overclock is actually reachable within the mono window instead of being capped
+// out by the ramp itself. Clamped to a comfortable line-solvable range.
+const SIZE_RAMP_SOLVES = 14; // matches the last solve before two-colour takes over
+const BASE_MAX_SIZE = 20;
 export function sizeForRun(run, shop) {
-  const cap = 12 + Number((shop || {}).overclock || 0);
-  const ramp = 5 + Math.floor((Number(run.solvedCount || 0) * 7) / BODY_SOLVES);
+  const cap = BASE_MAX_SIZE + Number((shop || {}).overclock || 0);
+  const solved = Math.min(Number(run.solvedCount || 0), SIZE_RAMP_SOLVES);
+  const ramp = 5 + Math.floor((solved * (cap - 5)) / SIZE_RAMP_SOLVES);
   return Math.max(5, Math.min(cap, ramp));
 }
 

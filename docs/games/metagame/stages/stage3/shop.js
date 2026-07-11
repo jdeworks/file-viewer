@@ -9,7 +9,7 @@ export const SHOP_UPGRADES = [
   { id: "throughput", name: "Throughput", desc: "+25% registers per solve", max: 5 },
   { id: "oracle", name: "Oracle", desc: "+1 hint (reveal a correct cell) per snapshot", max: 4 },
   { id: "parity", name: "Parity Unit", desc: "+1 integrity check (flag wrong fills) per snapshot", max: 3 },
-  { id: "overclock", name: "Overclock", desc: "+1 to the maximum grid size (deeper, richer snapshots)", max: 3 },
+  { id: "overclock", name: "Overclock", desc: "+1 to the maximum grid size (deeper, richer snapshots)", max: 5 },
   // Paid in RETAINED fragments (not registers) — gives the slow fragment currency a real sink.
   { id: "engram", name: "Engram Bank", desc: "+1 Oracle hint per snapshot — paid in retained fragments", max: 4, currency: "retained" }
 ];

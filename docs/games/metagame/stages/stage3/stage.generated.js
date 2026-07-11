@@ -881,9 +881,12 @@ var CH = { [FILLED]: "#", [COLOR_B]: "@", [EMPTY]: "x", [UNKNOWN]: "." };
 var FROM_CH = { "#": FILLED, "@": COLOR_B, x: EMPTY, ".": UNKNOWN };
 var fillColor = (v) => v === FILLED ? FILLED : v === COLOR_B ? COLOR_B : EMPTY;
 var BODY_SOLVES = 20;
+var SIZE_RAMP_SOLVES = 14;
+var BASE_MAX_SIZE = 20;
 function sizeForRun(run, shop) {
-  const cap = 12 + Number((shop || {}).overclock || 0);
-  const ramp = 5 + Math.floor(Number(run.solvedCount || 0) * 7 / BODY_SOLVES);
+  const cap = BASE_MAX_SIZE + Number((shop || {}).overclock || 0);
+  const solved = Math.min(Number(run.solvedCount || 0), SIZE_RAMP_SOLVES);
+  const ramp = 5 + Math.floor(solved * (cap - 5) / SIZE_RAMP_SOLVES);
   return Math.max(5, Math.min(cap, ramp));
 }
 function corruptionForRun(run) {
@@ -1183,7 +1186,7 @@ var SHOP_UPGRADES = [
   { id: "throughput", name: "Throughput", desc: "+25% registers per solve", max: 5 },
   { id: "oracle", name: "Oracle", desc: "+1 hint (reveal a correct cell) per snapshot", max: 4 },
   { id: "parity", name: "Parity Unit", desc: "+1 integrity check (flag wrong fills) per snapshot", max: 3 },
-  { id: "overclock", name: "Overclock", desc: "+1 to the maximum grid size (deeper, richer snapshots)", max: 3 },
+  { id: "overclock", name: "Overclock", desc: "+1 to the maximum grid size (deeper, richer snapshots)", max: 5 },
   // Paid in RETAINED fragments (not registers) — gives the slow fragment currency a real sink.
   { id: "engram", name: "Engram Bank", desc: "+1 Oracle hint per snapshot — paid in retained fragments", max: 4, currency: "retained" }
 ];

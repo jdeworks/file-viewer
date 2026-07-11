@@ -34,7 +34,7 @@ const pr = progress(puzzle, board.marks);
 ok(pr.have === pr.need && pr.need > 0, "progress reaches have===need on a solved board");
 
 // Run sizing ramps with solvedCount and stays in the line-solvable range; puzzleForRun is seeded.
-ok(sizeForRun({ solvedCount: 0 }) === 5 && sizeForRun({ solvedCount: 8 }) <= 12 && sizeForRun({ solvedCount: 100 }) === 12, "size ramps 5→12 and clamps");
+ok(sizeForRun({ solvedCount: 0 }) === 5 && sizeForRun({ solvedCount: 8 }) <= 20 && sizeForRun({ solvedCount: 100 }) === 20, "size ramps 5→20 and clamps");
 const r = { seed: "s3-run0", index: 2, solvedCount: 0 };
 ok(JSON.stringify(puzzleForRun(r).solution) === JSON.stringify(puzzleForRun(r).solution), "puzzleForRun is deterministic for a run");
 
@@ -45,7 +45,7 @@ let pfFilled = 0;
 let pfWrong = 0;
 for (let y = 0; y < 6; y += 1) for (let x = 0; x < 6; x += 1) if (pf.marks[y][x] === FILLED) { pfFilled += 1; if (pf.puzzle.solution[y][x] !== FILLED) pfWrong += 1; }
 ok(pfFilled === 3 && pfWrong === 0, "prefetch fills exactly N correct cells");
-ok(sizeForRun({ solvedCount: 100 }, {}) === 12 && sizeForRun({ solvedCount: 100 }, { overclock: 3 }) === 15, "overclock lifts the grid-size cap");
+ok(sizeForRun({ solvedCount: 100 }, {}) === 20 && sizeForRun({ solvedCount: 100 }, { overclock: 5 }) === 25, "overclock lifts the grid-size cap toward 25×25");
 
 // Oracle hint cell is a correct, not-yet-filled cell; Parity flags only wrong fills.
 const hb = createBoard(makePuzzle("hint-seed", { width: 6, height: 6 }));
