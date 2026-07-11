@@ -127,10 +127,14 @@ finish with clean `dev` pushed safely to `origin`.
   and four-case responsive settings matrix, ending with `✓ all checks passed`. An earlier fresh
   Chromium process transiently SIGSEGVed before the embedded-privacy page opened; that suite passed
   immediately alone and twice in later full runs, so no privacy assertion was bypassed.
-- Final non-code steps only: capture durable YAMS facts and run non-destructive maintenance; commit
-  these checkpoint notes; classify/remove task-owned temporary material; require a clean worktree;
-  fetch and prove `origin/dev` is an ancestor; push `dev` normally; fetch again and verify local HEAD
-  equals `origin/dev`. Do not force-push, tag, publish, or delete the committed beta evidence.
+- YAMS CLI fallback captured the archive-bound, pinned-runtime, and preference/Media conventions,
+  then completed a non-destructive repo rescan plus pointer, consolidation, temporal-graph, quality,
+  and generalization maintenance. Four quality findings were repaired; no duplicate, contradiction,
+  dead-pointer, or temporal-chain retirement was needed.
+- Final Git steps only: commit this handoff update; classify/remove task-owned temporary material;
+  require a clean worktree; fetch and prove `origin/dev` is an ancestor; push `dev` normally; fetch
+  again and verify local HEAD equals `origin/dev`. Do not force-push, tag, publish, or delete the
+  committed beta evidence.
 
 ## Open Questions
 
