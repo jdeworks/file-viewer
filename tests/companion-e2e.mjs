@@ -19,6 +19,7 @@ import { tmpdir } from 'node:os';
 import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { once } from 'node:events';
+import { createHash } from 'node:crypto';
 import net from 'node:net';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -28,6 +29,7 @@ const BIN = join(companionDir, 'target', 'debug', 'companion');
 const PORT = 7700;
 const TOKEN = 'fvtest-e2e';
 const captureDir = process.env.FV_COMPANION_CAPTURE_DIR || '';
+const captureQuality = {};
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function capture(page, name) {
@@ -36,12 +38,52 @@ async function capture(page, name) {
   // Chromium can hand a screenshot request a half-committed iframe/drawer compositing surface on
   // loaded WSL runners (large black rectangles despite a correct live page). Settle two paints and
   // take an unpersisted warm-up capture before the evidence frame.
-  await page.waitForTimeout(200);
-  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() =>
-    requestAnimationFrame(resolve))));
-  await page.screenshot({ animations: 'disabled' });
-  await page.waitForTimeout(100);
-  await page.screenshot({ path: join(captureDir, `${name}.png`), animations: 'disabled' });
+  for (let attempt = 1; attempt <= 6; attempt++) {
+    await page.waitForTimeout(attempt === 1 ? 200 : 300);
+    await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() =>
+      requestAnimationFrame(resolve))));
+    await page.screenshot({ animations: 'disabled' }); // warm the compositor
+    await page.waitForTimeout(100);
+    const bytes = await page.screenshot({ animations: 'disabled' });
+    const nearBlackRatio = await page.evaluate(async (dataUrl) => {
+      const bitmap = await createImageBitmap(await (await fetch(dataUrl)).blob());
+      const canvas = document.createElement('canvas');
+      canvas.width = bitmap.width;
+      canvas.height = bitmap.height;
+      const context = canvas.getContext('2d', { willReadFrequently: true });
+      context.drawImage(bitmap, 0, 0);
+      bitmap.close();
+      const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
+      let nearBlack = 0;
+      for (let i = 0; i < pixels.length; i += 4) {
+        if (pixels[i] < 8 && pixels[i + 1] < 8 && pixels[i + 2] < 8 && pixels[i + 3] > 250) {
+          nearBlack++;
+        }
+      }
+      return nearBlack / (pixels.length / 4);
+    }, `data:image/png;base64,${bytes.toString('base64')}`);
+    // These captures are all light-theme UI. Ordinary text and the dark toast stay under 2%; a
+    // compositor failure paints 15–50% of the viewport pure black. Reject it before evidence exists.
+    if (nearBlackRatio < 0.06) {
+      const screenshot = `${name}.png`;
+      writeFileSync(join(captureDir, screenshot), bytes);
+      captureQuality[name] = {
+        screenshot,
+        screenshotSha256: createHash('sha256').update(bytes).digest('hex'),
+        nearBlackPixelRatio: nearBlackRatio,
+        acceptedAttempt: attempt,
+      };
+      writeFileSync(join(captureDir, 'capture-quality.json'), JSON.stringify({
+        schemaVersion: 1,
+        threshold: 0.06,
+        captures: captureQuality,
+      }, null, 2) + '\n');
+      return;
+    }
+    if (attempt === 6) {
+      throw new Error(`${name}: compositor stayed black after ${attempt} captures (${nearBlackRatio.toFixed(3)})`);
+    }
+  }
 }
 
 const portFree = () => new Promise((res) => {
@@ -339,13 +381,18 @@ async function main() {
     } else fail('connected Settings state is dishonest: ' + JSON.stringify(connectedUi));
     const tokenMask = await page.evaluate(() => {
       const input = document.querySelector('.companion-token-input');
-      return { type: input?.type, filter: input ? getComputedStyle(input).filter : null };
+      return {
+        type: input?.type,
+        filter: input ? getComputedStyle(input).filter : null,
+        value: input?.value,
+      };
     });
     await page.click('.companion-token-input');
     const tokenRevealed = await page.locator('.companion-token-input').getAttribute('type');
     await page.click('.companion-token-input');
-    if (tokenMask.type === 'password' && tokenMask.filter === 'none' && tokenRevealed === 'text') {
-      pass('token uses native password masking and explicit click-to-reveal without a blur compositor');
+    if (tokenMask.type === 'password' && tokenMask.filter === 'none'
+      && tokenMask.value === TOKEN && tokenRevealed === 'text') {
+      pass('auto-delivered token is current, natively masked, and explicitly click-to-reveal');
     } else fail('token masking/reveal state is unsafe or compositor-backed: ' + JSON.stringify({
       tokenMask, tokenRevealed,
     }));
@@ -1213,6 +1260,12 @@ async function main() {
     await page.locator('.ft-row.ft-file[data-full-path="fast-root/fast-only.txt"]').click();
     await page.waitForFunction(() => !window.__fv?.state?.sidebarNavigationPending
       && window.__fv.state.currentFolderPath === 'fast-only.txt');
+    const liveFolderFileWatcher = await page.evaluate(() => {
+      const newest = window.__trackedCompanionSources.at(-1);
+      return !!newest && newest.__closedByViewer === false;
+    });
+    if (liveFolderFileWatcher) pass('settled folder navigation retains a live current-file watcher');
+    else fail('final sidebar activation closed the current folder-file watcher');
     await page.evaluate((path) => {
       document.querySelector('.companion-reload-banner')?.remove();
       window.__staleCompanionSource?.onmessage?.({
@@ -1223,6 +1276,13 @@ async function main() {
     const staleWatcherBanner = await page.locator('.companion-reload-banner').count();
     if (staleWatcherBanner === 0) pass('closed A watcher cannot surface a reload banner after switching to B');
     else fail('stale watcher event leaked into the newly active root');
+    writeFileSync(fastFile, 'real external folder-file change');
+    const realFolderFileBanner = await page.waitForFunction(() =>
+      /changed on disk/i.test(document.querySelector('.companion-reload-banner')?.textContent || ''),
+    null, { timeout: 8000 }).then(() => true).catch(() => false);
+    if (realFolderFileBanner) pass('live folder-file watcher surfaces a real external disk change');
+    else fail('active folder-file watcher missed a real external change');
+    await page.evaluate(() => document.querySelector('.companion-reload-banner')?.remove());
 
     // Enable folder auto-watch, delay a refresh at /tree, then opt out while it is in flight. Both
     // file/folder EventSources must close, row actions disappear, and no later /file fetch may start.

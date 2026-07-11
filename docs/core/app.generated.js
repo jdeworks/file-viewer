@@ -8435,6 +8435,7 @@ function renderCompanionSettings(container) {
       const ok = await detectCompanion();
       if (!isEnabled()) return;
       setCompanionAvailable(ok);
+      tokenEl.value = getToken() || "";
       const connected = isCompanionAvailable();
       document.body.classList.toggle("companion-active", connected);
       summary.innerHTML = `Companion <span class="companion-status-dot ${connected ? "connected" : ""}">${connected ? "● connected" : "○ not found"}</span>`;
@@ -8465,6 +8466,7 @@ function renderCompanionSettings(container) {
     testBtn.disabled = false;
     if (!isEnabled()) return;
     setCompanionAvailable(ok);
+    tokenEl.value = getToken() || "";
     const connected = isCompanionAvailable();
     document.body.classList.toggle("companion-active", connected);
     summary.innerHTML = `Companion <span class="companion-status-dot ${connected ? "connected" : ""}">${connected ? "● connected" : "○ not found"}</span>`;
@@ -8690,6 +8692,10 @@ function activateCompanionSidebarRoot(sidebarRoot) {
   );
   if (companionFolderRoot) onFolderRootResolved();
   else onFolderRootCleared();
+  if (companionFolderRoot && state16.currentFolderPath && !state16.sidebarNavigationPending) {
+    const currentAbsPath = absolutePathForFile(state16.currentFolderPath);
+    if (currentAbsPath) startWatching(currentAbsPath);
+  }
   syncSaveBtn();
 }
 function captureOperationContext() {

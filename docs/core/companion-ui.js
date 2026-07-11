@@ -115,6 +115,13 @@ export function activateCompanionSidebarRoot(sidebarRoot) {
   );
   if (companionFolderRoot) onFolderRootResolved();
   else onFolderRootCleared();
+  // Combined-sidebar navigation starts the new file watcher in onFolderFileOpened, then performs a
+  // final root render/activation. The transient link clear above closes that watcher, so restore it
+  // from the settled root-relative path. Skip the pre-load activation while navigation is pending.
+  if (companionFolderRoot && state.currentFolderPath && !state.sidebarNavigationPending) {
+    const currentAbsPath = absolutePathForFile(state.currentFolderPath);
+    if (currentAbsPath) startWatching(currentAbsPath);
+  }
   syncSaveBtn();
 }
 

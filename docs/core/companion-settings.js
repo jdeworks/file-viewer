@@ -219,6 +219,7 @@ export function renderCompanionSettings(container) {
       const ok = await detectCompanion();
       if (!companionEnabled()) return; // the user opted out while /ping was in flight
       setCompanionAvailable(ok);
+      tokenEl.value = getToken() || ''; // /ping may have auto-delivered a new session token
       const connected = isCompanionAvailable();
       document.body.classList.toggle('companion-active', connected);
       summary.innerHTML = `Companion <span class="companion-status-dot ${connected ? 'connected' : ''}">${connected ? '● connected' : '○ not found'}</span>`;
@@ -247,6 +248,7 @@ export function renderCompanionSettings(container) {
     testBtn.disabled = false;
     if (!companionEnabled()) return; // ignore a stale result after opt-out
     setCompanionAvailable(ok);
+    tokenEl.value = getToken() || '';
     const connected = isCompanionAvailable();
     document.body.classList.toggle('companion-active', connected);
     summary.innerHTML = `Companion <span class="companion-status-dot ${connected ? 'connected' : ''}">${connected ? '● connected' : '○ not found'}</span>`;
