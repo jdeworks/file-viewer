@@ -642,6 +642,14 @@
 .apk-table { border-collapse: collapse; font-size: 13px; margin-bottom: 10px; width: 100%; } .apk-table td { padding: 3px 6px; border-bottom: 1px solid var(--border); }
 .apk-key { color: var(--fg-2); white-space: nowrap; width: 120px; }
 .apk-note { font-size: .8em; color: var(--fg-2); margin-top: 6px; } .apk-signer { font: 11px ui-monospace,monospace; }
+.apk-contents { margin-top: 16px; } .apk-contents h2 { margin: 0; font-size: 15px; }
+.apk-entry-table { border-collapse: collapse; width: 100%; font-size: 12px; }
+.apk-entry-table th, .apk-entry-table td { border-bottom: 1px solid var(--border); padding: 5px 6px; text-align: left; }
+.apk-entry-table th { color: var(--fg-2); font-size: 11px; }
+.apk-entry-size, .apk-entry-method { white-space: nowrap; width: 1%; }
+.apk-entry-open { border: 0; padding: 0; background: none; color: var(--accent); cursor: pointer; font: inherit; text-align: left; overflow-wrap: anywhere; }
+.apk-entry-open:hover, .apk-entry-open:focus-visible { text-decoration: underline; }
+.apk-entry-name { overflow-wrap: anywhere; } .apk-entry-blocked { display: block; margin-top: 2px; color: var(--fg-2); font-size: 10px; }
 /* ISO 9660 disc images */
 .iso-preview { padding: 12px; } .iso-header { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
 .iso-badge { background: #1e293b; color: #94a3b8; font: 700 11px ui-monospace,monospace; padding: 2px 8px; border-radius: 4px; } .iso-title { font-weight: 600; font-size: .95em; font-family: ui-monospace,monospace; }

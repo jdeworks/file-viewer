@@ -3,6 +3,7 @@
 // ZipCrypto entries can be unlocked locally through libarchive; AES-encrypted ZIP entries
 // are shown as unsupported instead of advertising a password field that cannot help.
 import { readZip, fmtSize, encryptedNames, listCentralDirectory, extractEntry, extractEncryptedEntry, verifyZipCryptoPassword, verifyZipCryptoPasswordFull } from './ziplib.js';
+import { createBoundedEntryOpener } from './safe-entry.js';
 import { intakeFromBytes } from '../../core/intake.js';
 import { loadTemplate, fill, esc, fillEach } from '../../core/template.js';
 
@@ -111,6 +112,21 @@ export async function render(intake, ctx = {}) {
   let passwordWaiter = null;
   const testName = supported.values().next().value;
   const testEntry = byName.get(testName);
+  let boundedOpener;
+  try {
+    boundedOpener = createBoundedEntryOpener({
+      intake,
+      records: fileMeta,
+      makeIntake: intakeFromBytes,
+      extract: async (record) => {
+        if (canOpen) return extractEntry(z.zip, record.name);
+        if (!record.encrypted) return extractEncryptedEntry(intake, record.name, null);
+        return null;
+      },
+    });
+  } catch (error) {
+    return { bodyHtml: '<div class="json-error"><strong>Archive exceeds safe browsing limits</strong><br>' + esc(error.message) + '</div>', hadUnsafe: false };
+  }
 
   async function openEntry(name, promptHost = null) {
     if (!name) return null;
@@ -122,17 +138,8 @@ export async function render(intake, ctx = {}) {
       const bytes = await extractEncryptedEntry(intake, name, password);
       return intakeFromBytes(bytes, name.split('/').pop() || name);
     }
-    if (canOpen) {
-      const bytes = await extractEntry(z.zip, name);
-      if (!bytes) return null;
-      return intakeFromBytes(bytes, name.split('/').pop() || name);
-    }
-    // JSZip can reject a mixed encrypted archive as a whole. libarchive can still open the
-    // clear entries without a passphrase, so keep those rows usable.
-    if (meta && !meta.encrypted) {
-      const bytes = await extractEncryptedEntry(intake, name, null);
-      return intakeFromBytes(bytes, name.split('/').pop() || name);
-    }
+    // Clear entries share the same size/ratio/session/depth/time bounds as APK-family browsing.
+    if ((canOpen || (meta && !meta.encrypted)) && !meta?.encrypted) return boundedOpener.open(name);
     return null;
   }
 

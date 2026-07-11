@@ -74,13 +74,18 @@ finish with clean `dev` pushed safely to `origin`.
 - Commercial ROM handling can contaminate evidence. Keep the fixture ignored, reselect it manually
   after reload/offline transitions, and delete emulator saves/browser contexts after each gate.
 
-## Resume checkpoint — 2026-07-11, baseline recorded
+## Resume checkpoint — 2026-07-11, APK browsing ready to commit
 
-- Clean `dev` and `origin/dev` both point to `906fd642c50a9dd782edb57707d11b6a5681e0bb`.
+- Baseline/plan commit: `8628bec2` from clean `dev`/`origin/dev` at `906fd642`.
 - Private fixture exists at `.example-files-internet/Super Mario Bros. (World).nes`, is 40,976 bytes,
-  and is ignored/untracked; never stage or retain derived output from it.
-- Planning and repository/YAMS guidance were read. Implementation begins with bounded APK browsing.
-- Remaining: all seven plan steps above.
+  and remains ignored; never stage or retain derived output from it.
+- APK/AAB/XAPK now retain the specialist summary and expose central-directory contents through the
+  normal intake path. ZIP and APK clear-entry opening share explicit entry/session/ratio/depth/time
+  bounds plus unsafe-path, duplicate, symlink, encryption, stale-request, and actual-size handling.
+- Green validation: `archive-entry-bounds`, package trust labels, archive metadata, syntax checks,
+  `git diff --check`, and the full `binary-types` browser area including APK→JSON opening and all
+  other binary/container viewers.
+- Next: commit this stage, then move ASCII Studio into filtered Media category scope.
 
 ## Open Questions
 

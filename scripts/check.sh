@@ -193,6 +193,7 @@ FULL_UNIT_TESTS=(
   tests/mobile-renderer-layout.test.mjs
   tests/core-layout-regressions.mjs
   tests/archivelib-paths.test.mjs
+  tests/archive-entry-bounds.test.mjs
   tests/archive-metadata.test.mjs
   tests/example-fixture-quality.test.mjs
   tests/rich-example-fixtures.test.mjs
