@@ -42,7 +42,14 @@ export const UPGRADES = [
     effect: (t, l) => {
       t.maxIntegrity = 100 + 8 * l;
       t.offBeatPenalty = +Math.max(0, 1 - 0.13 * l).toFixed(3);
-      t.bumpDamage = +Math.max(0, 1 - 0.13 * l).toFixed(3);
+      // Playtest fix (2026-07-11, "not winnable without damage"): rival lane-share BUMPS are a
+      // damage source the hazard-glyph winnability proof (winnable-human.test.mjs) never modeled —
+      // they're independent of the "safe lane" invariant, so even the omniscient autoSolve bot took
+      // damage on 6/8 rounds. The old softening curve (1 - 0.13*l) only reached ~0.09 at maxLevel 7,
+      // never truly 0 — a zero-damage clear was mathematically impossible at ANY Hull investment.
+      // Linear-to-exactly-0 at max level makes a genuine zero-damage clear achievable (earned via a
+      // maxed Hull, not the default outcome of a fresh run) — see tests/zero-damage.test.mjs.
+      t.bumpDamage = +Math.max(0, 1 - l / 7).toFixed(3);
       t.bumpSlow = +Math.max(0.1, 0.5 - 0.055 * l).toFixed(3);
     } },
   { id: 'signal', label: 'Signal', desc: 'One clean signal curve — more packets, longer read, tougher against static.',

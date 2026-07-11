@@ -376,7 +376,7 @@ var UPGRADES = [
     effect: (t, l) => {
       t.maxIntegrity = 100 + 8 * l;
       t.offBeatPenalty = +Math.max(0, 1 - 0.13 * l).toFixed(3);
-      t.bumpDamage = +Math.max(0, 1 - 0.13 * l).toFixed(3);
+      t.bumpDamage = +Math.max(0, 1 - l / 7).toFixed(3);
       t.bumpSlow = +Math.max(0.1, 0.5 - 0.055 * l).toFixed(3);
     }
   },
@@ -553,8 +553,15 @@ function rollSkill(rng) {
     optimalLaneProb: 0.55 + rng.float() * 0.4,
     // 0.55–0.95
     reactionLag: rng.int(0, 2),
-    topSpeed: 0.9 + rng.float() * 0.28,
-    // 0.90–1.18
+    // Playtest fix (2026-07-11, "visuals/pacing not usable, best margin needed"): this range used to
+    // be 0.90-1.18 — up to 18% FASTER than the player's own base 1.0, contradicting this module's own
+    // documented intent above ("sub-1 = slower than the player's base"). A fresh (zero-Engine-upgrade)
+    // player racing a rival rolled near the top of that range had no guaranteed pace advantage at all.
+    // Capped below 1.0 with a real, checked-in margin (see tests/rival-pacing.test.mjs): even the
+    // WORST-case roll (0.96) still leaves a fresh player's base pace (1.0) ahead by ~4%, growing with
+    // any Engine investment (shop.js tops out at topSpeed 1.28).
+    topSpeed: 0.82 + rng.float() * 0.14,
+    // 0.82–0.96 (always below the player's base 1.0)
     aggression: rng.float()
   };
 }
