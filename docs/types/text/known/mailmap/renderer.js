@@ -4,6 +4,8 @@
 //   Canonical Name <canonical@email> <old@email>
 //   Canonical Name <canonical@email> Old Name <old@email>
 //   <canonical@email> <old@email>
+import { describeCollectionCap } from '../../../../core/collection-cap.js';
+
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 const CSS = `
@@ -59,7 +61,9 @@ function parseMailmap(text) {
 }
 
 export function render(intake) {
-  const entries = parseMailmap(intake.text || '').slice(0, 30);
+  const allEntries = parseMailmap(intake.text || '');
+  const entries = allEntries.slice(0, 30);
+  const entryCap = describeCollectionCap(allEntries, entries);
 
   const rows = entries.map((e) => {
     return '<tr>'
@@ -75,15 +79,13 @@ export function render(intake) {
       + '</tr>';
   }).join('');
 
-  const totalEntries = parseMailmap(intake.text || '').length;
-
   const host = document.createElement('div');
   host.className = 'mailmap-doc mm-doc';
   host.innerHTML = `<style>${CSS}</style>`
     + '<div class="mm-head">'
     + '<span class="mm-badge">Git Mailmap</span>'
     + '<h2 class="mm-title">.mailmap</h2>'
-    + '<span class="mm-count">' + totalEntries + ' entr' + (totalEntries === 1 ? 'y' : 'ies') + '</span>'
+    + '<span class="mm-count">' + entryCap.label + ' entries</span>'
     + '</div>'
     + (entries.length
       ? '<table class="mm-table"><thead><tr><th>Canonical Identity</th><th>Maps From</th></tr></thead>'

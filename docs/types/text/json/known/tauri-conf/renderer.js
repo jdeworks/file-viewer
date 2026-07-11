@@ -1,3 +1,5 @@
+import { describeCollectionCap } from '../../../../../core/collection-cap.js';
+
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 const CSS = `
@@ -40,9 +42,11 @@ export function render(intake) {
   const targets = Array.isArray(targetsRaw) ? targetsRaw : typeof targetsRaw === 'string' ? [targetsRaw] : [];
 
   // Permissions (v2: app.security.permissions[])
-  const permissions = Array.isArray(data.app && data.app.security && data.app.security.permissions ? data.app.security.permissions : null)
-    ? data.app.security.permissions.slice(0, 8)
-    : [];
+  const allPermissions = Array.isArray(data.app && data.app.security && data.app.security.permissions ? data.app.security.permissions : null)
+    ? data.app.security.permissions : [];
+  const permissions = allPermissions
+    .slice(0, 8);
+  const permissionCap = describeCollectionCap(allPermissions, permissions);
 
   // Build config
   const distDir = (data.build && data.build.distDir) || (data.build && data.build.frontendDist) || '';
@@ -60,8 +64,11 @@ export function render(intake) {
     ? `<div class="tauri-sec"><h3>Bundle Targets</h3><div class="tauri-chips">${targets.map((t) => `<span class="tauri-chip">${esc(t)}</span>`).join('')}</div></div>`
     : '';
 
-  const windowsHtml = windows.length
-    ? `<div class="tauri-sec"><h3>Windows (${windows.length})</h3>${windows.slice(0, 5).map((w) => {
+  const shownWindows = windows
+    .slice(0, 5);
+  const windowCap = describeCollectionCap(windows, shownWindows);
+  const windowsHtml = shownWindows.length
+    ? `<div class="tauri-sec"><h3>Windows (${windowCap.label})</h3>${shownWindows.map((w) => {
         const title = w.title || w.label || '(window)';
         const meta = [w.width && w.height ? `${w.width}\xd7${w.height}` : '', w.url ? `url: ${w.url}` : ''].filter(Boolean).join(' \xb7 ');
         return `<div class="tauri-win"><div class="tauri-win-title">${esc(title)}</div>${meta ? `<div class="tauri-win-meta">${esc(meta)}</div>` : ''}</div>`;
@@ -69,7 +76,7 @@ export function render(intake) {
     : '';
 
   const permsHtml = permissions.length
-    ? `<div class="tauri-sec"><h3>Permissions (${permissions.length})</h3><div class="tauri-chips">${permissions.map((p) => `<span class="tauri-chip">${esc(typeof p === 'string' ? p : p.identifier || JSON.stringify(p))}</span>`).join('')}</div></div>`
+    ? `<div class="tauri-sec"><h3>Permissions (${permissionCap.label})</h3><div class="tauri-chips">${permissions.map((p) => `<span class="tauri-chip">${esc(typeof p === 'string' ? p : p.identifier || JSON.stringify(p))}</span>`).join('')}</div></div>`
     : '';
 
   const host = document.createElement('div');

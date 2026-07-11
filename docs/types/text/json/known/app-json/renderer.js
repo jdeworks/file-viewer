@@ -1,4 +1,6 @@
 // Enhanced Heroku app.json viewer.
+import { describeCollectionCap } from '../../../../../core/collection-cap.js';
+
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 const SENSITIVE = /SECRET|TOKEN|KEY|PASSWORD|API/i;
@@ -42,13 +44,17 @@ export function render(intake) {
   const stack = cfg.stack || '';
 
   // Buildpacks
-  const buildpacks = Array.isArray(cfg.buildpacks) ? cfg.buildpacks.slice(0, 8) : [];
+  const allBuildpacks = Array.isArray(cfg.buildpacks) ? cfg.buildpacks : [];
+  const buildpacks = allBuildpacks.slice(0, 8);
+  const buildpackCap = describeCollectionCap(allBuildpacks, buildpacks);
 
   // Formation (dyno types)
   const formation = cfg.formation ? Object.entries(cfg.formation) : [];
 
   // Addons
-  const addons = Array.isArray(cfg.addons) ? cfg.addons.slice(0, 10) : [];
+  const allAddons = Array.isArray(cfg.addons) ? cfg.addons : [];
+  const addons = allAddons.slice(0, 10);
+  const addonCap = describeCollectionCap(allAddons, addons);
 
   // Env vars
   const envEntries = cfg.env ? Object.entries(cfg.env) : [];
@@ -67,7 +73,7 @@ export function render(intake) {
       const url = typeof bp === 'string' ? bp : (bp.url || bp.id || JSON.stringify(bp));
       return '<span class="apj-pill">' + esc(url) + '</span>';
     }).join('');
-    body += '<div class="apj-sec"><h3>Buildpacks (' + buildpacks.length + ')</h3><div>' + pills + '</div></div>';
+    body += '<div class="apj-sec"><h3>Buildpacks (' + buildpackCap.label + ')</h3><div>' + pills + '</div></div>';
   }
 
   // Formation section
@@ -91,7 +97,7 @@ export function render(intake) {
       const plan = a.plan || a.id || JSON.stringify(a);
       return '<span class="apj-pill">' + esc(plan) + '</span>';
     }).join('');
-    body += '<div class="apj-sec"><h3>Add-ons (' + addons.length + ')</h3><div>' + pills + '</div></div>';
+    body += '<div class="apj-sec"><h3>Add-ons (' + addonCap.label + ')</h3><div>' + pills + '</div></div>';
   }
 
   // Env vars section

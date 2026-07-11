@@ -1,4 +1,5 @@
 import { loadGlobal, vendor } from '../../../../../core/script-loader.js';
+import { describeCollectionCap } from '../../../../../core/collection-cap.js';
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 const CSS = `
@@ -107,8 +108,11 @@ export async function render(intake) {
     ? `<div class="pubspec-sec"><h3>Assets (${assets.length})</h3><div class="pubspec-pills">${shown10assets.map((a) => `<span class="pubspec-pill">${esc(String(a))}</span>`).join('')}${assets.length > 10 ? `<span class="pubspec-pill">+${assets.length - 10} more</span>` : ''}</div></div>`
     : '';
 
-  const fontsHtml = fonts.length
-    ? `<div class="pubspec-sec"><h3>Fonts (${fonts.length})</h3><div class="pubspec-pills">${fonts.slice(0, 10).map((f) => `<span class="pubspec-pill">${esc(f.family || JSON.stringify(f))}</span>`).join('')}</div></div>`
+  const shownFonts = fonts
+    .slice(0, 10);
+  const fontCap = describeCollectionCap(fonts, shownFonts);
+  const fontsHtml = shownFonts.length
+    ? `<div class="pubspec-sec"><h3>Fonts (${fontCap.label})</h3><div class="pubspec-pills">${shownFonts.map((f) => `<span class="pubspec-pill">${esc(f.family || JSON.stringify(f))}</span>`).join('')}${fontCap.remainder ? `<span class="pubspec-pill">${fontCap.remainder}</span>` : ''}</div></div>`
     : '';
 
   const host = document.createElement('div');

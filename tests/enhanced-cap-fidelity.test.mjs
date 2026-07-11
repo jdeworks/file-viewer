@@ -61,12 +61,12 @@ const LEDGER = [
 
 const SUPPLEMENTAL = [
   ['json/known/tauri-conf/renderer.js', 'tauri-permissions', /permissions[\s\S]*?slice\(0,\s*8\)/],
-  ['json/known/tauri-conf/renderer.js', 'tauri-windows', /windows\.slice\(0,\s*5\)/],
+  ['json/known/tauri-conf/renderer.js', 'tauri-windows', /windows\s*\.\s*slice\(0,\s*5\)/],
   ['known/claude-md/renderer.js', 'claude-headers', /headers\.slice\(0,\s*12\)/],
   ['known/org-mode/renderer.js', 'org-links', /links\.slice\(0,\s*30\)/],
-  ['yaml/known/clang-tidy/renderer.js', 'clang-check-options', /checkOpts\.slice\(0,\s*10\)/],
+  ['yaml/known/clang-tidy/renderer.js', 'clang-check-options', /checkOpts\s*\.\s*slice\(0,\s*10\)/],
   ['yaml/known/moonrepo/renderer.js', 'moonrepo-object-projects', /Object\.entries\(projects\)\.slice\(0,\s*8\)/],
-  ['yaml/known/pubspec/renderer.js', 'pubspec-fonts', /fonts\.slice\(0,\s*10\)/],
+  ['yaml/known/pubspec/renderer.js', 'pubspec-fonts', /fonts\s*\.\s*slice\(0,\s*10\)/],
   ['yaml/known/semaphore-ci/renderer.js', 'semaphore-global-secrets', /globalSecrets\.slice\(0,\s*6\)/],
   ['toml/known/pyproject/renderer.js', 'pyproject-authors', /authors[\s\S]*?slice\(0,\s*3\)/],
   ['toml/known/pyproject/renderer.js', 'pyproject-maintainers', /maintainers[\s\S]*?slice\(0,\s*2\)/],

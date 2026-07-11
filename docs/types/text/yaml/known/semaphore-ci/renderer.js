@@ -1,4 +1,5 @@
 import { loadGlobal, vendor } from '../../../../../core/script-loader.js';
+import { describeCollectionCap } from '../../../../../core/collection-cap.js';
 
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
@@ -46,7 +47,9 @@ export async function render(intake) {
   const globalSecrets = globalJob.secrets || [];
 
   // Blocks
-  const blocks = Array.isArray(cfg.blocks) ? cfg.blocks.slice(0, 8) : [];
+  const allBlocks = Array.isArray(cfg.blocks) ? cfg.blocks : [];
+  const blocks = allBlocks.slice(0, 8);
+  const blockCap = describeCollectionCap(allBlocks, blocks);
 
   // Promotions
   const promotions = Array.isArray(cfg.promotions) ? cfg.promotions : [];
@@ -66,19 +69,21 @@ export async function render(intake) {
     }).join('');
     const moreEnv = globalEnvVars.length > 10
       ? `<div class="smc-more">+${globalEnvVars.length - 10} more variables</div>` : '';
-    const secretChips = globalSecrets.slice(0, 6).map((s) =>
+    const shownGlobalSecrets = globalSecrets.slice(0, 6);
+    const secretCap = describeCollectionCap(globalSecrets, shownGlobalSecrets);
+    const secretChips = shownGlobalSecrets.map((s) =>
       `<span class="smc-chip">${esc(typeof s === 'string' ? s : (s.name || JSON.stringify(s)))}</span>`
     ).join('');
     globalHtml = `<div class="smc-sec"><h3>Global Job Config</h3>
       <div class="smc-card">
         ${envRows}${moreEnv}
-        ${secretChips ? `<div style="margin-top:6px;">${secretChips}</div>` : ''}
+        ${secretChips ? `<div style="margin-top:6px;">${secretChips}<div class="smc-more">${secretCap.label}</div></div>` : ''}
       </div></div>`;
   }
 
   // --- Blocks ---
   const blocksHtml = blocks.length
-    ? `<div class="smc-sec"><h3>Blocks (${blocks.length}${cfg.blocks?.length > 8 ? '+' : ''})</h3>
+    ? `<div class="smc-sec"><h3>Blocks (${blockCap.label})</h3>
         ${blocks.map((block) => {
           const blockName = block.name || '(unnamed block)';
           const task = block.task || {};
@@ -121,7 +126,7 @@ export async function render(intake) {
   // --- Summary subtitle ---
   const subParts = [
     version ? `v${version.replace(/^v/, '')}` : null,
-    blocks.length ? `${blocks.length} block${blocks.length !== 1 ? 's' : ''}` : null,
+    allBlocks.length ? `${allBlocks.length} block${allBlocks.length !== 1 ? 's' : ''}` : null,
     promotions.length ? `${promotions.length} promotion${promotions.length !== 1 ? 's' : ''}` : null,
   ].filter(Boolean);
 

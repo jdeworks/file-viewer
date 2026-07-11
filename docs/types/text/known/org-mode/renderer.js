@@ -1,4 +1,5 @@
 import { chip, ensureKnownUiStyle, esc, issueList, sourceButton, sourcePreview, wireSourceLinks } from '../../../../core/known-ui.js';
+import { describeCollectionCap } from '../../../../core/collection-cap.js';
 
 const CSS = `
 .org-doc{padding:16px 18px;max-width:860px;margin:0 auto;font:14px/1.55 system-ui,sans-serif;color:var(--fg,#24292f)}
@@ -363,11 +364,13 @@ export function render(intake) {
   });
   if (resultEl) host.appendChild(resultEl);
 
-  const linkEl = makeListSection('Links', links.slice(0, 30), (li, item) => {
+  const shownLinks = links.slice(0, 30);
+  const linkCap = describeCollectionCap(links, shownLinks);
+  const linkEl = makeListSection('Links', shownLinks, (li, item) => {
     li.appendChild(chip(item.kind, item.kind === 'http' || item.kind === 'https' ? 'ok' : item.kind === 'file' ? 'warn' : 'info'));
     li.appendChild(sourceButton(item.label || item.target, item.line, 'Open link in source'));
     if (item.target) li.appendChild(chip(item.target, 'muted'));
-  });
+  }, linkCap.label);
   if (linkEl) host.appendChild(linkEl);
 
   const issueEl = issueList(issues, { title: 'Link Review' });
@@ -379,12 +382,12 @@ export function render(intake) {
   return { parentNode: host };
 }
 
-function makeListSection(title, items, renderRow) {
+function makeListSection(title, items, renderRow, countLabel = null) {
   if (!items.length) return null;
   const sec = document.createElement('div');
   sec.className = 'org-sec';
   const h3 = document.createElement('h3');
-  h3.textContent = `${title} (${items.length})`;
+  h3.textContent = `${title} (${countLabel || items.length})`;
   sec.appendChild(h3);
   const ul = document.createElement('ul');
   ul.className = 'org-list';

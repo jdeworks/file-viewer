@@ -1,4 +1,5 @@
 import { loadGlobal, vendor } from '../../../../../core/script-loader.js';
+import { describeCollectionCap } from '../../../../../core/collection-cap.js';
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 const CSS = `
@@ -46,7 +47,9 @@ export async function render(intake) {
     const m = c.match(/^([a-z][a-z0-9-]*?)[-*]/);
     if (m) categorySet.add(m[1]);
   }
-  const categories = [...categorySet].slice(0, 10);
+  const allCategories = [...categorySet];
+  const categories = allCategories.slice(0, 10);
+  const categoryCap = describeCollectionCap(allCategories, categories);
 
   const checksCountHtml = checksStr
     ? `<div class="clangtidy-checks-row">
@@ -56,7 +59,7 @@ export async function render(intake) {
     : '';
 
   const categoriesHtml = categories.length
-    ? `<div class="clangtidy-sec"><h3>Check Categories (enabled)</h3><div class="clangtidy-tags">${categories.map((c) => `<span class="clangtidy-tag">${esc(c)}</span>`).join('')}</div></div>`
+    ? `<div class="clangtidy-sec"><h3>Check Categories (${categoryCap.label})</h3><div class="clangtidy-tags">${categories.map((c) => `<span class="clangtidy-tag">${esc(c)}</span>`).join('')}</div></div>`
     : '';
 
   const checksSecHtml = checksStr
@@ -77,8 +80,11 @@ export async function render(intake) {
 
   // CheckOptions key-value pairs (up to 10)
   const checkOpts = Array.isArray(cfg.CheckOptions) ? cfg.CheckOptions : [];
-  const checkOptsHtml = checkOpts.length
-    ? `<div class="clangtidy-sec"><h3>Check Options</h3><div class="clangtidy-kv-grid">${checkOpts.slice(0, 10).map((opt) => {
+  const shownCheckOpts = checkOpts
+    .slice(0, 10);
+  const checkOptionCap = describeCollectionCap(checkOpts, shownCheckOpts);
+  const checkOptsHtml = shownCheckOpts.length
+    ? `<div class="clangtidy-sec"><h3>Check Options (${checkOptionCap.label})</h3><div class="clangtidy-kv-grid">${shownCheckOpts.map((opt) => {
         const key = esc(opt.key || opt.Key || '');
         const val = esc(String(opt.value ?? opt.Value ?? ''));
         return `<div class="clangtidy-kv-item"><span class="clangtidy-kv-key">${key}</span><span class="clangtidy-kv-val">${val}</span></div>`;
@@ -88,7 +94,7 @@ export async function render(intake) {
   const sub = [
     enabledChecks.length ? `${enabledChecks.length} check${enabledChecks.length !== 1 ? 's' : ''} enabled` : '',
     disabledChecks.length ? `${disabledChecks.length} disabled` : '',
-    categories.length ? `families: ${categories.slice(0, 4).join(', ')}${categories.length > 4 ? '…' : ''}` : '',
+    allCategories.length ? `families: ${allCategories.slice(0, 4).join(', ')}${allCategories.length > 4 ? '…' : ''}` : '',
   ].filter(Boolean).join(' · ') || 'clang-tidy linter config';
 
   const host = document.createElement('div');
