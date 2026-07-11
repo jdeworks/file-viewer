@@ -74,18 +74,23 @@ finish with clean `dev` pushed safely to `origin`.
 - Commercial ROM handling can contaminate evidence. Keep the fixture ignored, reselect it manually
   after reload/offline transitions, and delete emulator saves/browser contexts after each gate.
 
-## Resume checkpoint — 2026-07-11, APK browsing ready to commit
+## Resume checkpoint — 2026-07-11, ASCII Studio scope ready to commit
 
-- Baseline/plan commit: `8628bec2` from clean `dev`/`origin/dev` at `906fd642`.
+- Baseline/plan commit: `8628bec2`; bounded APK browsing commit: `c3bd632e`.
 - Private fixture exists at `.example-files-internet/Super Mario Bros. (World).nes`, is 40,976 bytes,
   and remains ignored; never stage or retain derived output from it.
-- APK/AAB/XAPK now retain the specialist summary and expose central-directory contents through the
+- APK/AAB/XAPK retain the specialist summary and expose central-directory contents through the
   normal intake path. ZIP and APK clear-entry opening share explicit entry/session/ratio/depth/time
   bounds plus unsafe-path, duplicate, symlink, encryption, stale-request, and actual-size handling.
-- Green validation: `archive-entry-bounds`, package trust labels, archive metadata, syntax checks,
+- APK green validation: `archive-entry-bounds`, package trust labels, archive metadata, syntax checks,
   `git diff --check`, and the full `binary-types` browser area including APK→JSON opening and all
   other binary/container viewers.
-- Next: commit this stage, then move ASCII Studio into filtered Media category scope.
+- ASCII Studio now exists only in the expanded Media category and follows post-filter visible Media
+  samples; it is absent from Image, folder overview, and after back navigation. The exhaustive
+  `examples-catalog` browser area passed all 1,115 samples, all 144 registered types, Media search
+  and kind-filter transitions, standalone image/JPEG conversion, zero console errors, and zero
+  off-origin requests.
+- Next: commit this stage, then repair and lock the EmulatorJS runtime dependency closure.
 
 ## Open Questions
 

@@ -240,8 +240,7 @@ export async function run(ctx) {
   if (sourcedBadgeOk.ok) pass('sourced badge visible on sample.png in examples gallery');
   else fail('sourced badge missing: ' + sourcedBadgeOk.reason);
 
-  // ASCII Studio is NOT attached to individual samples — no catalog entry should
-  // carry a per-sample tools link. It is reached only via the one global button.
+  // ASCII Studio is NOT attached to individual samples.
   const noPerSampleTool = await page.evaluate(async () => {
     const res = await fetch('examples/index.json');
     const examples = res.ok ? await res.json() : [];
@@ -254,26 +253,54 @@ export async function run(ctx) {
     fail('samples still carry ASCII Studio tool links: ' + JSON.stringify(noPerSampleTool));
   }
 
-  // One standalone gallery-level button opens the ASCII Studio (no ?sample=).
-  const asciiBtnOk = await page.evaluate(() => {
-    const link = document.querySelector('.ex-ascii-studio');
-    const perCard = document.querySelectorAll('.ex-tool-link').length;
-    if (!link) return { ok: false, reason: 'global ASCII Studio button not rendered' };
-    return {
-      ok: true,
+  // The Image category is still open from the sourced-badge check: the Media-only tool must not
+  // leak here, into folder view, or into the show-all view.
+  if ((await page.$$('.ex-ascii-studio')).length === 0) pass('ASCII Studio is absent from Image category');
+  else fail('ASCII Studio leaked into Image category');
+  await page.click('.ex-back-btn');
+  if ((await page.$$('.ex-ascii-studio')).length === 0) pass('ASCII Studio is absent from folder overview');
+  else fail('ASCII Studio leaked into folder overview');
+
+  const mediaCard = await page.$('.ex-folder-card[data-categories="Media"]');
+  if (!mediaCard) {
+    fail('Media category card missing');
+  } else {
+    await mediaCard.click();
+    await page.waitForSelector('.ex-ascii-studio');
+    const asciiBtnOk = await page.$eval('.ex-ascii-studio', (link) => ({
+      count: document.querySelectorAll('.ex-ascii-studio').length,
       href: link.getAttribute('href'),
       absolute: link.href,
       target: link.target,
       rel: link.rel,
-      perCard,
-    };
-  });
-  if (asciiBtnOk.ok && asciiBtnOk.href === 'tools/ascii-studio/index.html'
-      && asciiBtnOk.absolute.startsWith(origin + '/tools/ascii-studio/') && !asciiBtnOk.absolute.includes('?sample=')
-      && asciiBtnOk.target === '_blank' && asciiBtnOk.rel.includes('noopener') && asciiBtnOk.perCard === 0) {
-    pass('gallery exposes one standalone ASCII Studio button (no per-sample links)');
-  } else {
-    fail('gallery ASCII Studio button invalid: ' + JSON.stringify(asciiBtnOk));
+      aria: link.getAttribute('aria-label'),
+      visible: !link.closest('.ex-media-tools').hidden,
+    }));
+    if (asciiBtnOk.count === 1 && asciiBtnOk.visible
+        && asciiBtnOk.href === 'tools/ascii-studio/index.html'
+        && asciiBtnOk.absolute.startsWith(origin + '/tools/ascii-studio/')
+        && !asciiBtnOk.absolute.includes('?sample=') && asciiBtnOk.target === '_blank'
+        && asciiBtnOk.rel.includes('noopener') && /ASCII Studio/.test(asciiBtnOk.aria || '')) {
+      pass('Media category exposes one accessible standalone ASCII Studio button');
+    } else fail('Media ASCII Studio button invalid: ' + JSON.stringify(asciiBtnOk));
+
+    await page.fill('.ex-search', 'no-media-sample-can-match-this');
+    if (await page.isHidden('.ex-media-tools')) pass('ASCII Studio hides when search leaves no Media match');
+    else fail('ASCII Studio remained visible with zero Media search matches');
+    await page.fill('.ex-search', 'sample.mp4');
+    if (await page.isVisible('.ex-media-tools')) pass('ASCII Studio returns when a Media search match remains');
+    else fail('ASCII Studio did not return for a Media search match');
+    await page.click('.ex-filter-chip[data-filter="edit"]');
+    if (await page.isHidden('.ex-media-tools')) pass('ASCII Studio follows zero-match kind filter');
+    else fail('ASCII Studio remained visible after zero-match kind filter');
+    await page.click('.ex-filter-chip[data-filter="view"]');
+    if (await page.isVisible('.ex-media-tools')) pass('ASCII Studio returns for matching preview-only Media filter');
+    else fail('ASCII Studio did not return for matching preview-only filter');
+    await page.fill('.ex-search', '');
+    await page.click('.ex-filter-chip[data-filter="all"]');
+    await page.click('.ex-back-btn');
+    if ((await page.$$('.ex-ascii-studio')).length === 0) pass('ASCII Studio is removed on Media back navigation');
+    else fail('ASCII Studio remained after leaving Media category');
   }
 
   await page.goto(origin + '/tools/ascii-studio/index.html?sample=sample.png', { waitUntil: 'load' });

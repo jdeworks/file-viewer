@@ -133,18 +133,26 @@ function renderFilterBar(container) {
   }
   tools.appendChild(kindRow);
 
-  // One standalone entry to the ASCII Studio for the whole gallery — the studio
-  // opens with its own sample and accepts uploads/drag-drop, so it is not tied
-  // to any single catalog file (no per-sample tool links).
+  return tools;
+}
+
+// The studio is a Media-category tool, not a gallery-global action and not a per-sample link.
+// It accepts uploads/drag-drop after opening, so one category-level entry is enough.
+function renderAsciiStudio() {
+  const tools = document.createElement('div');
+  tools.className = 'ex-media-tools';
+  tools.dataset.category = 'Media';
+  tools.setAttribute('role', 'group');
+  tools.setAttribute('aria-label', 'Media tools');
   const asciiLink = document.createElement('a');
   asciiLink.className = 'ex-ascii-studio';
   asciiLink.href = 'tools/ascii-studio/index.html';
   asciiLink.target = '_blank';
   asciiLink.rel = 'noopener noreferrer';
   asciiLink.textContent = '🎨 Open ASCII Studio';
+  asciiLink.setAttribute('aria-label', 'Open ASCII Studio for media');
   asciiLink.title = 'Open the standalone ASCII art studio (image + webcam → ASCII).';
   tools.appendChild(asciiLink);
-
   return tools;
 }
 
@@ -172,6 +180,12 @@ function applyFilter(container) {
   }
   for (const group of container.querySelectorAll('.ex-group')) {
     group.hidden = !group.querySelector('.ex-file-btn:not([hidden])');
+  }
+  for (const tools of container.querySelectorAll('.ex-media-tools')) {
+    const category = tools.dataset.category || '';
+    const hasVisibleMatch = [...container.querySelectorAll('.ex-file-btn:not([hidden])')]
+      .some((button) => (button.dataset.categories || '').split('|').includes(category));
+    tools.hidden = !hasVisibleMatch;
   }
   // Hide super-sections whose grids have no visible cards
   for (const section of container.querySelectorAll('.ex-super-section')) {
@@ -394,6 +408,7 @@ function renderGallery(host, list, onPick) {
     row.className = 'ex-group-items';
     row.appendChild(renderFiles(cat));
     host.appendChild(renderFilterBar(host));
+    if (cat === 'Media') host.appendChild(renderAsciiStudio());
     host.appendChild(row);
     applyFilter(host);
   }
