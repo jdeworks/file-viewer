@@ -117,7 +117,7 @@ function renderCertInfo(cert, type, block, badgeClass, badgeLabel, isCSR) {
 
   const subjectStr = rdnToString(cert.subject);
   const issuerStr = rdnToString(cert.issuer);
-  const isSelfIssued = subjectStr === issuerStr;
+  const isSelfIssued = cert.selfIssued === true;
 
   let keyStr = '';
   if (cert.keyInfo) {

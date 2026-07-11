@@ -117,4 +117,27 @@ const reversedWindowHtml = await renderCertificate(
 assert.match(reversedWindowHtml, /Invalid\/unknown validity dates/);
 assert.doesNotMatch(reversedWindowHtml, /Within validity dates|Not yet within validity dates/);
 
+const tlv = (tag, ...parts) => {
+  const body = Buffer.concat(parts.map((part) => Buffer.from(part)));
+  assert.ok(body.length < 128, 'synthetic certificate helper only uses short DER lengths');
+  return Buffer.concat([Buffer.from([tag, body.length]), body]);
+};
+const nameWithBmpCn = (letter) => tlv(0x30,
+  tlv(0x31, tlv(0x30, tlv(0x06, [0x55, 0x04, 0x03]), tlv(0x1e, [0x00, letter.charCodeAt(0)]))),
+);
+const signatureAlgorithm = tlv(0x30, tlv(0x06, [0x2a, 0x03]));
+const differentUndecodedNamesDer = tlv(0x30,
+  tlv(0x30,
+    tlv(0x02, [0x01]), signatureAlgorithm, nameWithBmpCn('A'),
+    tlv(0x30, tlv(0x17, Buffer.from('260101000000Z')), tlv(0x17, Buffer.from('270101000000Z'))),
+    nameWithBmpCn('B'), tlv(0x30),
+  ),
+  signatureAlgorithm,
+);
+const differentNamesBase64 = differentUndecodedNamesDer.toString('base64').match(/.{1,64}/g).join('\n');
+const differentNamesHtml = await renderCertificate(
+  `-----BEGIN CERTIFICATE-----\n${differentNamesBase64}\n-----END CERTIFICATE-----\n`,
+);
+assert.doesNotMatch(differentNamesHtml, /Self-issued/);
+
 console.log('package and certificate trust-label tests passed');

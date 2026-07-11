@@ -18,8 +18,11 @@ const textBytes = (value) => new TextEncoder().encode(value);
 const pemChild = spawnSync(process.execPath, ['--input-type=module', '--eval', `
   import { parseCertificate } from './docs/types/text/pem/asn1.js';
   import { render } from './docs/types/text/pem/renderer.js';
+  import { extractMetadata } from './docs/types/text/pem/metadata.js';
   const der = Uint8Array.from([0x30, 0x08, 0x30, 0x84, 0x80, 0, 0, 0, 0, 0]);
   try { parseCertificate(der); process.exit(2); } catch (_) {}
+  const metadata = await extractMetadata({ bytes: der, text: '' });
+  if (metadata.type !== 'PEM/DER (unrecognized)') process.exit(4);
   const encoded = btoa(String.fromCharCode(...der));
   const text = '-----BEGIN CERTIFICATE-----\\n' + encoded + '\\n-----END CERTIFICATE-----\\n';
   const html = (await render({ text, bytes: new TextEncoder().encode(text), isBinary: false })).bodyHtml;

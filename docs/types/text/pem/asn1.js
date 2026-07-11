@@ -168,6 +168,14 @@ function toHex(bytes, maxBytes) {
   return s;
 }
 
+function equalBytes(left, right) {
+  if (!left || !right || left.length !== right.length) return false;
+  for (let index = 0; index < left.length; index++) {
+    if (left[index] !== right[index]) return false;
+  }
+  return true;
+}
+
 function parseSAN(extValueBytes) {
   const outer = readTLV(extValueBytes, 0);
   if (outer.tag !== TAG.SEQ) return [];
@@ -374,7 +382,9 @@ export function parseCertificate(der) {
     }
   }
 
-  return { version, serial, sigAlgName, issuer, notBefore, notAfter, subject, keyInfo, exts };
+  const selfIssued = issuerTlv?.tag === TAG.SEQ && subjectTlv?.tag === TAG.SEQ
+    && equalBytes(issuerTlv.raw, subjectTlv.raw);
+  return { version, serial, sigAlgName, issuer, notBefore, notAfter, subject, selfIssued, keyInfo, exts };
 }
 
 export function parsePemFile(text) {
