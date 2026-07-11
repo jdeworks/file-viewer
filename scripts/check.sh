@@ -196,6 +196,7 @@ FULL_UNIT_TESTS=(
   tests/mobile-renderer-layout.test.mjs
   tests/core-layout-regressions.mjs
   tests/preview-request-lifecycle.test.mjs
+  tests/enhanced-cap-fidelity.test.mjs
   tests/archivelib-paths.test.mjs
   tests/archive-entry-bounds.test.mjs
   tests/archive-metadata.test.mjs
