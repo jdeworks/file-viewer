@@ -55,10 +55,10 @@ export function render(intake) {
     const sevClass = severityClass(r.severity);
     const loc = r.file ? `${esc(r.file.split('/').pop())}${r.line ? ':' + esc(String(r.line)) : ''}` : '';
     return `<tr data-sev="${esc(r.severity)}" class="sarif-row-${sevClass}">
-      <td><span class="sarif-level sarif-sev-${sevClass}">${esc(r.severity)}</span></td>
-      <td><code class="sarif-rule">${esc(r.ruleId)}</code></td>
-      <td class="sarif-message" title="${esc(r.msg)}">${esc(r.msg.slice(0, 120))}${r.msg.length > 120 ? '…' : ''}</td>
-      <td class="sarif-location">${loc}</td>
+      <td data-label="Level"><span class="sarif-level sarif-sev-${sevClass}">${esc(r.severity)}</span></td>
+      <td data-label="Rule"><code class="sarif-rule">${esc(r.ruleId)}</code></td>
+      <td data-label="Message" class="sarif-message" title="${esc(r.msg)}">${esc(r.msg.slice(0, 120))}${r.msg.length > 120 ? '…' : ''}</td>
+      <td data-label="Location" class="sarif-location">${loc}</td>
     </tr>`;
   }).join('');
 

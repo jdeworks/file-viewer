@@ -221,7 +221,7 @@ try {
   assert.ok(sarifMobile.documentWidth <= sarifMobile.viewport + 1, JSON.stringify(sarifMobile));
   assert.ok(sarifMobile.wrapRight <= sarifMobile.viewport + 1 && sarifMobile.pagerRight <= sarifMobile.viewport + 1, JSON.stringify(sarifMobile));
   assert.ok(sarifMobile.pagerBottom <= sarifMobile.wrapTop + 1, JSON.stringify(sarifMobile));
-  assert.ok(sarifMobile.wrapScrollWidth > sarifMobile.wrapClientWidth, 'SARIF table overflow must be contained in its scroller');
+  assert.ok(sarifMobile.wrapScrollWidth <= sarifMobile.wrapClientWidth + 1, 'SARIF mobile cards must not require horizontal scrolling');
   assert.equal(sarifMobile.nextVisible, true);
   assertContrast(sarifMobile, 'SARIF dark error row');
   await capture('sarif-phone-dark');

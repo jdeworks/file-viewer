@@ -67,6 +67,25 @@ try {
   if (Object.values(midi).every(Boolean)) pass('mobile MIDI tracks use labeled cards with the full instrument visible');
   else fail('mobile MIDI layout failed: ' + JSON.stringify(midi));
 
+  await open('SARIF security scan results (demo)', 'sarif');
+  const sarifFrame = await (await page.$('#previewHost iframe')).contentFrame();
+  const sarif = await sarifFrame.evaluate(() => {
+    const wrap = document.querySelector('.sarif-table-wrap');
+    const rows = [...document.querySelectorAll('.sarif-table tbody tr')]
+      .filter((row) => getComputedStyle(row).display !== 'none');
+    const cells = [...document.querySelectorAll('.sarif-table td')];
+    const message = document.querySelector('.sarif-message');
+    return {
+      noHorizontalOverflow: wrap.scrollWidth <= wrap.clientWidth + 1,
+      cardRows: rows.length > 0 && rows.every((row) => getComputedStyle(row).display === 'grid'),
+      labeledCells: cells.length > 0 && cells.every((cell) => cell.dataset.label),
+      wrappedMessage: message && getComputedStyle(message).whiteSpace === 'normal'
+        && message.scrollWidth <= message.clientWidth + 1,
+    };
+  });
+  if (Object.values(sarif).every(Boolean)) pass('mobile SARIF findings use labeled cards with wrapped messages');
+  else fail('mobile SARIF layout failed: ' + JSON.stringify(sarif));
+
   await open('Sample.glb', 'gltf');
   await page.waitForSelector('#previewHost .stl-canvas');
   const mesh = await page.$eval('#previewHost .stl-bar', (bar) => {
