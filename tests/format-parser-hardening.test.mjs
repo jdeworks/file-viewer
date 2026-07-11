@@ -128,6 +128,26 @@ assert.doesNotMatch(streamingHtml, /4294967295 records/);
 
 const pad4 = (value) => Buffer.concat([value, Buffer.alloc((4 - value.length % 4) % 4)]);
 const ncName = (value) => Buffer.concat([u32(Buffer.byteLength(value)), pad4(Buffer.from(value))]);
+const variableCount = 101;
+const variableHeaderBytes = 32 + variableCount * 32;
+const manyVariables = [];
+for (let index = 0; index < variableCount; index++) {
+  manyVariables.push(Buffer.concat([
+    ncName(`v${index}`), u32(0), u32(0), u32(0), u32(1), u32(4), u32(variableHeaderBytes + index * 4),
+  ]));
+}
+const manyVariableNetcdf = Buffer.concat([
+  Buffer.from([0x43, 0x44, 0x46, 0x01]), u32(0),
+  u32(0), u32(0), u32(0), u32(0), u32(11), u32(variableCount),
+  ...manyVariables, Buffer.alloc(variableCount * 4),
+]);
+assert.equal(variableHeaderBytes, 3264);
+assert.equal(parseNetcdfHeader(manyVariableNetcdf).variables.length, variableCount);
+const manyVariableHtml = renderNetcdf({ bytes: manyVariableNetcdf, size: manyVariableNetcdf.length }).bodyHtml;
+assert.match(manyVariableHtml, /Variables \(101\)/);
+assert.match(manyVariableHtml, /Showing first 100 of 101 variables\./);
+assert.doesNotMatch(manyVariableHtml, /Parse error/);
+
 const numericAttribute = (name, type, count, value) => Buffer.concat([ncName(name), u32(type), u32(count), pad4(value)]);
 const numericNetcdf = Buffer.concat([
   Buffer.from([0x43, 0x44, 0x46, 0x01]), u32(0),

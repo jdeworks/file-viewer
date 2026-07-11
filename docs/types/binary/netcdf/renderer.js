@@ -34,7 +34,10 @@ body.fv-dark .badge-ver{background:#122b45;color:#9dccff;border-color:#315b80}
 body.fv-dark .td-type{color:#79c0ff}
 body.fv-dark .err{background:#35171a;color:#ff938a;border-color:#7d3439}
 body.fv-dark .nc4-note{background:#16351f;color:#a7e3b5;border-color:#397249}
+.nc-limit-note{padding:8px 12px;color:var(--fg2,#666);font-size:12px;border-bottom:1px solid var(--border,#e8e8e8)}
 `;
+
+const MAX_DISPLAY_VARIABLES = 100;
 
 export function render(intake) {
   const b = intake.bytes;
@@ -123,8 +126,11 @@ export function render(intake) {
   // Variables
   if (parsed.variables.length > 0) {
     html += `<div class="sec"><div class="sec-title">Variables (${parsed.variables.length})</div><div class="card">`;
+    if (parsed.variables.length > MAX_DISPLAY_VARIABLES) {
+      html += `<div class="nc-limit-note">Showing first ${MAX_DISPLAY_VARIABLES} of ${parsed.variables.length} variables.</div>`;
+    }
     html += `<table><thead><tr><th>Name</th><th>Type</th><th>Shape</th><th>Attributes</th></tr></thead><tbody>`;
-    for (const v of parsed.variables) {
+    for (const v of parsed.variables.slice(0, MAX_DISPLAY_VARIABLES)) {
       const shape = v.dims.length > 0 ? `(${v.dims.join(', ')})` : 'scalar';
       const attrSummary = v.attrs.map((a) => `${a.name}: ${a.value.slice(0, 30)}`).join('; ').slice(0, 80) || '—';
       html += `<tr>`;
