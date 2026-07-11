@@ -35,13 +35,15 @@ export function boardText(state, pathTiles, width = 40, height = 40) {
 }
 
 // Colour-classed span markup for the same grid. `overlay` (optional) paints placement/selection hints:
-//   { rings: Set<"x,y"> range-ring cells, foot: {x,y}|null placement footprint, footValid: bool }.
+//   { rings: Set<"x,y"> range-ring cells, foot: {x,y}|null placement footprint, footValid: bool,
+//     hits: Set<"x,y"> enemy cells hit this frame, fired: Set<"x,y"> tower cells that fired this frame }.
 // Returns an HTML string whose textContent === boardText(state, pathTiles).
 export function boardHTML(state, pathTiles, overlay = null, width = 40, height = 40) {
   const grid = charGrid(state, pathTiles, width, height);
   const cls = classGrid(state, pathTiles, width, height);
   const rings = overlay?.rings;
   const hits = overlay?.hits;
+  const fired = overlay?.fired;
   const foot = overlay?.foot;
   const footValid = overlay?.footValid !== false;
   const rows = [];
@@ -54,6 +56,7 @@ export function boardHTML(state, pathTiles, overlay = null, width = 40, height =
       let c = cls[y][x];
       if (rings && rings.has(`${x},${y}`)) c += " s4c-range";
       if (hits && hits.has(`${x},${y}`)) c += " s4c-hit";
+      if (fired && fired.has(`${x},${y}`)) c += " s4c-fire";
       if (foot && foot.x === x && foot.y === y) c += footValid ? " s4c-foot" : " s4c-foot-bad";
       if (c !== runCls) { flush(); runCls = c; }
       run += esc(grid[y][x]);

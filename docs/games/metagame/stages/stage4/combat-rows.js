@@ -36,13 +36,18 @@ export function towerStatLine(def, disclosed) {
 
 // Shop buttons: the wave-1 wall of 14 is gated to a per-map drip (availableTowers); boss mode shows all.
 // Each is a two-line button — name + cost, then the stat line — so choice is informed before buying.
-export function shopRows({ placeable, isBoss, mapIndex, selected, disclosed }) {
+// `cycles` (playtest: buttons stayed clickable + failed silently when unaffordable) disables a button
+// whose cost exceeds the player's current cycles — reusing the SAME disabled-button styling the Armory
+// screen already ships (ui-campaign.js canBuyArmory + .s4-maprow/.s4-armoryrow button:disabled CSS),
+// not a new visual language.
+export function shopRows({ placeable, isBoss, mapIndex, selected, disclosed, cycles = Infinity }) {
   const list = isBoss ? placeable : availableTowers(placeable, mapIndex);
   return list.map((type) => {
     const def = TOWER_TYPES[type];
     const btn = document.createElement('button');
     btn.type = 'button'; btn.dataset.tower = type;
     btn.className = `s4-shop-row${type === selected ? ' is-selected' : ''}`;
+    btn.disabled = Number(def.cost) > Number(cycles);
     const head = document.createElement('span');
     head.className = 's4-shop-head';
     head.textContent = `${def.glyph} ${type} · ${def.cost}c`;
@@ -74,9 +79,11 @@ export function rosterRows(state, disclosed = true) {
       wrap.append(tag);
     }
     if (level < 3) {
+      const cost = towerUpgradeCost(tower.type, level);
       const up = document.createElement('button');
       up.type = 'button'; up.dataset.upgradeId = tower.id;
-      up.textContent = `upgrade (${towerUpgradeCost(tower.type, level)})`;
+      up.disabled = cost > Number(state.cycles || 0);
+      up.textContent = `upgrade (${cost})`;
       wrap.append(up);
     } else if (!tower.fork && forksFor(tower.type).length) {
       for (const f of forksFor(tower.type)) {

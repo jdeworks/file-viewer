@@ -33,7 +33,7 @@ export function openTowerPopover({ root, anchor, state, tower, disclosed = true,
   el.className = 's4-popover';
   el.setAttribute('role', 'menu');
   el.setAttribute('aria-label', `${tower.type} actions`);
-  el.innerHTML = popoverHTML(tower, disclosed);
+  el.innerHTML = popoverHTML(tower, disclosed, state);
   if (refreshing) return el;
 
   root.appendChild(el);
@@ -54,9 +54,10 @@ export function openTowerPopover({ root, anchor, state, tower, disclosed = true,
   return el;
 }
 
-function popoverHTML(tower, disclosed) {
+function popoverHTML(tower, disclosed, state) {
   const def = TOWER_TYPES[tower.type] || {};
   const level = tower.level || 1;
+  const cycles = Number(state?.cycles || 0);
   const stat = [];
   if (Number(def.damage) > 0) {
     stat.push(`dmg ${def.damage}`);
@@ -71,7 +72,8 @@ function popoverHTML(tower, disclosed) {
     verbs += `<button type="button" class="s4-pop-btn" data-tower-id="${tower.id}">target ▸ ${presetLabel(tower.targetMode)}</button>`;
   }
   if (level < 3) {
-    verbs += `<button type="button" class="s4-pop-btn" data-upgrade-id="${tower.id}">upgrade (${towerUpgradeCost(tower.type, level)}c)</button>`;
+    const upCost = towerUpgradeCost(tower.type, level);
+    verbs += `<button type="button" class="s4-pop-btn" data-upgrade-id="${tower.id}"${upCost > cycles ? " disabled" : ""}>upgrade (${upCost}c)</button>`;
   } else if (!tower.fork && forksFor(tower.type).length) {
     for (const f of forksFor(tower.type)) {
       verbs += `<button type="button" class="s4-pop-btn s4-fork-btn" data-fork-id="${tower.id}" data-fork-choice="${f.id}" title="${escAttr(f.desc)}">⑂ ${f.label}</button>`;

@@ -17,35 +17,47 @@
 
 // Each map: { id, name, theme, waveCount, depth (L-system path depth 1–3), subBosses: {wave: id},
 //   startCycles, startIntegrity, glyph }. `depth` drives lsystem.buildPath so each map's path differs.
+//
+// startCycles doubled (2026-07-11 playtest fix): a real, cost-respecting simulation (placeTower/
+// upgradeTower under real cycle constraints, not the fortify() test helper which injects a maxed
+// army for free) showed the ORIGINAL numbers below failed even the tutorial map (Outer Shell) by
+// wave 4/5 with a simple, non-optimal single-tower-type defense — the existing winnable.test.mjs
+// only ever proved the combat math CAN clear hard waves given an already-maxed board, never that a
+// player could actually AFFORD to build one. Doubling every map's startCycles clears Outer Shell
+// with a real (not razor-thin) ~60% integrity margin under that same simple strategy; see
+// tests/economy.test.mjs. Deeper maps weren't individually re-tuned beyond this proportional scale —
+// a real player diversifying tower types (armor/shield counters) does meaningfully better than the
+// single-tower-type bot used to validate this, and the existing fortify()-based winnable.test.mjs
+// already independently proves the late-game numbers support a real winning strategy.
 export const MAPS = [
   {
     id: 'outer-shell', name: 'Outer Shell', glyph: '◇',
     theme: 'the thin perimeter where the recursion first leaks in',
-    waveCount: 5, depth: 1, startCycles: 240, startIntegrity: 100,
+    waveCount: 5, depth: 1, startCycles: 480, startIntegrity: 100,
     subBosses: { 5: 'shell-warden' },
   },
   {
     id: 'recursion-halls', name: 'Recursion Halls', glyph: '◆',
     theme: 'corridors that repeat the corridor you just left',
-    waveCount: 10, depth: 1, startCycles: 280, startIntegrity: 100,
+    waveCount: 10, depth: 1, startCycles: 560, startIntegrity: 100,
     subBosses: { 5: 'echo-sentinel', 10: 'hall-keeper' },
   },
   {
     id: 'fractal-atrium', name: 'Fractal Atrium', glyph: '✦',
     theme: 'an open court that folds back on itself at the edges',
-    waveCount: 15, depth: 2, startCycles: 340, startIntegrity: 110,
+    waveCount: 15, depth: 2, startCycles: 680, startIntegrity: 110,
     subBosses: { 8: 'mirror-prefect', 15: 'atrium-regent' },
   },
   {
     id: 'depth-cascade', name: 'Depth Cascade', glyph: '❈',
     theme: 'a stairwell that descends faster than you climb it',
-    waveCount: 25, depth: 2, startCycles: 420, startIntegrity: 120,
+    waveCount: 25, depth: 2, startCycles: 840, startIntegrity: 120,
     subBosses: { 10: 'cascade-anchor', 18: 'descent-marshal', 25: 'cascade-sovereign' },
   },
   {
     id: 'infinite-approach', name: 'Infinite Approach', glyph: '∞',
     theme: 'the last span before the loop — it never quite arrives',
-    waveCount: 35, depth: 3, startCycles: 520, startIntegrity: 140,
+    waveCount: 35, depth: 3, startCycles: 1040, startIntegrity: 140,
     subBosses: { 10: 'approach-vanguard', 20: 'event-horizon', 30: 'penultimate-knot', 35: 'final-bastion' },
   },
 ];

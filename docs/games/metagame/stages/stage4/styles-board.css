@@ -98,7 +98,9 @@
   flex: 1;
   color: #3a3a4d;
   cursor: crosshair;
-  font: 12px/0.95 ui-monospace, SFMono-Regular, Menlo, monospace;
+  /* --s4-cell-font is computed by s4fit.js from the available board-wrap space (playtest: a fixed
+     12px made cells "sub-fingertip, sub-glance" — hard to read the range ring or place precisely). */
+  font: var(--s4-cell-font, 12px)/0.95 ui-monospace, SFMono-Regular, Menlo, monospace;
   letter-spacing: 1px;
   margin: 0;
   min-height: 0;
@@ -136,7 +138,12 @@
 .s4-board .s4c-range { background: rgba(120, 200, 255, 0.14); }
 .s4-board .s4c-foot { background: rgba(126, 224, 160, 0.5); color: #06210f; font-weight: 700; }
 .s4-board .s4c-foot-bad { background: rgba(255, 80, 80, 0.5); color: #2a0606; font-weight: 700; }
-.s4-board .s4c-hit { background: rgba(255, 255, 255, 0.72); color: #1a0000; }
+.s4-board .s4c-hit { background: rgba(255, 255, 255, 0.85); color: #1a0000; font-weight: 700; }
+/* Tower muzzle flash (playtest: "no shoot animation, shooting is hard to notice") — a bright flash on
+   the FIRING tower's own cell, re-applied every frame it fires (same re-paint-driven flicker as
+   s4c-hit), so an attack now reads at BOTH ends: the tower flashes when it shoots, the target flashes
+   when it's hit. Distinct warm colour from the hit flash so the two don't read as the same event. */
+.s4-board .s4c-fire { background: rgba(255, 214, 64, 0.85); color: #2a1c00; font-weight: 700; }
 
 /* integrity-leak edge flash (feedback #5) — driven by shared mg-hit--bad on the board */
 .s4-board.mg-hit--bad { outline: 2px solid #ff4d4d; outline-offset: -2px; }
@@ -159,6 +166,10 @@
 .s4-shop-head { color: var(--s4-fg); font-size: 12px; font-weight: 700; }
 .s4-shop-row.is-selected .s4-shop-head { color: var(--s4-cyan); }
 .s4-shop-sub { color: #8a93b5; font-size: 10px; }
+/* Unaffordable (playtest: buttons stayed clickable + failed silently) — same disabled treatment as
+   the Armory screen's .s4-maprow/.s4-armoryrow button:disabled (styles.css), not a new visual language. */
+.s4-shop-row:disabled,
+.s4-roster-row button:disabled { cursor: not-allowed; opacity: 0.4; }
 
 /* ── stats popover (S8-B pattern) ─────────────────────────────────────────── */
 .s4-popover {
@@ -187,6 +198,7 @@
 .s4-pop-btn:hover { border-color: var(--s4-cyan); }
 .s4-pop-btn.s4-fork-btn { border-color: var(--s4-cyan); color: var(--s4-cyan); }
 .s4-pop-btn.s4-sell-btn { border-color: var(--s4-amber, #d08b2f); color: var(--s4-amber, #d08b2f); }
+.s4-pop-btn:disabled { cursor: not-allowed; opacity: 0.4; }
 
 @media (max-width: 760px) {
   .s4-stage { grid-template-columns: 1fr; }

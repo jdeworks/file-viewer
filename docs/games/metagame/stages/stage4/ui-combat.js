@@ -22,6 +22,7 @@ import { cellFromTextRect } from './combat-board-map.js';
 import { combatDisclosed } from './run4.js';
 import { openTowerPopover, closeTowerPopover, popoverTowerId } from './combat-popover.js';
 import { createCombatFx, playFx, fxBanner } from './combat-fx.js';
+import { installBoardFit } from './s4fit.js';
 
 const PLACEABLE = [
   'pulse_node', 'scatter_array', 'null_spike', 'attractor_field',
@@ -78,6 +79,10 @@ export function mountCombat({ host, state, controller, mode = 'map' }) {
   const board = root.querySelector('.s4-board');
   const boardWrap = root.querySelector('.s4-board-wrap');
   const cmdbar = root.querySelector('.s4-cmdbar');
+  // Board legibility (playtest: cells were "sub-fingertip, sub-glance" at a fixed 12px) — scale the
+  // board's font-size to fill the available board-wrap space, same "largest that fits" approach as
+  // stage3's s3fit.js, adapted for a fixed 40×40 monospace char grid instead of a CSS Grid.
+  const boardFit = installBoardFit(root, boardWrap);
   let selected = null;        // selected SHOP tower type (placement mode) — null until the player picks
   let selectedTowerId = null; // a selected PLACED tower (range ring + popover)
   let hoverCell = null;       // cell under the pointer (desktop) / last tapped (touch preview)
@@ -89,6 +94,7 @@ export function mountCombat({ host, state, controller, mode = 'map' }) {
   let alive = true;
   const fx = createCombatFx();
   let lastHits = null;
+  let lastFired = null; // tower muzzle-flash cells (mirrors lastHits — see combat-fx.js)
 
   const pathSeed = isBoss ? (state.recursion?.pointSetId || 'x') : mapPathSeed(state.recursion?.pointSetId, mapIndex);
   let pathDepth = isBoss ? 3 : mapPathDepth(map.depth, state.waveNumber || 1);
@@ -120,6 +126,7 @@ export function mountCombat({ host, state, controller, mode = 'map' }) {
   function currentOverlay() {
     const overlay = {};
     if (lastHits && lastHits.size) overlay.hits = lastHits;
+    if (lastFired && lastFired.size) overlay.fired = lastFired;
     if (selectedTowerId) {
       const t = (state.towers || []).find((x) => x.id === selectedTowerId);
       if (t) overlay.rings = rangeRing(t.type, { x: t.x, y: t.y });
@@ -144,7 +151,7 @@ export function mountCombat({ host, state, controller, mode = 'map' }) {
       : (state.waveActive
         ? 'hold the line — call the next wave early for bonus cycles'
         : preWaveHint(mapIndex, state.waveNumber || 1));
-    fields.shop.replaceChildren(...shopRows({ placeable: PLACEABLE, isBoss, mapIndex, selected, disclosed }));
+    fields.shop.replaceChildren(...shopRows({ placeable: PLACEABLE, isBoss, mapIndex, selected, disclosed, cycles: state.cycles }));
     fields.roster.replaceChildren(...rosterRows(state, disclosed));
     if (!isBoss) {
       fields.next.textContent = state.waveActive ? '' : `next: ${wavePreviewLine(mapIndex, state.waveNumber || 1)}`;
@@ -207,6 +214,7 @@ export function mountCombat({ host, state, controller, mode = 'map' }) {
       tick(state, dt, path.tiles);
       const deltas = fx.observe(state);
       lastHits = deltas.hitCells;
+      lastFired = deltas.firedCells;
       playFx(deltas, { board, bar: cmdbar, floatHost: boardWrap });
       checkpointWave();
       if (settleWave()) { raf = null; return; }
@@ -229,6 +237,7 @@ export function mountCombat({ host, state, controller, mode = 'map' }) {
       if (cleared) { stopLoop(); controller.rerender(); return true; }
       maybeReshape();
       lastHits = null;
+      lastFired = null;
       repaint();
       return true;
     }
@@ -346,7 +355,7 @@ export function mountCombat({ host, state, controller, mode = 'map' }) {
   repaint();
   return {
     repaint,
-    destroy() { alive = false; stopLoop(); closeTowerPopover(); root.remove(); },
+    destroy() { alive = false; stopLoop(); closeTowerPopover(); boardFit.destroy(); root.remove(); },
     hook: {
       advance(ms = 30000, dt = 100) {
         let t = 0;

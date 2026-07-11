@@ -339,6 +339,7 @@ function boardHTML(state, pathTiles, overlay = null, width = 40, height = 40) {
   const cls = classGrid(state, pathTiles, width, height);
   const rings = overlay?.rings;
   const hits = overlay?.hits;
+  const fired = overlay?.fired;
   const foot = overlay?.foot;
   const footValid = overlay?.footValid !== false;
   const rows = [];
@@ -354,6 +355,7 @@ function boardHTML(state, pathTiles, overlay = null, width = 40, height = 40) {
       let c = cls[y][x];
       if (rings && rings.has(`${x},${y}`)) c += " s4c-range";
       if (hits && hits.has(`${x},${y}`)) c += " s4c-hit";
+      if (fired && fired.has(`${x},${y}`)) c += " s4c-fire";
       if (foot && foot.x === x && foot.y === y) c += footValid ? " s4c-foot" : " s4c-foot-bad";
       if (c !== runCls) {
         flush();
@@ -850,7 +852,7 @@ var MAPS = [
     theme: "the thin perimeter where the recursion first leaks in",
     waveCount: 5,
     depth: 1,
-    startCycles: 240,
+    startCycles: 480,
     startIntegrity: 100,
     subBosses: { 5: "shell-warden" }
   },
@@ -861,7 +863,7 @@ var MAPS = [
     theme: "corridors that repeat the corridor you just left",
     waveCount: 10,
     depth: 1,
-    startCycles: 280,
+    startCycles: 560,
     startIntegrity: 100,
     subBosses: { 5: "echo-sentinel", 10: "hall-keeper" }
   },
@@ -872,7 +874,7 @@ var MAPS = [
     theme: "an open court that folds back on itself at the edges",
     waveCount: 15,
     depth: 2,
-    startCycles: 340,
+    startCycles: 680,
     startIntegrity: 110,
     subBosses: { 8: "mirror-prefect", 15: "atrium-regent" }
   },
@@ -883,7 +885,7 @@ var MAPS = [
     theme: "a stairwell that descends faster than you climb it",
     waveCount: 25,
     depth: 2,
-    startCycles: 420,
+    startCycles: 840,
     startIntegrity: 120,
     subBosses: { 10: "cascade-anchor", 18: "descent-marshal", 25: "cascade-sovereign" }
   },
@@ -894,7 +896,7 @@ var MAPS = [
     theme: "the last span before the loop — it never quite arrives",
     waveCount: 35,
     depth: 3,
-    startCycles: 520,
+    startCycles: 1040,
     startIntegrity: 140,
     subBosses: { 10: "approach-vanguard", 20: "event-horizon", 30: "penultimate-knot", 35: "final-bastion" }
   }
@@ -1809,7 +1811,7 @@ function towerStatLine(def, disclosed) {
   }
   return parts.join(" · ");
 }
-function shopRows({ placeable, isBoss, mapIndex, selected, disclosed }) {
+function shopRows({ placeable, isBoss, mapIndex, selected, disclosed, cycles = Infinity }) {
   const list = isBoss ? placeable : availableTowers(placeable, mapIndex);
   return list.map((type) => {
     const def = TOWER_TYPES[type];
@@ -1817,6 +1819,7 @@ function shopRows({ placeable, isBoss, mapIndex, selected, disclosed }) {
     btn.type = "button";
     btn.dataset.tower = type;
     btn.className = `s4-shop-row${type === selected ? " is-selected" : ""}`;
+    btn.disabled = Number(def.cost) > Number(cycles);
     const head = document.createElement("span");
     head.className = "s4-shop-head";
     head.textContent = `${def.glyph} ${type} · ${def.cost}c`;
@@ -1846,10 +1849,12 @@ function rosterRows(state, disclosed = true) {
       wrap.append(tag);
     }
     if (level < 3) {
+      const cost = towerUpgradeCost(tower.type, level);
       const up = document.createElement("button");
       up.type = "button";
       up.dataset.upgradeId = tower.id;
-      up.textContent = `upgrade (${towerUpgradeCost(tower.type, level)})`;
+      up.disabled = cost > Number(state.cycles || 0);
+      up.textContent = `upgrade (${cost})`;
       wrap.append(up);
     } else if (!tower.fork && forksFor(tower.type).length) {
       for (const f of forksFor(tower.type)) {
@@ -1910,7 +1915,7 @@ function openTowerPopover({ root, anchor, state, tower, disclosed = true, onClos
   el.className = "s4-popover";
   el.setAttribute("role", "menu");
   el.setAttribute("aria-label", `${tower.type} actions`);
-  el.innerHTML = popoverHTML(tower, disclosed);
+  el.innerHTML = popoverHTML(tower, disclosed, state);
   if (refreshing) return el;
   root.appendChild(el);
   position(el, anchor, root);
@@ -1936,9 +1941,10 @@ function openTowerPopover({ root, anchor, state, tower, disclosed = true, onClos
   }, 0);
   return el;
 }
-function popoverHTML(tower, disclosed) {
+function popoverHTML(tower, disclosed, state) {
   const def = TOWER_TYPES[tower.type] || {};
   const level = tower.level || 1;
+  const cycles = Number(state?.cycles || 0);
   const stat = [];
   if (Number(def.damage) > 0) {
     stat.push(`dmg ${def.damage}`);
@@ -1953,7 +1959,8 @@ function popoverHTML(tower, disclosed) {
     verbs += `<button type="button" class="s4-pop-btn" data-tower-id="${tower.id}">target ▸ ${presetLabel(tower.targetMode)}</button>`;
   }
   if (level < 3) {
-    verbs += `<button type="button" class="s4-pop-btn" data-upgrade-id="${tower.id}">upgrade (${towerUpgradeCost(tower.type, level)}c)</button>`;
+    const upCost = towerUpgradeCost(tower.type, level);
+    verbs += `<button type="button" class="s4-pop-btn" data-upgrade-id="${tower.id}"${upCost > cycles ? " disabled" : ""}>upgrade (${upCost}c)</button>`;
   } else if (!tower.fork && forksFor(tower.type).length) {
     for (const f of forksFor(tower.type)) {
       verbs += `<button type="button" class="s4-pop-btn s4-fork-btn" data-fork-id="${tower.id}" data-fork-choice="${f.id}" title="${escAttr(f.desc)}">⑂ ${f.label}</button>`;
@@ -1982,15 +1989,18 @@ function escAttr(s) {
 import { flash, shake, floatNum, banner } from "../../shared/feedback.js";
 function createCombatFx() {
   let prevHp = /* @__PURE__ */ new Map();
+  let prevFiredMs = /* @__PURE__ */ new Map();
   let prevCycles = null;
   let prevIntegrity = null;
   return {
     reset() {
       prevHp = /* @__PURE__ */ new Map();
+      prevFiredMs = /* @__PURE__ */ new Map();
       prevCycles = null;
       prevIntegrity = null;
     },
-    // Diff the live state against the last frame. Returns { hitCells:Set<"x,y">, cyclesGained, integrityLost }.
+    // Diff the live state against the last frame.
+    // Returns { hitCells:Set<"x,y">, firedCells:Set<"x,y">, cyclesGained, integrityLost }.
     observe(state) {
       const hitCells = /* @__PURE__ */ new Set();
       const nextHp = /* @__PURE__ */ new Map();
@@ -1999,12 +2009,22 @@ function createCombatFx() {
         const was = prevHp.get(e.id);
         if (was != null && e.hp < was) hitCells.add(`${Math.round(e.x)},${Math.round(e.y)}`);
       }
+      const firedCells = /* @__PURE__ */ new Set();
+      const nextFiredMs = /* @__PURE__ */ new Map();
+      for (const t of state.towers || []) {
+        nextFiredMs.set(t.id, t.lastFiredMs);
+        const was = prevFiredMs.get(t.id);
+        if (was !== void 0 && t.lastFiredMs != null && t.lastFiredMs !== was) {
+          firedCells.add(`${Math.round(t.x)},${Math.round(t.y)}`);
+        }
+      }
       const cyclesGained = prevCycles == null ? 0 : Math.max(0, Number(state.cycles || 0) - prevCycles);
       const integrityLost = prevIntegrity != null && Number(state.integrity || 0) < prevIntegrity;
       prevHp = nextHp;
+      prevFiredMs = nextFiredMs;
       prevCycles = Number(state.cycles || 0);
       prevIntegrity = Number(state.integrity || 0);
-      return { hitCells, cyclesGained, integrityLost };
+      return { hitCells, firedCells, cyclesGained, integrityLost };
     }
   };
 }
@@ -2018,6 +2038,66 @@ function playFx(deltas, refs) {
 }
 function fxBanner(host, text) {
   return banner(host, text);
+}
+
+// ../../docs/games/metagame/stages/stage4/s4fit.js
+var MIN_FONT = 9;
+var MAX_FONT = 22;
+var PROBE_SIZE = 100;
+var probe = null;
+var charWidthCache = /* @__PURE__ */ new Map();
+function charWidthRatio(fontFamily, lineHeight, letterSpacing) {
+  const key = `${fontFamily}|${lineHeight}|${letterSpacing}`;
+  if (charWidthCache.has(key)) return charWidthCache.get(key);
+  if (!probe) {
+    probe = document.createElement("span");
+    probe.style.cssText = "position:absolute; visibility:hidden; white-space:pre; top:-9999px; left:-9999px;";
+    probe.textContent = "0";
+    document.body.appendChild(probe);
+  }
+  probe.style.font = `${PROBE_SIZE}px ${fontFamily}`;
+  probe.style.lineHeight = String(lineHeight);
+  probe.style.letterSpacing = `${letterSpacing}px`;
+  const ratio = probe.getBoundingClientRect().width / PROBE_SIZE;
+  charWidthCache.set(key, ratio);
+  return ratio;
+}
+function computeFontSize(availW, availH, dims, charW, lineHeight, letterSpacing, minFont = MIN_FONT, maxFont = MAX_FONT) {
+  const byW = (availW - dims.cols * letterSpacing) / Math.max(1, dims.cols * charW);
+  const byH = availH / Math.max(1, dims.rows * lineHeight);
+  const size = Math.floor(Math.min(byW, byH));
+  return Math.max(minFont, Math.min(maxFont, size));
+}
+function installBoardFit(root, host, {
+  cols = 40,
+  rows = 40,
+  lineHeight = 0.95,
+  letterSpacing = 1,
+  fontFamily = "ui-monospace, SFMono-Regular, Menlo, monospace",
+  minFont = MIN_FONT,
+  maxFont = MAX_FONT
+} = {}) {
+  function measure() {
+    if (!host || !host.isConnected) return;
+    const cs = getComputedStyle(host);
+    const padX = (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0);
+    const padY = (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0);
+    const availW = Math.max(0, host.clientWidth - padX);
+    const availH = Math.max(0, host.clientHeight - padY);
+    if (availW <= 0 || availH <= 0) return;
+    const charW = charWidthRatio(fontFamily, lineHeight, letterSpacing);
+    const size = computeFontSize(availW, availH, { cols, rows }, charW, lineHeight, letterSpacing, minFont, maxFont);
+    root.style.setProperty("--s4-cell-font", `${size}px`);
+  }
+  let ro = null;
+  if (typeof ResizeObserver !== "undefined") {
+    ro = new ResizeObserver(() => measure());
+    ro.observe(host);
+  }
+  measure();
+  return { measure, destroy() {
+    ro?.disconnect();
+  } };
 }
 
 // ../../docs/games/metagame/stages/stage4/ui-combat.js
@@ -2084,6 +2164,7 @@ function mountCombat({ host, state, controller, mode = "map" }) {
   const board = root.querySelector(".s4-board");
   const boardWrap = root.querySelector(".s4-board-wrap");
   const cmdbar = root.querySelector(".s4-cmdbar");
+  const boardFit = installBoardFit(root, boardWrap);
   let selected = null;
   let selectedTowerId = null;
   let hoverCell = null;
@@ -2095,6 +2176,7 @@ function mountCombat({ host, state, controller, mode = "map" }) {
   let alive = true;
   const fx = createCombatFx();
   let lastHits = null;
+  let lastFired = null;
   const pathSeed = isBoss ? state.recursion?.pointSetId || "x" : mapPathSeed(state.recursion?.pointSetId, mapIndex);
   let pathDepth = isBoss ? 3 : mapPathDepth(map.depth, state.waveNumber || 1);
   let path = buildPath(pathSeed, pathDepth);
@@ -2122,6 +2204,7 @@ function mountCombat({ host, state, controller, mode = "map" }) {
   function currentOverlay() {
     const overlay = {};
     if (lastHits && lastHits.size) overlay.hits = lastHits;
+    if (lastFired && lastFired.size) overlay.fired = lastFired;
     if (selectedTowerId) {
       const t = (state.towers || []).find((x) => x.id === selectedTowerId);
       if (t) overlay.rings = rangeRing(t.type, { x: t.x, y: t.y });
@@ -2143,7 +2226,7 @@ function mountCombat({ host, state, controller, mode = "map" }) {
     fields.integrity.textContent = `${state.integrity}/${state.maxIntegrity || state.integrity}`;
     fields.progress.textContent = isBoss ? `${lock.coveredPoints}/${lock.totalPoints}` : `${Math.min(state.waveNumber || 1, map.waveCount)}/${map.waveCount}`;
     fields.hint.textContent = isBoss ? lock.hint : state.waveActive ? "hold the line — call the next wave early for bonus cycles" : preWaveHint(mapIndex, state.waveNumber || 1);
-    fields.shop.replaceChildren(...shopRows({ placeable: PLACEABLE, isBoss, mapIndex, selected, disclosed }));
+    fields.shop.replaceChildren(...shopRows({ placeable: PLACEABLE, isBoss, mapIndex, selected, disclosed, cycles: state.cycles }));
     fields.roster.replaceChildren(...rosterRows(state, disclosed));
     if (!isBoss) {
       fields.next.textContent = state.waveActive ? "" : `next: ${wavePreviewLine(mapIndex, state.waveNumber || 1)}`;
@@ -2212,6 +2295,7 @@ function mountCombat({ host, state, controller, mode = "map" }) {
       tick(state, dt, path.tiles);
       const deltas = fx.observe(state);
       lastHits = deltas.hitCells;
+      lastFired = deltas.firedCells;
       playFx(deltas, { board, bar: cmdbar, floatHost: boardWrap });
       checkpointWave();
       if (settleWave()) {
@@ -2254,6 +2338,7 @@ function mountCombat({ host, state, controller, mode = "map" }) {
       }
       maybeReshape();
       lastHits = null;
+      lastFired = null;
       repaint();
       return true;
     }
@@ -2461,6 +2546,7 @@ function mountCombat({ host, state, controller, mode = "map" }) {
       alive = false;
       stopLoop();
       closeTowerPopover();
+      boardFit.destroy();
       root.remove();
     },
     hook: {
