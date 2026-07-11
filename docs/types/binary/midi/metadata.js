@@ -6,10 +6,10 @@ export async function extractMetadata(intake) {
     fields: [
       { label: 'Format', value: 'Type ' + midi.format },
       { label: 'Tracks', value: String(midi.declaredTracks) },
-      { label: 'PPQN', value: String(midi.ppqn) },
-      { label: 'BPM', value: midi.bpmText },
+      { label: midi.timingLabel, value: midi.timingValue },
+      { label: midi.bpmLabel, value: midi.bpmText },
       { label: 'Time signature', value: midi.timeSignature },
-      { label: 'Duration', value: midi.durationSeconds.toFixed(2) + 's' },
+      { label: midi.durationLabel, value: midi.durationSeconds == null ? '—' : midi.durationSeconds.toFixed(2) + 's' },
       { label: 'Notes', value: String(midi.totalNotes) },
       { label: 'Unique pitches', value: String(midi.uniquePitches) },
     ],

@@ -7,6 +7,7 @@ import { extract as torrentMetadata } from '../docs/types/binary/torrent/metadat
 import { render as renderTorrent } from '../docs/types/binary/torrent/renderer.js';
 import { parseNetcdfHeader } from '../docs/types/binary/netcdf/parser.js';
 import { render as renderNetcdf } from '../docs/types/binary/netcdf/renderer.js';
+import { parseMidi, render as renderMidi } from '../docs/types/binary/midi/renderer.js';
 import { parseCertificate } from '../docs/types/text/pem/asn1.js';
 import { render as renderPem } from '../docs/types/text/pem/renderer.js';
 
@@ -40,6 +41,24 @@ assert.throws(() => parseCertificate(malformedDer));
 const malformedPem = `-----BEGIN CERTIFICATE-----\n${Buffer.from(malformedDer).toString('base64')}\n-----END CERTIFICATE-----\n`;
 assert.match((await renderPem({ text: malformedPem, bytes: textBytes(malformedPem), isBinary: false })).bodyHtml,
   /Could not parse certificate structure/);
+
+const midiChild = spawnSync(process.execPath, ['--input-type=module', '--eval', `
+  import { parseMidi, render } from './docs/types/binary/midi/renderer.js';
+  const bytes = Buffer.from('4d546864000000060000000101e04d54726b0000000700f08880808000', 'hex');
+  try { parseMidi({ bytes }); process.exit(2); } catch (_) {}
+  if (!/Preview failed/.test((await render({ bytes })).bodyHtml)) process.exit(3);
+`], { cwd: root, encoding: 'utf8', timeout: 1000 });
+assert.ifError(midiChild.error);
+assert.equal(midiChild.status, 0, midiChild.stderr || midiChild.stdout);
+const backwardVlqMidi = Buffer.from(
+  '4d546864000000060000000101e04d54726b0000000700f08880808000',
+  'hex',
+);
+assert.throws(() => parseMidi({ bytes: backwardVlqMidi }), /exceeds four bytes/);
+assert.match((await renderMidi({ bytes: backwardVlqMidi })).bodyHtml, /Preview failed/);
+const missingTrackMidi = Buffer.from('4d546864000000060000000101e0', 'hex');
+assert.throws(() => parseMidi({ bytes: missingTrackMidi }), /Missing MTrk chunk 1/);
+assert.match((await renderMidi({ bytes: missingTrackMidi })).bodyHtml, /Preview failed/);
 
 // Run the exact historical infinite-loop repros out of process so a regression terminates with a
 // focused one-second failure instead of hanging the complete check indefinitely.

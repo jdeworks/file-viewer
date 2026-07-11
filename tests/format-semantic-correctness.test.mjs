@@ -4,6 +4,7 @@ import { parseFitsCard, parseFitsHeader } from '../docs/types/text/fits/parser.j
 import { render as renderFits } from '../docs/types/text/fits/renderer.js';
 import { extractMetadata as fitsMetadata } from '../docs/types/text/fits/metadata.js';
 import { parseMidi, render as renderMidi } from '../docs/types/binary/midi/renderer.js';
+import { extractMetadata as midiMetadata } from '../docs/types/binary/midi/metadata.js';
 import { render as renderDicom } from '../docs/types/binary/dicom/renderer.js';
 
 const fitsCard = (keyword, body = '') => (keyword.padEnd(8) + body).padEnd(80, ' ').slice(0, 80);
@@ -69,6 +70,18 @@ const smpteHtml = (await renderMidi({ bytes: smpteMidi })).bodyHtml;
 assert.match(smpteHtml, /25 fps × 40<\/strong><span>SMPTE timing/);
 assert.match(smpteHtml, /—<\/strong><span>Tempo meta BPM/);
 assert.match(smpteHtml, /1\.00s<\/strong><span>Duration/);
+const smpteFields = Object.fromEntries((await midiMetadata({ bytes: smpteMidi })).fields
+  .map(({ label, value }) => [label, value]));
+assert.equal(smpteFields['SMPTE timing'], '25 fps × 40');
+assert.equal(smpteFields['Tempo meta BPM'], '—');
+assert.equal(smpteFields.Duration, '1.00s');
+
+const invalidSmpteMidi = Buffer.from(smpteMidi);
+invalidSmpteMidi.writeUInt16BE(0xe100, 12);
+const invalidSmpteFields = Object.fromEntries((await midiMetadata({ bytes: invalidSmpteMidi })).fields
+  .map(({ label, value }) => [label, value]));
+assert.equal(invalidSmpteFields['SMPTE timing'], 'Invalid');
+assert.equal(invalidSmpteFields.Duration, '—');
 
 // The -29 code is the 29.97 fps drop-frame rate, not integer 29 fps.
 const dropFrameMidi = Buffer.from(
@@ -78,6 +91,19 @@ const dropFrameMidi = Buffer.from(
 const dropFrame = parseMidi({ bytes: dropFrameMidi });
 assert.equal(dropFrame.timingValue, '29.97 drop-frame fps × 80');
 assert.ok(Math.abs(dropFrame.durationSeconds - 1.001) < 1e-12);
+
+const multiChannelMidi = Buffer.from(
+  '4d546864000000060000000101e04d54726b0000001200c00000903c4000c1200091304000ff2f00',
+  'hex',
+);
+const multiChannel = parseMidi({ bytes: multiChannelMidi });
+assert.equal(multiChannel.tracks[0].channel, '1, 2');
+assert.deepEqual(multiChannel.tracks[0].programs, [
+  { channel: 1, program: 0 }, { channel: 2, program: 32 },
+]);
+const multiChannelHtml = (await renderMidi({ bytes: multiChannelMidi })).bodyHtml;
+assert.match(multiChannelHtml, /data-label="Channel">1, 2/);
+assert.match(multiChannelHtml, /Acoustic Grand Piano \(ch 1\); Acoustic Bass \(ch 2\)/);
 
 const dicomElement = (group, element, vr, value) => {
   const data = Buffer.from(value);

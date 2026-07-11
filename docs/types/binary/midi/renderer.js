@@ -4,10 +4,15 @@ const u16 = (b, o) => (b[o] << 8) | b[o + 1];
 const u32 = (b, o) => ((b[o] << 24) | (b[o + 1] << 16) | (b[o + 2] << 8) | b[o + 3]) >>> 0;
 const str = (b, o, n) => String.fromCharCode(...b.slice(o, o + n));
 
-function vlq(b, p) {
-  let v = 0, n = 0;
-  do { if (p >= b.length) throw new Error('Unexpected end of MIDI track'); n = b[p++]; v = (v << 7) | (n & 0x7f); } while (n & 0x80);
-  return { v, p };
+function vlq(b, p, end = b.length) {
+  let v = 0;
+  for (let count = 0; count < 4; count++) {
+    if (p >= end) throw new Error('Unexpected end of MIDI variable-length value');
+    const n = b[p++];
+    v = v * 128 + (n & 0x7f);
+    if (!(n & 0x80)) return { v, p };
+  }
+  throw new Error('MIDI variable-length value exceeds four bytes');
 }
 
 function durationFromTempoMap(maxTick, tempos, ppqn) {
@@ -50,25 +55,43 @@ function decodeTimingDivision(division) {
 export function parseMidi(intake) {
   const b = intake.bytes || new Uint8Array();
   if (b.length < 14 || str(b, 0, 4) !== 'MThd') throw new Error('Missing MThd header');
+  const headerLength = u32(b, 4);
+  if (headerLength < 6 || headerLength > b.length - 8) throw new Error('Invalid MThd length');
   const format = u16(b, 8), declaredTracks = u16(b, 10), division = u16(b, 12);
+  if (format > 2) throw new Error(`Unsupported MIDI format ${format}`);
+  if (format === 0 && declaredTracks !== 1) throw new Error('MIDI format 0 requires exactly one track');
+  if (division === 0) throw new Error('Invalid MIDI timing division');
   const timing = decodeTimingDivision(division);
   const { ppqn, smpte } = timing;
   const tempos = [], signatures = [], pitches = new Set();
-  let totalNotes = 0, maxTick = 0, p = 8 + u32(b, 4), trackIndex = 0;
+  let totalNotes = 0, maxTick = 0, p = 8 + headerLength, trackIndex = 0;
   const tracks = [], trackTimelines = [];
-  while (p + 8 <= b.length && trackIndex < declaredTracks) {
-    if (str(b, p, 4) !== 'MTrk') break;
-    const end = p + 8 + u32(b, p + 4);
-    p += 8;
-    const t = { name: '', instrumentName: '', channel: null, program: null, notes: 0 };
+  while (trackIndex < declaredTracks) {
+    if (p + 8 > b.length || str(b, p, 4) !== 'MTrk') throw new Error(`Missing MTrk chunk ${trackIndex + 1}`);
+    const trackLength = u32(b, p + 4);
+    const trackStart = p + 8;
+    if (trackLength > b.length - trackStart) throw new Error(`MTrk chunk ${trackIndex + 1} exceeds file bounds`);
+    const end = trackStart + trackLength;
+    p = trackStart;
+    const t = { name: '', instrumentName: '', channel: null, program: null, programs: [], notes: 0 };
+    const trackChannels = new Set();
+    const trackPrograms = new Map();
     const trackTempos = [];
     let tick = 0, running = 0;
     while (p < end) {
-      const d = vlq(b, p); tick += d.v; p = d.p; maxTick = Math.max(maxTick, tick);
+      const d = vlq(b, p, end); tick += d.v; p = d.p; maxTick = Math.max(maxTick, tick);
+      if (p >= end) throw new Error('Missing MIDI event after delta time');
       let status = b[p++];
-      if (status < 0x80) { p--; status = running; } else if (status < 0xf0) running = status;
+      if (status < 0x80) {
+        if (!running) throw new Error('Running status used before a channel status');
+        p--; status = running;
+      } else if (status < 0xf0) {
+        running = status;
+      }
       if (status === 0xff) {
-        const type = b[p++], len = vlq(b, p); p = len.p;
+        if (p >= end) throw new Error('Missing MIDI meta-event type');
+        const type = b[p++], len = vlq(b, p, end); p = len.p;
+        if (len.v > end - p) throw new Error('MIDI meta-event exceeds track bounds');
         const data = b.slice(p, p + len.v); p += len.v;
         if (type === 0x03) t.name = new TextDecoder().decode(data);
         else if (type === 0x04) t.instrumentName = new TextDecoder().decode(data);
@@ -82,17 +105,32 @@ export function parseMidi(intake) {
         else if (type === 0x58 && data.length >= 2) signatures.push(data[0] + '/' + (1 << data[1]));
         continue;
       }
-      if (status === 0xf0 || status === 0xf7) { const len = vlq(b, p); p = len.p + len.v; continue; }
+      if (status === 0xf0 || status === 0xf7) {
+        const len = vlq(b, p, end);
+        if (len.v > end - len.p) throw new Error('MIDI SysEx event exceeds track bounds');
+        p = len.p + len.v;
+        continue;
+      }
+      if (status >= 0xf0) throw new Error(`Unsupported MIDI event status 0x${status.toString(16)}`);
       const op = status & 0xf0, ch = (status & 0x0f) + 1;
-      t.channel ||= ch;
-      const a = b[p++], needsTwo = ![0xc0, 0xd0].includes(op), c = needsTwo ? b[p++] : 0;
+      trackChannels.add(ch);
+      const needsTwo = ![0xc0, 0xd0].includes(op);
+      const dataLength = needsTwo ? 2 : 1;
+      if (dataLength > end - p) throw new Error('MIDI channel event exceeds track bounds');
+      const a = b[p++], c = needsTwo ? b[p++] : 0;
+      if (a >= 0x80 || (needsTwo && c >= 0x80)) throw new Error('Invalid MIDI channel data byte');
       if (op === 0x90 && c > 0) { totalNotes++; t.notes++; pitches.add(a); }
-      else if (op === 0xc0) t.program = a;
+      else if (op === 0xc0) trackPrograms.set(ch, a);
     }
+    const channels = [...trackChannels];
+    t.channel = channels.length === 1 ? channels[0] : (channels.join(', ') || null);
+    t.programs = [...trackPrograms].map(([channel, program]) => ({ channel, program }));
+    t.program = t.programs.length === 1 ? t.programs[0].program : null;
     tracks.push(t);
     trackTimelines.push({ maxTick: tick, tempos: trackTempos });
     p = end; trackIndex++;
   }
+  if (p !== b.length) throw new Error('Unexpected trailing MIDI data');
   const bpmValues = tempos.length
     ? tempos.map(({ micros }) => Math.round(60000000 / micros))
     : (ppqn ? [120] : []);
@@ -123,7 +161,9 @@ export async function render(intake, _ctx) {
   let midi;
   try { midi = parseMidi(intake); } catch (err) { return { bodyHtml: '<p class="midi-doc">Preview failed: ' + esc(err.message) + '</p>', hadUnsafe: false }; }
   const rows = midi.tracks.map((t, i) => {
-    const instrument = t.program != null ? GM[t.program] || ('Program ' + t.program) : t.instrumentName || '—';
+    const instrument = t.programs.length
+      ? t.programs.map(({ channel, program }) => `${GM[program] || ('Program ' + program)} (ch ${channel})`).join('; ')
+      : t.instrumentName || '—';
     return `<tr><td data-label="#">${i + 1}</td><td data-label="Name">${esc(t.name || 'Track ' + (i + 1))}</td>`
       + `<td data-label="Channel">${esc(t.channel || '—')}</td><td data-label="Instrument">${esc(instrument)}</td>`
       + `<td data-label="Notes">${t.notes}</td></tr>`;
