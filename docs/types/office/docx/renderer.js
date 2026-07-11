@@ -12,8 +12,8 @@ export async function convert(intake) {
   return mammoth.convertToHtml({ arrayBuffer: intake.bytes.slice().buffer });
 }
 
-export async function render(intake, _ctx) {
+export async function render(intake, ctx) {
   const host = document.createElement('div');
-  const { destroy } = await mountDocxEditor(intake, host);
+  const { destroy } = await mountDocxEditor(intake, host, ctx);
   return { parentNode: host, revoke: destroy };
 }

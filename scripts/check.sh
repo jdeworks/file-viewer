@@ -199,6 +199,7 @@ FULL_UNIT_TESTS=(
   tests/enhanced-cap-fidelity.test.mjs
   tests/csv-shape-fidelity.test.mjs
   tests/xlsx-fidelity.test.mjs
+  tests/docx-fidelity.test.mjs
   tests/archivelib-paths.test.mjs
   tests/archive-entry-bounds.test.mjs
   tests/archive-metadata.test.mjs

@@ -10,6 +10,7 @@
 // Text and basic structure survive; advanced Word features do not. A note in the UI says so.
 import { loadGlobal, vendor } from '../../../core/script-loader.js';
 import { downloadBlob } from '../../../core/exports.js';
+import { DOCX_MIME, docxContentIsDirty, originalDocxDownload, rebuiltDocxFilename } from './fidelity.js';
 
 let _tiptap = null;
 async function loadTiptap() {
@@ -33,9 +34,23 @@ async function libs() {
   return { mammoth, DOMPurify };
 }
 
-export async function mountDocxEditor(intake, host) {
+export async function mountDocxEditor(intake, host, ctx = {}) {
+  let editor = null;
+  let destroyed = false;
+  function destroy() {
+    if (destroyed) return;
+    destroyed = true;
+    try { editor?.destroy(); } catch { /* partially initialized/stale editor */ }
+    editor = null;
+  }
+  // Register before conversion: a superseding preview owns both the initial Mammoth work and any
+  // later lazy TipTap import. The renderer also returns this same function; request cleanup
+  // identity-deduplicates it.
+  ctx?.onCleanup?.(destroy);
   const { mammoth, DOMPurify } = await libs();
+  if (destroyed || ctx?.signal?.aborted) throw new DOMException('Preview superseded', 'AbortError');
   const result = await mammoth.convertToHtml({ arrayBuffer: intake.bytes.slice().buffer });
+  if (destroyed || ctx?.signal?.aborted) throw new DOMException('Preview superseded', 'AbortError');
   DOMPurify.removed = [];
   // mammoth normally embeds images as data: URIs, but a *linked* (not embedded, TargetMode=
   // "External") image relationship in the .docx is passed through as a plain <img src="http(s)://…">
@@ -54,7 +69,7 @@ export async function mountDocxEditor(intake, host) {
     '$1src=""',
   );
   const hadUnsafe = DOMPurify.removed.length > 0;
-  const base = (intake.filename || 'document').replace(/\.[^.]+$/, '');
+  const original = originalDocxDownload(intake);
 
   host.className = 'dx-doc';
   host.innerHTML = '';
@@ -63,21 +78,25 @@ export async function mountDocxEditor(intake, host) {
   bar.className = 'dx-bar';
   const info = document.createElement('span');
   info.className = 'dx-info';
-  info.textContent = 'Read-only';
+  info.textContent = 'Read-only · unchanged';
   const editBtn = document.createElement('button');
   editBtn.className = 'dx-edit';
   editBtn.textContent = 'Edit';
-  const dl = document.createElement('button');
-  dl.className = 'dx-download';
-  dl.textContent = 'Download .docx';
-  bar.append(info, editBtn, dl);
+  const originalDownload = document.createElement('button');
+  originalDownload.className = 'dx-download-original';
+  originalDownload.textContent = 'Download original';
+  originalDownload.title = 'Download the exact original bytes without conversion';
+  const rebuiltDownload = document.createElement('button');
+  rebuiltDownload.className = 'dx-download dx-download-rebuilt';
+  rebuiltDownload.textContent = 'Download rebuilt .docx';
+  rebuiltDownload.title = 'Build a simplified Word document from changed semantic HTML';
+  rebuiltDownload.disabled = true;
+  bar.append(info, editBtn, originalDownload, rebuiltDownload);
   host.appendChild(bar);
 
   const note = document.createElement('div');
   note.className = 'dx-note';
-  note.hidden = true;
-  note.innerHTML = 'Editing an HTML view of the document. Export re-creates a Word file with text, '
-    + 'headings, bold/italic, lists and tables — page layout, fonts, footnotes and comments are not preserved.';
+  note.textContent = 'This reading view is converted to semantic HTML. Page layout, fonts, headers/footers, footnotes, comments, and complex numbering may be omitted. “Download original” is exact; the rebuilt copy preserves edited text and basic structure only.';
   host.appendChild(note);
 
   // Read-only article (the existing faithful preview). Hidden while editing.
@@ -92,27 +111,96 @@ export async function mountDocxEditor(intake, host) {
   editHost.hidden = true;
   host.appendChild(editHost);
 
-  let editor = null;
   let editing = false;
+  let entering = null;
+  let baselineHtml = null;
+  let dirty = false;
+  let building = false;
+  let userChanged = false;
+
+  const isLive = () => !destroyed && !ctx?.signal?.aborted && host.isConnected;
+  function refreshState() {
+    dirty = userChanged && editor && baselineHtml != null
+      ? docxContentIsDirty(baselineHtml, editor.getHTML())
+      : false;
+    rebuiltDownload.disabled = !dirty || building;
+    info.classList.toggle('dx-modified', dirty);
+    if (editing) info.textContent = dirty ? 'Editing · changed' : 'Editing · unchanged';
+    else info.textContent = dirty ? 'Edited · rebuilt copy available' : 'Read-only · unchanged';
+  }
+
+  async function testCheckpoint(stage) {
+    const hook = globalThis.__fvDocxEditorTestHook;
+    if (typeof hook === 'function') await hook({ stage, filename: intake.filename, signal: ctx?.signal });
+  }
+
+  editHost.addEventListener('beforeinput', () => {
+    // TipTap plugins can finish normalizing imported HTML after onCreate. Capture the definitive
+    // baseline at the last possible moment before the first user mutation, never after it.
+    if (!userChanged && editor) baselineHtml = editor.getHTML();
+    userChanged = true;
+  });
+  editHost.addEventListener('input', () => {
+    userChanged = true; // fallback for browser/input methods that omit beforeinput
+    refreshState();
+  });
+  editHost.addEventListener('keydown', (event) => {
+    if ((event.ctrlKey || event.metaKey) && ['z', 'y'].includes(event.key.toLowerCase())) {
+      // History commands update the ProseMirror document inside this key event; mark it as a user
+      // operation before TipTap's onUpdate callback compares against the normalized baseline.
+      userChanged = true;
+    }
+  });
 
   async function enterEdit() {
-    injectTiptapCss();
-    if (!editor) {
-      const { Editor, StarterKit, TableKit } = await loadTiptap();
-      editor = new Editor({
-        element: editHost,
-        extensions: [StarterKit, TableKit.configure({ table: { resizable: true } })],
-        content: article.innerHTML,   // HTML in; TipTap parses it to a PM doc
-      });
-    }
-    editing = true;
-    article.hidden = true;
-    editHost.hidden = false;
-    note.hidden = false;
-    editBtn.classList.add('active');
-    editBtn.textContent = 'Done';
-    info.textContent = 'Editing';
-    editor.commands.focus();
+    if (entering) return entering;
+    entering = (async () => {
+      editBtn.disabled = true;
+      editBtn.textContent = 'Loading editor…';
+      injectTiptapCss();
+      if (!editor) {
+        await testCheckpoint('before-tiptap-load');
+        const { Editor, StarterKit, TableKit } = await loadTiptap();
+        await testCheckpoint('before-tiptap-mount');
+        if (!isLive()) {
+          await testCheckpoint('tiptap-mount-skipped');
+          return;
+        }
+        let resolveCreated;
+        const created = new Promise((resolve) => { resolveCreated = resolve; });
+        const nextEditor = new Editor({
+          element: editHost,
+          extensions: [StarterKit, TableKit.configure({ table: { resizable: true } })],
+          content: article.innerHTML,
+          onUpdate: () => { if (isLive() && userChanged) refreshState(); },
+          onCreate: ({ editor: createdEditor }) => {
+            baselineHtml = createdEditor.getHTML();
+            userChanged = false;
+            dirty = false;
+            resolveCreated();
+          },
+        });
+        editor = nextEditor;
+        await created;
+        if (!isLive()) { nextEditor.destroy(); editor = null; return; }
+      }
+      if (!isLive()) return;
+      editing = true;
+      article.hidden = true;
+      editHost.hidden = false;
+      editBtn.classList.add('active');
+      editBtn.textContent = 'Done';
+      refreshState();
+      editor.commands.focus();
+    })().catch((error) => {
+      if (isLive()) info.textContent = 'Editor failed: ' + error.message;
+    }).finally(() => {
+      entering = null;
+      if (!isLive()) return;
+      editBtn.disabled = false;
+      editBtn.textContent = editing ? 'Done' : 'Edit';
+    });
+    return entering;
   }
 
   function exitEdit() {
@@ -123,26 +211,38 @@ export async function mountDocxEditor(intake, host) {
     article.hidden = false;
     editBtn.classList.remove('active');
     editBtn.textContent = 'Edit';
-    info.textContent = 'Edited (unsaved)';
+    refreshState();
   }
 
-  editBtn.addEventListener('click', () => { editing ? exitEdit() : enterEdit(); });
+  editBtn.addEventListener('click', () => { if (editing) exitEdit(); else void enterEdit(); });
 
-  dl.addEventListener('click', async () => {
-    const htmlForExport = (editing && editor) ? editor.getHTML() : article.innerHTML;
-    dl.disabled = true;
-    const prev = dl.textContent;
-    dl.textContent = 'Building…';
+  originalDownload.addEventListener('click', () => {
+    downloadBlob(original.bytes, original.filename, original.mime);
+  });
+
+  rebuiltDownload.addEventListener('click', async () => {
+    refreshState();
+    if (!dirty || building) return;
+    const htmlForExport = editor?.getHTML() || article.innerHTML;
+    building = true;
+    refreshState();
+    rebuiltDownload.textContent = 'Building…';
     try {
       const { buildDocx } = await import('../../../core/docx-export.js');
       const blob = await buildDocx(htmlForExport);
-      downloadBlob(blob, base + '-edited.docx', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+      if (!isLive()) return;
+      downloadBlob(blob, rebuiltDocxFilename(intake.filename), DOCX_MIME);
     } catch (err) {
-      info.textContent = 'Export failed: ' + err.message;
+      if (isLive()) info.textContent = 'Export failed: ' + err.message;
     } finally {
-      dl.disabled = false; dl.textContent = prev;
+      building = false;
+      if (isLive()) {
+        rebuiltDownload.textContent = 'Download rebuilt .docx';
+        refreshState();
+      }
     }
   });
 
-  return { host, hadUnsafe, destroy() { try { editor?.destroy(); } catch {} } };
+  refreshState();
+  return { host, hadUnsafe, destroy };
 }

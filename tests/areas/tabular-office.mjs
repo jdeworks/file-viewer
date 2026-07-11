@@ -1,4 +1,5 @@
 import { runXlsxFidelity } from './xlsx-fidelity.mjs';
+import { runDocxFidelity } from './docx-fidelity.mjs';
 
 export async function run(ctx) {
   const { page, origin, frameOf, pass, fail, openExample } = ctx;
@@ -276,20 +277,30 @@ export async function run(ctx) {
   if (/Hello, File Viewer/.test(dh1)) pass('Word: docx converted to HTML (h1)'); else fail('docx h1: ' + dh1);
   const strong = await page.$$eval('#previewHost .dx-view strong, #previewHost .dx-view b', (els) => els.length);
   if (strong > 0) pass('Word: formatting preserved (bold)'); else fail('no bold run in docx');
+  const docxInitial = await page.evaluate(() => ({
+    original: !document.querySelector('#previewHost .dx-download-original')?.disabled,
+    rebuiltDisabled: document.querySelector('#previewHost .dx-download-rebuilt')?.disabled,
+    warningVisible: getComputedStyle(document.querySelector('#previewHost .dx-note')).display !== 'none',
+  }));
+  if (docxInitial.original && docxInitial.rebuiltDisabled && docxInitial.warningVisible) pass('Word: exact original available while rebuilt copy starts disabled with warning');
+  else fail('docx initial fidelity state: ' + JSON.stringify(docxInitial));
   // Edit toggle mounts TipTap (ProseMirror) over the HTML.
   await page.click('#previewHost .dx-edit');
   await page.waitForSelector('#previewHost .dx-edit-host .ProseMirror', { timeout: 12000 });
   const editing = await page.$eval('#previewHost .dx-edit', (e) => e.classList.contains('active'));
   const pmText = await page.$eval('#previewHost .ProseMirror', (e) => e.textContent);
   if (editing && /Hello, File Viewer/.test(pmText)) pass('Word: Edit toggle mounts TipTap with the document content'); else fail('docx edit: editing=' + editing + ' text=' + pmText.slice(0, 60));
-  // Type into the editor, then export → a real .docx download.
+  if (await page.$eval('#previewHost .dx-download-rebuilt', (button) => button.disabled)) pass('Word: opening editor alone does not enable rebuilt export');
+  else fail('docx rebuilt export enabled without a net edit');
+  // Type into the editor, then export → a rebuilt .docx download.
   await page.$eval('#previewHost .ProseMirror', (e) => e.focus());
   await page.keyboard.type(' [edited]');
+  await page.waitForFunction(() => !document.querySelector('#previewHost .dx-download-rebuilt')?.disabled);
   const [docxDl] = await Promise.all([
     page.waitForEvent('download', { timeout: 15000 }),
-    page.click('#previewHost .dx-download'),
+    page.click('#previewHost .dx-download-rebuilt'),
   ]);
-  if (/-edited\.docx$/.test(docxDl.suggestedFilename())) pass('Word: edited .docx downloaded (' + docxDl.suggestedFilename() + ')'); else fail('docx download name: ' + docxDl.suggestedFilename());
+  if (/-rebuilt\.docx$/.test(docxDl.suggestedFilename())) pass('Word: rebuilt .docx downloaded (' + docxDl.suggestedFilename() + ')'); else fail('docx download name: ' + docxDl.suggestedFilename());
   // The .docx is a valid ZIP whose document.xml carries the edited text.
   const dpath = await docxDl.path();
   const fs2 = await import('node:fs');
@@ -303,6 +314,8 @@ export async function run(ctx) {
   const wMeta = await page.$eval('#metaBody', (e) => e.textContent);
   if (/Words\s*\d+/.test(wMeta)) pass('Word metadata: word count present'); else fail('docx meta: ' + wMeta.replace(/\s+/g, ' ').slice(0, 200));
   await page.click('#metaDrawer [data-close]');
+
+  await runDocxFidelity(ctx);
 
   // ── OpenDocument text (.odt) ── unzip content.xml → sanitized reading HTML in the iframe. ──
   await page.goto(origin, { waitUntil: 'load' });

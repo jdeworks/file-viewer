@@ -856,17 +856,26 @@ html[data-theme="dark"] .qp-preview .json-warning { color: #ffd166; background: 
 
 /* DOCX rich-text editor (parent pane). */
 .preview-host .dx-doc { position: absolute; inset: 0; display: flex; flex-direction: column; background: var(--bg); }
-.dx-bar { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--border); background: var(--bg-2); }
-.dx-info { font-size: 12px; color: var(--fg-2); margin-right: auto; }
+.dx-bar { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--border); background: var(--bg-2); flex-wrap: wrap; }
+.dx-info { flex: 1 1 12rem; min-width: 0; font-size: 12px; color: var(--fg-2); margin-right: auto; }
+.dx-info.dx-modified { color: var(--accent); font-weight: 600; }
 .dx-bar button { font-size: 12px; padding: 4px 12px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); color: var(--fg); cursor: pointer; }
+.dx-bar button:disabled { opacity: 0.5; cursor: default; }
 .dx-bar .dx-edit.active { border-color: var(--accent); color: var(--accent); }
 .dx-bar .dx-download { background: var(--accent); color: var(--accent-fg); border-color: transparent; }
 .dx-bar .dx-download:disabled { opacity: 0.5; cursor: default; }
-.dx-note { padding: 6px 12px; font-size: 12px; color: var(--fg-2); background: var(--bg-2); border-bottom: 1px solid var(--border); }
+.dx-note { padding: 6px 12px; font-size: 12px; color: var(--fg-2); background: color-mix(in srgb,#f59e0b 10%,var(--bg)); border-bottom: 1px solid var(--border); overflow-wrap: anywhere; }
 .dx-doc .dx-view, .dx-doc .dx-edit-host { flex: 1; overflow: auto; padding: 20px; max-width: 820px; width: 100%; margin: 0 auto; box-sizing: border-box; }
 .dx-doc .ProseMirror { outline: none; min-height: 100%; }
 .dx-doc .dx-edit-host table, .dx-doc .dx-view table { border-collapse: collapse; }
 .dx-doc .dx-edit-host td, .dx-doc .dx-edit-host th, .dx-doc .dx-view td, .dx-doc .dx-view th { border: 1px solid var(--border); padding: 4px 8px; }
+@media (max-width:520px) {
+  .dx-bar { padding: 8px; gap: 6px; }
+  .dx-info { flex-basis: 100%; }
+  .dx-bar button { flex: 1 1 auto; padding-inline: 8px; }
+  .dx-note { padding-inline: 8px; }
+  .dx-doc .dx-view,.dx-doc .dx-edit-host { padding: 12px; }
+}
 
 /* ── SVG dual-pane editor ────────────────────────────────────────────────────
    The SVG renderer mounts its host in the MAIN document (returned as parentNode),
