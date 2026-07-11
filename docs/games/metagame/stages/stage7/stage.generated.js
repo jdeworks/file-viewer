@@ -32,28 +32,28 @@ var CASE3_SEARCH_ACTION = "session_revoked_found";
 var CASE3_SEARCH_PATH = "/docs/examples/metagame/stage7/session_ledger.csv";
 var CASE3_SEARCH_QUERY = "S-7741";
 var substageHints = {
-  1: "Six dossiers, one name. Scan B, C, D, E — flag the field that contradicts an ambient fact.",
-  2: "A and F are tied on documents. Diff the two dossiers and find the tampered field.",
-  3: "Audit Entity F's activity log. One entry is logically impossible.",
-  4: "Follow F's credential chain. Open the referenced anchor record in the viewer.",
-  5: "A second roster claims the name. Open the system files, pin the evidence, and name the duplicate with a triad (entity + claim + source fact).",
-  6: "A THIRD roster (L/M/N/P/Q) claims CORE_ENTITY_002. Two anomalies are exonerated by different files; the duplicate's lie is only exposed by SEARCHING the session ledger.",
-  7: "Open Entity F's photo, then open its Metadata pane and read the GPS row — the image knows where it was. Then commit to the real holder."
+  1: "Six dossiers, one identity. Read B, C, D, E — flag the one detail that contradicts something you already know to be true.",
+  2: "A and F match on paper. Compare the two dossiers side by side and find the one detail that's been altered.",
+  3: "Check Entity F's movements. One entry in the log couldn't have happened.",
+  4: "Follow F's paper trail. Open the record it points to.",
+  5: "A second suspect claims the same identity. Open the case files, pin the evidence to the board, and name the impostor with three things: who, what they claimed, and the fact that disproves it.",
+  6: "A THIRD group of suspects (L/M/N/P/Q) claims the same identity. Two odd details turn out to be innocent, cleared by different records — the impostor's lie is only exposed by SEARCHING the sign-in ledger.",
+  7: "Open Entity F's photograph, then check where and when it was really taken — a photo remembers more than it shows. Then name the real one."
 };
 var bellMessages = {
   start: "something presented itself. I had to decide.",
-  unlock: "the image knew more than the image showed. the GPS was outside any layer.",
+  unlock: "the photograph knew more than it showed. it had been somewhere it claimed it hadn't.",
   wrongCommit: "incorrect. one of them was not what it appeared.",
   defeated: "I know which one. I chose. I was right."
 };
 var lockedHintLadder = [
   "one of them looks exactly like the description. that does not mean it is real.",
-  "the documents leave Entity A and Entity F tied.",
-  "the photo shows something the document does not. the metadata holds the answer.",
-  "open Entity F's image metadata and inspect GPSInfo, then commit to Entity A."
+  "the paperwork leaves Entity A and Entity F tied.",
+  "the photo shows something the paperwork doesn't. its hidden details hold the answer.",
+  "open Entity F's photo details and check where it claims to be from, then commit to Entity A."
 ];
 var arbiterLines = {
-  fContradicted: "Entity F contradicted: GPSInfo is outside every known entity layer.",
+  fContradicted: "Entity F contradicted: the photo's location doesn't match anywhere it claims to be.",
   stillChoose: "Entity F is eliminated. Judgment still requires selecting Entity A.",
   defeated: "The Name Collision resolves to Entity A."
 };
@@ -196,10 +196,10 @@ var DUP_FIELDS = {
 };
 var entityFields = {
   B: [
-    { id: "credential_class", label: "Credential Class", value: "TIER-1-PROXY" },
+    { id: "credential_class", label: "Role", value: "TIER-1-PROXY" },
     {
       id: "route_active_since",
-      label: "Route Active Since",
+      label: "Last Seen Active",
       value: "cycle 0043",
       wrong: true,
       reason: "Route ENTITY_ANCHOR_0043 was decommissioned at cycle 0043."
@@ -209,20 +209,20 @@ var entityFields = {
   C: [
     {
       id: "response_timing",
-      label: "Response Timing",
+      label: "How They Answer",
       value: "scripted: 0ms variance",
       wrong: true,
       reason: "All entities exhibit non-zero timing variance in this system."
     },
-    { id: "credential_class", label: "Credential Class", value: "TIER-1-PROXY" },
-    { id: "layer_tag", label: "Layer Tag", value: "LAYER-0" }
+    { id: "credential_class", label: "Role", value: "TIER-1-PROXY" },
+    { id: "layer_tag", label: "Clearance Level", value: "LAYER-0" }
   ],
   D: [
-    { id: "credential_class", label: "Credential Class", value: "TIER-1-PROXY" },
+    { id: "credential_class", label: "Role", value: "TIER-1-PROXY" },
     { id: "software", label: "Software", value: "Boot Vision 1.0" },
     {
       id: "log_event",
-      label: "Activity Log Event",
+      label: "What Happened",
       value: "LAYER_MERGE",
       wrong: true,
       reason: "LAYER_MERGE is not a valid event type in this system."
@@ -231,12 +231,12 @@ var entityFields = {
   E: [
     {
       id: "route_status",
-      label: "Route Status",
+      label: "Current Whereabouts",
       value: "active since cycle 0044",
       wrong: true,
       reason: "Route inactive since cycle 0043; activity after 0043 is impossible."
     },
-    { id: "layer_tag", label: "Layer Tag", value: "LAYER-0" },
+    { id: "layer_tag", label: "Clearance Level", value: "LAYER-0" },
     { id: "software", label: "Software", value: "Boot Vision 1.0" }
   ]
 };
@@ -288,26 +288,26 @@ var CASE2 = {
   // Dossier fields shown on the board as clue cards once Case 2 begins.
   fields: {
     G: [
-      { id: "tier", label: "Credential Tier", value: "TIER-2" },
-      { id: "layer", label: "Layer Tag", value: "LAYER-1" },
-      { id: "route", label: "Route", value: "R-0102 (active)" }
+      { id: "tier", label: "Standing", value: "TIER-2" },
+      { id: "layer", label: "Clearance Level", value: "LAYER-1" },
+      { id: "route", label: "Assignment", value: "R-0102 (active)" }
     ],
     H: [
       // Red herring: TIER-3-LEGACY LOOKS anomalous but system_spec confirms -LEGACY is a valid tier-3.
-      { id: "tier", label: "Credential Tier", value: "TIER-3-LEGACY" },
-      { id: "layer", label: "Layer Tag", value: "LAYER-0" },
-      { id: "route", label: "Route", value: "R-0110 (active)" }
+      { id: "tier", label: "Standing", value: "TIER-3-LEGACY" },
+      { id: "layer", label: "Clearance Level", value: "LAYER-0" },
+      { id: "route", label: "Assignment", value: "R-0110 (active)" }
     ],
     J: [
-      { id: "tier", label: "Credential Tier", value: "TIER-1" },
-      { id: "layer", label: "Layer Tag", value: "LAYER-2" },
-      { id: "route", label: "Route", value: "R-0118 (active)" }
+      { id: "tier", label: "Standing", value: "TIER-1" },
+      { id: "layer", label: "Clearance Level", value: "LAYER-2" },
+      { id: "route", label: "Assignment", value: "R-0118 (active)" }
     ],
     K: [
-      { id: "tier", label: "Credential Tier", value: "TIER-2" },
-      { id: "layer", label: "Layer Tag", value: "LAYER-1" },
+      { id: "tier", label: "Standing", value: "TIER-2" },
+      { id: "layer", label: "Clearance Level", value: "LAYER-1" },
       // The decisive lie: claims an ACTIVE route the route table proves was closed at cycle 0044.
-      { id: "route", label: "Route", value: "R-0091 (active)", suspect: true }
+      { id: "route", label: "Assignment", value: "R-0091 (active)", suspect: true }
     ]
   },
   // The unique correct triad: K's "active route R-0091" claim is refuted by the route_table fact.
@@ -372,32 +372,32 @@ var CASE3 = {
   // correct accusation → the EXIF boss (substage 7)
   fields: {
     L: [
-      { id: "tier", label: "Credential Tier", value: "TIER-1" },
-      { id: "layer", label: "Layer Tag", value: "LAYER-0" },
-      { id: "session", label: "Session", value: "S-7702 (active)" }
+      { id: "tier", label: "Standing", value: "TIER-1" },
+      { id: "layer", label: "Clearance Level", value: "LAYER-0" },
+      { id: "session", label: "Check-in", value: "S-7702 (active)" }
     ],
     M: [
-      { id: "tier", label: "Credential Tier", value: "TIER-2" },
-      { id: "layer", label: "Layer Tag", value: "LAYER-1" },
-      { id: "session", label: "Session", value: "S-7715 (active)" }
+      { id: "tier", label: "Standing", value: "TIER-2" },
+      { id: "layer", label: "Clearance Level", value: "LAYER-1" },
+      { id: "session", label: "Check-in", value: "S-7715 (active)" }
     ],
     N: [
-      { id: "tier", label: "Credential Tier", value: "TIER-2" },
-      { id: "layer", label: "Layer Tag", value: "LAYER-1" },
+      { id: "tier", label: "Standing", value: "TIER-2" },
+      { id: "layer", label: "Clearance Level", value: "LAYER-1" },
       // The decisive lie: claims an ACTIVE session the ledger proves was REVOKED at cycle 0045.
-      { id: "session", label: "Session", value: "S-7741 (active)", suspect: true }
+      { id: "session", label: "Check-in", value: "S-7741 (active)", suspect: true }
     ],
     P: [
-      { id: "tier", label: "Credential Tier", value: "TIER-1" },
+      { id: "tier", label: "Standing", value: "TIER-1" },
       // Red herring #1: LAYER-3 LOOKS out-of-spec, but audit_trail.txt records a sanctioned elevation.
-      { id: "layer", label: "Layer Tag", value: "LAYER-3" },
-      { id: "session", label: "Session", value: "S-7720 (active)" }
+      { id: "layer", label: "Clearance Level", value: "LAYER-3" },
+      { id: "session", label: "Check-in", value: "S-7720 (active)" }
     ],
     Q: [
       // Red herring #2: TIER-0-ROOT LOOKS anomalous, but quorum_spec.json lists it as a valid tier.
-      { id: "tier", label: "Credential Tier", value: "TIER-0-ROOT" },
-      { id: "layer", label: "Layer Tag", value: "LAYER-0" },
-      { id: "session", label: "Session", value: "S-7708 (active)" }
+      { id: "tier", label: "Standing", value: "TIER-0-ROOT" },
+      { id: "layer", label: "Clearance Level", value: "LAYER-0" },
+      { id: "session", label: "Check-in", value: "S-7708 (active)" }
     ]
   },
   // The unique correct triad: N's "active session S-7741" is refuted by the searched ledger fact.

@@ -1,3 +1,18 @@
+// Reskin note (2026-07-11 playtest fix, gate-by-gate assessment): the evidence/triad/pin/accuse LAYER
+// itself is generic and was reskinned into plain human-detective vocabulary this pass (see the
+// substageHints/lockedHintLadder/arbiterLines rewrite in messages.js, and the field `label` rewrite
+// below — "Credential Class" → "Role", "Layer Tag" → "Clearance Level", etc.). The GATED real-app-
+// feature actions are a separate, deliberately-DEFERRED question — going gate by gate:
+//   - SS2 (dossier diff) and Case 3 (CSV search) already map naturally onto "compare two witness
+//     statements" / "search a sign-in ledger for a name" — no computer-forensics framing forced.
+//   - SS4 / Case 2 (open a referenced/source file) reads fine as "open the file this record points
+//     to" / "pull the case file" — a detective opening a folder, not a technical action.
+//   - The boss gate (read EXIF GPSInfo from an image) is the one genuinely hard to fully disguise —
+//     "a photo remembers where it was taken" is the reskinned FRAMING used here, but the underlying
+//     action is still, mechanically, an EXIF metadata read. Swapping it for a literally different real
+//     app feature (e.g. a different action entirely) would be a real content redesign — bigger than a
+//     vocabulary pass, not attempted here. Flagged for a future pass if the boss gate specifically
+//     still reads as "computer" rather than "detective" after this reskin.
 export const candidates = [
   { id: "A", claim: "consistent EXIF, consistent credentials", status: "real" },
   { id: "B", claim: "photo software exposes editing", status: "impostor" },
@@ -38,27 +53,27 @@ export const CURRENT_CYCLE = "0047";
 
 export const entityFields = {
   B: [
-    { id: "credential_class", label: "Credential Class", value: "TIER-1-PROXY" },
-    { id: "route_active_since", label: "Route Active Since", value: "cycle 0043", wrong: true,
+    { id: "credential_class", label: "Role", value: "TIER-1-PROXY" },
+    { id: "route_active_since", label: "Last Seen Active", value: "cycle 0043", wrong: true,
       reason: "Route ENTITY_ANCHOR_0043 was decommissioned at cycle 0043." },
     { id: "software", label: "Software", value: "Boot Vision 1.0" }
   ],
   C: [
-    { id: "response_timing", label: "Response Timing", value: "scripted: 0ms variance", wrong: true,
+    { id: "response_timing", label: "How They Answer", value: "scripted: 0ms variance", wrong: true,
       reason: "All entities exhibit non-zero timing variance in this system." },
-    { id: "credential_class", label: "Credential Class", value: "TIER-1-PROXY" },
-    { id: "layer_tag", label: "Layer Tag", value: "LAYER-0" }
+    { id: "credential_class", label: "Role", value: "TIER-1-PROXY" },
+    { id: "layer_tag", label: "Clearance Level", value: "LAYER-0" }
   ],
   D: [
-    { id: "credential_class", label: "Credential Class", value: "TIER-1-PROXY" },
+    { id: "credential_class", label: "Role", value: "TIER-1-PROXY" },
     { id: "software", label: "Software", value: "Boot Vision 1.0" },
-    { id: "log_event", label: "Activity Log Event", value: "LAYER_MERGE", wrong: true,
+    { id: "log_event", label: "What Happened", value: "LAYER_MERGE", wrong: true,
       reason: "LAYER_MERGE is not a valid event type in this system." }
   ],
   E: [
-    { id: "route_status", label: "Route Status", value: "active since cycle 0044", wrong: true,
+    { id: "route_status", label: "Current Whereabouts", value: "active since cycle 0044", wrong: true,
       reason: "Route inactive since cycle 0043; activity after 0043 is impossible." },
-    { id: "layer_tag", label: "Layer Tag", value: "LAYER-0" },
+    { id: "layer_tag", label: "Clearance Level", value: "LAYER-0" },
     { id: "software", label: "Software", value: "Boot Vision 1.0" }
   ]
 };
@@ -113,26 +128,26 @@ export const CASE2 = {
   // Dossier fields shown on the board as clue cards once Case 2 begins.
   fields: {
     G: [
-      { id: "tier", label: "Credential Tier", value: "TIER-2" },
-      { id: "layer", label: "Layer Tag", value: "LAYER-1" },
-      { id: "route", label: "Route", value: "R-0102 (active)" }
+      { id: "tier", label: "Standing", value: "TIER-2" },
+      { id: "layer", label: "Clearance Level", value: "LAYER-1" },
+      { id: "route", label: "Assignment", value: "R-0102 (active)" }
     ],
     H: [
       // Red herring: TIER-3-LEGACY LOOKS anomalous but system_spec confirms -LEGACY is a valid tier-3.
-      { id: "tier", label: "Credential Tier", value: "TIER-3-LEGACY" },
-      { id: "layer", label: "Layer Tag", value: "LAYER-0" },
-      { id: "route", label: "Route", value: "R-0110 (active)" }
+      { id: "tier", label: "Standing", value: "TIER-3-LEGACY" },
+      { id: "layer", label: "Clearance Level", value: "LAYER-0" },
+      { id: "route", label: "Assignment", value: "R-0110 (active)" }
     ],
     J: [
-      { id: "tier", label: "Credential Tier", value: "TIER-1" },
-      { id: "layer", label: "Layer Tag", value: "LAYER-2" },
-      { id: "route", label: "Route", value: "R-0118 (active)" }
+      { id: "tier", label: "Standing", value: "TIER-1" },
+      { id: "layer", label: "Clearance Level", value: "LAYER-2" },
+      { id: "route", label: "Assignment", value: "R-0118 (active)" }
     ],
     K: [
-      { id: "tier", label: "Credential Tier", value: "TIER-2" },
-      { id: "layer", label: "Layer Tag", value: "LAYER-1" },
+      { id: "tier", label: "Standing", value: "TIER-2" },
+      { id: "layer", label: "Clearance Level", value: "LAYER-1" },
       // The decisive lie: claims an ACTIVE route the route table proves was closed at cycle 0044.
-      { id: "route", label: "Route", value: "R-0091 (active)", suspect: true }
+      { id: "route", label: "Assignment", value: "R-0091 (active)", suspect: true }
     ]
   },
   // The unique correct triad: K's "active route R-0091" claim is refuted by the route_table fact.
@@ -171,32 +186,32 @@ export const CASE3 = {
   nextSubstage: 7, // correct accusation → the EXIF boss (substage 7)
   fields: {
     L: [
-      { id: "tier", label: "Credential Tier", value: "TIER-1" },
-      { id: "layer", label: "Layer Tag", value: "LAYER-0" },
-      { id: "session", label: "Session", value: "S-7702 (active)" }
+      { id: "tier", label: "Standing", value: "TIER-1" },
+      { id: "layer", label: "Clearance Level", value: "LAYER-0" },
+      { id: "session", label: "Check-in", value: "S-7702 (active)" }
     ],
     M: [
-      { id: "tier", label: "Credential Tier", value: "TIER-2" },
-      { id: "layer", label: "Layer Tag", value: "LAYER-1" },
-      { id: "session", label: "Session", value: "S-7715 (active)" }
+      { id: "tier", label: "Standing", value: "TIER-2" },
+      { id: "layer", label: "Clearance Level", value: "LAYER-1" },
+      { id: "session", label: "Check-in", value: "S-7715 (active)" }
     ],
     N: [
-      { id: "tier", label: "Credential Tier", value: "TIER-2" },
-      { id: "layer", label: "Layer Tag", value: "LAYER-1" },
+      { id: "tier", label: "Standing", value: "TIER-2" },
+      { id: "layer", label: "Clearance Level", value: "LAYER-1" },
       // The decisive lie: claims an ACTIVE session the ledger proves was REVOKED at cycle 0045.
-      { id: "session", label: "Session", value: "S-7741 (active)", suspect: true }
+      { id: "session", label: "Check-in", value: "S-7741 (active)", suspect: true }
     ],
     P: [
-      { id: "tier", label: "Credential Tier", value: "TIER-1" },
+      { id: "tier", label: "Standing", value: "TIER-1" },
       // Red herring #1: LAYER-3 LOOKS out-of-spec, but audit_trail.txt records a sanctioned elevation.
-      { id: "layer", label: "Layer Tag", value: "LAYER-3" },
-      { id: "session", label: "Session", value: "S-7720 (active)" }
+      { id: "layer", label: "Clearance Level", value: "LAYER-3" },
+      { id: "session", label: "Check-in", value: "S-7720 (active)" }
     ],
     Q: [
       // Red herring #2: TIER-0-ROOT LOOKS anomalous, but quorum_spec.json lists it as a valid tier.
-      { id: "tier", label: "Credential Tier", value: "TIER-0-ROOT" },
-      { id: "layer", label: "Layer Tag", value: "LAYER-0" },
-      { id: "session", label: "Session", value: "S-7708 (active)" }
+      { id: "tier", label: "Standing", value: "TIER-0-ROOT" },
+      { id: "layer", label: "Clearance Level", value: "LAYER-0" },
+      { id: "session", label: "Check-in", value: "S-7708 (active)" }
     ]
   },
   // The unique correct triad: N's "active session S-7741" is refuted by the searched ledger fact.

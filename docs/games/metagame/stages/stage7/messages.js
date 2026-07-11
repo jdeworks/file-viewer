@@ -33,32 +33,37 @@ export const CASE3_SEARCH_ACTION = "session_revoked_found";
 export const CASE3_SEARCH_PATH = "/docs/examples/metagame/stage7/session_ledger.csv";
 export const CASE3_SEARCH_QUERY = "S-7741";
 
+// Playtest fix (2026-07-11): reworded the player-facing narration from computer-forensics jargon
+// (EXIF, GPSInfo, "ambient fact", "credential chain") into plain human-detective language — witness
+// statements, alibis, paper trails — since testers found the original wording hard to follow. This is
+// vocabulary/flavor ONLY: field ids, file paths, and action names underneath are untouched, so the
+// win-condition logic and existing tests referencing those technical strings still work unchanged.
 export const substageHints = {
-  1: "Six dossiers, one name. Scan B, C, D, E — flag the field that contradicts an ambient fact.",
-  2: "A and F are tied on documents. Diff the two dossiers and find the tampered field.",
-  3: "Audit Entity F's activity log. One entry is logically impossible.",
-  4: "Follow F's credential chain. Open the referenced anchor record in the viewer.",
-  5: "A second roster claims the name. Open the system files, pin the evidence, and name the duplicate with a triad (entity + claim + source fact).",
-  6: "A THIRD roster (L/M/N/P/Q) claims CORE_ENTITY_002. Two anomalies are exonerated by different files; the duplicate's lie is only exposed by SEARCHING the session ledger.",
-  7: "Open Entity F's photo, then open its Metadata pane and read the GPS row — the image knows where it was. Then commit to the real holder."
+  1: "Six dossiers, one identity. Read B, C, D, E — flag the one detail that contradicts something you already know to be true.",
+  2: "A and F match on paper. Compare the two dossiers side by side and find the one detail that's been altered.",
+  3: "Check Entity F's movements. One entry in the log couldn't have happened.",
+  4: "Follow F's paper trail. Open the record it points to.",
+  5: "A second suspect claims the same identity. Open the case files, pin the evidence to the board, and name the impostor with three things: who, what they claimed, and the fact that disproves it.",
+  6: "A THIRD group of suspects (L/M/N/P/Q) claims the same identity. Two odd details turn out to be innocent, cleared by different records — the impostor's lie is only exposed by SEARCHING the sign-in ledger.",
+  7: "Open Entity F's photograph, then check where and when it was really taken — a photo remembers more than it shows. Then name the real one."
 };
 
 export const bellMessages = {
   start: "something presented itself. I had to decide.",
-  unlock: "the image knew more than the image showed. the GPS was outside any layer.",
+  unlock: "the photograph knew more than it showed. it had been somewhere it claimed it hadn't.",
   wrongCommit: "incorrect. one of them was not what it appeared.",
   defeated: "I know which one. I chose. I was right."
 };
 
 export const lockedHintLadder = [
   "one of them looks exactly like the description. that does not mean it is real.",
-  "the documents leave Entity A and Entity F tied.",
-  "the photo shows something the document does not. the metadata holds the answer.",
-  "open Entity F's image metadata and inspect GPSInfo, then commit to Entity A."
+  "the paperwork leaves Entity A and Entity F tied.",
+  "the photo shows something the paperwork doesn't. its hidden details hold the answer.",
+  "open Entity F's photo details and check where it claims to be from, then commit to Entity A."
 ];
 
 export const arbiterLines = {
-  fContradicted: "Entity F contradicted: GPSInfo is outside every known entity layer.",
+  fContradicted: "Entity F contradicted: the photo's location doesn't match anywhere it claims to be.",
   stillChoose: "Entity F is eliminated. Judgment still requires selecting Entity A.",
   defeated: "The Name Collision resolves to Entity A."
 };
