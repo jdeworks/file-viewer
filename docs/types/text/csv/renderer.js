@@ -3,6 +3,7 @@
 // postMessage. Chart.js is lazy-loaded only when the Chart tab is shown.
 import { loadGlobal, vendor } from '../../../core/script-loader.js';
 import { TableEditor } from './table-editor.js';
+import { csvColumnLabels, maxCsvColumns } from './shape.js';
 
 const DELIMS = { auto: '', comma: ',', semicolon: ';', tab: '\t', pipe: '|' };
 
@@ -36,7 +37,7 @@ export async function render(intake, ctx) {
 
   const sep = delimiter || ',';
   const numRows = rows.length;
-  const numCols = rows[0]?.length || 0;
+  const numCols = maxCsvColumns(rows);
   const base = (intake.filename || 'data').replace(/\.[^.]+$/, '');
 
   const host = document.createElement('div');
@@ -88,23 +89,26 @@ export async function render(intake, ctx) {
     chartTab.classList.add('active'); tableTab.classList.remove('active');
     if (chartLoaded) return;
     chartLoaded = true;
-    const numericCols = hasHeader
-      ? rows[0].map((_, ci) => rows.slice(1).every((r) => r[ci] !== '' && !isNaN(Number(r[ci]))) ? ci : -1).filter((i) => i >= 0)
-      : rows[0].map((_, ci) => rows.every((r) => r[ci] !== '' && !isNaN(Number(r[ci]))) ? ci : -1).filter((i) => i >= 0);
+    const data = hasHeader ? rows.slice(1) : rows;
+    const numericCols = Array.from({ length: numCols }, (_, columnIndex) => columnIndex)
+      .filter((columnIndex) => {
+        const populated = data.map((row) => row[columnIndex])
+          .filter((value) => value != null && String(value).trim() !== '');
+        return populated.length > 0 && populated.every((value) => Number.isFinite(Number(value)));
+      });
     if (!numericCols.length) {
       chartPanel.innerHTML = '<p class="csv-empty">No numeric columns detected for charting.</p>';
       return;
     }
     try {
       const Chart = await loadGlobal(vendor('chartjs/chart.umd.js'), 'Chart');
-      const header = hasHeader ? rows[0] : rows[0].map((_, i) => 'col' + (i + 1));
-      const data = hasHeader ? rows.slice(1) : rows;
+      const header = csvColumnLabels(rows, hasHeader);
       const labelCol = numericCols[0] === 0 ? -1 : 0;
       const labels = labelCol >= 0 ? data.map((r) => String(r[labelCol]).slice(0, 30)) : data.map((_, i) => String(i + 1));
       const colours = ['#4e9af1', '#e05c6b', '#4db889', '#f5a623', '#9b59b6', '#1abc9c', '#e67e22', '#2980b9'];
       const datasets = numericCols.slice(0, 8).map((ci, k) => ({
         label: String(header[ci]),
-        data: data.map((r) => Number(r[ci]) || 0),
+        data: data.map((r) => r[ci] == null || String(r[ci]).trim() === '' ? null : Number(r[ci])),
         borderColor: colours[k % colours.length],
         backgroundColor: colours[k % colours.length] + '33',
         tension: 0.3, fill: numericCols.length === 1,

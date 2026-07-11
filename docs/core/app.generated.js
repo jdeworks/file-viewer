@@ -3255,6 +3255,28 @@ var HtmlWysiwygEditor = class {
   }
 };
 
+// ../../docs/types/text/csv/shape.js
+function maxCsvColumns(rows) {
+  if (!Array.isArray(rows)) return 0;
+  return rows.reduce((max, row) => Math.max(max, Array.isArray(row) ? row.length : 0), 0);
+}
+function csvColumnLabels(rows, hasHeader = true) {
+  const width = maxCsvColumns(rows);
+  const header = hasHeader && Array.isArray(rows?.[0]) ? rows[0] : [];
+  const used = /* @__PURE__ */ new Set();
+  const nextSuffix = /* @__PURE__ */ new Map();
+  return Array.from({ length: width }, (_, columnIndex) => {
+    const raw = header[columnIndex];
+    const base = hasHeader && raw != null && String(raw) !== "" ? String(raw) : `column_${columnIndex + 1}`;
+    let label = base;
+    let suffix = nextSuffix.get(base) || 2;
+    while (used.has(label)) label = `${base}_${suffix++}`;
+    nextSuffix.set(base, suffix);
+    used.add(label);
+    return label;
+  });
+}
+
 // ../../docs/types/text/csv/table-editor.js
 function parseCsvText(text, sep) {
   const rows = [];
@@ -3379,6 +3401,7 @@ var TableEditor = class {
     tbl.className = "te-table";
     const tbody = document.createElement("tbody");
     const maxCols = this._maxCols();
+    const columnLabels = csvColumnLabels(this._rows, this._hasHeader);
     this._rows.forEach((row, ri) => {
       const tr = document.createElement("tr");
       const isHeaderRow = this._hasHeader && ri === 0;
@@ -3400,6 +3423,14 @@ var TableEditor = class {
         td.textContent = row[ci] ?? "";
         td.dataset.ri = ri;
         td.dataset.ci = ci;
+        if (isHeaderRow) {
+          td.dataset.columnLabel = columnLabels[ci];
+          td.setAttribute("aria-label", columnLabels[ci]);
+          if (td.textContent === "") {
+            td.classList.add("te-header-fallback");
+            td.dataset.fallbackLabel = columnLabels[ci];
+          }
+        }
         td.addEventListener("blur", () => {
           if (!this._rows[ri]) return;
           while (this._rows[ri].length <= ci) this._rows[ri].push("");

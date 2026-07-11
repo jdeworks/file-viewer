@@ -440,6 +440,7 @@
 .te-cell { border: 1px solid var(--border); padding: 3px 6px; color: var(--fg); min-width: 80px; white-space: nowrap; outline: none; }
 .te-cell:focus { background: var(--bg-2); outline: 2px solid var(--accent); outline-offset: -1px; }
 .te-header { font-weight: 600; background: var(--bg-2); color: var(--fg-2); }
+.te-header-fallback:empty::before { content: attr(data-fallback-label); opacity: .72; font-style: italic; pointer-events: none; }
 
 /* OFX / QFX financial viewer (parentNode — styles apply in the parent document) */
 .ofx-preview { font-family: system-ui, sans-serif; padding: 14px; max-width: 900px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; }

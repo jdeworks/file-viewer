@@ -124,6 +124,92 @@ export async function run(ctx) {
   ]);
   if (/\.json$/.test(csvDownload.suggestedFilename())) pass('CSV exported to JSON (' + csvDownload.suggestedFilename() + ')'); else fail('CSV download name: ' + csvDownload.suggestedFilename());
 
+  // Ragged CSV fidelity: the widest row, not row 0, defines the rendered/exported shape.
+  const shortHeaderCsv = 'name,score\nAda,10,30,40\nBob,20';
+  await page.evaluate((source) => window.__fv.openBlobFile(
+    new Blob([source], { type: 'text/csv' }),
+    'short-header-ragged.csv',
+    { mime: 'text/csv' },
+  ), shortHeaderCsv);
+  await page.waitForFunction(() => /4 cols?/.test(document.querySelector('#previewHost .csv-info')?.textContent || ''), null, { timeout: 10000 });
+  const raggedTable = await page.evaluate(() => {
+    const headerCells = [...document.querySelectorAll('#previewHost .te-table tbody tr:first-child .te-header')];
+    const bodyRows = [...document.querySelectorAll('#previewHost .te-table tbody tr')].slice(1);
+    return {
+      stats: document.querySelector('#previewHost .csv-info')?.textContent || '',
+      headers: headerCells.map((cell) => ({
+        text: cell.textContent,
+        fallback: cell.dataset.fallbackLabel || '',
+        aria: cell.getAttribute('aria-label') || '',
+        before: getComputedStyle(cell, '::before').content,
+      })),
+      rows: bodyRows.map((row) => [...row.querySelectorAll('.te-cell')].map((cell) => cell.textContent)),
+    };
+  });
+  if (/4 cols?/.test(raggedTable.stats) && raggedTable.headers.length === 4) pass('ragged CSV reports width from the widest later row');
+  else fail('ragged CSV shape: ' + JSON.stringify(raggedTable));
+  const fallbackHeaders = raggedTable.headers.slice(2);
+  if (fallbackHeaders.map((h) => h.fallback).join(',') === 'column_3,column_4'
+    && fallbackHeaders.every((h) => h.aria === h.fallback && h.before.includes(h.fallback))) {
+    pass('short CSV header gets visible, accessible fallback labels for later columns');
+  } else fail('ragged CSV fallback headers: ' + JSON.stringify(fallbackHeaders));
+  if (raggedTable.rows[0]?.join(',') === 'Ada,10,30,40' && raggedTable.rows[1]?.join(',') === 'Bob,20,,') {
+    pass('ragged CSV table preserves wide-later cells and explicit short-row blanks');
+  } else fail('ragged CSV rows: ' + JSON.stringify(raggedTable.rows));
+
+  await page.click('#previewHost .csv-tab:has-text("Chart")');
+  await page.waitForFunction(() => {
+    const canvas = document.querySelector('#previewHost .csv-chart-canvas');
+    return canvas && window.Chart?.getChart?.(canvas);
+  }, null, { timeout: 10000 });
+  const raggedChart = await page.evaluate(() => {
+    const chart = window.Chart.getChart(document.querySelector('#previewHost .csv-chart-canvas'));
+    return chart.data.datasets.map((dataset) => ({ label: dataset.label, data: dataset.data }));
+  });
+  if (raggedChart.map((dataset) => dataset.label).join(',') === 'score,column_3,column_4'
+    && raggedChart[1]?.data[0] === 30 && raggedChart[1]?.data[1] === null) {
+    pass('ragged CSV chart retains numeric columns beyond a short header with fallback labels');
+  } else fail('ragged CSV chart: ' + JSON.stringify(raggedChart));
+  await page.click('#previewHost .csv-tab:has-text("Table")');
+
+  await page.click('#exportBtn');
+  await page.waitForSelector('#exportMenu:not([hidden]) .export-item', { timeout: 5000 });
+  const [raggedJsonDownload] = await Promise.all([
+    page.waitForEvent('download', { timeout: 8000 }),
+    page.click('#exportMenu .export-item:has-text("Download as JSON")'),
+  ]);
+  const raggedFs = await import('node:fs');
+  const raggedJson = JSON.parse(raggedFs.readFileSync(await raggedJsonDownload.path(), 'utf8'));
+  if (raggedJson[0]?.column_3 === '30' && raggedJson[0]?.column_4 === '40'
+    && raggedJson[1]?.column_3 === '' && raggedJson[1]?.column_4 === '') {
+    pass('ragged CSV JSON export retains columns absent from the header');
+  } else fail('ragged CSV JSON export: ' + JSON.stringify(raggedJson));
+
+  const csvViewport = page.viewportSize() || { width: 1280, height: 720 };
+  await page.setViewportSize({ width: 390, height: 844 });
+  const raggedMobile = await page.evaluate(() => ({
+    pageOverflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    visibleFallbacks: [...document.querySelectorAll('#previewHost .te-header-fallback')]
+      .map((cell) => getComputedStyle(cell, '::before').content),
+  }));
+  if (raggedMobile.pageOverflow <= 1 && raggedMobile.visibleFallbacks.every((label) => /column_[34]/.test(label))) {
+    pass('ragged CSV fallback headers stay visible without page overflow at 390px');
+  } else fail('ragged CSV mobile layout: ' + JSON.stringify(raggedMobile));
+  await page.setViewportSize(csvViewport);
+
+  const wideHeaderCsv = 'a,b,c,d\n1,2\n3,4,5,6';
+  await page.evaluate((source) => window.__fv.openBlobFile(
+    new Blob([source], { type: 'text/csv' }),
+    'wide-header-ragged.csv',
+    { mime: 'text/csv' },
+  ), wideHeaderCsv);
+  await page.waitForFunction(() => /4 cols?/.test(document.querySelector('#previewHost .csv-info')?.textContent || ''), null, { timeout: 10000 });
+  const wideHeaderRows = await page.$$eval('#previewHost .te-table tbody tr', (rows) => rows.slice(1)
+    .map((row) => [...row.querySelectorAll('.te-cell')].map((cell) => cell.textContent)));
+  if (wideHeaderRows[0]?.join(',') === '1,2,,' && wideHeaderRows[1]?.join(',') === '3,4,5,6') {
+    pass('wide-first CSV preserves shorter later rows without collapsing columns');
+  } else fail('wide-first CSV rows: ' + JSON.stringify(wideHeaderRows));
+
   // ── Excel module ── multi-sheet workbook via SheetJS, now an EDITABLE grid in the parent pane.
   await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.xlsx');
