@@ -125,6 +125,28 @@ export async function run(ctx) {
   } else {
     pass('dedicated media format samples indexed (' + mediaFormatSamples.length + ')');
   }
+  const mp4Video = await page.evaluate(() => new Promise((resolve) => {
+    const video = document.createElement('video');
+    const finish = (error = '') => resolve({
+      error,
+      width: video.videoWidth,
+      height: video.videoHeight,
+      duration: video.duration,
+      readyState: video.readyState,
+    });
+    const timer = setTimeout(() => finish('metadata timeout'), 8000);
+    video.preload = 'metadata';
+    video.muted = true;
+    video.onloadedmetadata = () => { clearTimeout(timer); finish(); };
+    video.onerror = () => { clearTimeout(timer); finish(video.error?.message || 'media error'); };
+    video.src = 'examples/sample.mp4';
+  }));
+  if (!mp4Video.error && mp4Video.width === 320 && mp4Video.height === 180
+    && Number.isFinite(mp4Video.duration) && mp4Video.duration >= 1) {
+    pass('MP4 sample decodes as a real 320×180 video track');
+  } else {
+    fail('MP4 sample is not a decodable video: ' + JSON.stringify(mp4Video));
+  }
   const partialContainerSamples = ['sample.mov', 'sample.mkv'];
   const missingPartialContainers = partialContainerSamples.filter((file) => !byFile.get(file)?.partial);
   if (missingPartialContainers.length) {

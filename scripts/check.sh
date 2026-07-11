@@ -192,6 +192,8 @@ FULL_UNIT_TESTS=(
   tests/mobile-renderer-layout.test.mjs
   tests/core-layout-regressions.mjs
   tests/archivelib-paths.test.mjs
+  tests/archive-metadata.test.mjs
+  tests/example-fixture-quality.test.mjs
   tests/asset-manifest.test.mjs
   tests/settings-defaults.test.mjs
   tests/registry-runtime.test.mjs

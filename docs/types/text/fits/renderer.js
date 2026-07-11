@@ -16,6 +16,11 @@ function esc(s) {
 function parseCard(rec) {
   const kw = rec.slice(0, 8).trim();
   if (!kw || kw === 'END') return kw === 'END' ? null : undefined;
+  // COMMENT/HISTORY and other commentary cards have no "= " marker; their free text starts in
+  // column 9. Treating every card like a value card (slice(10)) dropped the first letter.
+  if (rec.slice(8, 10) !== '= ') {
+    return { kw, value: rec.slice(8).trim(), comment: '' };
+  }
   const valueComment = rec.slice(10).trimEnd();
   let value = valueComment;
   let comment = '';

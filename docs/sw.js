@@ -11,7 +11,7 @@
 // an update and installs a new SW; (2) the cache is NAMED per version, so a new SW serves a single
 // CONSISTENT asset set instead of a stale mix of old+new modules (the version-skew that looked like
 // a hang). Keep this line in the exact `const VERSION = '...';` shape — the generator rewrites it.
-const VERSION = '6b98069492a4';   // stamped by scripts/gen-asset-manifest.mjs
+const VERSION = '541a723f2520';   // stamped by scripts/gen-asset-manifest.mjs
 const CACHE_PREFIX = 'file-viewer-';
 const CACHE = 'file-viewer-' + VERSION;
 const SCOPE = self.registration.scope;

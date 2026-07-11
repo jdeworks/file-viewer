@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { createRequire } from 'node:module';
-import { gzipSync, gunzipSync } from 'node:zlib';
 import { basename, join } from 'node:path';
 import { readFile, writeFile } from 'node:fs/promises';
+import { Archive } from 'libarchive.js/dist/libarchive-node.mjs';
 import { FORMAT_CASES, mimeFor } from './release-readiness-format-cases.mjs';
 import {
   FORMAT_ARTIFACT_ROOT, FORMAT_FIXTURE_ROOT, REPO_ROOT,
@@ -18,48 +18,6 @@ const require = createRequire(import.meta.url);
 const JSZip = require('jszip');
 const XLSX = require('xlsx');
 const yaml = require('js-yaml');
-
-function writeAscii(buf, offset, length, value) {
-  Buffer.from(String(value)).copy(buf, offset, 0, length);
-}
-
-function writeOctal(buf, offset, length, value) {
-  const encoded = Math.max(0, value).toString(8).padStart(length - 1, '0') + '\0';
-  writeAscii(buf, offset, length, encoded);
-}
-
-function tarEntry(name, content) {
-  const body = Buffer.from(content);
-  const header = Buffer.alloc(512);
-  writeAscii(header, 0, 100, name);
-  writeOctal(header, 100, 8, 0o644);
-  writeOctal(header, 108, 8, 0);
-  writeOctal(header, 116, 8, 0);
-  writeOctal(header, 124, 12, body.length);
-  writeOctal(header, 136, 12, 0);
-  header.fill(0x20, 148, 156);
-  header[156] = 0x30;
-  writeAscii(header, 257, 6, 'ustar\0');
-  writeAscii(header, 263, 2, '00');
-  writeAscii(header, 265, 32, 'file-viewer');
-  writeAscii(header, 297, 32, 'file-viewer');
-  writeOctal(header, 148, 8, [...header].reduce((sum, byte) => sum + byte, 0));
-  const padding = Buffer.alloc((512 - body.length % 512) % 512);
-  return Buffer.concat([header, body, padding]);
-}
-
-async function createRepresentativeArchive() {
-  const tar = Buffer.concat([
-    tarEntry('README.md', '# Representative archive\n\nA real nested archive tree for File Viewer release-readiness inspection.\n'),
-    tarEntry('nested/data.json', JSON.stringify({ project: 'file-viewer', rows: [1, 2, 3], offline: true }, null, 2) + '\n'),
-    tarEntry('nested/deeper/notes.txt', 'alpha\nbeta\ngamma\ndelta\n'),
-    tarEntry('src/example.js', 'export const answer = 42;\nexport function greet(name) { return `Hello ${name}`; }\n'),
-    Buffer.alloc(1024),
-  ]);
-  const target = join(FORMAT_FIXTURE_ROOT, 'representative.tar.gz');
-  await writeFile(target, gzipSync(tar, { level: 9, mtime: 0 }));
-  return target;
-}
 
 async function createRepresentativeTopoJson() {
   const topology = {
@@ -89,21 +47,24 @@ async function createRepresentativeTopoJson() {
 const text = (bytes) => new TextDecoder().decode(bytes);
 const starts = (bytes, values, offset = 0) => values.every((value, i) => bytes[offset + i] === value);
 const u16be = (b, o) => (b[o] << 8) | b[o + 1];
+const u16le = (b, o) => b[o] | b[o + 1] << 8;
 const u32le = (b, o) => (b[o] | b[o + 1] << 8 | b[o + 2] << 16 | b[o + 3] << 24) >>> 0;
 const u32be = (b, o) => (b[o] * 0x1000000) + (b[o + 1] << 16) + (b[o + 2] << 8) + b[o + 3];
+const u64le = (b, o) => Number(new DataView(b.buffer, b.byteOffset, b.byteLength).getBigUint64(o, true));
 
-function parseTarNames(compressed) {
-  const tar = gunzipSync(compressed);
-  const names = [];
-  for (let offset = 0; offset + 512 <= tar.length;) {
-    const header = tar.subarray(offset, offset + 512);
-    if (header.every((byte) => byte === 0)) break;
-    const name = header.subarray(0, 100).toString().replace(/\0.*$/, '');
-    const size = Number.parseInt(header.subarray(124, 136).toString().replace(/\0.*$/, '').trim() || '0', 8);
-    if (name) names.push(name);
-    offset += 512 + Math.ceil(size / 512) * 512;
+function mp4VideoDimensions(bytes) {
+  const data = Buffer.from(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  const codecs = ['avc1', 'hvc1', 'hev1', 'vp09', 'av01', 'mp4v'];
+  for (const codec of codecs) {
+    let offset = -1;
+    while ((offset = data.indexOf(codec, offset + 1, 'ascii')) >= 0) {
+      if (offset + 32 > data.length) break;
+      const width = data.readUInt16BE(offset + 28);
+      const height = data.readUInt16BE(offset + 30);
+      if (width > 0 && height > 0) return { codec, width, height };
+    }
   }
-  return names;
+  return null;
 }
 
 function countWasmSections(bytes) {
@@ -218,13 +179,25 @@ async function validateFixture(row, bytes) {
     case 'rtf':
       return result(/^\{\\rtf/.test(s), s.split(/\s+/).length >= 150, { wordsIncludingControls: s.split(/\s+/).length, characters: s.length });
     case 'archive': {
-      const names = parseTarNames(bytes);
-      return result(names.length > 0, names.length >= 4 && names.some((name) => name.includes('/')), { entries: names });
+      const archive = await Archive.open(new Blob([bytes]));
+      try {
+        const files = await archive.getFilesArray();
+        const names = files.map(({ path, file }) => `${path}${file.name}`);
+        const readme = files.find(({ path, file }) => `${path}${file.name}` === 'README.md');
+        const readmeText = readme ? await (await readme.file.extract()).text() : '';
+        return result(names.length > 0,
+          names.length >= 4 && names.some((name) => name.includes('/')) && /File Viewer archive sample/.test(readmeText),
+          { entries: names, extractedReadmeCharacters: readmeText.length });
+      } finally {
+        await archive.close();
+      }
     }
     case 'media': {
       const webm = starts(bytes, [0x1a, 0x45, 0xdf, 0xa3]);
       const mp4 = s.slice(4, 8) === 'ftyp';
-      return result(webm || mp4, bytes.length >= 10000, { bytes: bytes.length, container: webm ? 'WebM' : mp4 ? 'ISO BMFF' : 'unknown', brand: mp4 ? s.slice(8, 12) : null });
+      const video = mp4 ? mp4VideoDimensions(bytes) : null;
+      return result(webm || mp4, bytes.length >= 10000 && (webm || (video?.width >= 160 && video?.height >= 90)),
+        { bytes: bytes.length, container: webm ? 'WebM' : mp4 ? 'ISO BMFF' : 'unknown', brand: mp4 ? s.slice(8, 12) : null, video });
     }
     case 'midi':
       return result(s.slice(0, 4) === 'MThd', u16be(bytes, 10) >= 2, { format: u16be(bytes, 8), tracks: u16be(bytes, 10), division: u16be(bytes, 12) });
@@ -261,8 +234,32 @@ async function validateFixture(row, bytes) {
       return result(/^HEADER/m.test(s) && atoms > 0, atoms >= 15 && chains >= 2, { atoms, chains, lines: s.split(/\r?\n/).length });
     }
     case 'fits': {
-      const cards = Math.floor(bytes.length / 80);
-      return result(s.slice(0, 8) === 'SIMPLE  ', cards >= 12 && /NAXIS/.test(s), { cards, bytes: bytes.length, hasEnd: /END\s+/.test(s) });
+      const cards = [];
+      let endOffset = -1;
+      for (let offset = 0; offset + 80 <= bytes.length; offset += 80) {
+        const record = text(bytes.subarray(offset, offset + 80));
+        const keyword = record.slice(0, 8).trim();
+        cards.push(record);
+        if (keyword === 'END') { endOffset = offset; break; }
+      }
+      const headerValue = (keyword) => {
+        const record = cards.find((candidate) => candidate.slice(0, 8).trim() === keyword);
+        return record ? record.slice(10).split('/')[0].trim().replace(/^'(.*)'$/, '$1').trim() : null;
+      };
+      const width = Number(headerValue('NAXIS1'));
+      const height = Number(headerValue('NAXIS2'));
+      const bitpix = Number(headerValue('BITPIX'));
+      const headerBytes = endOffset >= 0 ? Math.ceil((endOffset + 80) / 2880) * 2880 : 0;
+      const pixelBytes = width * height * Math.abs(bitpix) / 8;
+      let nonzeroPixels = 0;
+      for (let offset = headerBytes; offset + 1 < Math.min(bytes.length, headerBytes + pixelBytes); offset += 2) {
+        if (bytes[offset] || bytes[offset + 1]) nonzeroPixels++;
+      }
+      const valid = s.slice(0, 8) === 'SIMPLE  ' && endOffset >= 0 && bytes.length % 2880 === 0
+        && width > 0 && height > 0 && [8, 16, 32, 64, -32, -64].includes(bitpix)
+        && bytes.length >= headerBytes + pixelBytes;
+      return result(valid, cards.length >= 15 && width >= 32 && height >= 32 && nonzeroPixels > width,
+        { cards: cards.length, bytes: bytes.length, headerBytes, width, height, bitpix, pixelBytes, nonzeroPixels });
     }
     case 'wasm': {
       const sections = countWasmSections(bytes);
@@ -273,8 +270,16 @@ async function validateFixture(row, bytes) {
       const header = text(bytes.subarray(10, 10 + headerLength));
       return result(starts(bytes, [0x93, 0x4e, 0x55, 0x4d, 0x50, 0x59]), /'shape':/.test(header) && bytes.length > 10 + headerLength, { header: header.trim(), dataBytes: bytes.length - 10 - headerLength });
     }
-    case 'exe':
-      return result(starts(bytes, [0x7f, 0x45, 0x4c, 0x46]), bytes[4] === 2 && bytes.length >= 64, { class: bytes[4] === 2 ? '64-bit' : '32-bit', machine: bytes[18] | bytes[19] << 8, bytes: bytes.length });
+    case 'exe': {
+      const programHeaders = bytes.length >= 64 ? u16le(bytes, 56) : 0;
+      const sectionHeaders = bytes.length >= 64 ? u16le(bytes, 60) : 0;
+      const sectionOffset = bytes.length >= 64 ? u64le(bytes, 40) : 0;
+      const entry = bytes.length >= 64 ? u64le(bytes, 24) : 0;
+      const completeSectionTable = sectionOffset > 0 && sectionOffset + sectionHeaders * 64 <= bytes.length;
+      return result(starts(bytes, [0x7f, 0x45, 0x4c, 0x46]),
+        bytes[4] === 2 && programHeaders >= 2 && sectionHeaders >= 5 && completeSectionTable && entry > 0,
+        { class: bytes[4] === 2 ? '64-bit' : '32-bit', machine: bytes[18] | bytes[19] << 8, bytes: bytes.length, entry, programHeaders, sectionHeaders, completeSectionTable });
+    }
     case 'torrent':
       return result(bytes[0] === 0x64 && bytes.at(-1) === 0x65, /announce/.test(s) && /pieces/.test(s) && bytes.length >= 100, { bytes: bytes.length, hasAnnounce: /announce/.test(s), hasPieces: /pieces/.test(s) });
     case 'dockerfile': {
@@ -311,7 +316,6 @@ async function validateFixture(row, bytes) {
 }
 
 await ensureFormatArtifactDirs();
-await createRepresentativeArchive();
 await createRepresentativeTopoJson();
 
 const registryIds = REGISTRY.map((type) => type.id);
