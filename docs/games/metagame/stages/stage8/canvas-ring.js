@@ -14,6 +14,9 @@ import { getMode, effectiveDarkZone } from "./modes.js";
 import { drawSingleGap, drawDualGap, drawMultiGap, drawStealthGap, polarPoint } from "./canvas-modes.js";
 
 const UNKNOWN_RING_COLOR = "#444";
+// The ring is drawn INSIDE the ship's orbit (design fix 2026-07-12: ship and ring at the same radius
+// made the ship read as part of the ring). The ship keeps the outermost orbit; the rotor shrinks.
+const RING_RADIUS_FACTOR = 0.8;
 const SHIP_COLOR = "#8ef7d1";
 const SHIP_GLOW = "rgba(142, 247, 209, 0.9)";
 const TRAIL_COLOR = "142, 247, 209"; // rgb triple, alpha applied per-sample by age
@@ -46,13 +49,16 @@ export function drawArena(canvas, frame) {
   ctx.clearRect(0, 0, w, h);
   const cx = w / 2, cy = h / 2;
   const r = Math.max(8, Math.min(w, h) / 2 - 10);
+  // Two radii: the SHIP orbits at r (outermost); the ring/gap geometry draws on a smaller rotor so
+  // the two never overlap. Ship, trail and launch burst share the ship's orbit.
   const geom = { cx, cy, r };
+  const ringGeom = { cx, cy, r: r * RING_RADIUS_FACTOR };
 
   const { cfg, seed, ms, shipAngle = 0, shipPath = [], launchAnim = null, ghosts = [], shipIntensity = 0 } = frame;
   if (cfg.display === "hidden") {
-    drawUnknownRing(ctx, geom);
+    drawUnknownRing(ctx, ringGeom);
   } else {
-    drawGapGeometry(ctx, geom, cfg, seed, ms, shipAngle, ghosts);
+    drawGapGeometry(ctx, ringGeom, cfg, seed, ms, shipAngle, ghosts);
   }
   drawTrail(ctx, geom, shipPath, ms);
   drawShip(ctx, geom, shipAngle, shipIntensity);
@@ -96,15 +102,16 @@ function drawUnknownRing(ctx, { cx, cy, r }) {
   ctx.stroke();
 }
 
-// The player-steered ship: a small triangle marker at (shipAngle, r), pointing outward. Glows toward
-// SHIP_GLOW as `intensity` (0..1, the existing overlay.js markerIntensity ramp) approaches 1.
+// The player-steered ship: a small triangle marker at (shipAngle, r) on its own orbit OUTSIDE the
+// ring, pointing inward at the rotor it crosses. Glows toward SHIP_GLOW as `intensity` (0..1, the
+// existing overlay.js markerIntensity ramp) approaches 1.
 function drawShip(ctx, geom, shipAngle, intensity) {
   const p = polarPoint(geom, shipAngle, geom.r);
   const rad = (shipAngle - 90) * Math.PI / 180;
   const size = 9;
   ctx.save();
   ctx.translate(p.x, p.y);
-  ctx.rotate(rad + Math.PI / 2); // point the triangle outward along the radius
+  ctx.rotate(rad - Math.PI / 2); // point the triangle inward, toward the ring it dives through
   ctx.beginPath();
   ctx.moveTo(0, -size);
   ctx.lineTo(size * 0.7, size * 0.7);

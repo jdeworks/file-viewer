@@ -891,6 +891,7 @@ function polarPoint({ cx, cy, r }, deg, radius = r) {
 
 // ../../docs/games/metagame/stages/stage8/canvas-ring.js
 var UNKNOWN_RING_COLOR = "#444";
+var RING_RADIUS_FACTOR = 0.8;
 var SHIP_COLOR = "#8ef7d1";
 var SHIP_GLOW = "rgba(142, 247, 209, 0.9)";
 var TRAIL_COLOR = "142, 247, 209";
@@ -915,11 +916,12 @@ function drawArena(canvas, frame) {
   const cx = w / 2, cy = h / 2;
   const r = Math.max(8, Math.min(w, h) / 2 - 10);
   const geom = { cx, cy, r };
+  const ringGeom = { cx, cy, r: r * RING_RADIUS_FACTOR };
   const { cfg, seed, ms, shipAngle = 0, shipPath = [], launchAnim = null, ghosts = [], shipIntensity = 0 } = frame;
   if (cfg.display === "hidden") {
-    drawUnknownRing(ctx, geom);
+    drawUnknownRing(ctx, ringGeom);
   } else {
-    drawGapGeometry(ctx, geom, cfg, seed, ms, shipAngle, ghosts);
+    drawGapGeometry(ctx, ringGeom, cfg, seed, ms, shipAngle, ghosts);
   }
   drawTrail(ctx, geom, shipPath, ms);
   drawShip(ctx, geom, shipAngle, shipIntensity);
@@ -959,7 +961,7 @@ function drawShip(ctx, geom, shipAngle, intensity) {
   const size = 9;
   ctx.save();
   ctx.translate(p.x, p.y);
-  ctx.rotate(rad + Math.PI / 2);
+  ctx.rotate(rad - Math.PI / 2);
   ctx.beginPath();
   ctx.moveTo(0, -size);
   ctx.lineTo(size * 0.7, size * 0.7);
