@@ -1,4 +1,4 @@
-import { ensureKnownUiStyle, issueList, sourcePreview, wireSourceLinks } from '../../../../core/known-ui.js';
+import { ensureKnownUiStyle, issueList, maskedValue, sourcePreview, wireSourceLinks } from '../../../../core/known-ui.js';
 
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
@@ -11,12 +11,13 @@ const CSS = `
 .sysd-chip.warn{background:#fff7ed;border-color:#fed7aa;color:#c2410c;}
 .sysd-card{background:var(--bg-2,#f6f8fa);border:1px solid var(--border,#e0e0e0);border-radius:6px;padding:12px 16px;margin-bottom:10px;}
 .sysd-card-hd{font-family:ui-monospace,monospace;font-size:13px;font-weight:700;color:var(--fg,#24292f);margin:0 0 8px;padding-bottom:6px;border-bottom:1px solid var(--border,#e0e0e0);}
-.sysd-table{width:100%;border-collapse:collapse;font-size:13px;}
+.sysd-table{width:100%;table-layout:fixed;border-collapse:collapse;font-size:13px;}
 .sysd-table td{padding:4px 8px 4px 0;border-bottom:1px solid var(--border,#e0e0e0);vertical-align:top;}
 .sysd-table tr:last-child td{border-bottom:none;}
-.sysd-table td:first-child{color:var(--fg-2,#666);width:30%;white-space:nowrap;font-family:ui-monospace,monospace;font-size:12px;}
+.sysd-table td:first-child{color:var(--fg-2,#666);width:30%;white-space:normal;overflow-wrap:anywhere;font-family:ui-monospace,monospace;font-size:12px;}
 .sysd-val{font-family:ui-monospace,monospace;font-size:12px;color:var(--fg,#24292f);word-break:break-all;}
 .sysd-val-env{font-family:ui-monospace,monospace;font-size:12px;color:#6f42c1;word-break:break-all;}
+.sysd-mask-note{display:inline-block;margin-left:6px;color:#9a6700;font:11px system-ui,sans-serif;}
 .sysd-empty{color:var(--fg-2,#888);font-size:12px;font-style:italic;}
 .sysd-link{border:0;background:transparent;color:inherit;font:inherit;padding:0;text-align:left;cursor:pointer;text-decoration:underline;text-decoration-style:dotted;text-underline-offset:3px;}
 .sysd-link:hover{color:#5F4B8B;}
@@ -25,13 +26,17 @@ const CSS = `
 .sysd-source-comment{color:#6e7781;font-style:italic;}
 `;
 
-const SECTION_FIELDS = {
-  Unit: ['Description', 'Documentation', 'After', 'Requires', 'Wants', 'ConditionPathExists'],
-  Service: ['Type', 'ExecStart', 'ExecReload', 'ExecStop', 'User', 'Group', 'WorkingDirectory', 'Restart', 'RestartSec', 'Environment', 'EnvironmentFile', 'NoNewPrivileges', 'PrivateTmp', 'ProtectSystem', 'ProtectHome', 'CapabilityBoundingSet'],
-  Timer: ['OnCalendar', 'OnBootSec', 'OnUnitActiveSec', 'Persistent'],
-  Socket: ['ListenStream', 'ListenDatagram', 'ListenSequentialPacket', 'Accept', 'SocketUser', 'SocketGroup'],
-  Install: ['WantedBy', 'RequiredBy'],
-};
+const HARDENING_FIELDS = new Set([
+  'NoNewPrivileges', 'DynamicUser', 'PrivateTmp', 'PrivateDevices', 'PrivateNetwork',
+  'PrivateUsers', 'ProtectSystem', 'ProtectHome', 'ProtectKernelTunables',
+  'ProtectKernelModules', 'ProtectControlGroups', 'ProtectClock', 'ProtectHostname',
+  'ProtectProc', 'ProcSubset', 'RestrictAddressFamilies', 'RestrictNamespaces',
+  'RestrictRealtime', 'SystemCallFilter', 'SystemCallArchitectures',
+  'MemoryDenyWriteExecute', 'LockPersonality', 'RemoveIPC', 'CapabilityBoundingSet',
+  'AmbientCapabilities', 'DevicePolicy', 'DeviceAllow', 'SecureBits', 'KeyringMode',
+  'UMask', 'RootDirectory', 'RootImage', 'ReadOnlyPaths', 'ReadWritePaths',
+  'InaccessiblePaths',
+]);
 
 const HELP = {
   Unit: 'Unit-level metadata and ordering dependencies.',
@@ -114,18 +119,30 @@ function lineButton(label, line, key = label, section = '') {
   return `<button class="sysd-link" type="button" data-source-line="${line || 1}" title="${esc(title)}">${esc(label)}</button>`;
 }
 
+function maskEnvironment(value) {
+  let maskedAny = false;
+  const text = String(value || '').replace(/(^|\s|["'])([A-Za-z_][A-Za-z0-9_]*)(=)([^\s"']+|"[^"]*"|'[^']*')/g,
+    (whole, prefix, key, separator, rawValue) => {
+      const masked = maskedValue(key, rawValue.replace(/^["']|["']$/g, ''));
+      if (!masked.masked) return whole;
+      maskedAny = true;
+      const quote = /^["']/.test(rawValue) ? rawValue[0] : '';
+      return `${prefix}${key}${separator}${quote}********${quote}`;
+    });
+  return { text, masked: maskedAny };
+}
+
 function renderSection(section) {
-  const allowedFields = SECTION_FIELDS[section.name];
-  const rows = (allowedFields
-    ? section.entries.filter((entry) => allowedFields.includes(entry.key))
-    : section.entries
-  );
+  // Unit files are extensible and security-relevant directives evolve over time. Rendering only
+  // a hand-maintained allowlist made an "enhanced" card silently hide valid source settings.
+  const rows = section.entries;
   if (!rows.length) return '';
 
   const trs = rows.map((entry) => {
     const isEnvKey = entry.key === 'Environment' || entry.key === 'EnvironmentFile';
     const valClass = isEnvKey ? 'sysd-val-env' : 'sysd-val';
-    return `<tr><td>${lineButton(entry.key, entry.line, entry.key, section.name)}</td><td><span class="${valClass}">${lineButton(entry.value || '[empty]', entry.line, entry.key, section.name)}</span></td></tr>`;
+    const display = entry.key === 'Environment' ? maskEnvironment(entry.value) : { text: entry.value, masked: false };
+    return `<tr><td>${lineButton(entry.key, entry.line, entry.key, section.name)}</td><td><span class="${valClass}">${lineButton(display.text || '[empty]', entry.line, entry.key, section.name)}</span>${display.masked ? '<span class="sysd-mask-note">secret-like value masked</span>' : ''}</td></tr>`;
   }).join('');
 
   return `<div class="sysd-card">
@@ -172,10 +189,16 @@ function collectIssues(sections, unitType) {
     const configured = new Set(service.entries.map((entry) => entry.key));
     const missing = hardening.filter((key) => !configured.has(key));
     if (missing.length) {
-      issues.push({ severity: 'warning', label: 'hardening', line: service.line, message: `No explicit service hardening for ${missing.slice(0, 4).join(', ')}${missing.length > 4 ? ', ...' : ''}.` });
+      issues.push({ severity: 'warning', label: 'baseline hardening', line: service.line,
+        message: `Baseline checks not explicitly configured: ${missing.slice(0, 4).join(', ')}${missing.length > 4 ? ', ...' : ''}. Other hardening settings are counted separately.` });
     }
     if (!user || /^(root)?$/i.test(user.value)) {
       issues.push({ severity: 'warning', label: 'service user', line: user?.line || service.line, message: 'Service has no non-root User= directive.' });
+    }
+    for (const entry of service.entries) {
+      if (!HARDENING_FIELDS.has(entry.key) || !/^(?:no|false|off|0)$/i.test(entry.value)) continue;
+      issues.push({ severity: 'warning', label: 'hardening disabled', line: entry.line,
+        message: `${entry.key}=${entry.value} explicitly disables this hardening setting.` });
     }
   }
   for (const entry of entriesFor(sections, 'Service', 'Environment')) {
@@ -187,7 +210,9 @@ function collectIssues(sections, unitType) {
 }
 
 function highlightIniLine(line) {
-  const raw = esc(line);
+  const environment = String(line).match(/^(\s*Environment\s*=\s*)(.*)$/);
+  const safeLine = environment ? environment[1] + maskEnvironment(environment[2]).text : line;
+  const raw = esc(safeLine);
   return raw.replace(/^(\s*\[[^\]]+\])/, '<span class="sysd-source-section">$1</span>')
     .replace(/^(\s*)([A-Za-z][\w-]*)(\s*=)/, `$1<span class="sysd-source-key">$2</span>$3`)
     .replace(/([#;].*)$/, '<span class="sysd-source-comment">$1</span>');
@@ -202,12 +227,15 @@ export function render(intake) {
   const description = firstEntry(sections, 'Unit', 'Description');
   const descText = description ? description.value : '';
   const service = sections.get('Service');
-  const hardeningKeys = ['NoNewPrivileges', 'PrivateTmp', 'ProtectSystem', 'ProtectHome', 'CapabilityBoundingSet'];
-  const hardeningCount = service ? service.entries.filter((entry) => hardeningKeys.includes(entry.key)).length : 0;
+  const hardeningCount = service ? new Set(service.entries
+    .filter((entry) => HARDENING_FIELDS.has(entry.key)).map((entry) => entry.key)).size : 0;
 
   const sectionOrder = ['Unit', 'Service', 'Timer', 'Socket', 'Mount', 'Target', 'Path', 'Scope', 'Slice', 'Install'];
-  const cardsHtml = sectionOrder
-    .filter((name) => sections.has(name))
+  const orderedSections = [
+    ...sectionOrder.filter((name) => sections.has(name)),
+    ...[...sections.keys()].filter((name) => !sectionOrder.includes(name)),
+  ];
+  const cardsHtml = orderedSections
     .map((name) => renderSection(sections.get(name)))
     .filter(Boolean)
     .join('');
@@ -219,7 +247,7 @@ export function render(intake) {
 <div class="sysd-sub">
   <span class="sysd-chip">${esc(unitType)}</span>
   <span>${sections.size} section${sections.size !== 1 ? 's' : ''}</span>
-  ${unitType === 'service' ? `<span class="sysd-chip ${hardeningCount ? '' : 'warn'}">${hardeningCount} hardening directive${hardeningCount === 1 ? '' : 's'}</span>` : ''}
+  ${unitType === 'service' ? `<span class="sysd-chip ${hardeningCount ? '' : 'warn'}">${hardeningCount} hardening setting${hardeningCount === 1 ? '' : 's'}</span>` : ''}
 </div>
 ${cardsHtml || '<p class="sysd-empty">No recognized sections found.</p>'}`;
 

@@ -87,6 +87,35 @@ function composeIssues(services, topVolumes, text) {
     if (svc.privileged === true) out.push({ severity: 'high', label: 'privileged', line: lineOfServiceKey(text, name, 'privileged') || line, message: `${name} runs with privileged container access.` });
     if (svc.network_mode === 'host') out.push({ severity: 'warning', label: 'host network', line: lineOfServiceKey(text, name, 'network_mode') || line, message: `${name} shares the host network namespace.` });
     if (svc.pid === 'host') out.push({ severity: 'warning', label: 'host pid', line: lineOfServiceKey(text, name, 'pid') || line, message: `${name} shares the host PID namespace.` });
+    if (svc.ipc === 'host') out.push({ severity: 'warning', label: 'host ipc', line: lineOfServiceKey(text, name, 'ipc') || line, message: `${name} shares the host IPC namespace.` });
+    if (svc.userns_mode === 'host') out.push({ severity: 'warning', label: 'host userns', line: lineOfServiceKey(text, name, 'userns_mode') || line, message: `${name} disables user-namespace isolation.` });
+    const capabilities = asArray(svc.cap_add).map(String);
+    if (capabilities.length) {
+      const all = capabilities.some((capability) => capability.toUpperCase() === 'ALL');
+      out.push({ severity: all ? 'high' : 'warning', label: 'added capabilities',
+        line: lineOfServiceKey(text, name, 'cap_add') || line,
+        message: `${name} adds ${all ? 'all Linux capabilities' : capabilities.join(', ')}.` });
+    }
+    const securityOptions = asArray(svc.security_opt).map(String);
+    if (securityOptions.some((option) => /(?:seccomp|apparmor)[=:]unconfined/i.test(option))) {
+      out.push({ severity: 'high', label: 'unconfined security',
+        line: lineOfServiceKey(text, name, 'security_opt') || line,
+        message: `${name} disables a seccomp or AppArmor confinement profile.` });
+    }
+    if (asArray(svc.devices).length || asArray(svc.device_cgroup_rules).length) {
+      out.push({ severity: 'warning', label: 'host devices',
+        line: lineOfServiceKey(text, name, 'devices') || line,
+        message: `${name} receives explicit host-device access.` });
+    }
+    if (/^(?:0|root)(?::(?:0|root))?$/i.test(String(svc.user || ''))) {
+      out.push({ severity: 'warning', label: 'root user', line: lineOfServiceKey(text, name, 'user') || line,
+        message: `${name} explicitly runs as root.` });
+    }
+    const command = [svc.entrypoint, svc.command].flatMap(asArray).map(String).join(' ');
+    if (/(?:curl|wget)\b[^\n|]*\|\s*(?:bash|sh)\b/i.test(command)) {
+      out.push({ severity: 'high', label: 'network shell', line: lineOfServiceKey(text, name, svc.entrypoint ? 'entrypoint' : 'command') || line,
+        message: `${name} appears to download and execute shell content at startup.` });
+    }
     if (image.endsWith(':latest') || (!/:/.test(image) && image)) out.push({ severity: 'warning', label: 'floating image', line: lineOfServiceKey(text, name, 'image') || line, message: `${name} uses an unpinned image tag.` });
     for (const port of asArray(svc.ports)) {
       const value = typeof port === 'object' ? JSON.stringify(port) : String(port);
@@ -131,9 +160,9 @@ function lineOfServiceKey(text, name, key) {
 }
 
 function highlightComposeSourceLine(line) {
-  const envM = String(line).match(/^(\s*-\s*|[A-Za-z0-9_-]+\s*:\s*)?([A-Za-z0-9_.-]*(?:PASSWORD|TOKEN|SECRET|API_KEY|PRIVATE_KEY|CLIENT_SECRET)[A-Za-z0-9_.-]*)(\s*[:=]\s*)(.+)$/i);
+  const envM = String(line).match(/^(\s*(?:-\s*)?)([A-Za-z0-9_.-]*(?:PASSWORD|TOKEN|SECRET|API_KEY|PRIVATE_KEY|CLIENT_SECRET)[A-Za-z0-9_.-]*)(\s*[:=]\s*)(.+)$/i);
   if (!envM) return esc(line);
-  return esc(`${envM[1] || ''}${envM[2]}${envM[3]}********`);
+  return esc(`${envM[1]}${envM[2]}${envM[3]}********`);
 }
 
 function escapeRegExp(s) {
@@ -161,8 +190,15 @@ export async function render(intake, _ctx) {
     const line = lineOfService(intake.text || '', name);
     return '<section class="kf-svc" data-source-line="' + esc(line) + '"><h3>' + sourceLink(name, line) + '</h3>'
       + (src ? '<div class="kf-field"><span class="kf-fvals">' + src + '</span></div>' : '')
-      + field('ports', s.ports) + field('depends on', s.depends_on) + field('environment', s.environment, renderEnv)
+      + field('command', s.command) + field('entrypoint', s.entrypoint) + field('user', s.user)
+      + field('restart', s.restart) + field('read only', s.read_only) + field('privileged', s.privileged)
+      + field('network mode', s.network_mode) + field('pid namespace', s.pid) + field('ipc namespace', s.ipc)
+      + field('user namespace', s.userns_mode) + field('add capabilities', s.cap_add) + field('drop capabilities', s.cap_drop)
+      + field('security options', s.security_opt) + field('devices', [...asArray(s.devices), ...asArray(s.device_cgroup_rules)])
+      + field('ports', s.ports) + field('depends on', s.depends_on) + field('healthcheck', s.healthcheck ? [s.healthcheck] : null)
+      + field('environment', s.environment, renderEnv)
       + field('volumes', s.volumes, (volume) => renderVolume(volume, topVolumes)) + field('networks', s.networks)
+      + field('secrets', s.secrets) + field('configs', s.configs) + field('deploy', s.deploy ? [s.deploy] : null)
       + (hints.length ? field('local hints', hints) : '') + '</section>';
   }).join('');
 

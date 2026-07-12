@@ -30,6 +30,7 @@ const AREAS = {
   'tree-drag':         () => import('./areas/tree-drag.mjs'),
   'examples-catalog':  () => import('./areas/examples-catalog.mjs'),
   'cap-fidelity':      () => import('./areas/cap-fidelity.mjs'),
+  'enhanced-security-fidelity': () => import('./areas/enhanced-security-fidelity.mjs'),
   'partial-support-fidelity': () => import('./areas/partial-support-fidelity.mjs'),
   'binary-types':      () => import('./areas/binary-types.mjs'),
   'known-files':       () => import('./areas/known-files.mjs'),
