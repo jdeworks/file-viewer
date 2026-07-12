@@ -1,7 +1,11 @@
 import assert from 'node:assert/strict';
+import { createRequire } from 'node:module';
 import { readFile } from 'node:fs/promises';
 import { Archive } from 'libarchive.js/dist/libarchive-node.mjs';
 import { render as renderFits } from '../docs/types/text/fits/renderer.js';
+
+const require = createRequire(import.meta.url);
+const JSZip = require('jszip');
 
 const root = new URL('../docs/examples/', import.meta.url);
 const bytes = (name) => readFile(new URL(name, root));
@@ -77,5 +81,20 @@ assert.equal(sectionHeaders, 5);
 assert.ok(sectionOffset + sectionHeaders * 64 <= elf.length, 'ELF section table must fit the file');
 assert.equal(elf64(24), 0x400100);
 assert.match(elf.toString('latin1'), /\.text\0.*\.symtab\0\.strtab\0/s);
+
+// Pages must exercise both enhanced capabilities. The former 454-byte placeholder contained a
+// 1x1 thumbnail and no IWA document content, making the preview look blank while the text tab had
+// nothing to extract.
+const pages = await bytes('sample.pages');
+const pagesZip = await JSZip.loadAsync(pages);
+assert.deepEqual(Object.keys(pagesZip.files).sort(), ['Index/Document.iwa', 'preview.png']);
+const pagesPreview = Buffer.from(await pagesZip.file('preview.png').async('uint8array'));
+assert.deepEqual([...pagesPreview.subarray(0, 8)], [137, 80, 78, 71, 13, 10, 26, 10]);
+assert.equal(pagesPreview.readUInt32BE(16), 640);
+assert.equal(pagesPreview.readUInt32BE(20), 360);
+assert.ok(pagesPreview.length > 2000, 'Pages preview must contain a meaningful document image');
+const pagesIwa = Buffer.from(await pagesZip.file('Index/Document.iwa').async('uint8array'));
+assert.ok(pagesIwa.length > 150, 'Pages fixture must contain extractable IWA content');
+assert.match(pagesIwa.toString('utf8'), /File Viewer Pages Fidelity Sample/);
 
 console.log('public example fixture quality tests passed');

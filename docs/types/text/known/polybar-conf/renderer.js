@@ -1,5 +1,7 @@
 // Polybar status bar config renderer. Pure text parsing — no eval, no execution.
 // Parses [colors], [bar/NAME], [module/NAME], and [settings] sections.
+import { describeCollectionCap } from '../../../../core/collection-cap.js';
+
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 function parsePolybarSections(text) {
@@ -127,9 +129,11 @@ export function render(intake) {
   }
 
   // Colors palette
-  const colorEntries = Object.entries(colors).slice(0, 8);
+  const allColorEntries = Object.entries(colors);
+  const colorEntries = allColorEntries.slice(0, 8);
+  const colorCap = describeCollectionCap(allColorEntries, colorEntries);
   if (colorEntries.length) {
-    html += '<section class="kf-svc"><h3>Colors</h3><div style="display:flex;flex-wrap:wrap;gap:8px;padding:4px 0">';
+    html += '<section class="kf-svc"><h3>Colors (' + colorCap.label + ')</h3><div style="display:flex;flex-wrap:wrap;gap:8px;padding:4px 0">';
     for (const [name, val] of colorEntries) {
       const hex = val.replace(/"/g, '').trim();
       const isHex = /^#[0-9a-fA-F]{3,8}$/.test(hex);

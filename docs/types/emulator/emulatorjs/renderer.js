@@ -3,6 +3,9 @@
 
 import { EXT_CORE } from './detect.js';
 
+export const EMULATORJS_RELEASE = '4.2.3';
+const DATA_PATH = './vendor/emulatorjs/data/';
+
 const CORE_NAMES = {
   fceumm: 'NES / Famicom',
   snes9x: 'Super Nintendo (SNES)',
@@ -12,7 +15,7 @@ const CORE_NAMES = {
   stella2014: 'Atari 2600',
 };
 
-function getCoreForFile(filename) {
+export function getCoreForFile(filename) {
   const ext = '.' + filename.split('.').pop().toLowerCase();
   return EXT_CORE[ext] || 'fceumm';
 }
@@ -21,29 +24,66 @@ function loadScript(src) {
   return new Promise((resolve, reject) => {
     const s = document.createElement('script');
     s.src = src;
-    s.onload = resolve;
+    s.onload = () => resolve(s);
     s.onerror = () => reject(new Error('Failed to load ' + src));
     document.head.appendChild(s);
   });
 }
 
-// The vendored EmulatorJS core calls `checkForUpdates()` — an unconditional
-// `fetch('https://cdn.emulatorjs.org/stable/data/version.json')` — whenever
-// `location.hostname` is `localhost`/`127.0.0.1` (its own debug heuristic), regardless of any
-// EJS_* config we set. That fires during local dev/testing (this repo's smoke tests run against
-// a localhost server) and violates the zero-off-origin-at-runtime rule. There is no public
-// EmulatorJS option to disable it, so block just that host at the fetch layer — same-origin and
-// blob: requests the emulator needs (core wasm, ROM blob) are untouched.
-function installOffOriginGuard() {
-  if (window.__ejsFetchGuardInstalled) return;
-  window.__ejsFetchGuardInstalled = true;
-  const nativeFetch = window.fetch.bind(window);
-  window.fetch = (input, init) => {
+// EmulatorJS 4.2.3 contains update/CDN failsafes and optional netplay code. File Viewer's runtime
+// contract is stricter: every HTTP request must stay on this app's origin, and a missing locked
+// file must fail with its local path instead of retrying a CDN.
+export function installOffOriginGuard() {
+  if (window.__ejsFetchGuard?.restore) return window.__ejsFetchGuard.restore;
+  const nativeFetch = window.fetch;
+  const guardedFetch = async (input, init) => {
     const url = typeof input === 'string' ? input : (input && input.url) || '';
-    if (/^https?:\/\/(cdn|netplay)\.emulatorjs\.org\//i.test(url)) {
-      return Promise.reject(new Error('Blocked off-origin request (zero off-origin runtime policy): ' + url));
+    let resolved;
+    try { resolved = new URL(url, document.baseURI); } catch { resolved = null; }
+    // Upstream checks this URL only on localhost. Answer from the pinned lock without issuing a
+    // request; GitHub Pages never enters this debug path, and tests remain error-free/off-origin.
+    if (resolved?.href === 'https://cdn.emulatorjs.org/stable/data/version.json') {
+      return new Response(JSON.stringify({ version: EMULATORJS_RELEASE, current_version: EMULATORJS_RELEASE }), {
+        status: 200, headers: { 'content-type': 'application/json' },
+      });
     }
-    return nativeFetch(input, init);
+    if (resolved && /^https?:$/.test(resolved.protocol) && resolved.origin !== location.origin) {
+      throw new Error('Blocked off-origin EmulatorJS request: ' + resolved.href);
+    }
+    const response = await nativeFetch.call(window, input, init);
+    const dataRoot = new URL(DATA_PATH, document.baseURI).pathname;
+    if (resolved && resolved.origin === location.origin && resolved.pathname.startsWith(dataRoot) && !response.ok) {
+      throw new Error(`Missing local EmulatorJS ${EMULATORJS_RELEASE} asset (${response.status}): ${resolved.pathname}`);
+    }
+    return response;
+  };
+  window.fetch = guardedFetch;
+  const restore = () => {
+    if (window.fetch === guardedFetch) window.fetch = nativeFetch;
+    delete window.__ejsFetchGuard;
+  };
+  window.__ejsFetchGuard = { restore };
+  return restore;
+}
+
+// RetroArch's Emscripten glue leaves a rejected Wake Lock request unobserved. Preserve working
+// wake locks, but convert permission denial into a no-op sentinel so it cannot become a pageerror.
+function installWakeLockGuard() {
+  const own = Object.getOwnPropertyDescriptor(navigator, 'wakeLock');
+  const native = navigator.wakeLock;
+  if (!native?.request) return () => {};
+  const guarded = Object.create(native);
+  guarded.request = async (...args) => {
+    try { return await native.request(...args); }
+    catch { return { released: true, release: async () => {}, addEventListener: () => {} }; }
+  };
+  try { Object.defineProperty(navigator, 'wakeLock', { configurable: true, value: guarded }); }
+  catch { return () => {}; }
+  return () => {
+    try {
+      if (own) Object.defineProperty(navigator, 'wakeLock', own);
+      else delete navigator.wakeLock;
+    } catch {}
   };
 }
 
@@ -110,6 +150,47 @@ export async function render(intake, _ctx) {
 
   // Blob URL for the ROM — created on demand, revoked on cleanup.
   let blobUrl = null;
+  let restoreFetch = null;
+  let restoreWakeLock = null;
+  let disposed = false;
+
+  function clearEjsGlobals() {
+    for (const key of [
+      'EJS_player', 'EJS_core', 'EJS_gameUrl', 'EJS_pathtodata', 'EJS_startOnLoaded',
+      'EJS_gameName', 'EJS_threads', 'EJS_forceLegacyCores', 'EJS_disableAutoLang',
+      'EJS_language', 'EJS_netplayServer', 'EJS_AdUrl', 'EJS_AdMode',
+      'EJS_ready', 'EJS_onGameStart', 'EJS_emulator',
+      'EJS_adBlocked', 'EJS_GameManager', 'EmulatorJS',
+    ]) {
+      try { delete window[key]; } catch { window[key] = undefined; }
+    }
+  }
+
+  function teardownRuntime() {
+    if (disposed) return;
+    disposed = true;
+    const emulator = window.EJS_emulator;
+    try { emulator?.pause?.(true); } catch {}
+    try { emulator?.gamepad?.terminate?.(); } catch {}
+    try { emulator?.callEvent?.('exit'); } catch {}
+    try { emulator?.gameManager?.toggleMainLoop?.(0); } catch {}
+    try {
+      const audio = emulator?.gameManager?.Module?.SDL2?.audioContext
+        || emulator?.gameManager?.Module?.SDL?.audioContext;
+      if (audio && audio.state !== 'closed') audio.close?.();
+    } catch {}
+    if (emulator) emulator.started = false;
+    for (const node of document.querySelectorAll('script[src], link[href]')) {
+      const ref = node.getAttribute('src') || node.getAttribute('href') || '';
+      if (ref.includes('vendor/emulatorjs/')) node.remove();
+    }
+    restoreFetch?.();
+    restoreFetch = null;
+    restoreWakeLock?.();
+    restoreWakeLock = null;
+    clearEjsGlobals();
+    if (blobUrl) { URL.revokeObjectURL(blobUrl); blobUrl = null; }
+  }
 
   async function startEmulator() {
     // Guard against multiple simultaneous EmulatorJS instances.
@@ -129,9 +210,8 @@ export async function render(intake, _ctx) {
     dialog.remove();
 
     // Create blob URL from ROM bytes.
-    blobUrl = URL.createObjectURL(
-      new Blob([intake.bytes.buffer], { type: 'application/octet-stream' })
-    );
+    disposed = false;
+    blobUrl = URL.createObjectURL(new Blob([intake.bytes], { type: 'application/octet-stream' }));
 
     // Reset wrap layout for the emulator.
     wrap.style.cssText = [
@@ -151,22 +231,41 @@ export async function render(intake, _ctx) {
     window.EJS_player = '#' + containerId;
     window.EJS_core = coreName;
     window.EJS_gameUrl = blobUrl;
-    window.EJS_pathtodata = './vendor/emulatorjs/data/';
-    window.EJS_language = 'en-US';
+    window.EJS_pathtodata = DATA_PATH;
     window.EJS_startOnLoaded = true;
     window.EJS_gameName = intake.filename.replace(/\.[^.]+$/, '');
+    window.EJS_threads = false;          // GitHub Pages does not provide COOP/COEP isolation.
+    window.EJS_forceLegacyCores = false; // WebGL2 preferred; locked legacy variants remain fallback.
+    // 4.2.3's loader condition is inverted relative to its option docs: false suppresses the
+    // automatic system-locale fetch. Keep EJS_language unset so no localization asset is needed.
+    delete window.EJS_language;
+    window.EJS_disableAutoLang = false;
+    window.EJS_netplayServer = null;
+    window.EJS_AdUrl = null;
+    window.EJS_AdMode = 0;
+    window.EJS_ready = () => {
+      if (!disposed) wrap.dataset.ejsReady = '1';
+    };
+    window.EJS_onGameStart = () => {
+      if (!disposed) {
+        wrap.dataset.ejsStarted = '1';
+        wrap.dispatchEvent(new CustomEvent('fv-emulator-started'));
+      }
+    };
 
-    installOffOriginGuard();
+    restoreFetch = installOffOriginGuard();
+    restoreWakeLock = installWakeLockGuard();
 
     try {
-      await loadScript('./vendor/emulatorjs/data/loader.js');
+      await loadScript(DATA_PATH + 'loader.js');
+      if (disposed) teardownRuntime();
     } catch (e) {
       const errDiv = document.createElement('div');
       errDiv.style.cssText = 'padding:16px;color:var(--fg,#ccc);font-size:13px;background:var(--bg-1,#1e1e1e);';
       errDiv.textContent = 'Failed to load EmulatorJS: ' + e.message;
       container.remove();
       wrap.appendChild(errDiv);
-      if (blobUrl) { URL.revokeObjectURL(blobUrl); blobUrl = null; }
+      teardownRuntime();
     }
   }
 
@@ -203,12 +302,7 @@ export async function render(intake, _ctx) {
   return {
     parentNode: wrap,
     revoke() {
-      if (blobUrl) { URL.revokeObjectURL(blobUrl); blobUrl = null; }
-      try {
-        if (window.EJS_emulator && typeof window.EJS_emulator.pause === 'function') {
-          window.EJS_emulator.pause();
-        }
-      } catch (_) {}
+      teardownRuntime();
     },
   };
 }

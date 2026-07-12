@@ -1,6 +1,8 @@
 // Enhanced .editorconfig view (parentNode DOM). INI-like: a preamble (root=true) then
 // [glob] sections each holding key=value properties. We render a card per section and annotate
 // the well-known keys so the intent is readable without consulting the spec.
+import { describeCollectionCap } from '../../../../core/collection-cap.js';
+
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 const CSS = `
@@ -75,7 +77,9 @@ export function render(intake) {
   }
 
   const isRoot = sections.some((s) => s.props.some((p) => p.key === 'root' && /^true$/i.test(p.val)));
-  const globSections = sections.filter((s) => s.glob !== null).slice(0, 10);
+  const allGlobSections = sections.filter((s) => s.glob !== null);
+  const globSections = allGlobSections.slice(0, 10);
+  const sectionCap = describeCollectionCap(allGlobSections, globSections.length);
 
   const sectionHtml = globSections.map((s) => {
     const rows = s.props.map((p) => {
@@ -100,7 +104,7 @@ export function render(intake) {
     + '<span class="ec-badge">EditorConfig</span>'
     + '<h2 class="ec-title">.editorconfig</h2>'
     + (isRoot ? '<span class="ec-chip-root">root = true</span>' : '')
-    + '<span class="ec-sections-count">' + globSections.length + ' section' + (globSections.length === 1 ? '' : 's') + '</span>'
+    + '<span class="ec-sections-count">' + sectionCap.label + ' sections</span>'
     + '</div>'
     + (sectionHtml || '<p class="ec-empty">No sections found.</p>');
 

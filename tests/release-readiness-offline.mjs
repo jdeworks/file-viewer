@@ -4,6 +4,7 @@ import http from 'node:http';
 import { mkdir, readFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import { extname, join, normalize } from 'node:path';
+import { runOfflineFidelityMatrix } from './release-fidelity-offline.mjs';
 
 const ROOT = new URL('../docs/', import.meta.url).pathname;
 const captureDir = process.env.FV_OFFLINE_CAPTURE_DIR || '';
@@ -495,7 +496,7 @@ await scenario('limited Office selection is honest; selected dependencies work a
   } finally { await context.close(); }
 });
 
-await scenario('production full save caches every release-manifest asset with exact source bytes', async () => {
+await scenario('production full save is byte-exact and hard-offline fidelity viewers remain complete', async () => {
   state.realAssets = true;
   state.version = actualManifest.version;
   const { context, page } = await fresh();
@@ -536,6 +537,13 @@ await scenario('production full save caches every release-manifest asset with ex
     const cacheHashes = await cachedAssetHashes(page, expectedAssets);
     assert.deepEqual(cacheHashes, expectedHashes,
       'every cached production response must be byte-for-byte identical to the release asset');
+
+    await runOfflineFidelityMatrix({
+      page,
+      context,
+      origin,
+      setServerOffline: () => { state.networkDown = true; },
+    });
   } finally { await context.close(); }
 });
 

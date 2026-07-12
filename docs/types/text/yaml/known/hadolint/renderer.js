@@ -1,4 +1,5 @@
 import { loadGlobal, vendor } from '../../../../../core/script-loader.js';
+import { describeCollectionCap } from '../../../../../core/collection-cap.js';
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 const CSS = `
@@ -25,9 +26,13 @@ export async function render(intake) {
     cfg = (jsyaml.loadAll(intake.text || '') || [])[0] || {};
   } catch { cfg = {}; }
 
-  const ignored = Array.isArray(cfg.ignore) ? cfg.ignore.slice(0, 15) : [];
+  const allIgnored = Array.isArray(cfg.ignore) ? cfg.ignore : [];
+  const ignored = allIgnored.slice(0, 15);
   const overrides = cfg.override || {};
-  const trustedRegistries = Array.isArray(cfg['trusted-registries']) ? cfg['trusted-registries'].slice(0, 8) : [];
+  const allTrustedRegistries = Array.isArray(cfg['trusted-registries']) ? cfg['trusted-registries'] : [];
+  const trustedRegistries = allTrustedRegistries.slice(0, 8);
+  const ignoredCap = describeCollectionCap(allIgnored, ignored);
+  const registryCap = describeCollectionCap(allTrustedRegistries, trustedRegistries);
   const failureThreshold = cfg['failure-threshold'] || cfg.failureThreshold || null;
   const format = cfg.format || null;
   const noFail = cfg['no-fail'] || cfg.noFail || false;
@@ -38,11 +43,11 @@ export async function render(intake) {
     ${failureThreshold != null ? `<span class="hadolint-k">failure-threshold</span><span class="hadolint-v hadolint-pill">${esc(failureThreshold)}</span>` : ''}
     ${format ? `<span class="hadolint-k">format</span><span class="hadolint-v">${esc(format)}</span>` : ''}
     ${noFail ? `<span class="hadolint-k">no-fail</span><span class="hadolint-v">true</span>` : ''}
-    ${trustedRegistries.length ? `<span class="hadolint-k">trusted registries</span><span class="hadolint-v">${trustedRegistries.map(esc).join(', ')}</span>` : ''}
+    ${trustedRegistries.length ? `<span class="hadolint-k">trusted registries (${registryCap.label})</span><span class="hadolint-v">${trustedRegistries.map(esc).join(', ')}</span>` : ''}
   </div></div>`;
 
   const ignoredHtml = ignored.length
-    ? `<div class="hadolint-sec"><h3>Ignored rules (${ignored.length})</h3><div style="display:flex;flex-wrap:wrap;gap:4px;">${ignored.map((r) => `<span class="hadolint-pill warn">${esc(r)}</span>`).join('')}</div></div>`
+    ? `<div class="hadolint-sec"><h3>Ignored rules (${ignoredCap.label})</h3><div style="display:flex;flex-wrap:wrap;gap:4px;">${ignored.map((r) => `<span class="hadolint-pill warn">${esc(r)}</span>`).join('')}</div></div>`
     : '';
 
   const overrideHtml = overrideEntries.length
@@ -53,9 +58,9 @@ export async function render(intake) {
     : '';
 
   const sub = [
-    ignored.length ? `${ignored.length} ignored rule${ignored.length !== 1 ? 's' : ''}` : '',
+    allIgnored.length ? `${allIgnored.length} ignored rule${allIgnored.length !== 1 ? 's' : ''}` : '',
     failureThreshold ? `threshold: ${failureThreshold}` : '',
-    trustedRegistries.length ? `${trustedRegistries.length} trusted registr${trustedRegistries.length !== 1 ? 'ies' : 'y'}` : '',
+    allTrustedRegistries.length ? `${allTrustedRegistries.length} trusted registr${allTrustedRegistries.length !== 1 ? 'ies' : 'y'}` : '',
   ].filter(Boolean).join(' · ') || 'Hadolint Dockerfile linter config';
 
   const host = document.createElement('div');

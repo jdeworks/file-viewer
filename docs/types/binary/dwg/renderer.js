@@ -8,6 +8,10 @@
 //   bytes 14-17: preview image finder (varies by version)
 //   ...rest is deeply version-specific
 
+import { partialSupportHtml } from '../../../core/partial-support.js';
+
+const CAPABILITY = 'Partial preview: the DWG version/header and an embedded JPEG thumbnail found within the first 4 KiB are shown. Drawing entities, layers, blocks, dimensions, model/paper-space layouts, and 2D/3D geometry are not decoded or rendered.';
+
 const VERSION_MAP = {
   AC1006: 'R10',
   AC1009: 'R11/R12',
@@ -30,12 +34,12 @@ function esc(s) {
 export function render(intake) {
   const b = intake.bytes;
   if (!b || b.length < 6) {
-    return { bodyHtml: '<p class="viewer-message">Not a valid DWG file.</p>', hadUnsafe: false };
+    return { bodyHtml: partialSupportHtml(CAPABILITY) + '<p class="viewer-message">Not a valid DWG file.</p>', hadUnsafe: false };
   }
 
   const versionStr = new TextDecoder('ascii', { fatal: false }).decode(b.slice(0, 6));
   if (!DWG_VERSION_RE.test(versionStr)) {
-    return { bodyHtml: '<p class="viewer-message">Missing DWG version signature.</p>', hadUnsafe: false };
+    return { bodyHtml: partialSupportHtml(CAPABILITY) + '<p class="viewer-message">Missing DWG version signature.</p>', hadUnsafe: false };
   }
 
   const acadVersion = VERSION_MAP[versionStr] || 'Unknown';
@@ -89,6 +93,7 @@ export function render(intake) {
         .badge-dwg { background: #1a237e; color: #fff; }
       </style>
       <div class="badge-row"><span class="badge badge-dwg">DWG</span></div>
+      ${partialSupportHtml(CAPABILITY)}
       <div class="meta-section">
         <h4 class="meta-section-title">File Info</h4>
         ${metaRows}

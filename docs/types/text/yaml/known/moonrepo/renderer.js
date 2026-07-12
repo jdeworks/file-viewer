@@ -1,4 +1,5 @@
 import { loadGlobal, vendor } from '../../../../../core/script-loader.js';
+import { describeCollectionCap } from '../../../../../core/collection-cap.js';
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 const CSS = `
@@ -47,10 +48,14 @@ export async function render(intake) {
 
   // Projects/sources
   const projects = cfg.projects;
+  const allProjectEntries = typeof projects === 'object' && !Array.isArray(projects)
+    ? Object.entries(projects) : null;
   const projectEntries = typeof projects === 'object' && !Array.isArray(projects)
     ? Object.entries(projects).slice(0, 8)
     : null;
   const projectGlobs = Array.isArray(projects) ? projects.slice(0, 8) : null;
+  const projectEntryCap = describeCollectionCap(allProjectEntries, projectEntries);
+  const projectGlobCap = describeCollectionCap(projects, projectGlobs);
 
   // Top-level keys summary
   const topKeys = Object.keys(cfg).filter((k) => k !== '$schema');
@@ -80,9 +85,9 @@ export async function render(intake) {
 
   let projectsHtml = '';
   if (projectGlobs && projectGlobs.length) {
-    projectsHtml = `<div class="moon-sec"><h3>Projects</h3><div class="moon-pills">${projectGlobs.map((g) => `<span class="moon-pill">${esc(String(g))}</span>`).join('')}${projects.length > 8 ? `<span class="moon-pill" style="color:var(--fg-2,#888)">…${projects.length - 8} more</span>` : ''}</div></div>`;
+    projectsHtml = `<div class="moon-sec"><h3>Projects (${projectGlobCap.label})</h3><div class="moon-pills">${projectGlobs.map((g) => `<span class="moon-pill">${esc(String(g))}</span>`).join('')}${projectGlobCap.remainder ? `<span class="moon-pill" style="color:var(--fg-2,#888)">${projectGlobCap.remainder}</span>` : ''}</div></div>`;
   } else if (projectEntries && projectEntries.length) {
-    projectsHtml = `<div class="moon-sec"><h3>Projects</h3><div class="moon-kv-grid">${projectEntries.map(([k, v]) => `<div class="moon-kv-item"><span class="moon-kv-key">${esc(k)}</span><span class="moon-kv-val">${esc(String(v))}</span></div>`).join('')}</div></div>`;
+    projectsHtml = `<div class="moon-sec"><h3>Projects (${projectEntryCap.label})</h3><div class="moon-kv-grid">${projectEntries.map(([k, v]) => `<div class="moon-kv-item"><span class="moon-kv-key">${esc(k)}</span><span class="moon-kv-val">${esc(String(v))}</span></div>`).join('')}</div></div>`;
   }
 
   const summaryHtml = topKeys.length

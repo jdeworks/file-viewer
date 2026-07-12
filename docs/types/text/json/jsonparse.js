@@ -1,15 +1,27 @@
 export function parseJsonLike(text, fallback = 'null') {
   const source = text == null || text === '' ? fallback : String(text);
+  const hadBom = source.startsWith('\ufeff');
+  const parseSource = hadBom ? source.slice(1) : source;
+  const bomWarning = 'A leading UTF-8 BOM was ignored while parsing; the source is unchanged.';
   try {
-    return { data: JSON.parse(source), mode: 'strict', warnings: [] };
+    return {
+      data: JSON.parse(parseSource),
+      mode: hadBom ? 'bom' : 'strict',
+      hadBom,
+      warnings: hadBom ? [bomWarning] : [],
+    };
   } catch (strictError) {
-    const cleaned = stripJsonCommentsAndTrailingCommas(source);
-    if (cleaned === source) throw strictError;
+    const cleaned = stripJsonCommentsAndTrailingCommas(parseSource);
+    if (cleaned === parseSource) throw strictError;
     try {
       return {
         data: JSON.parse(cleaned),
         mode: 'jsonc',
-        warnings: ['Parsed as JSONC: comments or trailing commas were ignored.'],
+        hadBom,
+        warnings: [
+          ...(hadBom ? [bomWarning] : []),
+          'Parsed as JSONC: comments or trailing commas were ignored.',
+        ],
       };
     } catch {
       throw strictError;

@@ -2,6 +2,8 @@
 // Self-contained — no framework deps, pure DOM. Handles quoted fields, Tab/Enter
 // navigation, add/delete rows+columns, and flushes back to CSV text on getValue().
 
+import { csvColumnLabels } from './shape.js';
+
 // Serialize a character safely for HTML text content (via textContent — not needed for
 // innerHTML builds, but used in the idx cell). We use textContent everywhere so no esc needed.
 
@@ -124,6 +126,7 @@ export class TableEditor {
     tbl.className = 'te-table';
     const tbody = document.createElement('tbody');
     const maxCols = this._maxCols();
+    const columnLabels = csvColumnLabels(this._rows, this._hasHeader);
 
     this._rows.forEach((row, ri) => {
       const tr = document.createElement('tr');
@@ -152,6 +155,14 @@ export class TableEditor {
         td.textContent = row[ci] ?? '';
         td.dataset.ri = ri;
         td.dataset.ci = ci;
+        if (isHeaderRow) {
+          td.dataset.columnLabel = columnLabels[ci];
+          td.setAttribute('aria-label', columnLabels[ci]);
+          if (td.textContent === '') {
+            td.classList.add('te-header-fallback');
+            td.dataset.fallbackLabel = columnLabels[ci];
+          }
+        }
 
         td.addEventListener('blur', () => {
           if (!this._rows[ri]) return;

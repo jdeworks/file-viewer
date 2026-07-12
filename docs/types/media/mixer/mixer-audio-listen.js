@@ -69,7 +69,7 @@ export function buildMixerAudioListenSurface(mediaEl, intake, options = {}) {
   const zoomOut = h('button', 'al-btn al-zoom-out', { type: 'button', title: 'Zoom out', 'aria-label': 'Zoom out' }, '−');
   const zoomIn = h('button', 'al-btn al-zoom-in', { type: 'button', title: 'Zoom in', 'aria-label': 'Zoom in' }, '+');
   const fitBtn = h('button', 'al-btn al-fit', { type: 'button', title: 'Fit to width' }, 'Fit');
-  const exportBtn = h('button', 'al-btn al-export', { type: 'button', title: 'Export project settings (config only)' }, 'Export settings');
+  const exportBtn = h('button', 'al-btn al-export', { type: 'button', title: 'Download project configuration as JSON (media files are not embedded)' }, 'Download project settings');
   const toolbar = h('div', 'al-toolbar', {}, [
     h('div', 'al-transport', {}, [stopBtn, playBtn, timeLabel]),
     h('div', 'al-spacer'),
@@ -248,7 +248,10 @@ export function buildMixerAudioListenSurface(mediaEl, intake, options = {}) {
   zoomIn.addEventListener('click', () => { setZoomPxPerSec((pxPerSec || fitPxPerSec()) * 1.5); });
   zoomOut.addEventListener('click', () => { setZoomPxPerSec((pxPerSec || fitPxPerSec()) / 1.5); });
   fitBtn.addEventListener('click', () => { pxPerSec = 0; renderWaveform(); });
-  exportBtn.addEventListener('click', () => { exportSettings(); });
+  exportBtn.addEventListener('click', () => {
+    const json = exportSettings();
+    downloadProjectSettings(json, `${(intake?.filename || 'media').replace(/\.[^.]+$/, '')}.mixer.json`);
+  });
 
   function fitPxPerSec() { return (canvasWrap.clientWidth || 700) / Math.max(0.001, timelineSec()); }
   function setZoomPxPerSec(v) { pxPerSec = clamp(v, ZOOM_MIN, ZOOM_MAX); renderWaveform(); }
@@ -459,6 +462,16 @@ function roomToneField(checked, onChange) {
 }
 
 function round2(n) { return Math.round((Number(n) || 0) * 100) / 100; }
+
+function downloadProjectSettings(json, filename) {
+  const url = URL.createObjectURL(new Blob([json], { type: 'application/json' }));
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.append(link);
+  link.click();
+  setTimeout(() => { URL.revokeObjectURL(url); link.remove(); }, 0);
+}
 
 function niceStep(seconds) {
   const steps = [0.1, 0.25, 0.5, 1, 2, 5, 10, 15, 30, 60, 120, 300, 600];

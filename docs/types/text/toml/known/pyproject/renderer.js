@@ -1,4 +1,5 @@
 import { parseTOML } from '../../toml.js';
+import { describeCollectionCap } from '../../../../../core/collection-cap.js';
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 function detectBackend(buildSystem) {
@@ -84,10 +85,16 @@ export function render(intake) {
   const pyReq = project['requires-python'] || '';
   const license = typeof project.license === 'string' ? project.license
     : project.license?.text || project.license?.file || '';
-  const authors = (project.authors || tool?.poetry?.authors || [])
-    .slice(0, 3).map((a) => (typeof a === 'string' ? a : a?.name || a?.email || '')).filter(Boolean);
-  const maintainers = (project.maintainers || [])
-    .slice(0, 2).map((a) => (typeof a === 'string' ? a : a?.name || '')).filter(Boolean);
+  const allAuthors = (project.authors || tool?.poetry?.authors || [])
+    .map((a) => (typeof a === 'string' ? a : a?.name || a?.email || '')).filter(Boolean);
+  const authors = allAuthors
+    .slice(0, 3);
+  const allMaintainers = (project.maintainers || [])
+    .map((a) => (typeof a === 'string' ? a : a?.name || '')).filter(Boolean);
+  const maintainers = allMaintainers
+    .slice(0, 2);
+  const authorCap = describeCollectionCap(allAuthors, authors);
+  const maintainerCap = describeCollectionCap(allMaintainers, maintainers);
 
   // Build backend
   const backend = detectBackend(buildSys);
@@ -136,8 +143,8 @@ export function render(intake) {
 
   // [project] metadata
   const metaRows = [
-    authors.length ? `<div class="pp-row"><span class="pp-key">authors</span><span class="pp-val">${authors.map(esc).join(', ')}</span></div>` : '',
-    maintainers.length ? `<div class="pp-row"><span class="pp-key">maintainers</span><span class="pp-val">${maintainers.map(esc).join(', ')}</span></div>` : '',
+    authors.length ? `<div class="pp-row"><span class="pp-key">authors (${authorCap.label})</span><span class="pp-val">${authors.map(esc).join(', ')}</span></div>` : '',
+    maintainers.length ? `<div class="pp-row"><span class="pp-key">maintainers (${maintainerCap.label})</span><span class="pp-val">${maintainers.map(esc).join(', ')}</span></div>` : '',
     license ? `<div class="pp-row"><span class="pp-key">license</span><span class="pp-val">${esc(license)}</span></div>` : '',
   ].filter(Boolean).join('');
 
@@ -163,10 +170,11 @@ export function render(intake) {
   }).join('')}</div></div>` : '';
 
   // Tool configs
+  const pytestMarkerCap = describeCollectionCap(pytest.markers, Math.min(pytest.markers?.length || 0, 3));
   const pytestRows = [
     pytest.testpaths ? `<div class="pp-row"><span class="pp-key">testpaths</span><span class="pp-val">${esc(Array.isArray(pytest.testpaths) ? pytest.testpaths.join(', ') : pytest.testpaths)}</span></div>` : '',
     pytest.addopts ? `<div class="pp-row"><span class="pp-key">addopts</span><span class="pp-val">${esc(pytest.addopts)}</span></div>` : '',
-    (pytest.markers && Array.isArray(pytest.markers) && pytest.markers.length) ? `<div class="pp-row"><span class="pp-key">markers</span><span class="pp-val">${esc(pytest.markers.slice(0,3).join(', '))}${pytest.markers.length > 3 ? '…' : ''}</span></div>` : '',
+    (pytest.markers && Array.isArray(pytest.markers) && pytest.markers.length) ? `<div class="pp-row"><span class="pp-key">markers (${pytestMarkerCap.label})</span><span class="pp-val">${esc(pytest.markers.slice(0,3).join(', '))}</span></div>` : '',
   ].filter(Boolean).join('');
   const pytestHtml = pytestRows ? `<div class="pp-sec"><h3>[tool.pytest.ini_options]</h3><div class="pp-card">${pytestRows}</div></div>` : '';
 
@@ -177,21 +185,27 @@ export function render(intake) {
   ].filter(Boolean).join('');
   const mypyHtml = mypyRows ? `<div class="pp-sec"><h3>[tool.mypy]</h3><div class="pp-card">${mypyRows}</div></div>` : '';
 
-  const ruffKeys = Object.keys(ruff).filter(Boolean).slice(0, 6);
-  const ruffHtml = ruffKeys.length ? `<div class="pp-sec"><h3>[tool.ruff]</h3><div class="pp-card">
+  const allRuffKeys = Object.keys(ruff).filter(Boolean);
+  const ruffKeys = allRuffKeys.slice(0, 6);
+  const ruffCap = describeCollectionCap(allRuffKeys, ruffKeys);
+  const ruffHtml = ruffKeys.length ? `<div class="pp-sec"><h3>[tool.ruff] (${ruffCap.label})</h3><div class="pp-card">
 ${ruffKeys.map((k) => {
     const v = ruff[k];
     const vs = Array.isArray(v) ? v.join(', ') : String(v ?? '');
     return `<div class="pp-row"><span class="pp-key">${esc(k)}</span><span class="pp-val">${esc(vs)}</span></div>`;
   }).join('')}</div></div>` : '';
 
-  const blackKeys = Object.keys(black).slice(0, 4);
-  const blackHtml = blackKeys.length ? `<div class="pp-sec"><h3>[tool.black]</h3><div class="pp-card">
+  const allBlackKeys = Object.keys(black);
+  const blackKeys = allBlackKeys.slice(0, 4);
+  const blackCap = describeCollectionCap(allBlackKeys, blackKeys);
+  const blackHtml = blackKeys.length ? `<div class="pp-sec"><h3>[tool.black] (${blackCap.label})</h3><div class="pp-card">
 ${blackKeys.map((k) => `<div class="pp-row"><span class="pp-key">${esc(k)}</span><span class="pp-val">${esc(String(black[k] ?? ''))}</span></div>`).join('')}
 </div></div>` : '';
 
-  const isortKeys = Object.keys(isort).slice(0, 4);
-  const isortHtml = isortKeys.length ? `<div class="pp-sec"><h3>[tool.isort]</h3><div class="pp-card">
+  const allIsortKeys = Object.keys(isort);
+  const isortKeys = allIsortKeys.slice(0, 4);
+  const isortCap = describeCollectionCap(allIsortKeys, isortKeys);
+  const isortHtml = isortKeys.length ? `<div class="pp-sec"><h3>[tool.isort] (${isortCap.label})</h3><div class="pp-card">
 ${isortKeys.map((k) => `<div class="pp-row"><span class="pp-key">${esc(k)}</span><span class="pp-val">${esc(String(isort[k] ?? ''))}</span></div>`).join('')}
 </div></div>` : '';
 

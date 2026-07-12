@@ -1,3 +1,7 @@
+import { runXlsxFidelity } from './xlsx-fidelity.mjs';
+import { runDocxFidelity } from './docx-fidelity.mjs';
+import { runPptxNotesFidelity } from './pptx-notes-fidelity.mjs';
+
 export async function run(ctx) {
   const { page, origin, frameOf, pass, fail, openExample } = ctx;
 
@@ -124,6 +128,96 @@ export async function run(ctx) {
   ]);
   if (/\.json$/.test(csvDownload.suggestedFilename())) pass('CSV exported to JSON (' + csvDownload.suggestedFilename() + ')'); else fail('CSV download name: ' + csvDownload.suggestedFilename());
 
+  // Ragged CSV fidelity: the widest row, not row 0, defines the rendered/exported shape.
+  const shortHeaderCsv = 'name,score\nAda,10,30,40\nBob,20';
+  await page.evaluate((source) => window.__fv.openBlobFile(
+    new Blob([source], { type: 'text/csv' }),
+    'short-header-ragged.csv',
+    { mime: 'text/csv' },
+  ), shortHeaderCsv);
+  await page.waitForFunction(() => /4 cols?/.test(document.querySelector('#previewHost .csv-info')?.textContent || ''), null, { timeout: 10000 });
+  const raggedTable = await page.evaluate(() => {
+    const headerCells = [...document.querySelectorAll('#previewHost .te-table tbody tr:first-child .te-header')];
+    const bodyRows = [...document.querySelectorAll('#previewHost .te-table tbody tr')].slice(1);
+    return {
+      stats: document.querySelector('#previewHost .csv-info')?.textContent || '',
+      headers: headerCells.map((cell) => ({
+        text: cell.textContent,
+        fallback: cell.dataset.fallbackLabel || '',
+        aria: cell.getAttribute('aria-label') || '',
+        before: getComputedStyle(cell, '::before').content,
+      })),
+      rows: bodyRows.map((row) => [...row.querySelectorAll('.te-cell')].map((cell) => cell.textContent)),
+    };
+  });
+  if (/4 cols?/.test(raggedTable.stats) && raggedTable.headers.length === 4) pass('ragged CSV reports width from the widest later row');
+  else fail('ragged CSV shape: ' + JSON.stringify(raggedTable));
+  const fallbackHeaders = raggedTable.headers.slice(2);
+  if (fallbackHeaders.map((h) => h.fallback).join(',') === 'column_3,column_4'
+    && fallbackHeaders.every((h) => h.aria === h.fallback && h.before.includes(h.fallback))) {
+    pass('short CSV header gets visible, accessible fallback labels for later columns');
+  } else fail('ragged CSV fallback headers: ' + JSON.stringify(fallbackHeaders));
+  if (raggedTable.rows[0]?.join(',') === 'Ada,10,30,40' && raggedTable.rows[1]?.join(',') === 'Bob,20,,') {
+    pass('ragged CSV table preserves wide-later cells and explicit short-row blanks');
+  } else fail('ragged CSV rows: ' + JSON.stringify(raggedTable.rows));
+
+  await page.click('#previewHost .csv-tab:has-text("Chart")');
+  await page.waitForFunction(() => {
+    const canvas = document.querySelector('#previewHost .csv-chart-canvas');
+    return canvas && window.Chart?.getChart?.(canvas);
+  }, null, { timeout: 10000 });
+  const raggedChart = await page.evaluate(() => {
+    const chart = window.Chart.getChart(document.querySelector('#previewHost .csv-chart-canvas'));
+    return chart.data.datasets.map((dataset) => ({ label: dataset.label, data: dataset.data }));
+  });
+  if (raggedChart.map((dataset) => dataset.label).join(',') === 'score,column_3,column_4'
+    && raggedChart[1]?.data[0] === 30 && raggedChart[1]?.data[1] === null) {
+    pass('ragged CSV chart retains numeric columns beyond a short header with fallback labels');
+  } else fail('ragged CSV chart: ' + JSON.stringify(raggedChart));
+  await page.click('#previewHost .csv-tab:has-text("Table")');
+
+  await page.click('#exportBtn');
+  await page.waitForSelector('#exportMenu:not([hidden]) .export-item', { timeout: 5000 });
+  const [raggedJsonDownload] = await Promise.all([
+    page.waitForEvent('download', { timeout: 8000 }),
+    page.click('#exportMenu .export-item:has-text("Download as JSON")'),
+  ]);
+  const raggedFs = await import('node:fs');
+  const raggedJson = JSON.parse(raggedFs.readFileSync(await raggedJsonDownload.path(), 'utf8'));
+  if (raggedJson[0]?.column_3 === '30' && raggedJson[0]?.column_4 === '40'
+    && raggedJson[1]?.column_3 === '' && raggedJson[1]?.column_4 === '') {
+    pass('ragged CSV JSON export retains columns absent from the header');
+  } else fail('ragged CSV JSON export: ' + JSON.stringify(raggedJson));
+
+  const csvViewport = page.viewportSize() || { width: 1280, height: 720 };
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.waitForFunction(() => matchMedia('(max-width: 760px)').matches
+    && document.getElementById('exportBtn')?.parentElement?.id === 'moreMenu');
+  const raggedMobile = await page.evaluate(() => ({
+    pageOverflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    visibleFallbacks: [...document.querySelectorAll('#previewHost .te-header-fallback')]
+      .map((cell) => getComputedStyle(cell, '::before').content),
+  }));
+  if (raggedMobile.pageOverflow <= 1 && raggedMobile.visibleFallbacks.every((label) => /column_[34]/.test(label))) {
+    pass('ragged CSV fallback headers stay visible without page overflow at 390px');
+  } else fail('ragged CSV mobile layout: ' + JSON.stringify(raggedMobile));
+  await page.setViewportSize(csvViewport);
+  await page.waitForFunction(() => !matchMedia('(max-width: 760px)').matches
+    && document.getElementById('exportBtn')?.parentElement?.id !== 'moreMenu');
+
+  const wideHeaderCsv = 'a,b,c,d\n1,2\n3,4,5,6';
+  await page.evaluate((source) => window.__fv.openBlobFile(
+    new Blob([source], { type: 'text/csv' }),
+    'wide-header-ragged.csv',
+    { mime: 'text/csv' },
+  ), wideHeaderCsv);
+  await page.waitForFunction(() => /4 cols?/.test(document.querySelector('#previewHost .csv-info')?.textContent || ''), null, { timeout: 10000 });
+  const wideHeaderRows = await page.$$eval('#previewHost .te-table tbody tr', (rows) => rows.slice(1)
+    .map((row) => [...row.querySelectorAll('.te-cell')].map((cell) => cell.textContent)));
+  if (wideHeaderRows[0]?.join(',') === '1,2,,' && wideHeaderRows[1]?.join(',') === '3,4,5,6') {
+    pass('wide-first CSV preserves shorter later rows without collapsing columns');
+  } else fail('wide-first CSV rows: ' + JSON.stringify(wideHeaderRows));
+
   // ── Excel module ── multi-sheet workbook via SheetJS, now an EDITABLE grid in the parent pane.
   await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.xlsx');
@@ -174,6 +268,8 @@ export async function run(ctx) {
   if (/Sheets\s*2/.test(xMeta) && /Sheet names\s*People, Totals/.test(xMeta)) pass('Excel metadata: sheet count + names'); else fail('xlsx meta: ' + xMeta.replace(/\s+/g, ' ').slice(0, 200));
   await page.click('#metaDrawer [data-close]');
 
+  await runXlsxFidelity(ctx);
+
   // ── Word module ── mammoth → sanitized HTML, now an editor in the parent pane (Edit + export).
   await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.docx');
@@ -182,20 +278,30 @@ export async function run(ctx) {
   if (/Hello, File Viewer/.test(dh1)) pass('Word: docx converted to HTML (h1)'); else fail('docx h1: ' + dh1);
   const strong = await page.$$eval('#previewHost .dx-view strong, #previewHost .dx-view b', (els) => els.length);
   if (strong > 0) pass('Word: formatting preserved (bold)'); else fail('no bold run in docx');
+  const docxInitial = await page.evaluate(() => ({
+    original: !document.querySelector('#previewHost .dx-download-original')?.disabled,
+    rebuiltDisabled: document.querySelector('#previewHost .dx-download-rebuilt')?.disabled,
+    warningVisible: getComputedStyle(document.querySelector('#previewHost .dx-note')).display !== 'none',
+  }));
+  if (docxInitial.original && docxInitial.rebuiltDisabled && docxInitial.warningVisible) pass('Word: exact original available while rebuilt copy starts disabled with warning');
+  else fail('docx initial fidelity state: ' + JSON.stringify(docxInitial));
   // Edit toggle mounts TipTap (ProseMirror) over the HTML.
   await page.click('#previewHost .dx-edit');
   await page.waitForSelector('#previewHost .dx-edit-host .ProseMirror', { timeout: 12000 });
   const editing = await page.$eval('#previewHost .dx-edit', (e) => e.classList.contains('active'));
   const pmText = await page.$eval('#previewHost .ProseMirror', (e) => e.textContent);
   if (editing && /Hello, File Viewer/.test(pmText)) pass('Word: Edit toggle mounts TipTap with the document content'); else fail('docx edit: editing=' + editing + ' text=' + pmText.slice(0, 60));
-  // Type into the editor, then export → a real .docx download.
+  if (await page.$eval('#previewHost .dx-download-rebuilt', (button) => button.disabled)) pass('Word: opening editor alone does not enable rebuilt export');
+  else fail('docx rebuilt export enabled without a net edit');
+  // Type into the editor, then export → a rebuilt .docx download.
   await page.$eval('#previewHost .ProseMirror', (e) => e.focus());
   await page.keyboard.type(' [edited]');
+  await page.waitForFunction(() => !document.querySelector('#previewHost .dx-download-rebuilt')?.disabled);
   const [docxDl] = await Promise.all([
     page.waitForEvent('download', { timeout: 15000 }),
-    page.click('#previewHost .dx-download'),
+    page.click('#previewHost .dx-download-rebuilt'),
   ]);
-  if (/-edited\.docx$/.test(docxDl.suggestedFilename())) pass('Word: edited .docx downloaded (' + docxDl.suggestedFilename() + ')'); else fail('docx download name: ' + docxDl.suggestedFilename());
+  if (/-rebuilt\.docx$/.test(docxDl.suggestedFilename())) pass('Word: rebuilt .docx downloaded (' + docxDl.suggestedFilename() + ')'); else fail('docx download name: ' + docxDl.suggestedFilename());
   // The .docx is a valid ZIP whose document.xml carries the edited text.
   const dpath = await docxDl.path();
   const fs2 = await import('node:fs');
@@ -209,6 +315,8 @@ export async function run(ctx) {
   const wMeta = await page.$eval('#metaBody', (e) => e.textContent);
   if (/Words\s*\d+/.test(wMeta)) pass('Word metadata: word count present'); else fail('docx meta: ' + wMeta.replace(/\s+/g, ' ').slice(0, 200));
   await page.click('#metaDrawer [data-close]');
+
+  await runDocxFidelity(ctx);
 
   // ── OpenDocument text (.odt) ── unzip content.xml → sanitized reading HTML in the iframe. ──
   await page.goto(origin, { waitUntil: 'load' });
@@ -229,6 +337,8 @@ export async function run(ctx) {
   await page.waitForSelector('#previewHost img.pptx-slide', { timeout: 25000 });
   const slideDims = await page.$$eval('#previewHost img.pptx-slide', (els) => els.map((e) => e.naturalWidth));
   if (slideDims.length === 2 && slideDims.every((w) => w > 100)) pass('PPTX: ' + slideDims.length + ' slides rendered to images'); else fail('pptx slides: ' + JSON.stringify(slideDims));
+  const sampleNotesStatus = await page.$eval('#previewHost .pptx-notes-status', (element) => element.textContent);
+  if (/No speaker notes found/.test(sampleNotesStatus)) pass('PPTX reports when the deck has no speaker notes'); else fail('sample PPTX notes status: ' + sampleNotesStatus);
   await page.click('#previewHost .pptx-viewmode');
   await page.waitForFunction(() => document.querySelector('#previewHost .pptx-doc')?.classList.contains('pptx-single-on'), null, { timeout: 4000 });
   const pptxSingleVisible = await page.$$eval('#previewHost .pptx-slide-wrap', (els) => els.filter((el) => !el.hidden).length);
@@ -252,5 +362,7 @@ export async function run(ctx) {
   await page.waitForSelector('#previewHost img.pptx-slide', { timeout: 25000 });
   const reopenedSlides = await page.$$eval('#previewHost img.pptx-slide', (els) => els.length);
   if (reopenedSlides === 2) pass('PPTX sidebar root reopens after loading a folder'); else fail('pptx reopen slides: ' + reopenedSlides);
+
+  await runPptxNotesFidelity(ctx);
 
 }

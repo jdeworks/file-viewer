@@ -1,4 +1,4 @@
-import { intakeFromFile, intakeFromText } from './intake.js';
+import { intakeFromFile, intakeFromText, sourceTextOf, withSourceText } from './intake.js';
 import { buildTree, renderTree } from './filetree.js';
 import { $, state } from './state.js';
 import { setTree, flushFolderEdit } from './folder.js';
@@ -42,7 +42,8 @@ export function updateSessionTree(intake, { skipSidebarRoot = false } = {}) {
   state.treeApi = renderTree($('ftBody'), buildTree(entries), { onOpen: (node) => {
     flushSessionEdit();
     const edited = state.sessionEdits.get(node.path);
-    const si = edited != null ? intakeFromText(edited, node.path) : state.sessionIntakes.get(node.path);
+    const base = state.sessionIntakes.get(node.path);
+    const si = edited != null && base ? withSourceText(base, edited) : base;
     if (!si) return;
     state._skipDiscardGuard = true;
     loadIntakeCallback(si);
@@ -64,7 +65,7 @@ export function flushSessionEdit() {
   if (!filename || !state.sessionIntakes.has(filename)) return false;
   const text = state.rawview.getValue();
   state.sessionEdits.set(filename, text);
-  state.sessionIntakes.set(filename, { ...state.sessionIntakes.get(filename), text });
+  state.sessionIntakes.set(filename, withSourceText(state.sessionIntakes.get(filename), text));
   state.treeApi?.setEdited?.(filename, true);
   return true;
 }
@@ -73,13 +74,19 @@ export async function createNewFile() {
   const name = prompt('New file name (include an extension, e.g. notes.md, script.js, data.json):', 'untitled.txt');
   if (name == null) return;
   const filename = (name.trim() || 'untitled.txt');
+  let nextIntake = null;
   if (state.type && !$('workspace').hidden) {
     flushFolderEdit();
     const prevName = state.intake.filename;
-    const prevText = state.rawview ? state.rawview.getValue() : (state.intake.text || '');
-    const prevFile = new File([prevText], prevName, { type: 'text/plain' });
-    const newFile = new File([''], filename, { type: 'text/plain' });
-    const entries = [{ file: prevFile, path: prevName }, { file: newFile, path: filename }];
+    const prevText = state.rawview ? state.rawview.getValue() : sourceTextOf(state.intake);
+    const prevIntake = state.intake;
+    nextIntake = intakeFromText('', filename);
+    const prevFile = new File([prevIntake.bytes], prevName, { type: prevIntake.mimeType || 'text/plain' });
+    const newFile = new File([nextIntake.bytes], filename, { type: 'text/plain' });
+    const entries = [
+      { file: prevFile, path: prevName, intake: prevIntake },
+      { file: newFile, path: filename, intake: nextIntake },
+    ];
     state.sessionTree = false; state.sessionIntakes = new Map(); state.sessionEdits = new Map();
     state.treeEntries = entries;
     state.folderEdits = new Map([[prevName, prevText]]);
@@ -88,9 +95,8 @@ export async function createNewFile() {
     const tree = buildTree(entries);
     state.treeApi = renderTree($('ftBody'), tree, { onOpen: (node) => {
       const stashed = state.folderEdits.get(node.path);
-      const intake = stashed != null
-        ? intakeFromText(stashed, node.path.split('/').pop())
-        : intakeFromText('', node.path.split('/').pop());
+      const base = node.intake || intakeFromText('', node.path.split('/').pop());
+      const intake = stashed != null ? withSourceText(base, stashed) : base;
       state._skipDiscardGuard = true;
       loadIntakeCallback(intake).then(() => { state.currentFolderPath = node.path; });
     } });
@@ -103,7 +109,7 @@ export async function createNewFile() {
     setTree(true);
     state._skipDiscardGuard = true;
   }
-  await loadIntakeCallback(intakeFromText('', filename));
+  await loadIntakeCallback(nextIntake || intakeFromText('', filename));
   if (state.treeEntries) {
     state.currentFolderPath = filename;
     state.treeApi?.setActive?.(filename);
@@ -116,9 +122,13 @@ export async function onTreeFileDrop(node) {
   if (state.type && !$('workspace').hidden && !state.treeEntries) {
     flushFolderEdit();
     const prevName = state.intake.filename;
-    const prevText = state.rawview ? state.rawview.getValue() : (state.intake.text || '');
-    const prevFileObj = new File([prevText], prevName, { type: 'text/plain' });
-    const entries = [{ file: prevFileObj, path: prevName }, { file: node.file, path: node.path }];
+    const prevText = state.rawview ? state.rawview.getValue() : sourceTextOf(state.intake);
+    const prevIntake = state.intake;
+    const prevFileObj = new File([prevIntake.bytes], prevName, { type: prevIntake.mimeType || 'text/plain' });
+    const entries = [
+      { file: prevFileObj, path: prevName, intake: prevIntake },
+      { ...node, file: node.file, path: node.path },
+    ];
     state.sessionTree = false; state.sessionIntakes = new Map(); state.sessionEdits = new Map();
     state.treeEntries = entries;
     state.folderEdits = new Map([[prevName, prevText]]);
@@ -127,9 +137,9 @@ export async function onTreeFileDrop(node) {
     const tree = buildTree(entries);
     state.treeApi = renderTree($('ftBody'), tree, { onOpen: (n) => {
       const stashed = state.folderEdits.get(n.path);
-      const getIntake = stashed != null
-        ? Promise.resolve(intakeFromText(stashed, n.path.split('/').pop()))
-        : intakeFromFile(n.file);
+      const getIntake = (n.intake ? Promise.resolve(n.intake) : intakeFromFile(n.file)).then((originalIntake) => (
+        stashed != null ? withSourceText(originalIntake, stashed) : originalIntake
+      ));
       getIntake.then((i) => { state._skipDiscardGuard = true; loadIntakeCallback(i).then(() => { state.currentFolderPath = n.path; }); });
     } });
     $('ftRoot').textContent = 'Files';
@@ -142,9 +152,8 @@ export async function onTreeFileDrop(node) {
     state._skipDiscardGuard = true;
   }
   const stashed = state.folderEdits?.get(node.path);
-  const intake = stashed != null
-    ? intakeFromText(stashed, node.path.split('/').pop())
-    : await intakeFromFile(node.file);
+  const originalIntake = node.intake || await intakeFromFile(node.file);
+  const intake = stashed != null ? withSourceText(originalIntake, stashed) : originalIntake;
   state._skipDiscardGuard = true;
   await loadIntakeCallback(intake);
   if (state.treeEntries) {

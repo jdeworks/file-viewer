@@ -7,7 +7,7 @@ import { state, $, isMobile, toast, escapeHtml } from './state.js';
 import { findGitDir, isGitInternal, openRepo } from './git.js';
 import { renderRepoView } from './repoview.js';
 import { buildTree, renderTree } from './filetree.js';
-import { FILE_LOAD_FEEDBACK_BYTES, intakeFromFile, intakeFromText } from './intake.js';
+import { FILE_LOAD_FEEDBACK_BYTES, intakeFromFile, withSourceText } from './intake.js';
 import { exportFolderZip } from './folder-export.js';
 import { downloadBlob } from './exports.js';
 import { repackZipWithDeletions } from './repack.js';
@@ -236,9 +236,8 @@ async function openTreeFile(node, {
       });
       await nextFrame();
     }
-    const intake = stashed != null
-      ? intakeFromText(stashed, node.path.split('/').pop())
-      : await intakeFromFile(node.file);
+    const originalIntake = await intakeFromFile(node.file);
+    const intake = stashed != null ? withSourceText(originalIntake, stashed) : originalIntake;
     state._skipDiscardGuard = true;    // folder edits are preserved in folderEdits — no discard prompt
     state._skipSidebarRoot = true;
     const loaded = await loadIntake(intake, { sidebarNavigationToken });

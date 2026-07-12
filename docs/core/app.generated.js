@@ -21,6 +21,30 @@ var MEDIA_EXT = /\.(mp3|wav|m4a|m4b|aac|oga|ogg|opus|flac|weba|mp4|m4v|webm|ogv|
 function looksLikeMedia(file) {
   return MEDIA_EXT.test(file.name || "") || /^(audio|video)\//.test(file.type || "");
 }
+function parserTextFromSource(sourceText) {
+  const source = String(sourceText ?? "");
+  return source.startsWith("\uFEFF") ? source.slice(1) : source;
+}
+function sourceTextOf(intake) {
+  return intake?.sourceText ?? intake?.text ?? "";
+}
+function sourceTextFromParser(intake, parserText) {
+  const text = parserTextFromSource(parserText);
+  return sourceTextOf(intake).startsWith("\uFEFF") ? "\uFEFF" + text : text;
+}
+function withSourceText(intake, sourceText) {
+  const source = String(sourceText ?? "");
+  const text = parserTextFromSource(source);
+  return {
+    ...intake,
+    sourceText: source,
+    text,
+    textSample: text.slice(0, TEXT_SNIFF_BYTES)
+  };
+}
+function withParserText(intake, parserText) {
+  return withSourceText(intake, sourceTextFromParser(intake, parserText));
+}
 function decodeText(bytes) {
   let start = 0;
   if (bytes.length >= 3 && bytes[0] === 239 && bytes[1] === 187 && bytes[2] === 191) start = 3;
@@ -29,13 +53,16 @@ function decodeText(bytes) {
     if (window2[i] === 0) return null;
   }
   try {
-    return new TextDecoder("utf-8", { fatal: false }).decode(bytes.subarray(start));
+    const sourceText = new TextDecoder("utf-8", { fatal: false, ignoreBOM: true }).decode(bytes);
+    return { sourceText, text: parserTextFromSource(sourceText) };
   } catch {
     return null;
   }
 }
 function buildIntake({ filename, mimeType, bytes, isPaste, lastModified, file = null, size, streamed = false, truncated = false }) {
-  const text = streamed ? null : decodeText(bytes);
+  const decoded = streamed ? null : decodeText(bytes);
+  const text = decoded?.text ?? null;
+  const sourceText = decoded?.sourceText ?? null;
   return {
     filename: filename || (isPaste ? "pasted" : "untitled"),
     mimeType: mimeType || "",
@@ -43,6 +70,11 @@ function buildIntake({ filename, mimeType, bytes, isPaste, lastModified, file = 
     // for streamed media this is only a header slice
     text,
     // null => binary
+    sourceText,
+    // exact decoded working source (retains a leading BOM)
+    originalText: sourceText,
+    // immutable as-opened decoded baseline
+    hadBom: sourceText?.startsWith("\uFEFF") || false,
     textSample: text ? text.slice(0, TEXT_SNIFF_BYTES) : "",
     isBinary: text === null,
     isPaste: !!isPaste,
@@ -1361,11 +1393,11 @@ var GENERAL_DESCRIPTORS = [
   },
   {
     key: "enableEmulators",
-    label: "Emulators (v86, EmulatorJS, Ruffle Flash — download per-engine on first use)",
+    label: "Prefer emulators for supported game files",
     category: "advanced",
     type: "bool",
     default: false,
-    hint: "Run retro console ROMs, DOS software, and Flash games in-browser. Each emulator engine downloads on first use (1–4 MB each). Only open files from sources you trust — emulated software runs with reduced but non-zero access."
+    hint: "Apply immediately. Uses same-origin emulator engines that are cached on first use; the complete optional EmulatorJS bundle is about 14 MB. Only open files from sources you trust — emulated software runs with reduced but non-zero access."
   }
 ];
 var MONACO_DESCRIPTORS = [
@@ -1848,11 +1880,6 @@ var HEAVY_PACKAGES = {
       const { preloadArchiveLib } = await import("./archivelib.js");
       await preloadArchiveLib();
     }
-  },
-  enableEmulators: {
-    label: "emulator engines",
-    load: null
-    // per-engine, downloaded on first use — nothing to pre-fetch
   }
 };
 var MOUNTED = /* @__PURE__ */ new WeakMap();
@@ -2018,6 +2045,12 @@ function persistGlobalKey(key2, value) {
   const cur = readSaved(GLOBAL_KEY) || {};
   cur[key2] = value;
   localStorage.setItem(GLOBAL_KEY, JSON.stringify({ version: SETTINGS_VERSION, values: cur }));
+  for (const model of modelCache.values()) {
+    if (model.descriptors.some((descriptor) => descriptor.key === key2)) {
+      model.values[key2] = value;
+      model.selectedPresetId = matchPreset(model.values, model.presets, model.descriptors);
+    }
+  }
 }
 function persistTypeKey(typeId, key2, value) {
   const k = typeKey(typeId);
@@ -2646,6 +2679,7 @@ function fill(el) {
   el.style.inset = "0";
   return el;
 }
+var exactModelValue = (model) => model.getValue(void 0, true);
 async function createRawView(host, {
   originalText,
   currentText,
@@ -2658,9 +2692,12 @@ async function createRawView(host, {
   onContextMenu,
   onPaste,
   onMoveDiff,
-  onCustomDiff
+  onCustomDiff,
+  signal,
+  isCurrent
 }) {
   const monaco = await loadMonaco();
+  if (signal?.aborted || isCurrent && !isCurrent()) return null;
   import("../types/text/code/codelens.js").then((m) => m.registerCodeMetrics?.(monaco)).catch(() => {
   });
   host.innerHTML = "";
@@ -2687,7 +2724,7 @@ async function createRawView(host, {
   let diff = null;
   let mode = "current";
   let decorations = [];
-  modifiedModel.onDidChangeContent(() => onChange?.(modifiedModel.getValue()));
+  modifiedModel.onDidChangeContent(() => onChange?.(exactModelValue(modifiedModel)));
   std.onDidChangeCursorPosition((e) => {
     if (mode !== "diff" && mode !== "movediff") onCursor?.(e.position.lineNumber);
   });
@@ -2734,7 +2771,7 @@ async function createRawView(host, {
     customHost.style.display = "none";
     if (next === "diff" && onCustomDiff) {
       customHost.style.display = "";
-      onCustomDiff(customHost, diffOriginal().getValue(), modifiedModel.getValue());
+      onCustomDiff(customHost, exactModelValue(diffOriginal()), exactModelValue(modifiedModel));
     } else if (next === "diff") {
       ensureDiff().setModel({ original: diffOriginal(), modified: modifiedModel });
       diff.updateOptions({ renderSideBySide: !isNarrow() });
@@ -2742,7 +2779,7 @@ async function createRawView(host, {
       diff.layout();
     } else if (next === "movediff") {
       moveHost.style.display = "";
-      onMoveDiff?.(moveHost, diffOriginal().getValue(), modifiedModel.getValue());
+      onMoveDiff?.(moveHost, exactModelValue(diffOriginal()), exactModelValue(modifiedModel));
     } else {
       std.setModel(next === "original" ? originalModel : modifiedModel);
       std.updateOptions({ readOnly: next === "original" });
@@ -2754,8 +2791,8 @@ async function createRawView(host, {
     monaco,
     mode: () => mode,
     setMode,
-    getValue: () => modifiedModel.getValue(),
-    originalValue: () => originalModel.getValue(),
+    getValue: () => exactModelValue(modifiedModel),
+    originalValue: () => exactModelValue(originalModel),
     setValue: (text) => modifiedModel.setValue(text),
     selectionText() {
       return modifiedModel.getValueInRange(std.getSelection());
@@ -2780,19 +2817,21 @@ async function createRawView(host, {
     // Replace the WHOLE document via an undoable edit (so Ctrl+Z reverts it). Unlike
     // setValue(), this goes through executeEdits and stays on Monaco's undo stack.
     transformAll(transform, opts = {}) {
-      const result = transform(modifiedModel.getValue());
-      const text = typeof result === "string" ? result : result?.text ?? modifiedModel.getValue();
+      const current = modifiedModel.getValue();
+      const result = transform(current);
+      const text = typeof result === "string" ? result : result?.text ?? current;
       replaceRange(modifiedModel.getFullModelRange(), text, { source: "raw-textutil", ...opts });
     },
     setSelection(startLine, startColumn, endLine, endColumn) {
       std.setSelection(new monaco.Range(startLine, startColumn, endLine, endColumn));
       std.focus();
     },
-    isDirty: () => originalModel.getValue() !== modifiedModel.getValue(),
+    isDirty: () => exactModelValue(originalModel) !== exactModelValue(modifiedModel),
     // Adopt the current working copy as the new baseline (so isDirty() → false). Used after a
     // successful save-back to disk: the on-disk content now IS the original, nothing is unsaved.
     markClean: () => {
-      if (originalModel.getValue() !== modifiedModel.getValue()) originalModel.setValue(modifiedModel.getValue());
+      const current = exactModelValue(modifiedModel);
+      if (exactModelValue(originalModel) !== current) originalModel.setValue(current);
     },
     setLanguage(lang) {
       monaco.editor.setModelLanguage(originalModel, lang);
@@ -3251,6 +3290,28 @@ var HtmlWysiwygEditor = class {
   }
 };
 
+// ../../docs/types/text/csv/shape.js
+function maxCsvColumns(rows) {
+  if (!Array.isArray(rows)) return 0;
+  return rows.reduce((max, row) => Math.max(max, Array.isArray(row) ? row.length : 0), 0);
+}
+function csvColumnLabels(rows, hasHeader = true) {
+  const width = maxCsvColumns(rows);
+  const header = hasHeader && Array.isArray(rows?.[0]) ? rows[0] : [];
+  const used = /* @__PURE__ */ new Set();
+  const nextSuffix = /* @__PURE__ */ new Map();
+  return Array.from({ length: width }, (_, columnIndex) => {
+    const raw = header[columnIndex];
+    const base = hasHeader && raw != null && String(raw) !== "" ? String(raw) : `column_${columnIndex + 1}`;
+    let label = base;
+    let suffix = nextSuffix.get(base) || 2;
+    while (used.has(label)) label = `${base}_${suffix++}`;
+    nextSuffix.set(base, suffix);
+    used.add(label);
+    return label;
+  });
+}
+
 // ../../docs/types/text/csv/table-editor.js
 function parseCsvText(text, sep) {
   const rows = [];
@@ -3375,6 +3436,7 @@ var TableEditor = class {
     tbl.className = "te-table";
     const tbody = document.createElement("tbody");
     const maxCols = this._maxCols();
+    const columnLabels = csvColumnLabels(this._rows, this._hasHeader);
     this._rows.forEach((row, ri) => {
       const tr = document.createElement("tr");
       const isHeaderRow = this._hasHeader && ri === 0;
@@ -3396,6 +3458,14 @@ var TableEditor = class {
         td.textContent = row[ci] ?? "";
         td.dataset.ri = ri;
         td.dataset.ci = ci;
+        if (isHeaderRow) {
+          td.dataset.columnLabel = columnLabels[ci];
+          td.setAttribute("aria-label", columnLabels[ci]);
+          if (td.textContent === "") {
+            td.classList.add("te-header-fallback");
+            td.dataset.fallbackLabel = columnLabels[ci];
+          }
+        }
         td.addEventListener("blur", () => {
           if (!this._rows[ri]) return;
           while (this._rows[ri].length <= ci) this._rows[ri].push("");
@@ -3476,14 +3546,14 @@ function wireHtmlToolbar() {
 async function toggleHtmlWysiwyg() {
   if (state6.type?.id !== "html") return;
   if (!htmlWysiwyg) {
-    const text = state6.rawview?.getValue?.() ?? (state6.intake?.text || "");
+    const text = parserTextFromSource(state6.rawview?.getValue?.() ?? sourceTextOf(state6.intake));
     state6.rawview?.dispose?.();
     state6.rawview = null;
     const editorEl = document.getElementById("editor");
     if (editorEl) editorEl.style.display = "none";
     const editorParent = editorEl?.parentElement || document.getElementById("rawPane");
     htmlWysiwyg = new HtmlWysiwygEditor(editorParent, text, async (newHtml) => {
-      state6.intake = { ...state6.intake, text: newHtml };
+      state6.intake = withParserText(state6.intake, newHtml);
       state6.downloadedSinceEdit = false;
       if (state6.currentFolderPath) {
         state6.folderEdits.set(state6.currentFolderPath, newHtml);
@@ -3514,7 +3584,7 @@ async function toggleHtmlWysiwyg() {
     }
     const editorEl = document.getElementById("editor");
     if (editorEl) editorEl.style.display = "";
-    state6.intake = { ...state6.intake, text: html };
+    state6.intake = withParserText(state6.intake, html);
     await buildRawView();
   }
 }
@@ -3548,7 +3618,7 @@ function setTableMode(on) {
     } else {
       sep = (state6.intake?.filename || "").toLowerCase().endsWith(".tsv") ? "	" : ",";
     }
-    const text = state6.rawview ? state6.rawview.getValue() : state6.intake?.text || "";
+    const text = parserTextFromSource(state6.rawview ? state6.rawview.getValue() : sourceTextOf(state6.intake));
     state6.rawview?.updateOptions?.({ readOnly: true });
     let host = document.getElementById("tableEditorHost");
     if (!host) {
@@ -3560,7 +3630,7 @@ function setTableMode(on) {
     host.hidden = false;
     if (editorEl) editorEl.style.display = "none";
     tableEditor = new TableEditor(host, text, sep, (newCsv) => {
-      state6.intake = { ...state6.intake, text: newCsv };
+      state6.intake = withParserText(state6.intake, newCsv);
       state6.downloadedSinceEdit = false;
     });
   } else {
@@ -3568,11 +3638,11 @@ function setTableMode(on) {
       const csv = tableEditor.getValue();
       tableEditor.destroy();
       tableEditor = null;
+      state6.intake = withParserText(state6.intake, csv);
       if (state6.rawview) {
-        state6.rawview.setValue(csv);
+        state6.rawview.setValue(sourceTextOf(state6.intake));
         state6.rawview.updateOptions?.({ readOnly: false });
       }
-      state6.intake = { ...state6.intake, text: csv };
     }
     const host = document.getElementById("tableEditorHost");
     if (host) host.hidden = true;
@@ -4974,7 +5044,7 @@ var YamlFormEditor = class {
 
 // ../../docs/core/rawpane-forms.js
 function editTrack(newText) {
-  state7.intake = { ...state7.intake, text: newText };
+  state7.intake = withParserText(state7.intake, newText);
   state7.downloadedSinceEdit = false;
 }
 var FORMS = {
@@ -5006,7 +5076,7 @@ function setFormMode(kind, on) {
       state7.tab = "raw";
       applyLayout();
     }
-    const text = state7.rawview ? state7.rawview.getValue() : state7.intake?.text || "";
+    const text = parserTextFromSource(state7.rawview ? state7.rawview.getValue() : sourceTextOf(state7.intake));
     state7.rawview?.updateOptions?.({ readOnly: true });
     let host = document.getElementById(cfg.hostId);
     if (!host) {
@@ -5023,11 +5093,11 @@ function setFormMode(kind, on) {
       const text = instances[kind].getValue();
       instances[kind].destroy();
       instances[kind] = null;
+      state7.intake = withParserText(state7.intake, text);
       if (state7.rawview) {
-        state7.rawview.setValue(text);
+        state7.rawview.setValue(sourceTextOf(state7.intake));
         state7.rawview.updateOptions?.({ readOnly: false });
       }
-      state7.intake = { ...state7.intake, text };
     }
     const host = document.getElementById(cfg.hostId);
     if (host) host.hidden = true;
@@ -5720,7 +5790,7 @@ function showAutosaveBanner(saved) {
     el.querySelector(".autosave-restore").addEventListener("click", () => {
       if (!_currentSaved) return;
       state10.rawview?.setValue?.(_currentSaved.text);
-      state10.intake = { ...state10.intake, text: _currentSaved.text };
+      state10.intake = withSourceText(state10.intake, _currentSaved.text);
       el.hidden = true;
       $5("rawPane")?.classList.remove("has-autosave");
     });
@@ -5852,13 +5922,13 @@ async function toggleWysiwyg({ skipPersist = false } = {}) {
   if (state11.type?.id !== "markdown") return;
   if (!wysiwygMode) {
     if (!state11.rawview) return;
-    const text = state11.rawview.getValue();
+    const text = parserTextFromSource(state11.rawview.getValue());
     state11.rawview.dispose();
     state11.rawview = null;
     wysiwygMode = true;
     updateWysiwygBtn();
     await mountWysiwyg(document.getElementById("editor"), text, async (value) => {
-      state11.intake = { ...state11.intake, text: value };
+      state11.intake = withParserText(state11.intake, value);
       state11.downloadedSinceEdit = false;
       if (state11.currentFolderPath) {
         state11.folderEdits.set(state11.currentFolderPath, value);
@@ -5880,7 +5950,7 @@ async function toggleWysiwyg({ skipPersist = false } = {}) {
     const text = getWysiwygValue();
     unmountWysiwyg();
     wysiwygMode = false;
-    state11.intake = { ...state11.intake, text };
+    state11.intake = withParserText(state11.intake, text);
     updateWysiwygBtn();
     if (!skipPersist && state11.settingsModel) {
       state11.settingsModel.values.markdownEditor = "monaco";
@@ -5896,7 +5966,8 @@ async function exitWysiwygForFeature() {
   await toggleWysiwyg();
   return true;
 }
-async function buildRawView() {
+async function buildRawView({ isCurrent = () => true, signal } = {}) {
+  if (!isCurrent() || signal?.aborted) return false;
   stopAutosave();
   hideWordCount();
   teardownHtmlWysiwyg();
@@ -5911,11 +5982,13 @@ async function buildRawView() {
     updateWysiwygBtn();
   }
   state11.rawview?.dispose();
+  state11.rawview = null;
   const sl = state11.type.syntaxLanguage;
   const lang = state11.intake.isBinary ? "plaintext" : (typeof sl === "function" ? sl(state11.intake) : sl) || "plaintext";
-  const text = state11.intake.isBinary ? hexDump(state11.intake.bytes) : state11.intake.text || "";
-  state11.rawview = await createRawView($6("editor"), {
-    originalText: text,
+  const text = state11.intake.isBinary ? hexDump(state11.intake.bytes) : sourceTextOf(state11.intake);
+  const originalText = state11.intake.isBinary ? text : state11.intake.originalText ?? text;
+  const nextRawview = await createRawView($6("editor"), {
+    originalText,
     currentText: text,
     language: lang,
     theme: themeIsDark() ? "dark" : "light",
@@ -5940,8 +6013,15 @@ async function buildRawView() {
       }
       const mod = await loader();
       (mod.render || mod.default)(host, original, current);
-    } : void 0
+    } : void 0,
+    signal,
+    isCurrent
   });
+  if (!nextRawview || !isCurrent() || signal?.aborted) {
+    nextRawview?.dispose();
+    return false;
+  }
+  state11.rawview = nextRawview;
   if (!state11.intake.isBinary) state11.rawview.addCommand?.("ctrl+s", downloadCurrent);
   applyEditorMode(state11.rawview, state11.type, { isBinary: state11.intake.isBinary, onSave: downloadCurrent });
   wireMarkdownTools();
@@ -5951,7 +6031,9 @@ async function buildRawView() {
     state11.rawview.addCommand?.("ctrl+i", () => runMarkdownAction("italic"));
   }
   if (state11.type?.id === "markdown" && !state11.intake.isBinary && state11.settingsModel?.values?.markdownEditor === "wysiwyg") {
+    if (!isCurrent() || signal?.aborted) return false;
     await toggleWysiwyg({ skipPersist: true });
+    if (!isCurrent() || signal?.aborted) return false;
   }
   wireJsonTools();
   setJsonToolsVisible(state11.type?.id === "json" && !state11.intake.isBinary);
@@ -6022,12 +6104,13 @@ async function buildRawView() {
   if (!state11.intake?.isBinary) {
     const filename2 = state11.intake?.filename || state11.intake?.name;
     const saved = getAutosave(filename2);
-    if (saved && saved.text !== (state11.intake?.text || "")) {
+    if (saved && saved.text !== sourceTextOf(state11.intake)) {
       showAutosaveBanner(saved);
     }
     startAutosave();
-    updateWordCount(state11.intake?.text || "", state11.type?.id);
+    updateWordCount(sourceTextOf(state11.intake), state11.type?.id);
   }
+  return true;
 }
 function showCheatToast(msg) {
   if (typeof toast6 === "function") {
@@ -6060,7 +6143,7 @@ async function onRawEdited(value) {
     }
   } catch {
   }
-  state11.intake = { ...state11.intake, text: value };
+  state11.intake = withSourceText(state11.intake, value);
   state11.downloadedSinceEdit = false;
   if (state11.currentFolderPath) {
     state11.folderEdits.set(state11.currentFolderPath, value);
@@ -6081,14 +6164,14 @@ async function onRawEdited(value) {
 }
 function hasUnsavedWork() {
   if (state11.rawview?.isDirty() && !state11.downloadedSinceEdit) return true;
-  if (wysiwygMode && isWysiwygActive() && !state11.downloadedSinceEdit && getWysiwygValue() !== (state11.intake?.originalText ?? state11.intake?.text ?? "")) return true;
+  if (wysiwygMode && isWysiwygActive() && !state11.downloadedSinceEdit && sourceTextFromParser(state11.intake, getWysiwygValue()) !== (state11.intake?.originalText ?? sourceTextOf(state11.intake))) return true;
   const htmlValue = getHtmlWysiwygValue();
-  if (htmlValue != null && !state11.downloadedSinceEdit && htmlValue !== (state11.intake?.originalText ?? "")) return true;
+  if (htmlValue != null && !state11.downloadedSinceEdit && sourceTextFromParser(state11.intake, htmlValue) !== (state11.intake?.originalText ?? sourceTextOf(state11.intake))) return true;
   if (state11.binaryEdit?.dirty && !state11.downloadedSinceEdit) return true;
   const tableValue = getTableEditorValue();
-  if (tableValue != null && !state11.downloadedSinceEdit && tableValue !== (state11.intake?.originalText ?? "")) return true;
+  if (tableValue != null && !state11.downloadedSinceEdit && sourceTextFromParser(state11.intake, tableValue) !== (state11.intake?.originalText ?? sourceTextOf(state11.intake))) return true;
   const formValue = getActiveFormValue();
-  if (formValue != null && !state11.downloadedSinceEdit && formValue !== (state11.intake?.originalText ?? "")) return true;
+  if (formValue != null && !state11.downloadedSinceEdit && sourceTextFromParser(state11.intake, formValue) !== (state11.intake?.originalText ?? sourceTextOf(state11.intake))) return true;
   if (state11.sessionEdits.size > 0) return true;
   return state11.folderEdits.size > 0 && !state11.folderExported;
 }
@@ -6128,6 +6211,16 @@ async function takeScreenshot() {
     toast6("Screenshot failed: " + err.message);
   }
 }
+function currentEditableSource() {
+  const tableValue = getTableEditorValue();
+  if (tableValue != null) return sourceTextFromParser(state11.intake, tableValue);
+  const formValue = getActiveFormValue();
+  if (formValue != null) return sourceTextFromParser(state11.intake, formValue);
+  const htmlValue = getHtmlWysiwygValue();
+  if (htmlValue != null) return sourceTextFromParser(state11.intake, htmlValue);
+  if (wysiwygMode && isWysiwygActive()) return sourceTextFromParser(state11.intake, getWysiwygValue());
+  return state11.rawview ? state11.rawview.getValue() : sourceTextOf(state11.intake);
+}
 async function downloadCurrent() {
   viewerActions().then(({ recordStage10EchoDownload }) => recordStage10EchoDownload({ file: state11.intake?.filename || "" }));
   let blob;
@@ -6136,8 +6229,7 @@ async function downloadCurrent() {
     blob = new Blob([bytes], { type: state11.binaryEdit.mimeType || state11.intake.mimeType || "application/octet-stream" });
     state11.binaryEdit.dirty = false;
   } else {
-    const tableValue = getTableEditorValue(), formValue = getActiveFormValue(), htmlValue = getHtmlWysiwygValue();
-    const text = tableValue != null ? tableValue : formValue != null ? formValue : htmlValue != null ? htmlValue : wysiwygMode && isWysiwygActive() ? getWysiwygValue() : state11.rawview ? state11.rawview.getValue() : state11.intake.text || "";
+    const text = currentEditableSource();
     blob = new Blob([text], { type: state11.intake.mimeType || "text/plain" });
   }
   const a = document.createElement("a");
@@ -6146,9 +6238,8 @@ async function downloadCurrent() {
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 1e3);
   if (state11.sessionEdits.has(state11.intake.filename)) {
-    const tableValue = getTableEditorValue(), formValue = getActiveFormValue(), htmlValue = getHtmlWysiwygValue();
-    const text = tableValue != null ? tableValue : formValue != null ? formValue : htmlValue != null ? htmlValue : wysiwygMode && isWysiwygActive() ? getWysiwygValue() : state11.rawview ? state11.rawview.getValue() : state11.sessionEdits.get(state11.intake.filename);
-    state11.sessionIntakes.set(state11.intake.filename, { ...state11.sessionIntakes.get(state11.intake.filename), text });
+    const text = currentEditableSource();
+    state11.sessionIntakes.set(state11.intake.filename, withSourceText(state11.sessionIntakes.get(state11.intake.filename), text));
     state11.sessionEdits.delete(state11.intake.filename);
     state11.treeApi?.setEdited?.(state11.intake.filename, false);
   }
@@ -6809,7 +6900,7 @@ function captureActiveSidebarRoot() {
     const entry = (root.treeEntries || [])[0];
     const path = entry?.path || root.label;
     const text = state12.rawview.getValue();
-    const intake = intakeFromText(text, path.split("/").pop() || root.label);
+    const intake = withSourceText(entry?.intake || state12.intake, text);
     root.treeEntries = [{
       ...entry || {},
       path,
@@ -6962,7 +7053,7 @@ function renderSidebarRoots(activeRoot = null, activeInnerPath = null, { skipCap
             const edited = root.folderEdits?.get(innerPath);
             state12._skipDiscardGuard = true;
             state12._skipSidebarRoot = true;
-            loaded = await loadIntake(edited != null ? intakeFromText(edited, innerPath.split("/").pop()) : entry.intake, { sidebarNavigationToken: navigationToken }) !== false;
+            loaded = await loadIntake(edited != null ? withSourceText(entry.intake, edited) : entry.intake, { sidebarNavigationToken: navigationToken }) !== false;
           }
           if (loaded) {
             state12.currentFolderPath = root.kind === "file" ? null : innerPath;
@@ -7305,7 +7396,8 @@ async function openTreeFile(node, {
       });
       await nextFrame();
     }
-    const intake = stashed != null ? intakeFromText(stashed, node.path.split("/").pop()) : await intakeFromFile(node.file);
+    const originalIntake = await intakeFromFile(node.file);
+    const intake = stashed != null ? withSourceText(originalIntake, stashed) : originalIntake;
     state13._skipDiscardGuard = true;
     state13._skipSidebarRoot = true;
     const loaded = await loadIntake2(intake, { sidebarNavigationToken });
@@ -7547,7 +7639,9 @@ function mountArchiveTree(archive, openEntry, loadIntake4, archiveIntake) {
         (state14.binaryEdits = state14.binaryEdits || /* @__PURE__ */ new Map()).set(state14.currentFolderPath, state14.binaryEdit);
       }
       const stashed = state14.folderEdits.get(node.path);
-      const intake = stashed != null ? intakeFromText(stashed, node.file.name) : await openEntry(node.path);
+      const originalIntake = node.intake || await openEntry(node.path);
+      if (originalIntake && !node.intake) node.intake = originalIntake;
+      const intake = stashed != null && originalIntake ? withSourceText(originalIntake, stashed) : originalIntake;
       if (!intake) {
         toast9("Could not open " + node.path);
         return false;
@@ -9026,7 +9120,7 @@ ${absPath}
 This replaces the original file with the edited image bytes.` : `Save to:
 ${absPath}?`;
     if (!isCreate && !confirm(msg)) return;
-    const bytes = isBinaryEdit ? await binaryEdit.getBytes() : state16.rawview ? new TextEncoder().encode(state16.rawview.getValue()) : context.intake.bytes || new TextEncoder().encode(context.intake.text || "");
+    const bytes = isBinaryEdit ? await binaryEdit.getBytes() : new TextEncoder().encode(currentEditableSource());
     if (!operationContextCurrent(context, token) || isBinaryEdit && state16.binaryEdit !== binaryEdit) return;
     const savedFile = new File([bytes], filename, {
       type: context.intake.mimeType || "",
@@ -9049,6 +9143,10 @@ ${absPath}?`;
       Object.assign(context.intake, {
         bytes: savedIntake.bytes,
         text: savedIntake.text,
+        sourceText: savedIntake.sourceText,
+        originalText: savedIntake.originalText,
+        hadBom: savedIntake.hadBom,
+        textSample: savedIntake.textSample,
         size: savedIntake.size,
         loadedBytes: savedIntake.loadedBytes,
         truncated: false
@@ -9056,7 +9154,10 @@ ${absPath}?`;
       if (!state16.currentFolderPath) setCompanionLinked(absPath);
       if (isBinaryEdit) state16.binaryEdit.dirty = false;
       if (state16.sessionEdits.has(state16.intake.filename)) {
-        state16.sessionIntakes.set(state16.intake.filename, { ...state16.sessionIntakes.get(state16.intake.filename), text: state16.rawview?.getValue?.() || state16.sessionEdits.get(state16.intake.filename) });
+        state16.sessionIntakes.set(state16.intake.filename, withSourceText(
+          savedIntake,
+          state16.rawview?.getValue?.() ?? state16.sessionEdits.get(state16.intake.filename)
+        ));
         state16.sessionEdits.delete(state16.intake.filename);
         state16.treeApi?.setEdited?.(state16.intake.filename, false);
       }
@@ -9349,7 +9450,8 @@ function updateSessionTree(intake, { skipSidebarRoot = false } = {}) {
   state17.treeApi = renderTree($11("ftBody"), buildTree(entries), { onOpen: (node) => {
     flushSessionEdit();
     const edited = state17.sessionEdits.get(node.path);
-    const si = edited != null ? intakeFromText(edited, node.path) : state17.sessionIntakes.get(node.path);
+    const base = state17.sessionIntakes.get(node.path);
+    const si = edited != null && base ? withSourceText(base, edited) : base;
     if (!si) return;
     state17._skipDiscardGuard = true;
     loadIntakeCallback2(si);
@@ -9370,7 +9472,7 @@ function flushSessionEdit() {
   if (!filename || !state17.sessionIntakes.has(filename)) return false;
   const text = state17.rawview.getValue();
   state17.sessionEdits.set(filename, text);
-  state17.sessionIntakes.set(filename, { ...state17.sessionIntakes.get(filename), text });
+  state17.sessionIntakes.set(filename, withSourceText(state17.sessionIntakes.get(filename), text));
   state17.treeApi?.setEdited?.(filename, true);
   return true;
 }
@@ -9378,13 +9480,19 @@ async function createNewFile() {
   const name = prompt("New file name (include an extension, e.g. notes.md, script.js, data.json):", "untitled.txt");
   if (name == null) return;
   const filename = name.trim() || "untitled.txt";
+  let nextIntake = null;
   if (state17.type && !$11("workspace").hidden) {
     flushFolderEdit();
     const prevName = state17.intake.filename;
-    const prevText = state17.rawview ? state17.rawview.getValue() : state17.intake.text || "";
-    const prevFile = new File([prevText], prevName, { type: "text/plain" });
-    const newFile = new File([""], filename, { type: "text/plain" });
-    const entries = [{ file: prevFile, path: prevName }, { file: newFile, path: filename }];
+    const prevText = state17.rawview ? state17.rawview.getValue() : sourceTextOf(state17.intake);
+    const prevIntake = state17.intake;
+    nextIntake = intakeFromText("", filename);
+    const prevFile = new File([prevIntake.bytes], prevName, { type: prevIntake.mimeType || "text/plain" });
+    const newFile = new File([nextIntake.bytes], filename, { type: "text/plain" });
+    const entries = [
+      { file: prevFile, path: prevName, intake: prevIntake },
+      { file: newFile, path: filename, intake: nextIntake }
+    ];
     state17.sessionTree = false;
     state17.sessionIntakes = /* @__PURE__ */ new Map();
     state17.sessionEdits = /* @__PURE__ */ new Map();
@@ -9395,7 +9503,8 @@ async function createNewFile() {
     const tree = buildTree(entries);
     state17.treeApi = renderTree($11("ftBody"), tree, { onOpen: (node) => {
       const stashed = state17.folderEdits.get(node.path);
-      const intake = stashed != null ? intakeFromText(stashed, node.path.split("/").pop()) : intakeFromText("", node.path.split("/").pop());
+      const base = node.intake || intakeFromText("", node.path.split("/").pop());
+      const intake = stashed != null ? withSourceText(base, stashed) : base;
       state17._skipDiscardGuard = true;
       loadIntakeCallback2(intake).then(() => {
         state17.currentFolderPath = node.path;
@@ -9410,7 +9519,7 @@ async function createNewFile() {
     setTree(true);
     state17._skipDiscardGuard = true;
   }
-  await loadIntakeCallback2(intakeFromText("", filename));
+  await loadIntakeCallback2(nextIntake || intakeFromText("", filename));
   if (state17.treeEntries) {
     state17.currentFolderPath = filename;
     state17.treeApi?.setActive?.(filename);
@@ -9475,7 +9584,7 @@ async function openBlobFile(blob, name, opts = {}) {
 async function searchViewerFile(path, query, opts = {}) {
   const target = String(path || "");
   const clean = target.replace(/^\/?docs\/examples\//, "").replace(/^\/?examples\//, "");
-  const text = opts.text || (state18.intake?.filename === clean.split("/").pop() ? state18.rawview?.getValue?.() || state18.intake.text : null);
+  const text = opts.text ?? (state18.intake?.filename === clean.split("/").pop() ? state18.rawview?.getValue?.() ?? sourceTextOf(state18.intake) : null);
   const sourceText = text == null ? await fetch("examples/" + clean).then((r) => r.ok ? r.text() : "").catch(() => "") : text;
   const line = sourceText.split(/\r?\n/).find((entry) => entry.includes(query));
   const result = line && line.trim();
@@ -9614,7 +9723,116 @@ async function rankLiteCandidates(intake, limit = 5) {
   return rows.slice(0, limit);
 }
 
+// ../../docs/core/request-lifecycle.js
+function once(fn, onError) {
+  let active = true;
+  return () => {
+    if (!active) return;
+    active = false;
+    try {
+      fn();
+    } catch (error) {
+      onError?.(error);
+    }
+  };
+}
+function createLatestRequestController({ onCleanupError } = {}) {
+  let sequence = 0;
+  let current = null;
+  function begin(snapshot = {}) {
+    current?.dispose("superseded");
+    const aborter = new AbortController();
+    const cleanups = /* @__PURE__ */ new Set();
+    const cleanupByFunction = /* @__PURE__ */ new Map();
+    let disposed = false;
+    const request = {
+      id: ++sequence,
+      snapshot: Object.freeze({ ...snapshot }),
+      signal: aborter.signal,
+      isCurrent() {
+        return current === request && !disposed;
+      },
+      registerCleanup(fn) {
+        if (typeof fn !== "function") return () => {
+        };
+        if (cleanupByFunction.has(fn)) return cleanupByFunction.get(fn).release;
+        const cleanup = once(fn, onCleanupError);
+        if (disposed) {
+          cleanup();
+          return () => {
+          };
+        }
+        cleanups.add(cleanup);
+        const release = () => {
+          cleanups.delete(cleanup);
+          cleanupByFunction.delete(fn);
+        };
+        cleanupByFunction.set(fn, { cleanup, release });
+        return release;
+      },
+      dispose(reason = "invalidated") {
+        if (disposed) return;
+        disposed = true;
+        if (current === request) current = null;
+        try {
+          aborter.abort(reason);
+        } catch {
+          aborter.abort();
+        }
+        for (const cleanup of [...cleanups].reverse()) cleanup();
+        cleanups.clear();
+        cleanupByFunction.clear();
+      }
+    };
+    current = request;
+    return request;
+  }
+  return {
+    begin,
+    invalidate(reason) {
+      current?.dispose(reason);
+    },
+    isCurrent(request) {
+      return current === request && request?.isCurrent();
+    },
+    current() {
+      return current;
+    }
+  };
+}
+
 // ../../docs/core/app.js
+var previewRequests = createLatestRequestController({
+  onCleanupError: (error) => console.warn("Preview cleanup failed:", error)
+});
+var activationRequests = createLatestRequestController({
+  onCleanupError: (error) => console.warn("Activation cleanup failed:", error)
+});
+function beginActivation(intake) {
+  previewRequests.invalidate("new activation intent");
+  return activationRequests.begin({ intake });
+}
+function activationIsCurrent(activation) {
+  return activationRequests.isCurrent(activation) && activation.snapshot.intake === state19.intake;
+}
+function snapshotSettings(values) {
+  try {
+    return structuredClone(values || {});
+  } catch {
+    return { ...values || {} };
+  }
+}
+var previewTestHook = null;
+async function previewCheckpoint(stage, request) {
+  if (typeof previewTestHook !== "function") return;
+  await previewTestHook({
+    stage,
+    id: request.id,
+    snapshot: request.snapshot,
+    signal: request.signal,
+    onCleanup: (cleanup) => request.registerCleanup(cleanup)
+  });
+}
 var knownRegistryPromise = null;
 function knownRegistry() {
   if (!knownRegistryPromise) knownRegistryPromise = import("../known/registry.generated.js");
@@ -9664,6 +9882,7 @@ async function loadIntake3(intake, { sidebarNavigationToken = null } = {}) {
     const mb = (intake.size / 1048576).toFixed(1);
     if (!confirm(`This file is ${mb} MB. Large files may be slow in the editor. Open anyway?`)) return false;
   }
+  const activation = beginActivation(intake);
   state19.downloadedSinceEdit = true;
   state19.binaryEdit = null;
   state19.currentFolderPath = null;
@@ -9673,15 +9892,20 @@ async function loadIntake3(intake, { sidebarNavigationToken = null } = {}) {
   setCompanionLinked(null, { persist: false });
   if (!fromTree) resetCompanionFolderRoot();
   const liteCandidates = await rankLiteCandidates(intake);
+  if (!activationIsCurrent(activation)) return false;
   if (liteCandidates.length) {
     showFileLoading("Detecting file type", { detail: liteCandidates.map((row) => row.type.label).join(", ") });
   }
   const [{ pickType }, { populateTypeSelect }] = await Promise.all([detectRuntime(), typeSelectRuntime()]);
-  const { type, ranking } = pickType(intake);
+  if (!activationIsCurrent(activation)) return false;
+  const enableEmulators = readGlobalKey("enableEmulators", false) === true;
+  const { type, ranking } = pickType(intake, { enableEmulators });
   const { matchAllKnown } = await knownRegistry();
+  if (!activationIsCurrent(activation)) return false;
   state19.knownCandidates = matchAllKnown(intake, ranking);
   populateTypeSelect(ranking, type.id, !!state19.settingsModel?.values?.showAllTypes, intake, state19.knownCandidates);
-  await activateType(type);
+  if (!await activateType(type, null, activation)) return false;
+  if (!activationIsCurrent(activation)) return false;
   showFileLoading(null);
   if (intake.truncated) {
     const shown = (intake.loadedBytes / 1048576).toFixed(0);
@@ -9743,18 +9967,25 @@ async function openSidebarDropSideBySide(node) {
   try {
     const path = node.path || node.sidebarInnerPath || node.file.name;
     const edited = state19.folderEdits?.get(path) ?? state19.sessionEdits?.get(path);
-    const intake2 = edited != null ? intakeFromText(edited, path.split("/").pop()) : await intakeFromFile(node.file);
+    const originalIntake = await intakeFromFile(node.file);
+    const intake2 = edited != null ? withSourceText(originalIntake, edited) : originalIntake;
     const { openSideBySideWithIntake } = await import("./sidebyside.js");
     await openSideBySideWithIntake(intake2);
   } catch (err) {
     toast14("Could not read file: " + err.message);
   }
 }
-async function activateType(type, knownOverride = null) {
+async function activateType(type, knownOverride = null, activation = null) {
+  const request = activation || beginActivation(state19.intake);
+  const intake = request.snapshot.intake;
+  const [settingsModel, { matchKnown }] = await Promise.all([
+    getModel(type),
+    knownRegistry()
+  ]);
+  if (!activationIsCurrent(request)) return false;
   state19.type = type;
-  state19.settingsModel = await getModel(type);
-  const { matchKnown } = await knownRegistry();
-  state19.known = knownOverride || matchKnown(state19.intake, type);
+  state19.settingsModel = settingsModel;
+  state19.known = knownOverride || matchKnown(intake, type);
   state19.forceBase = false;
   updateEnhanceChip();
   $12("intake").hidden = true;
@@ -9786,8 +10017,13 @@ async function activateType(type, knownOverride = null) {
   state19.tab = both ? isMobile5() ? "preview" : "raw" : canPreview && !canRaw ? "preview" : "raw";
   state19.htmlAllowScripts = false;
   state19.htmlAsked = false;
-  if (canRaw) await buildRawView();
-  else {
+  if (canRaw) {
+    const built = await buildRawView({
+      isCurrent: () => activationIsCurrent(request),
+      signal: request.signal
+    });
+    if (built === false || !activationIsCurrent(request)) return false;
+  } else {
     state19.rawview?.dispose();
     state19.rawview = null;
     $12("editor").innerHTML = "";
@@ -9795,20 +10031,57 @@ async function activateType(type, knownOverride = null) {
   clearPreview();
   if (canPreview) await renderPreview3();
   else clearPreview();
+  if (!activationIsCurrent(request)) return false;
   applyLayout();
   if (isMobile5()) layoutTopbar();
+  return true;
 }
 async function renderPreview3() {
   const type = state19.type;
-  const useKnown = state19.known && !state19.forceBase;
-  if (!useKnown && !type.loadRenderer) return clearPreview();
+  const intake = state19.intake;
+  if (!type || !intake) {
+    clearPreview();
+    return false;
+  }
+  const known = state19.known;
+  const forceBase = state19.forceBase;
+  const useKnown = known && !forceBase;
+  const snapshot = {
+    intake,
+    type,
+    known,
+    forceBase,
+    renderMode: useKnown ? "enhanced" : "default",
+    layoutMode: state19.mode,
+    mobile: isMobile5(),
+    settingsModel: state19.settingsModel,
+    settings: snapshotSettings(state19.settingsModel?.values),
+    folder: folderContext(),
+    htmlAllowScripts: state19.htmlAllowScripts,
+    htmlAsked: state19.htmlAsked,
+    theme: themeIsDark2() ? "dark" : "light"
+  };
+  const request = previewRequests.begin(snapshot);
+  if (!useKnown && !type.loadRenderer) {
+    if (request.isCurrent()) clearMountedPreview();
+    request.dispose("no renderer");
+    return false;
+  }
   let rendered;
   try {
-    const mod = useKnown ? await state19.known.loadRenderer() : await type.loadRenderer();
+    await previewCheckpoint("request-started", request);
+    if (!request.isCurrent()) return false;
+    const mod = useKnown ? await known.loadRenderer() : await type.loadRenderer();
+    if (!request.isCurrent()) return false;
+    await previewCheckpoint("module-loaded", request);
+    if (!request.isCurrent()) return false;
     const ctx = {
-      settings: state19.settingsModel.values,
-      folder: folderContext(),
+      settings: snapshot.settings,
+      folder: snapshot.folder,
+      signal: request.signal,
+      onCleanup: (cleanup) => request.registerCleanup(cleanup),
       onBinaryEdit: (edit) => {
+        if (!request.isCurrent()) return;
         if (state19.archiveTree && state19.currentFolderPath && edit?.dirty) {
           (state19.binaryEdits = state19.binaryEdits || /* @__PURE__ */ new Map()).set(state19.currentFolderPath, edit);
         }
@@ -9817,69 +10090,111 @@ async function renderPreview3() {
         syncSaveBtn();
       },
       openIntake: async (innerIntake, activePath = null) => {
+        if (!request.isCurrent()) return false;
         state19._skipDiscardGuard = true;
-        await loadIntake3(innerIntake);
-        if (activePath) state19.treeApi?.setActive?.(activePath);
+        const loaded = await loadIntake3(innerIntake);
+        if (loaded !== false && activePath && state19.intake === innerIntake) state19.treeApi?.setActive?.(activePath);
+        return loaded;
       },
-      toast: toast14
+      toast: (...args) => {
+        if (request.isCurrent()) toast14(...args);
+      }
     };
-    if (type.id === "html") ctx.allowScripts = state19.htmlAllowScripts;
-    rendered = await mod.render(state19.intake, ctx);
+    if (type.id === "html") ctx.allowScripts = snapshot.htmlAllowScripts;
+    rendered = await mod.render(intake, ctx);
+    if (rendered?.revoke) request.registerCleanup(rendered.revoke);
+    if (rendered?.destroy && rendered.destroy !== rendered.revoke) request.registerCleanup(rendered.destroy);
+    if (!request.isCurrent()) return false;
+    await previewCheckpoint("rendered", request);
+    if (!request.isCurrent()) return false;
+    await previewCheckpoint("before-commit", request);
+    if (!request.isCurrent()) return false;
   } catch (err) {
-    if (!navigator.onLine) {
-      $12("previewHost").innerHTML = offlineMissHtml();
-      return;
-    }
-    $12("previewHost").innerHTML = '<p style="padding:16px;color:var(--danger)">Preview failed: ' + escapeHtml4(err.message) + "</p>";
-    return;
+    if (!request.isCurrent()) return false;
+    clearMountedPreview();
+    if (!navigator.onLine) $12("previewHost").innerHTML = offlineMissHtml();
+    else $12("previewHost").innerHTML = '<p style="padding:16px;color:var(--danger)">Preview failed: ' + escapeHtml4(err.message) + "</p>";
+    request.dispose("render failed");
+    updateExportButton();
+    return false;
   }
-  if (type.id === "html" && rendered.containsScripts && !state19.htmlAllowScripts && !state19.htmlAsked) {
+  if (type.id === "html" && rendered.containsScripts && !snapshot.htmlAllowScripts && !snapshot.htmlAsked) {
+    if (!request.isCurrent()) return false;
     state19.htmlAsked = true;
     if (confirm("This HTML contains scripts. Run them in a sandboxed iframe?\n\nThey cannot access this page or your data, but only continue if you trust the source. Cancel to view it sanitized (scripts removed).")) {
+      if (!request.isCurrent()) return false;
       state19.htmlAllowScripts = true;
+      request.dispose("HTML script choice changed");
       return renderPreview3();
     }
   }
-  state19.previewCleanup?.();
-  state19.previewCleanup = null;
+  if (!request.isCurrent()) return false;
+  clearMountedPreview();
   if (rendered.parentNode) {
-    clearPreview();
     $12("previewHost").appendChild(rendered.parentNode);
-    if (rendered.archiveTree) mountArchiveTree(rendered.archiveTree, rendered.openEntry, loadIntake3, state19.intake);
+    if (rendered.archiveTree && request.isCurrent()) {
+      mountArchiveTree(rendered.archiveTree, rendered.openEntry, loadIntake3, intake);
+    }
     state19.lastBodyHtml = rendered.bodyHtml || null;
-    state19.previewCleanup = rendered.revoke || null;
+    state19.previewCleanup = () => request.dispose("preview unmounted");
     state19.preview = { iframe: null, highlight() {
     }, scrollTo() {
     }, destroy() {
       $12("previewHost").innerHTML = "";
     } };
     updateExportButton();
-    return;
+    return true;
   }
-  if (rendered.archiveTree) mountArchiveTree(rendered.archiveTree, rendered.openEntry, loadIntake3, state19.intake);
+  if (rendered.archiveTree && request.isCurrent()) {
+    mountArchiveTree(rendered.archiveTree, rendered.openEntry, loadIntake3, intake);
+  }
   state19.lastBodyHtml = rendered.fullDoc ? null : rendered.bodyHtml;
-  state19.preview = mountPreview($12("previewHost"), {
+  const preview = mountPreview($12("previewHost"), {
     bodyHtml: rendered.bodyHtml,
     fullDoc: rendered.fullDoc,
     allowScripts: !!rendered.ranScripts,
-    theme: themeIsDark2() ? "dark" : "light",
-    style: previewStyle(state19.settingsModel.values),
-    onSelect: (src) => mapPreviewToRaw(src),
-    onHover: (src) => mapPreviewToRaw(src, false),
-    onScroll: (ratio) => syncScrollFromPreview(ratio),
-    onOpen: rendered.openEntry ? (name) => openInnerEntry(rendered.openEntry, name) : void 0
+    theme: snapshot.theme,
+    style: previewStyle(snapshot.settings),
+    onSelect: (src) => {
+      if (request.isCurrent()) mapPreviewToRaw(src);
+    },
+    onHover: (src) => {
+      if (request.isCurrent()) mapPreviewToRaw(src, false);
+    },
+    onScroll: (ratio) => {
+      if (request.isCurrent()) syncScrollFromPreview(ratio);
+    },
+    onOpen: rendered.openEntry ? (name) => {
+      if (request.isCurrent()) openInnerEntry(guardedOpenEntry(request, rendered.openEntry), name);
+    } : void 0
   });
-  if (rendered.hadUnsafe) toast14("Some unsafe HTML (scripts/handlers) was removed for safety.");
+  request.registerCleanup(() => preview.destroy());
+  state19.preview = preview;
+  state19.previewCleanup = () => request.dispose("preview unmounted");
+  if (rendered.hadUnsafe && request.isCurrent()) toast14("Some unsafe HTML (scripts/handlers) was removed for safety.");
   updateExportButton();
+  return true;
 }
-function clearPreview() {
-  state19.previewCleanup?.();
+function guardedOpenEntry(request, openEntry) {
+  if (typeof openEntry !== "function") return void 0;
+  return async (...args) => {
+    if (!request.isCurrent()) return null;
+    return openEntry(...args);
+  };
+}
+function clearMountedPreview() {
+  const cleanup = state19.previewCleanup;
   state19.previewCleanup = null;
-  state19.preview?.destroy();
+  if (cleanup) cleanup();
+  else state19.preview?.destroy();
   state19.preview = null;
   state19.lastBodyHtml = null;
   updateExportButton();
   $12("previewHost").innerHTML = "";
+}
+function clearPreview() {
+  previewRequests.invalidate("preview cleared");
+  clearMountedPreview();
 }
 async function openInnerEntry(openEntry, name) {
   try {
@@ -9907,15 +10222,22 @@ function updateEnhanceChip() {
   }
   chip.hidden = false;
   const showingEnhanced = !state19.forceBase;
-  chip.querySelector(".ec-label").textContent = (showingEnhanced ? "✦ Enhanced: " : "Plain view — ") + state19.known.label;
+  chip.querySelector(".ec-label").textContent = (showingEnhanced ? "✦ Enhanced summary: " : "Plain view — ") + state19.known.label;
   const btn = chip.querySelector(".ec-toggle");
-  btn.textContent = showingEnhanced ? "Show default view" : "Show enhanced view";
+  btn.textContent = showingEnhanced ? "Show default view" : "Show enhanced summary";
 }
 async function toggleEnhance() {
   if (!state19.known) return;
   state19.forceBase = !state19.forceBase;
+  const expected = {
+    intake: state19.intake,
+    type: state19.type,
+    known: state19.known,
+    forceBase: state19.forceBase
+  };
   updateEnhanceChip();
   await renderPreview3();
+  if (state19.intake !== expected.intake || state19.type !== expected.type || state19.known !== expected.known || state19.forceBase !== expected.forceBase) return;
   applyLayout();
 }
 function openSettings2() {
@@ -9928,7 +10250,9 @@ async function onSettingsChange(model, changedKey) {
     persistGlobalKey("showAllTypes", model.values.showAllTypes);
     if (state19.intake && state19.type) {
       const [{ pickType }, { populateTypeSelect }] = await Promise.all([detectRuntime(), typeSelectRuntime()]);
-      const { ranking } = pickType(state19.intake);
+      const { ranking } = pickType(state19.intake, {
+        enableEmulators: readGlobalKey("enableEmulators", false) === true
+      });
       const selId = state19.known && !state19.forceBase ? "known:" + state19.known.id : state19.type.id;
       populateTypeSelect(ranking, selId, !!state19.settingsModel?.values?.showAllTypes, state19.intake, state19.knownCandidates || []);
     }
@@ -9939,6 +10263,16 @@ async function onSettingsChange(model, changedKey) {
   }
   if (changedKey === "enableFfmpeg" || changedKey === "enableArchiveWasm" || changedKey === "enableEmulators") {
     persistGlobalKey(changedKey, model.values[changedKey]);
+  }
+  if (changedKey === "enableEmulators" && state19.intake && state19.type) {
+    const activation = beginActivation(state19.intake);
+    const [{ pickType }, { populateTypeSelect }] = await Promise.all([detectRuntime(), typeSelectRuntime()]);
+    if (!activationIsCurrent(activation)) return;
+    const { type, ranking } = pickType(state19.intake, { enableEmulators: model.values.enableEmulators === true });
+    populateTypeSelect(ranking, type.id, !!model.values.showAllTypes, state19.intake, state19.knownCandidates || []);
+    if (type.id !== state19.type.id) await activateType(type, null, activation);
+    else await renderPreview3();
+    return;
   }
   if (!state19.type?.capabilities.preview) return;
   if (changedKey === "previewMaxWidth" || changedKey === "previewWidthMode") applyLayout();
@@ -10069,15 +10403,19 @@ function init() {
   initSplitDivider();
   $12("typeSelect").addEventListener("change", async (e) => {
     const val = e.target.value;
+    const activation = beginActivation(state19.intake);
     if (val.startsWith("known:")) {
       const knownId = val.slice(6);
       const match = (state19.knownCandidates || []).find((m) => m.known.id === knownId);
-      if (match) await activateType(match.baseType, match.known);
+      if (match) await activateType(match.baseType, match.known, activation);
+      else if (activationIsCurrent(activation)) await renderPreview3();
       return;
     }
     const { getType } = await registryRuntime();
+    if (!activationIsCurrent(activation)) return;
     const t = getType(val);
-    if (t) await activateType(t);
+    if (t) await activateType(t, null, activation);
+    else if (activationIsCurrent(activation)) await renderPreview3();
   });
   $12("themeBtn").addEventListener("click", () => applyTheme(!themeIsDark2()));
   $12("settingsBtn").addEventListener("click", () => openDrawer("settingsDrawer", openSettings2));
@@ -10200,6 +10538,14 @@ function init() {
     // entries (e.g. its split frames) — the same sidebar item gains the frames underneath.
     expandFileRootToFolder: (opts) => expandActiveFileRootToFolder(opts),
     persistence: persistence_exports,
+    rerenderPreview: renderPreview3,
+    setPreviewTestHook: (hook) => {
+      previewTestHook = typeof hook === "function" ? hook : null;
+    },
+    previewRequest: () => {
+      const request = previewRequests.current();
+      return request ? { id: request.id, snapshot: request.snapshot } : null;
+    },
     get games() {
       return state19.games;
     },

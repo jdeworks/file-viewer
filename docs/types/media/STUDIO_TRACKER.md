@@ -1,8 +1,7 @@
 # Media Studio Tracker
 
-Active tracker for the `worktree-media` lane. Use this before `MEDIA_EDITOR_PLAN.md`,
-`EDITOR.md`, or `STUDIO_ROADMAP.md`; those files contain useful design history but some
-status notes are stale.
+Active tracker for the `worktree-media` lane. Use this before `EDITOR.md` or
+`STUDIO_ROADMAP.md`; those files contain useful design history but some status notes are stale.
 
 ## Daily Start Checklist
 

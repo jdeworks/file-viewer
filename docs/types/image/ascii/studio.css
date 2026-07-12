@@ -7,7 +7,7 @@
 .asx-perf { font-size: 12px; padding: 4px 6px; border-radius: 6px; border: 1px solid #3a3a3a; background: #1b1b1b; color: #ddd; }
 /* In camera mode the studio toolbar's image buttons are hidden (the camera has its
    own toolbar); only the 📷/back toggle remains. */
-.asx-bar.asx-cam-on > *:not(.asx-cam) { display: none; }
+.asx-bar.asx-cam-on > *:not(.asx-cam):not(.asx-settings-btn):not(.asx-perf):not(.asx-preset):not(.asx-preset-save):not(.asx-preset-del):not(.asx-reset-filters):not(.asx-reset-all) { display: none; }
 
 /* ── Mobile: collapse the toolbar behind a ☰ toggle ── On a wide pane every control
    sits in the bar. On a narrow pane (set by the ResizeObserver in studio.js) the bar
@@ -94,6 +94,7 @@
 
 /* Webcam mode (mounted by webcam.js into .asx-cam-host). */
 .asx-cam-host { flex: 1; min-height: 0; display: flex; }
+.asx-cam-host[hidden] { display: none; }
 .asx-cam { display: flex; flex-direction: column; flex: 1; min-height: 0; }
 .asx-cam .asx-bar { gap: 6px; }
 .asx-cam .cam-stats { color: #8f8; font: 12px ui-monospace, monospace; margin-left: auto; }
@@ -121,9 +122,3 @@
   background: rgba(13,13,13,.95); border: 1px solid #3a3a3a; border-radius: 6px; }
 .cam-orig-peek figcaption { font: 10px ui-monospace, monospace; color: #9ab; text-transform: uppercase; margin-bottom: 4px; }
 .cam-orig-peek canvas { display: block; max-width: 260px; border-radius: 3px; background: #111; }
-
-.cam-settings { position: fixed; z-index: 40; min-width: 280px; min-height: 180px; max-width: min(92vw, 680px); max-height: min(84vh, 760px);
-  overflow: auto; resize: both; display: none; flex-direction: column; background: rgba(13,13,13,.98);
-  border: 1px solid #2a2a2a; border-radius: 6px; box-shadow: 0 12px 34px rgba(0,0,0,.62); }
-.cam-settings:not([hidden]) { display: flex; }
-.asx-cam .cam-gear.active { color: #6ab0ff; border-color: #3a5a8a; }

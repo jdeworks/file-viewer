@@ -52,12 +52,15 @@
 }
 .ex-tool-link:hover { background: color-mix(in srgb, var(--accent) 14%, var(--bg)); }
 .ex-ascii-studio {
-  justify-self: center; font-size: 12px; padding: 6px 12px; border-radius: 16px;
+  font-size: 12px; padding: 6px 12px; border-radius: 16px;
   border: 1px solid color-mix(in srgb, var(--accent) 55%, var(--border));
   color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, var(--bg));
   text-decoration: none; white-space: nowrap;
 }
 .ex-ascii-studio:hover { background: color-mix(in srgb, var(--accent) 14%, var(--bg)); }
+.ex-ascii-studio:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.ex-media-tools { display: flex; justify-content: center; }
+.ex-media-tools[hidden] { display: none; }
 /* Super-category sections in the gallery grid */
 .ex-super-section { display: flex; flex-direction: column; gap: 6px; }
 .ex-super-section[hidden] { display: none; }

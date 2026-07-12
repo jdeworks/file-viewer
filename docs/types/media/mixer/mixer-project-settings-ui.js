@@ -149,17 +149,19 @@ export function createProjectSettingsUi({
     const exportButton = document.createElement('button');
     exportButton.type = 'button';
     exportButton.className = 'mmx-settings-download';
-    exportButton.textContent = 'Export settings';
+    exportButton.textContent = 'Download project settings';
+    exportButton.title = 'Download project configuration as JSON (media files are not embedded)';
     const importLabel = document.createElement('label');
     importLabel.className = 'mmx-settings-import-label';
-    importLabel.textContent = 'Import settings';
+    importLabel.textContent = 'Import project settings';
+    importLabel.title = 'Import project configuration from JSON';
     const input = document.createElement('input');
     input.type = 'file';
     input.className = 'mmx-settings-import';
     input.accept = 'application/json,.json';
     importLabel.append(input);
     controls.append(exportButton, importLabel);
-    toolbar.append(controls);
+    (toolbar.querySelector('.mmx-mix-project-group') || toolbar).append(controls);
     if (lastImport) root.append(renderRelinkPanel(lastImport));
   }
 }

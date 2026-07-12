@@ -16,7 +16,7 @@ VENDOR=docs/vendor
 # Subdirs this script owns. Each is wiped + recreated before its copy block (per-lib clean drops stale
 # files), leaving manually-vendored dirs/loose files elsewhere in docs/vendor/ untouched.
 MANAGED=(monaco pdfjs dompurify html2canvas markdown-it papaparse xlsx mammoth js-yaml jszip chartjs \
-         pptxviewjs sql.js pdf-lib libarchive ffmpeg ag-psd qrcodejs abcjs tesseract)
+         pptxviewjs sql.js pdf-lib libarchive ffmpeg ag-psd qrcodejs abcjs lamejs tesseract)
 for d in "${MANAGED[@]}"; do rm -rf "${VENDOR:?}/$d"; mkdir -p "$VENDOR/$d"; done
 
 # --- Monaco (AMD dist). Drop locale bundles (English is built-in) to save weight. ---
@@ -91,6 +91,11 @@ cp node_modules/qrcodejs2-fixes/qrcode.js "$VENDOR/qrcodejs/qrcode.js"
 # --- abcjs (ABC music notation renderer, browser UMD, ~492 KB). Loaded only for .abc files.
 mkdir -p "$VENDOR/abcjs"
 cp node_modules/abcjs/dist/abcjs-basic-min.js "$VENDOR/abcjs/abcjs-basic-min.js"
+
+# --- lamejs (offline MP3 encoder, UMD). Loaded only by the Mix export worker.
+mkdir -p "$VENDOR/lamejs"
+cp node_modules/lamejs/lame.min.js "$VENDOR/lamejs/lame.min.js"
+cp node_modules/lamejs/LICENSE "$VENDOR/lamejs/LICENSE"
 
 # --- tesseract.js (OCR, WASM, ~11 MB). UMD lib + worker + self-contained core (SIMD + non-SIMD
 # fallback; each .wasm.js embeds its wasm as base64, so no separate .wasm fetch) + English LSTM

@@ -9,6 +9,16 @@ import { mountAsciiStudio } from '../../types/image/ascii/studio.js';
 const $ = (id) => document.getElementById(id);
 let studio = null;
 
+export const SAMPLE_IMAGES = Object.freeze([
+  { name: 'sample.png', label: 'PNG' },
+  { name: 'sample.jpg', label: 'JPEG' },
+  { name: 'sample.jpeg', label: 'JPEG (alternate)' },
+  { name: 'sample.gif', label: 'GIF' },
+  { name: 'sample.webp', label: 'WebP' },
+  { name: 'sample.bmp', label: 'Bitmap' },
+  { name: 'sample.avif', label: 'AVIF' },
+]);
+
 function ensureStudio() {
   if (!studio) studio = mountAsciiStudio($('studio'), { filename: 'image' });
   return studio;
@@ -30,21 +40,36 @@ function imageMimeFor(name, declared) {
 }
 
 async function loadFile(file) {
-  if (!file || !file.type.startsWith('image/')) return;
+  const mime = imageMimeFor(file?.name, file?.type);
+  if (!file || !mime) return false;
   const bytes = new Uint8Array(await file.arrayBuffer());
-  ensureStudio().setImage({ bytes, mime: file.type });
+  return ensureStudio().setImage({ bytes, mime, filename: file.name });
 }
 
+let sampleRequest = 0;
+let sampleAbort = null;
 async function loadExampleSample(name) {
+  const request = ++sampleRequest;
+  sampleAbort?.abort();
+  sampleAbort = new AbortController();
+  ensureStudio().cancelPendingImage();
   const clean = String(name || '').replace(/^\/?docs\/examples\//, '').replace(/^\/?examples\//, '');
-  if (!clean || clean.includes('..') || clean.includes('\\')) return false;
-  const res = await fetch('../../examples/' + clean).catch(() => null);
+  if (!clean || clean.includes('..') || clean.includes('\\') || !/^[a-zA-Z0-9_./ -]+$/.test(clean)) return false;
+  const res = await fetch('../../examples/' + clean, { signal: sampleAbort.signal }).catch(() => null);
+  if (request !== sampleRequest) return null;
   if (!res?.ok) return false;
   const blob = await res.blob();
   const mime = imageMimeFor(clean, blob.type);
   if (!mime) return false; // fetched OK but not a recognizable image
-  await loadFile(new File([blob], clean.split('/').pop() || 'sample', { type: mime }));
-  return true;
+  const loaded = await loadFile(new File([blob], clean.split('/').pop() || 'sample', { type: mime }));
+  return request === sampleRequest ? !!loaded : null;
+}
+
+function loadLocalFile(file) {
+  sampleRequest++;
+  sampleAbort?.abort();
+  ensureStudio().cancelPendingImage();
+  return loadFile(file);
 }
 
 // A tiny generated test pattern so the page is useful with no upload.
@@ -58,21 +83,58 @@ function loadSample() {
   g.fillStyle = '#fff'; g.beginPath(); g.arc(160, 130, 70, 0, Math.PI * 2); g.fill();
   g.fillStyle = '#222'; g.font = 'bold 48px sans-serif'; g.textAlign = 'center';
   g.fillText('ASCII', 160, 260);
-  ensureStudio().setImage({ source: c });
+  ensureStudio().setImage({ source: c, filename: 'sample.png' });
+}
+
+const sampleDialog = $('sample-dialog');
+const sampleGrid = $('sample-grid');
+const sampleError = $('sample-error');
+for (const sample of SAMPLE_IMAGES) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'sample-card';
+  button.dataset.sample = sample.name;
+  const preview = document.createElement('img');
+  preview.src = '../../examples/' + sample.name;
+  preview.alt = '';
+  preview.loading = 'lazy';
+  const label = document.createElement('span');
+  label.textContent = `${sample.label} · ${sample.name}`;
+  button.append(preview, label);
+  button.addEventListener('click', async () => {
+    sampleError.textContent = '';
+    button.disabled = true;
+    button.setAttribute('aria-busy', 'true');
+    const ok = await loadExampleSample(sample.name).catch(() => false);
+    button.disabled = false;
+    button.removeAttribute('aria-busy');
+    if (ok) sampleDialog.close();
+    else if (ok === false) sampleError.textContent = `Could not load ${sample.name}. The current image was kept.`;
+  });
+  sampleGrid.append(button);
+}
+
+function openSampleGallery() {
+  sampleError.textContent = '';
+  if (typeof sampleDialog.showModal === 'function') sampleDialog.showModal();
+  else sampleDialog.setAttribute('open', '');
+  sampleGrid.querySelector('button')?.focus();
 }
 
 // File input + drag/drop
 $('pick').addEventListener('click', () => $('file').click());
-$('sample').addEventListener('click', loadSample);
-$('file').addEventListener('change', (e) => loadFile(e.target.files[0]));
+$('sample').addEventListener('click', openSampleGallery);
+$('sample-close').addEventListener('click', () => sampleDialog.close());
+$('file').addEventListener('change', (e) => loadLocalFile(e.target.files[0]));
 const drop = $('drop');
 ['dragover', 'dragenter'].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add('over'); }));
 ['dragleave', 'drop'].forEach((ev) => drop.addEventListener(ev, () => drop.classList.remove('over')));
-drop.addEventListener('drop', (e) => { e.preventDefault(); loadFile(e.dataTransfer.files[0]); });
+drop.addEventListener('drop', (e) => { e.preventDefault(); loadLocalFile(e.dataTransfer.files[0]); });
 
+loadSample();
 const initialSample = new URLSearchParams(location.search).get('sample');
 if (initialSample) {
   loadExampleSample(initialSample).then((ok) => {
-    if (!ok) { console.warn('ASCII Studio: sample "' + initialSample + '" could not be loaded; showing the generated placeholder.'); loadSample(); }
+    if (!ok) console.warn('ASCII Studio: sample "' + initialSample + '" could not be loaded; keeping the generated placeholder.');
   });
-} else loadSample();
+}

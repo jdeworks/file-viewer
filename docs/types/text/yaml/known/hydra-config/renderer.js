@@ -1,6 +1,7 @@
 // Enhanced Hydra config viewer.
 // Shows defaults list as pills, config groups, _target_ class, and override flags.
 import { loadGlobal, vendor } from '../../../../../core/script-loader.js';
+import { describeCollectionCap } from '../../../../../core/collection-cap.js';
 
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
@@ -90,8 +91,10 @@ export async function render(intake) {
     <div class="hyd-card"><div class="hyd-target">${esc(target)}</div></div></div>` : '';
 
   // Config values (flatten non-hydra keys)
-  const configEntries = flattenConfig(cfg).slice(0, 30);
-  const configHtml = configEntries.length ? `<div class="hyd-sec"><h3>Config Values (${configEntries.length})</h3>
+  const allConfigEntries = flattenConfig(cfg);
+  const configEntries = allConfigEntries.slice(0, 30);
+  const configCap = describeCollectionCap(allConfigEntries, configEntries);
+  const configHtml = configEntries.length ? `<div class="hyd-sec"><h3>Config Values (${configCap.label})</h3>
     <div class="hyd-card"><ul class="hyd-cfg-items">${configEntries.map(([k, v]) =>
     `<li class="hyd-cfg-item"><span class="hyd-cfg-key">${esc(k)}</span><span class="hyd-cfg-val">${esc(v && typeof v === 'object' ? JSON.stringify(v) : String(v ?? ''))}</span></li>`
   ).join('')}</ul></div></div>` : '';
@@ -99,7 +102,7 @@ export async function render(intake) {
   const subtitle = [
     defaults.length ? `${defaults.length} defaults` : '',
     target ? 'instantiable' : '',
-    configEntries.length ? `${configEntries.length} values` : '',
+    allConfigEntries.length ? `${allConfigEntries.length} values` : '',
   ].filter(Boolean).join(' · ');
 
   const host = document.createElement('div');

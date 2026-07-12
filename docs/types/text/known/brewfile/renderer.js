@@ -1,3 +1,5 @@
+import { describeCollectionCap } from '../../../../core/collection-cap.js';
+
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 const CSS = `
@@ -74,29 +76,34 @@ export function render(intake) {
   const displayCasks = casks.slice(0, 20);
   const displayMas = mas.slice(0, 10);
   const displayVscode = vscode.slice(0, 10);
+  const tapCap = describeCollectionCap(taps, displayTaps);
+  const formulaCap = describeCollectionCap(formulas, displayFormulas);
+  const caskCap = describeCollectionCap(casks, displayCasks);
+  const masCap = describeCollectionCap(mas, displayMas);
+  const vscodeCap = describeCollectionCap(vscode, displayVscode);
 
   if (displayTaps.length) {
     const rows = displayTaps.map((t) => `<li class="brew-item"><span class="brew-name">${esc(t)}</span></li>`).join('');
-    parts.push(section('Taps', displayTaps.length, `<ul class="brew-list">${rows}</ul>`));
+    parts.push(section('Taps', tapCap.label, `<ul class="brew-list">${rows}</ul>`));
   }
   if (displayFormulas.length) {
     const rows = displayFormulas.map((f) => {
       const args = f.args.length ? `<span class="brew-args">${esc(f.args.join(' '))}</span>` : '';
       return `<li class="brew-item"><span class="brew-name">${esc(f.name)}</span>${args}</li>`;
     }).join('');
-    parts.push(section('Formulae', displayFormulas.length + (formulas.length > 30 ? ` of ${formulas.length}` : ''), `<ul class="brew-list">${rows}</ul>`));
+    parts.push(section('Formulae', formulaCap.label, `<ul class="brew-list">${rows}</ul>`));
   }
   if (displayCasks.length) {
     const rows = displayCasks.map((c) => `<li class="brew-item"><span class="brew-name">${esc(c)}</span><span class="brew-tag">cask</span></li>`).join('');
-    parts.push(section('Casks', displayCasks.length + (casks.length > 20 ? ` of ${casks.length}` : ''), `<ul class="brew-list">${rows}</ul>`));
+    parts.push(section('Casks', caskCap.label, `<ul class="brew-list">${rows}</ul>`));
   }
   if (displayMas.length) {
     const rows = displayMas.map((a) => `<li class="brew-item"><span class="brew-name">${esc(a.name)}</span><span class="brew-id">id: ${esc(a.id)}</span></li>`).join('');
-    parts.push(section('Mac App Store', displayMas.length, `<ul class="brew-list">${rows}</ul>`));
+    parts.push(section('Mac App Store', masCap.label, `<ul class="brew-list">${rows}</ul>`));
   }
   if (displayVscode.length) {
     const rows = displayVscode.map((e) => `<li class="brew-item"><span class="brew-name">${esc(e)}</span></li>`).join('');
-    parts.push(section('VS Code Extensions', displayVscode.length, `<ul class="brew-list">${rows}</ul>`));
+    parts.push(section('VS Code Extensions', vscodeCap.label, `<ul class="brew-list">${rows}</ul>`));
   }
 
   const chipParts = [

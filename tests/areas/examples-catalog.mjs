@@ -154,6 +154,16 @@ export async function run(ctx) {
   } else {
     pass('container-dependent media samples document partial playback support');
   }
+  const fidelityPartialSamples = [
+    'sample.blend', 'sample.dcm', 'sample.dwg', 'sample.exr', 'sample.fbx', 'sample.fits',
+    'sample.nc', 'sample.nii', 'sample.pages', 'sample.rtf', 'sample.sketch', 'sample.eps',
+  ];
+  const missingFidelityPartial = fidelityPartialSamples.filter((file) => !byFile.get(file)?.partial);
+  if (missingFidelityPartial.length) {
+    fail('fidelity-limited samples should be marked partial: ' + missingFidelityPartial.join(', '));
+  } else {
+    pass('all twelve fidelity-limited samples carry partial catalog claims');
+  }
   const fontFormatSamples = ['sample.ttf', 'sample.otf', 'sample.woff', 'sample.woff2'];
   const missingFontFormats = fontFormatSamples.filter((file) => byFile.get(file)?.type !== 'font');
   if (missingFontFormats.length) {
@@ -240,8 +250,7 @@ export async function run(ctx) {
   if (sourcedBadgeOk.ok) pass('sourced badge visible on sample.png in examples gallery');
   else fail('sourced badge missing: ' + sourcedBadgeOk.reason);
 
-  // ASCII Studio is NOT attached to individual samples — no catalog entry should
-  // carry a per-sample tools link. It is reached only via the one global button.
+  // ASCII Studio is NOT attached to individual samples.
   const noPerSampleTool = await page.evaluate(async () => {
     const res = await fetch('examples/index.json');
     const examples = res.ok ? await res.json() : [];
@@ -254,26 +263,54 @@ export async function run(ctx) {
     fail('samples still carry ASCII Studio tool links: ' + JSON.stringify(noPerSampleTool));
   }
 
-  // One standalone gallery-level button opens the ASCII Studio (no ?sample=).
-  const asciiBtnOk = await page.evaluate(() => {
-    const link = document.querySelector('.ex-ascii-studio');
-    const perCard = document.querySelectorAll('.ex-tool-link').length;
-    if (!link) return { ok: false, reason: 'global ASCII Studio button not rendered' };
-    return {
-      ok: true,
+  // The Image category is still open from the sourced-badge check: the Media-only tool must not
+  // leak here, into folder view, or into the show-all view.
+  if ((await page.$$('.ex-ascii-studio')).length === 0) pass('ASCII Studio is absent from Image category');
+  else fail('ASCII Studio leaked into Image category');
+  await page.click('.ex-back-btn');
+  if ((await page.$$('.ex-ascii-studio')).length === 0) pass('ASCII Studio is absent from folder overview');
+  else fail('ASCII Studio leaked into folder overview');
+
+  const mediaCard = await page.$('.ex-folder-card[data-categories="Media"]');
+  if (!mediaCard) {
+    fail('Media category card missing');
+  } else {
+    await mediaCard.click();
+    await page.waitForSelector('.ex-ascii-studio');
+    const asciiBtnOk = await page.$eval('.ex-ascii-studio', (link) => ({
+      count: document.querySelectorAll('.ex-ascii-studio').length,
       href: link.getAttribute('href'),
       absolute: link.href,
       target: link.target,
       rel: link.rel,
-      perCard,
-    };
-  });
-  if (asciiBtnOk.ok && asciiBtnOk.href === 'tools/ascii-studio/index.html'
-      && asciiBtnOk.absolute.startsWith(origin + '/tools/ascii-studio/') && !asciiBtnOk.absolute.includes('?sample=')
-      && asciiBtnOk.target === '_blank' && asciiBtnOk.rel.includes('noopener') && asciiBtnOk.perCard === 0) {
-    pass('gallery exposes one standalone ASCII Studio button (no per-sample links)');
-  } else {
-    fail('gallery ASCII Studio button invalid: ' + JSON.stringify(asciiBtnOk));
+      aria: link.getAttribute('aria-label'),
+      visible: !link.closest('.ex-media-tools').hidden,
+    }));
+    if (asciiBtnOk.count === 1 && asciiBtnOk.visible
+        && asciiBtnOk.href === 'tools/ascii-studio/index.html'
+        && asciiBtnOk.absolute.startsWith(origin + '/tools/ascii-studio/')
+        && !asciiBtnOk.absolute.includes('?sample=') && asciiBtnOk.target === '_blank'
+        && asciiBtnOk.rel.includes('noopener') && /ASCII Studio/.test(asciiBtnOk.aria || '')) {
+      pass('Media category exposes one accessible standalone ASCII Studio button');
+    } else fail('Media ASCII Studio button invalid: ' + JSON.stringify(asciiBtnOk));
+
+    await page.fill('.ex-search', 'no-media-sample-can-match-this');
+    if (await page.isHidden('.ex-media-tools')) pass('ASCII Studio hides when search leaves no Media match');
+    else fail('ASCII Studio remained visible with zero Media search matches');
+    await page.fill('.ex-search', 'sample.mp4');
+    if (await page.isVisible('.ex-media-tools')) pass('ASCII Studio returns when a Media search match remains');
+    else fail('ASCII Studio did not return for a Media search match');
+    await page.click('.ex-filter-chip[data-filter="edit"]');
+    if (await page.isHidden('.ex-media-tools')) pass('ASCII Studio follows zero-match kind filter');
+    else fail('ASCII Studio remained visible after zero-match kind filter');
+    await page.click('.ex-filter-chip[data-filter="view"]');
+    if (await page.isVisible('.ex-media-tools')) pass('ASCII Studio returns for matching preview-only Media filter');
+    else fail('ASCII Studio did not return for matching preview-only filter');
+    await page.fill('.ex-search', '');
+    await page.click('.ex-filter-chip[data-filter="all"]');
+    await page.click('.ex-back-btn');
+    if ((await page.$$('.ex-ascii-studio')).length === 0) pass('ASCII Studio is removed on Media back navigation');
+    else fail('ASCII Studio remained after leaving Media category');
   }
 
   await page.goto(origin + '/tools/ascii-studio/index.html?sample=sample.png', { waitUntil: 'load' });
@@ -299,6 +336,46 @@ export async function run(ctx) {
   } else {
     fail('ASCII Studio JPEG ?sample= fell back to the placeholder: ' + JSON.stringify({ jpegLen: jpegAscii.length, sameAsPlaceholder: jpegAscii === placeholderAscii }));
   }
+
+  // Default mode keeps the generated starter art but Use a sample must open a
+  // real, keyboard-accessible gallery and allow several maintained examples.
+  await page.goto(origin + '/tools/ascii-studio/index.html', { waitUntil: 'load' });
+  await page.waitForFunction(() => (document.querySelector('.asx-out')?.textContent || '').trim().length > 20, null, { timeout: 10000 });
+  const standaloneLayout = await page.evaluate(() => {
+    const host = document.querySelector('.studio-host').getBoundingClientRect();
+    return { hostHeight: host.height, viewportHeight: window.innerHeight, bodyOverflow: getComputedStyle(document.body).overflow };
+  });
+  if (standaloneLayout.hostHeight > standaloneLayout.viewportHeight * 0.72 && standaloneLayout.bodyOverflow === 'hidden') {
+    pass('ASCII Studio uses the full remaining viewport');
+  } else fail('ASCII Studio standalone height: ' + JSON.stringify(standaloneLayout));
+  const generatedAscii = await page.$eval('.asx-out', (el) => el.textContent);
+  await page.click('#sample');
+  const gallery = await page.evaluate(() => ({
+    open: document.querySelector('#sample-dialog')?.open,
+    count: document.querySelectorAll('.sample-card').length,
+    focused: document.activeElement?.classList.contains('sample-card'),
+  }));
+  if (gallery.open && gallery.count >= 6 && gallery.focused) pass('Use a sample opens the maintained accessible image gallery');
+  else fail('ASCII sample gallery: ' + JSON.stringify(gallery));
+  await page.click('.sample-card[data-sample="sample.jpg"]');
+  await page.waitForFunction(() => !document.querySelector('#sample-dialog').open, null, { timeout: 10000 });
+  await page.waitForFunction((before) => document.querySelector('.asx-out')?.textContent !== before, generatedAscii, { timeout: 10000 });
+  const jpgAscii = await page.$eval('.asx-out', (el) => el.textContent);
+  await page.click('#sample');
+  await page.click('.sample-card[data-sample="sample.gif"]');
+  await page.waitForFunction((before) => !document.querySelector('#sample-dialog').open && document.querySelector('.asx-out')?.textContent !== before, jpgAscii, { timeout: 10000 });
+  pass('ASCII sample gallery loads multiple distinct maintained images');
+  const gifAscii = await page.$eval('.asx-out', (el) => el.textContent);
+  await page.click('#sample');
+  await page.evaluate(() => {
+    document.querySelector('.sample-card[data-sample="sample.jpg"]').click();
+    document.querySelector('.sample-card[data-sample="sample.gif"]').click();
+  });
+  await page.waitForFunction(() => !document.querySelector('#sample-dialog').open, null, { timeout: 10000 });
+  await page.waitForTimeout(400);
+  const latestAscii = await page.$eval('.asx-out', (el) => el.textContent);
+  if (latestAscii === gifAscii) pass('ASCII sample gallery keeps the latest choice when an earlier load finishes late');
+  else fail('ASCII sample gallery allowed a stale sample load to win');
 
   // Single canonical webcam entry: no page-level "Webcam" tab; the ONLY camera
   // door is the studio's own 📷 Camera toolbar button (matches the in-viewer studio).

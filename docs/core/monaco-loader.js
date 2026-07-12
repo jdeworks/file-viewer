@@ -2,6 +2,23 @@
 // the first time a raw view / diff is actually shown. Loaded from vendor (no CDN).
 
 let monacoPromise = null;
+let cancellationGuardInstalled = false;
+
+function installCancellationGuard() {
+  if (cancellationGuardInstalled) return;
+  cancellationGuardInstalled = true;
+  // Monaco rejects some internal async editor work with its private `Canceled` error when an
+  // editor is deliberately disposed during a fast file switch. That is expected lifecycle
+  // cancellation, but an unhandled rejection otherwise becomes a misleading page error. Keep the
+  // guard deliberately narrow so application errors and AbortErrors still surface normally.
+  window.addEventListener('unhandledrejection', (event) => {
+    const reason = event.reason;
+    if (reason?.name === 'Canceled' && reason?.message === 'Canceled'
+        && /\/vendor\/monaco\//.test(String(reason.stack || ''))) {
+      event.preventDefault();
+    }
+  });
+}
 
 function loadScript(src) {
   return new Promise((resolve, reject) => {
@@ -14,6 +31,7 @@ function loadScript(src) {
 }
 
 export function loadMonaco() {
+  installCancellationGuard();
   if (monacoPromise) return monacoPromise;
   monacoPromise = (async () => {
     const base = new URL('../vendor/monaco/vs', import.meta.url).href;

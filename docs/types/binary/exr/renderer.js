@@ -8,6 +8,10 @@
 //
 // OpenEXR v2 multipart adds additional flags in the version word.
 
+import { partialSupportHtml } from '../../../core/partial-support.js';
+
+const CAPABILITY = 'Partial preview: the OpenEXR version and a bounded set of header attributes are shown. Pixel channels, layers, mip levels, multipart image payloads, deep samples, and the HDR image itself are not decoded or rendered.';
+
 function esc(s) {
   return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
@@ -24,8 +28,10 @@ function readCStr(b, off) {
 
 function parseAttributes(b, off) {
   const attrs = [];
+  let complete = false;
+  let limited = false;
   while (off < b.length) {
-    if (b[off] === 0) break; // end of header marker
+    if (b[off] === 0) { complete = true; break; } // end of header marker
     const name = readCStr(b, off); off = name.next;
     if (off >= b.length) break;
     const type = readCStr(b, off); off = type.next;
@@ -63,20 +69,20 @@ function parseAttributes(b, off) {
       }
     } catch (_) { val = `(${type.val}, ${size}B)`; }
     attrs.push({ name: name.val, type: type.val, val: String(val) });
-    if (attrs.length >= 50) { attrs.push({ name: '…', type: '', val: 'truncated' }); break; }
+    if (attrs.length >= 50) { limited = true; break; }
   }
-  return attrs;
+  return { attrs, complete, limited };
 }
 
 export function render(intake) {
   const b = intake.bytes;
   if (!b || b.length < 8) {
-    return { bodyHtml: '<p class="viewer-message">Not a valid OpenEXR file.</p>', hadUnsafe: false };
+    return { bodyHtml: partialSupportHtml(CAPABILITY) + '<p class="viewer-message">Not a valid OpenEXR file.</p>', hadUnsafe: false };
   }
 
   const MAGIC = [0x76, 0x2f, 0x31, 0x01];
   if (!MAGIC.every((v, i) => b[i] === v)) {
-    return { bodyHtml: '<p class="viewer-message">Missing OpenEXR magic signature.</p>', hadUnsafe: false };
+    return { bodyHtml: partialSupportHtml(CAPABILITY) + '<p class="viewer-message">Missing OpenEXR magic signature.</p>', hadUnsafe: false };
   }
 
   const version = r32le(b, 4);
@@ -87,7 +93,11 @@ export function render(intake) {
   const isMultiPart = !!(version & 0x1000);
 
   let attrs = [];
-  try { attrs = parseAttributes(b, 8); } catch (_) {}
+  let attributeScanComplete = false;
+  let attributeScanLimited = false;
+  try {
+    ({ attrs, complete: attributeScanComplete, limited: attributeScanLimited } = parseAttributes(b, 8));
+  } catch (_) {}
 
   const getAttr = (n) => attrs.find((a) => a.name === n);
   const displayWindow = getAttr('displayWindow');
@@ -116,12 +126,15 @@ export function render(intake) {
     `<div class="meta-row"><span class="meta-key">${esc(k)}</span><span class="meta-val">${esc(v)}</span></div>`
   ).join('');
 
-  const attrRows = attrs
-    .filter((a) => !['displayWindow', 'dataWindow', 'pixelAspectRatio', 'compression'].includes(a.name))
-    .slice(0, 20)
+  const otherAttrs = attrs.filter((a) => !['displayWindow', 'dataWindow', 'pixelAspectRatio', 'compression'].includes(a.name));
+  const shownAttrs = otherAttrs.slice(0, 20);
+  const attrRows = shownAttrs
     .map((a) =>
       `<div class="meta-row"><span class="meta-key">${esc(a.name)}</span><span class="meta-val"><span class="exr-type">${esc(a.type)}</span> ${esc(a.val)}</span></div>`
     ).join('');
+  const attrLimit = otherAttrs.length > shownAttrs.length
+    ? `<p class="viewer-message">Showing ${shownAttrs.length} of ${otherAttrs.length} parsed additional attributes.${attributeScanLimited ? ' The header scan stopped at its 50-attribute safety bound.' : ''}</p>`
+    : (!attributeScanComplete ? '<p class="viewer-message">The header attribute scan ended early; displayed attributes may be incomplete.</p>' : '');
 
   return {
     bodyHtml: `
@@ -130,11 +143,12 @@ export function render(intake) {
         .exr-type { color: #888; font-size: 0.8em; margin-right: 0.4em; }
       </style>
       <div class="badge-row"><span class="badge badge-exr">OpenEXR</span></div>
+      ${partialSupportHtml(CAPABILITY)}
       <div class="meta-section">
         <h4 class="meta-section-title">File Info</h4>
         ${metaRows}
       </div>
-      ${attrRows ? `<div class="meta-section"><h4 class="meta-section-title">Attributes</h4>${attrRows}</div>` : ''}
+      ${attrRows || attrLimit ? `<div class="meta-section"><h4 class="meta-section-title">Attributes</h4>${attrLimit}${attrRows}</div>` : ''}
       <div class="meta-section">
         <h4 class="meta-section-title">About this format</h4>
         <p style="font-size:0.85rem;line-height:1.6;margin:0">

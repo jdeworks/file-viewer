@@ -7,7 +7,7 @@
 // Entry contract (default export of known/<id>/index.js):
 //   {
 //     id: string,
-//     label: string,                       // shown in the "Enhanced: <label>" chip
+//     label: string,                       // shown in the "Enhanced summary: <label>" chip
 //     match(intake, baseType) => boolean,  // cheap; runs after the base type is detected
 //     loadRenderer() => Promise<{render}>, // render(intake, ctx) -> { parentNode } | { bodyHtml }
 //     loadDiffRenderer?() => Promise<{render}>,   // optional custom diff (overrides the type's)

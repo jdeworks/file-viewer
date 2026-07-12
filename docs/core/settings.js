@@ -128,6 +128,15 @@ export function persistGlobalKey(key, value) {
   const cur = readSaved(GLOBAL_KEY) || {};
   cur[key] = value;
   localStorage.setItem(GLOBAL_KEY, JSON.stringify({ version: SETTINGS_VERSION, values: cur }));
+  // Models are cached across file switches and may have been preloaded before this instant global
+  // preference changed. Keep every cached model coherent so switching type does not resurrect the
+  // old value during the same session.
+  for (const model of modelCache.values()) {
+    if (model.descriptors.some((descriptor) => descriptor.key === key)) {
+      model.values[key] = value;
+      model.selectedPresetId = matchPreset(model.values, model.presets, model.descriptors);
+    }
+  }
 }
 
 // Persist a single key for a specific type (merging into that type's saved bag).

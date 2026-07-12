@@ -28,6 +28,10 @@
 //   [254-255]: sform_code
 //   [344-347]: magic "n+1\0" or "ni1\0"
 
+import { partialSupportHtml } from '../../../core/partial-support.js';
+
+const CAPABILITY = 'Partial preview: the NIfTI-1 header, dimensions, voxel spacing, data type, intent, and selected description fields are shown. Voxel values, image volumes/slices, extensions, qform/sform orientation transforms, and overlays are not decoded or rendered.';
+
 const DATATYPES = {
   0: 'unknown', 1: 'binary', 2: 'uint8', 4: 'int16', 8: 'int32',
   16: 'float32', 32: 'complex64', 64: 'float64', 128: 'RGB24',
@@ -70,13 +74,13 @@ function readU16le(b, off) {
 export function render(intake) {
   const b = intake.bytes;
   if (!b || b.length < 348) {
-    return { bodyHtml: '<p class="viewer-message">File too small for a NIfTI header.</p>', hadUnsafe: false };
+    return { bodyHtml: partialSupportHtml(CAPABILITY) + '<p class="viewer-message">File too small for a NIfTI header.</p>', hadUnsafe: false };
   }
 
   const sizeofHdr = (b[0] | (b[1] << 8) | (b[2] << 16) | (b[3] << 24)) | 0;
   const magic = new TextDecoder('ascii', { fatal: false }).decode(b.slice(344, 348));
   if (sizeofHdr !== 348 || (magic !== 'n+1\x00' && magic !== 'ni1\x00')) {
-    return { bodyHtml: '<p class="viewer-message">Not a valid NIfTI-1 file.</p>', hadUnsafe: false };
+    return { bodyHtml: partialSupportHtml(CAPABILITY) + '<p class="viewer-message">Not a valid NIfTI-1 file.</p>', hadUnsafe: false };
   }
 
   const ndim = readU16le(b, 40);
@@ -119,6 +123,7 @@ export function render(intake) {
         .badge-nifti { background: #283593; color: #fff; }
       </style>
       <div class="badge-row"><span class="badge badge-nifti">NIfTI</span></div>
+      ${partialSupportHtml(CAPABILITY)}
       <div class="meta-section">
         <h4 class="meta-section-title">Image Info</h4>
         ${metaRows}

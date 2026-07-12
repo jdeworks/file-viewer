@@ -4,6 +4,7 @@
 // that highlights/filters matching nodes; a static bodyHtml is returned alongside so screenshots
 // and Print/Save-as-PDF still work.
 import { parseJsonLike } from './jsonparse.js';
+import { diagnoseDuplicateJsonKeys, duplicateJsonWarningHtml } from './duplicate-keys.js';
 import { createQueryPanel, jsonPathQuery } from '../../../core/query-panel.js';
 import { ensureKnownUiStyle, issueList, maskedValue, sourcePreview, wireSourceLinks } from '../../../core/known-ui.js';
 
@@ -187,17 +188,24 @@ function escapeRegExp(value) {
 }
 
 export async function render(intake, ctx) {
+  const source = intake.sourceText ?? intake.text ?? '';
+  const duplicateReport = diagnoseDuplicateJsonKeys(source);
   let parsed;
   try {
-    parsed = parseJsonLike(intake.text || '', '');
+    parsed = parseJsonLike(source, '');
   } catch (err) {
-    return { bodyHtml: '<div class="json-error"><strong>Invalid JSON</strong><br>' + esc(err.message) + '</div>', hadUnsafe: false };
+    const errorHtml = '<div class="json-error"><strong>Invalid JSON</strong><br>' + esc(err.message) + '</div>';
+    return {
+      bodyHtml: errorHtml + duplicateJsonWarningHtml(duplicateReport, { malformed: true }),
+      hadUnsafe: false,
+    };
   }
   const sortMode = ['A-Z', 'Z-A'].includes(ctx?.settings?.jsonSortKeys) ? ctx.settings.jsonSortKeys : 'original';
-  const warn = parsed.mode === 'jsonc' ? '<div class="json-warning">' + esc(parsed.warnings.join(' ')) + '</div>' : '';
-  const { secrets, issues } = collectSecrets(parsed.data, intake.text || '');
+  const warn = parsed.warnings.length ? '<div class="json-warning">' + esc(parsed.warnings.join(' ')) + '</div>' : '';
+  const duplicateWarning = duplicateJsonWarningHtml(duplicateReport);
+  const { secrets, issues } = collectSecrets(parsed.data, source);
   const treeHtml = '<div class="json-tree" data-sort="' + esc(sortMode) + '">' + valueNode(null, parsed.data, sortMode, '', secrets) + '</div>';
-  const bodyHtml = warn + treeHtml;
+  const bodyHtml = warn + duplicateWarning + treeHtml;
 
   // Live preview: tree + JSONPath query panel. Static bodyHtml is also returned for screenshots.
   const host = document.createElement('div');

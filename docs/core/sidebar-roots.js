@@ -1,5 +1,5 @@
 import { buildTree, renderTree } from './filetree.js';
-import { intakeFromText } from './intake.js';
+import { withSourceText } from './intake.js';
 import { $, isMobile, state, toast } from './state.js';
 
 let loadIntake = null;
@@ -52,7 +52,7 @@ export function captureActiveSidebarRoot() {
     const entry = (root.treeEntries || [])[0];
     const path = entry?.path || root.label;
     const text = state.rawview.getValue();
-    const intake = intakeFromText(text, path.split('/').pop() || root.label);
+    const intake = withSourceText(entry?.intake || state.intake, text);
     root.treeEntries = [{
       ...(entry || {}),
       path,
@@ -227,7 +227,7 @@ export function renderSidebarRoots(activeRoot = null, activeInnerPath = null, { 
             state._skipDiscardGuard = true;
             state._skipSidebarRoot = true;
             loaded = (await loadIntake(edited != null
-              ? intakeFromText(edited, innerPath.split('/').pop())
+              ? withSourceText(entry.intake, edited)
               : entry.intake, { sidebarNavigationToken: navigationToken })) !== false;
           }
           if (loaded) {

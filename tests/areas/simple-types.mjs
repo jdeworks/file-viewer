@@ -355,7 +355,7 @@ export async function run(ctx) {
   const fitsSubhead = await fitsf.$eval('.fits-subhead', (e) => e.textContent);
   if (/FV-GRADIENT/i.test(fitsSubhead)) pass('FITS object name shown'); else fail('fits subhead: ' + fitsSubhead);
   const fitsCapabilityNote = await fitsf.$eval('.fits-capability-note', (e) => e.textContent);
-  if (/Header metadata only.+pixel data is not decoded or rendered/i.test(fitsCapabilityNote)) pass('FITS pixel-rendering limitation shown'); else fail('fits capability note: ' + fitsCapabilityNote);
+  if (/header-card metadata.+image pixels.+not decoded or rendered/i.test(fitsCapabilityNote)) pass('FITS payload-rendering limitations shown'); else fail('fits capability note: ' + fitsCapabilityNote);
 
   // ── KML map viewer ──
   await openExample('Silicon Valley Map (KML)');

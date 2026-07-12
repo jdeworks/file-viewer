@@ -172,6 +172,9 @@ run_phase_unit_tests() {
   done
 }
 
+run_phase "verifying pinned EmulatorJS vendor closure…" \
+  node scripts/verify-emulatorjs-vendor.mjs
+
 FULL_UNIT_TESTS=(
   tests/media-parsers.test.mjs
   tests/media-mixer-model.test.mjs
@@ -192,7 +195,17 @@ FULL_UNIT_TESTS=(
   tests/molview.test.mjs
   tests/mobile-renderer-layout.test.mjs
   tests/core-layout-regressions.mjs
+  tests/preview-request-lifecycle.test.mjs
+  tests/enhanced-cap-fidelity.test.mjs
+  tests/csv-shape-fidelity.test.mjs
+  tests/xlsx-fidelity.test.mjs
+  tests/docx-fidelity.test.mjs
+  tests/pptx-notes-fidelity.test.mjs
+  tests/json-duplicate-keys.test.mjs
+  tests/source-fidelity.test.mjs
+  tests/partial-support-notices.test.mjs
   tests/archivelib-paths.test.mjs
+  tests/archive-entry-bounds.test.mjs
   tests/archive-metadata.test.mjs
   tests/example-fixture-quality.test.mjs
   tests/rich-example-fixtures.test.mjs
@@ -203,6 +216,7 @@ FULL_UNIT_TESTS=(
   tests/asset-manifest.test.mjs
   tests/settings-defaults.test.mjs
   tests/registry-runtime.test.mjs
+  tests/emulatorjs-runtime-contract.test.mjs
   tests/example-compatibility.test.mjs
   tests/type-info.test.mjs
   tests/metadata-normalize.test.mjs
@@ -665,5 +679,11 @@ run_phase "smoke test: known-file viewers (fresh browser process, avoids WSL2 OO
 
 run_phase "smoke test: binary/container types (fresh browser process, ~45 heavy WebGL/wasm opens)…" \
   node tests/smoke-binary.mjs
+
+run_phase "EmulatorJS six-core dependency closure (headless Chromium)…" \
+  node tests/emulatorjs-core-load.mjs
+
+run_phase "Emulator settings responsive matrix (headless Chromium)…" \
+  node tests/emulator-settings-responsive.mjs
 
 echo "✓ all checks passed"

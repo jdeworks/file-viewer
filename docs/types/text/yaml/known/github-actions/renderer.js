@@ -66,6 +66,7 @@ export async function render(intake) {
     { value: model.actions.length, label: 'Actions' },
     { value: model.runs.length, label: 'Run steps' },
     { value: model.env.length, label: 'Env vars' },
+    { value: model.permissions.length, label: 'Permissions' },
     { value: model.issues.length, label: 'Risk notes' },
   ]) {
     const card = document.createElement('div');
@@ -111,7 +112,17 @@ export async function render(intake) {
     const masked = maskedValue(env.key, env.value);
     li.appendChild(chip('env', masked.masked ? 'warn' : 'info', masked.reason || 'Workflow environment variable.'));
     li.appendChild(sourceButton(env.key, env.line, 'Open environment variable in source'));
+    li.appendChild(chip(env.owner, 'muted', 'Scope that receives this environment variable.'));
     if (env.value) li.appendChild(chip(masked.text, masked.masked ? 'danger' : 'muted', masked.reason));
+  });
+
+  appendList(host, 'Permissions', model.permissions, (li, permission) => {
+    const tone = permission.level === 'write-all' || permission.level === 'write'
+      ? 'warn' : permission.level === 'none' ? 'ok' : 'info';
+    li.appendChild(chip(permission.level, tone, 'Effective permission level declared by this workflow.'));
+    li.appendChild(sourceButton(permission.name === 'all' ? 'all scopes' : permission.name,
+      permission.line, 'Open permission in source'));
+    li.appendChild(chip(permission.owner, 'muted', 'Workflow or job scope for this permission declaration.'));
   });
 
   const issueEl = issueList(model.issues, { title: 'Workflow Review' });
@@ -145,7 +156,7 @@ function parseWorkflow(text, filename) {
   const name = { value: scalarAt(lines, 'name')?.value || filename.split('/').pop() || 'Workflow', line: scalarAt(lines, 'name')?.line || 1 };
   const triggers = parseTriggers(lines);
   const jobs = parseJobs(lines);
-  const env = parseTopEnv(lines);
+  const env = parseEnv(lines);
   const actions = [];
   const runs = [];
   const permissions = parsePermissions(lines);
@@ -164,8 +175,10 @@ function parseWorkflow(text, filename) {
     }
   }
   for (const permission of permissions) {
-    if (permission.scope === 'write-all' || permission.level === 'write') {
-      issues.push({ severity: 'warning', label: 'broad permission', line: permission.line, message: permission.scope === 'write-all' ? 'Workflow grants write-all permissions.' : `Workflow grants ${permission.scope}: write.` });
+    if (permission.level === 'write-all' || permission.level === 'write') {
+      const grant = permission.level === 'write-all' ? 'write-all permissions' : `${permission.name}: write`;
+      issues.push({ severity: 'warning', label: 'broad permission', line: permission.line,
+        message: `${permission.owner} grants ${grant}.` });
     }
   }
   for (const action of actions) {
@@ -257,14 +270,46 @@ function parseJobs(lines) {
   return jobs;
 }
 
-function parseTopEnv(lines) {
-  const envLine = lines.findIndex((line) => /^env\s*:/.test(line));
-  if (envLine < 0) return [];
-  const env = [];
-  for (let i = envLine + 1; i < lines.length; i++) {
+function jobAtLine(lines, index) {
+  const jobsLine = lines.findIndex((line) => /^jobs\s*:/.test(line));
+  if (jobsLine < 0 || index <= jobsLine) return '';
+  let job = '';
+  for (let i = jobsLine + 1; i < index; i++) {
     if (/^\S/.test(lines[i])) break;
-    const m = lines[i].match(/^ {2}([\w.-]+)\s*:\s*(.*)$/);
-    if (m) env.push({ key: m[1], value: cleanScalar(m[2] || ''), line: i + 1 });
+    const match = lines[i].match(/^ {2}([\w-]+)\s*:/);
+    if (match) job = match[1];
+  }
+  return job;
+}
+
+function ownerAtLine(lines, index, indent) {
+  if (indent === 0) return 'workflow';
+  const job = jobAtLine(lines, index);
+  if (!job) return 'nested scope';
+  return indent <= 4 ? `job ${job}` : `step in ${job}`;
+}
+
+function parseEnv(lines) {
+  const env = [];
+  for (let i = 0; i < lines.length; i++) {
+    const head = lines[i].match(/^(\s*)env\s*:\s*(.*)$/);
+    if (!head) continue;
+    const indent = head[1].length;
+    const owner = ownerAtLine(lines, i, indent);
+    const inline = head[2].trim().match(/^\{(.*)\}$/);
+    if (inline) {
+      for (const pair of inline[1].split(',')) {
+        const match = pair.match(/^\s*([\w.-]+)\s*:\s*(.*?)\s*$/);
+        if (match) env.push({ key: match[1], value: cleanScalar(match[2]), line: i + 1, owner });
+      }
+      continue;
+    }
+    for (let j = i + 1; j < lines.length; j++) {
+      const nextIndent = lines[j].match(/^\s*/)[0].length;
+      if (lines[j].trim() && nextIndent <= indent) break;
+      const match = lines[j].match(new RegExp(`^ {${indent + 2}}([\\w.-]+)\\s*:\\s*(.*)$`));
+      if (match) env.push({ key: match[1], value: cleanScalar(match[2] || ''), line: j + 1, owner });
+    }
   }
   return env;
 }
@@ -272,10 +317,29 @@ function parseTopEnv(lines) {
 function parsePermissions(lines) {
   const out = [];
   for (let i = 0; i < lines.length; i++) {
-    const single = lines[i].match(/^\s*permissions\s*:\s*(write-all|read-all|{})\s*$/);
-    if (single) out.push({ scope: single[1], level: single[1], line: i + 1 });
-    const scope = lines[i].match(/^\s{2,6}([\w-]+)\s*:\s*(write|read|none)\s*$/);
-    if (scope) out.push({ scope: scope[1], level: scope[2], line: i + 1 });
+    const head = lines[i].match(/^(\s*)permissions\s*:\s*(.*)$/);
+    if (!head) continue;
+    const indent = head[1].length;
+    const owner = ownerAtLine(lines, i, indent);
+    const value = cleanScalar(head[2]);
+    if (value) {
+      if (value === '{}') out.push({ name: 'all', level: 'none', line: i + 1, owner });
+      else if (/^(?:write-all|read-all)$/.test(value)) out.push({ name: 'all', level: value, line: i + 1, owner });
+      else {
+        const inline = value.match(/^\{(.*)\}$/);
+        if (inline) for (const pair of inline[1].split(',')) {
+          const match = pair.match(/^\s*([\w-]+)\s*:\s*(write|read|none)\s*$/);
+          if (match) out.push({ name: match[1], level: match[2], line: i + 1, owner });
+        }
+      }
+      continue;
+    }
+    for (let j = i + 1; j < lines.length; j++) {
+      const nextIndent = lines[j].match(/^\s*/)[0].length;
+      if (lines[j].trim() && nextIndent <= indent) break;
+      const match = lines[j].match(new RegExp(`^ {${indent + 2}}([\\w-]+)\\s*:\\s*(write|read|none)\\s*$`));
+      if (match) out.push({ name: match[1], level: match[2], line: j + 1, owner });
+    }
   }
   return out;
 }

@@ -80,11 +80,19 @@ export async function run(ctx) {
   if (/classes\.dex/i.test(apkText)) pass('APK classes.dex shown'); else fail('apk content: ' + apkText.slice(0, 200));
   if (/arm64-v8a|x86_64/i.test(apkText)) pass('APK native ABI shown'); else fail('apk abi: ' + apkText.slice(0, 200));
   if (/Signature evidence\s*No recognized signature material/i.test(apkText) && !/\bSigned\b/.test(apkText)) pass('unsigned APK is not presented as signed'); else fail('apk signature label: ' + apkText.slice(0, 300));
+  if (/Contents\s*5 entries/.test(apkText) && /assets\/config\.json/.test(apkText)) pass('APK contents inventory shown'); else fail('apk contents: ' + apkText.slice(0, 400));
   await page.click('#metaBtn');
   await page.waitForSelector('#metaBody .meta-row', { timeout: 6000 });
   const apkMeta = await page.$eval('#metaBody', (e) => e.textContent);
   if (/Format\s*APK/.test(apkMeta)) pass('APK metadata includes format'); else fail('apk meta: ' + apkMeta.replace(/\s+/g, ' ').slice(0, 160));
   await page.click('#metaDrawer [data-close]');
+  const configButton = await apkf.$('button[data-fv-open*="assets/config.json"]');
+  if (configButton) {
+    await configButton.click();
+    await page.waitForFunction(() => window.__fv?.state?.intake?.filename === 'config.json', null, { timeout: 12000 });
+    if ((await page.$eval('#typeSelect', (select) => select.value)) === 'json') pass('APK entry opens through normal type detection');
+    else fail('APK JSON entry did not route through normal detection');
+  } else fail('APK config entry open button missing');
 
   const openSyntheticPackage = async (filename, entries) => {
     const zip = new JSZip();

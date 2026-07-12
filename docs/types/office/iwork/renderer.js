@@ -1,4 +1,5 @@
 import { loadGlobal, vendor } from '../../../core/script-loader.js';
+import { createPartialSupportNotice } from '../../../core/partial-support.js';
 
 // ---------------------------------------------------------------------------
 // Minimal Protobuf wire-level string extractor (no schema needed).
@@ -183,51 +184,50 @@ export async function render(intake) {
   const ext = '.' + (intake.filename || '').split('.').pop().toLowerCase();
   const NAMES = { '.pages': 'Pages Document', '.numbers': 'Numbers Spreadsheet', '.key': 'Keynote Presentation' };
   const typeName = NAMES[ext] || 'iWork Document';
+  const capability = `Partial preview: an embedded ${typeName} thumbnail and heuristic text from at most four IWA files are shown when available. Page layout, formatting, images, tables, charts, comments, and the complete document structure are not decoded or rendered.`;
 
   const wrap = document.createElement('div');
+  wrap.className = 'iwork-preview';
   wrap.style.cssText = 'display:flex;flex-direction:column;align-items:stretch;padding:24px;gap:0;';
 
   // ---- Tab bar ----
   const tabBar = document.createElement('div');
+  tabBar.className = 'iwork-tabs';
   tabBar.style.cssText = 'display:flex;gap:0;border-bottom:2px solid var(--border,#e5e7eb);margin-bottom:16px;';
 
   const tabThumbnail = document.createElement('button');
+  tabThumbnail.className = 'iwork-tab-thumbnail';
   tabThumbnail.textContent = 'Thumbnail';
   tabThumbnail.style.cssText = 'padding:8px 18px;font-size:13px;font-weight:600;border:none;background:none;cursor:pointer;border-bottom:2px solid var(--accent,#2563eb);margin-bottom:-2px;color:var(--accent,#2563eb);';
 
   const tabText = document.createElement('button');
+  tabText.className = 'iwork-tab-text';
   tabText.textContent = 'Text content';
   tabText.style.cssText = 'padding:8px 18px;font-size:13px;font-weight:500;border:none;background:none;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;color:var(--text-muted,#6b7280);';
 
   tabBar.appendChild(tabThumbnail);
   tabBar.appendChild(tabText);
   wrap.appendChild(tabBar);
+  wrap.appendChild(createPartialSupportNotice(capability));
 
   // ---- Thumbnail panel ----
   const thumbPanel = document.createElement('div');
+  thumbPanel.className = 'iwork-thumbnail-panel';
   thumbPanel.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:16px;';
-
-  // Partial-support banner
-  const banner = document.createElement('div');
-  banner.style.cssText = 'max-width:480px;padding:10px 14px;background:var(--bg-warn,#fef3c7);color:var(--text-warn,#92400e);border-radius:6px;font-size:13px;text-align:center;';
-  banner.textContent = '⚠ Apple ' + typeName + ' — showing embedded thumbnail only. Full document content requires the iWork format (Protobuf/IWA), which is not yet supported.';
-  thumbPanel.appendChild(banner);
 
   // ---- Text panel ----
   const textPanel = document.createElement('div');
+  textPanel.className = 'iwork-text-panel';
   textPanel.style.cssText = 'display:none;flex-direction:column;gap:12px;';
 
-  const textBanner = document.createElement('div');
-  textBanner.style.cssText = 'padding:10px 14px;background:var(--bg-info,#eff6ff);color:var(--text-info,#1e40af);border-radius:6px;font-size:13px;';
-  textBanner.textContent = 'ℹ️ Text extracted from Apple IWA format. Formatting, images, and tables are not shown. For full fidelity, open in Pages/Numbers/Keynote.';
-  textPanel.appendChild(textBanner);
-
   const textStatusEl = document.createElement('div');
+  textStatusEl.className = 'iwork-text-status';
   textStatusEl.style.cssText = 'font-size:12px;color:var(--text-muted,#6b7280);';
   textStatusEl.textContent = 'Extracting text…';
   textPanel.appendChild(textStatusEl);
 
   const textPre = document.createElement('pre');
+  textPre.className = 'iwork-text-content';
   textPre.style.cssText = 'white-space:pre-wrap;word-break:break-word;font-size:13px;line-height:1.6;padding:16px;background:var(--bg-code,#f9fafb);border:1px solid var(--border,#e5e7eb);border-radius:6px;max-height:600px;overflow-y:auto;margin:0;display:none;';
   textPanel.appendChild(textPre);
 
@@ -266,21 +266,26 @@ export async function render(intake) {
       if (key) { thumbFile = zip.files[key]; break; }
     }
     if (thumbFile) {
-      const blob = new Blob([await thumbFile.async('uint8array')], { type: 'image/jpeg' });
+      const thumbnailName = thumbFile.name.toLowerCase();
+      const thumbnailType = thumbnailName.endsWith('.png') ? 'image/png' : 'image/jpeg';
+      const blob = new Blob([await thumbFile.async('uint8array')], { type: thumbnailType });
       blobUrl = URL.createObjectURL(blob);
       const img = document.createElement('img');
+      img.className = 'iwork-thumbnail';
       img.src = blobUrl;
       img.alt = typeName + ' preview';
       img.style.cssText = 'max-width:100%;max-height:600px;object-fit:contain;border-radius:4px;box-shadow:0 2px 8px rgba(0,0,0,0.15);';
       thumbPanel.appendChild(img);
     } else {
       const noThumb = document.createElement('div');
+      noThumb.className = 'iwork-thumbnail-missing';
       noThumb.style.cssText = 'color:var(--text-muted,#6b7280);font-size:13px;';
       noThumb.textContent = 'No thumbnail found in this file.';
       thumbPanel.appendChild(noThumb);
     }
   } catch (e) {
     const err = document.createElement('div');
+    err.className = 'iwork-archive-error';
     err.style.cssText = 'color:var(--text-error,#dc2626);font-size:13px;';
     err.textContent = 'Could not read ZIP archive: ' + e.message;
     thumbPanel.appendChild(err);

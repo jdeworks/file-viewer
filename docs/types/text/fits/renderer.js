@@ -10,6 +10,9 @@
 // which can still issue a live off-origin request even though scripts there can't reach the
 // parent (violates the zero-off-origin-at-runtime rule).
 import { parseFitsHeader } from './parser.js';
+import { partialSupportHtml } from '../../../core/partial-support.js';
+
+const CAPABILITY = 'Partial preview: bounded FITS header-card metadata is shown. Image pixels, table-HDU rows and cell values, additional HDUs, and other data payloads are not decoded or rendered.';
 
 function esc(s) {
   return String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -38,7 +41,7 @@ export function render(intake) {
   const cards = parseFitsHeader(intake);
 
   if (!cards.length) {
-    return { bodyHtml: '<div class="fits-preview"><p class="fits-note">No FITS header found.</p></div>', hadUnsafe: false };
+    return { bodyHtml: `<div class="fits-preview">${partialSupportHtml(CAPABILITY, 'fits-capability-note')}<p class="fits-note">No FITS header found.</p></div>`, hadUnsafe: false };
   }
 
   const naxis = val(cards, 'NAXIS') || '0';
@@ -55,7 +58,7 @@ export function render(intake) {
     ${dims ? `<div class="fits-stat"><div class="fits-stat-value">${esc(dims)}</div><div class="fits-stat-label">Dimensions</div></div>` : ''}
     ${naxis ? `<div class="fits-stat"><div class="fits-stat-value">${esc(naxis)}</div><div class="fits-stat-label">NAXIS</div></div>` : ''}
     ${bpDesc ? `<div class="fits-stat"><div class="fits-stat-value">${esc(bpDesc)}</div><div class="fits-stat-label">Data Type</div></div>` : ''}
-    ${cards.length ? `<div class="fits-stat"><div class="fits-stat-value">${cards.length}</div><div class="fits-stat-label">Header Cards</div></div>` : ''}
+    ${cards.length ? `<div class="fits-stat"><div class="fits-stat-value">${cards.length}</div><div class="fits-stat-label">Parsed Header Cards</div></div>` : ''}
   </div>`;
 
   // Table of interesting keyword=value pairs
@@ -74,9 +77,9 @@ export function render(intake) {
   const bodyHtml = `<div class="fits-preview">
   <div class="fits-header"><span class="fits-badge">FITS</span><span class="fits-subhead">${esc(val(cards, 'OBJECT')) || 'Flexible Image Transport System'}</span></div>
   ${statsHtml}
-  <p class="fits-note fits-capability-note">Header metadata only — image pixel data is not decoded or rendered.</p>
+  ${partialSupportHtml(CAPABILITY, 'fits-capability-note')}
   ${keyRows ? `<table class="fits-table">${keyRows}</table>` : ''}
-  <details class="fits-all"><summary>${cards.length} header cards</summary><table class="fits-table">${allRows}</table></details>
+  <details class="fits-all"><summary>${cards.length} parsed header cards</summary><table class="fits-table">${allRows}</table></details>
 </div>`;
 
   return { bodyHtml, hadUnsafe: false };

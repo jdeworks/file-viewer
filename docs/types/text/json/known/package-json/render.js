@@ -2,6 +2,8 @@
 // external links work without loosening the iframe sandbox. The links are href-only — no
 // request is made until the user clicks — so the zero-off-origin-at-runtime guarantee holds.
 import { chip, ensureKnownUiStyle, esc, issueList, sourceButton, sourcePreview, wireSourceLinks } from '../../../../../core/known-ui.js';
+import { parseJsonLike } from '../../jsonparse.js';
+import { createDuplicateJsonWarning, diagnoseDuplicateJsonKeys } from '../../duplicate-keys.js';
 
 const npmUrl = (name) => 'https://www.npmjs.com/package/' + name.split('/').map(encodeURIComponent).join('/');
 
@@ -48,12 +50,22 @@ function repoUrl(repo) {
 }
 
 export async function render(intake, _ctx) {
-  let pkg;
-  try { pkg = JSON.parse(intake.text || '{}'); }
+  const source = intake.sourceText ?? intake.text ?? '{}';
+  const duplicateReport = diagnoseDuplicateJsonKeys(source);
+  let parsed, pkg;
+  try {
+    parsed = parseJsonLike(source, '{}');
+    pkg = parsed.data;
+  }
   catch (e) {
     const d = document.createElement('div');
     d.className = 'pj-doc';
-    d.innerHTML = '<p class="pj-err">Invalid JSON: ' + esc(e.message) + '</p>';
+    const error = document.createElement('p');
+    error.className = 'pj-err';
+    error.textContent = 'Invalid JSON: ' + e.message;
+    d.appendChild(error);
+    const duplicateWarning = createDuplicateJsonWarning(duplicateReport, { malformed: true });
+    if (duplicateWarning) d.appendChild(duplicateWarning);
     return { parentNode: d };
   }
 
@@ -81,6 +93,15 @@ export async function render(intake, _ctx) {
   }
   header.appendChild(meta);
   el.appendChild(header);
+
+  if (parsed.warnings.length) {
+    const warning = document.createElement('div');
+    warning.className = 'json-warning pj-parse-warning';
+    warning.textContent = parsed.warnings.join(' ');
+    el.appendChild(warning);
+  }
+  const duplicateWarning = createDuplicateJsonWarning(duplicateReport);
+  if (duplicateWarning) el.appendChild(duplicateWarning);
 
   if (pkg.description) {
     const desc = document.createElement('p');

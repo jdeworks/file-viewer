@@ -1,19 +1,15 @@
 // PPTX preview: render each slide to a canvas (parent) and embed as an image in the
 // parent preview pane, same pattern as PDF. Slide cap is reported, not silent.
 import { loadPptxViewer } from './pptxlib.js';
+import { loadGlobal, vendor } from '../../../core/script-loader.js';
+import { extractPptxSpeakerNotes, formatPptxNotesStatus } from './notes.js';
 
 const MAX_SLIDES = 50;
-
-// pptxviewjs queues an async render after renderSlide; calling destroy() immediately throws
-// "No PPTX loaded" when that pending render fires. So we keep the current viewer alive and
-// only dispose the PREVIOUS (now-idle) one on the next render. One live viewer at a time.
-let activeViewer = null;
 
 export async function render(intake, ctx) {
   const scale = ctx?.settings?.pptxScale || 1.5;
   let viewMode = 'continuous', currentSlide = 0;
   const PPTXViewer = await loadPptxViewer();
-  if (activeViewer) { try { activeViewer.destroy?.(); } catch { /* idle, safe */ } activeViewer = null; }
   // Fixed 16:9 canvas; resolution scales with the setting. slideSizeMode 'fit' draws the
   // slide into this canvas (letterboxes non-16:9 decks).
   const W = Math.round(1280 * scale / 1.5), H = Math.round(W * 9 / 16);
@@ -28,16 +24,47 @@ export async function render(intake, ctx) {
     // to an image snapshot, so that delayed pass can hit a retired canvas and throw.
     autoChartRerenderDelayMs: 0,
   });
-  activeViewer = viewer;
-  await viewer.loadFile(intake.bytes.slice());
-  const count = viewer.getSlideCount();
-  const max = Math.min(count, MAX_SLIDES);
+  let busy = true;
+  let disposeRequested = false;
+  let disposed = false;
+  function destroyWhenIdle() {
+    disposeRequested = true;
+    if (busy || disposed) return;
+    disposed = true;
+    try { viewer.destroy?.(); } catch { /* stale/partially loaded viewer */ }
+  }
+  // Register before the first await: a superseding main or side-by-side request owns cleanup even
+  // when loadFile/renderSlide never returns a normal renderer result. pptxviewjs cannot be safely
+  // destroyed while one of those calls is active, so invalidation requests disposal and the
+  // finally block performs it as soon as the instance is idle.
+  ctx?.onCleanup?.(destroyWhenIdle);
+  try {
+    await viewer.loadFile(intake.bytes.slice());
+    if (ctx?.signal?.aborted) throw new DOMException('Preview superseded', 'AbortError');
+    const count = viewer.getSlideCount();
+    const max = Math.min(count, MAX_SLIDES);
+    let notesResult = null;
+    let notesError = false;
+    try {
+      const JSZip = await loadGlobal(vendor('jszip/jszip.min.js'), 'JSZip');
+      const zip = await JSZip.loadAsync(intake.bytes);
+      notesResult = await extractPptxSpeakerNotes(
+        async (part) => zip.file(part) ? zip.file(part).async('string') : null,
+        { maxSlides: MAX_SLIDES, signal: ctx?.signal },
+      );
+    } catch (error) {
+      if (ctx?.signal?.aborted || error?.name === 'AbortError') throw error;
+      notesError = true;
+    }
+    if (ctx?.signal?.aborted) throw new DOMException('Preview superseded', 'AbortError');
+    const notesBySlide = new Map((notesResult?.slides || []).map((notes) => [notes.slideNumber, notes]));
 
-  const host = document.createElement('div');
-  host.className = 'pptx-doc';
-  host.innerHTML =
+    const host = document.createElement('div');
+    host.className = 'pptx-doc';
+    host.innerHTML =
     '<div class="pptx-bar">'
     + '<span class="pptx-info"></span>'
+    + '<span class="pptx-notes-status"></span>'
     + '<button class="pptx-viewmode" title="Switch between continuous and single-slide view">Single slide</button>'
     + '<span class="pptx-slide-nav" hidden>'
     + '<button class="pptx-slide-prev" title="Previous slide">‹</button>'
@@ -46,8 +73,8 @@ export async function render(intake, ctx) {
     + '</span>'
     + '</div>'
     + '<div class="pptx-slides"></div>';
-  const slidesEl = host.querySelector('.pptx-slides');
-  const infoEl = host.querySelector('.pptx-info');
+    const slidesEl = host.querySelector('.pptx-slides');
+    const infoEl = host.querySelector('.pptx-info');
 
   function updateSlideMode() {
     currentSlide = Math.min(Math.max(currentSlide, 0), Math.max(max - 1, 0));
@@ -73,18 +100,52 @@ export async function render(intake, ctx) {
     return true;
   }
 
-  for (let i = 0; i < max; i++) {
-    await viewer.renderSlide(i, canvas, { quality: 'high' });
-    const wrap = document.createElement('div');
-    wrap.className = 'pptx-slide-wrap';
-    wrap.dataset.slideIndex = String(i);
-    const img = document.createElement('img');
-    img.className = 'pptx-slide';
-    img.alt = 'Slide ' + (i + 1);
-    img.src = canvas.toDataURL('image/png');
-    wrap.appendChild(img);
-    slidesEl.appendChild(wrap);
-  }
+    for (let i = 0; i < max; i++) {
+      if (ctx?.signal?.aborted) throw new DOMException('Preview superseded', 'AbortError');
+      await viewer.renderSlide(i, canvas, { quality: 'high' });
+      const wrap = document.createElement('div');
+      wrap.className = 'pptx-slide-wrap';
+      wrap.dataset.slideIndex = String(i);
+      const img = document.createElement('img');
+      img.className = 'pptx-slide';
+      img.alt = 'Slide ' + (i + 1);
+      img.src = canvas.toDataURL('image/png');
+      wrap.appendChild(img);
+      const notes = notesBySlide.get(i + 1);
+      if (notes) {
+        const card = document.createElement('details');
+        card.className = 'pptx-notes-card';
+        card.dataset.slideNumber = String(i + 1);
+        const summary = document.createElement('summary');
+        const label = document.createElement('strong');
+        label.textContent = 'Slide ' + (i + 1) + ' notes';
+        const headline = document.createElement('span');
+        headline.className = 'pptx-notes-headline';
+        headline.textContent = notes.headline;
+        const countLabel = document.createElement('span');
+        countLabel.className = 'pptx-notes-count';
+        countLabel.textContent = notes.paragraphCount + (notes.truncated ? '+' : '')
+          + ' paragraph' + (notes.paragraphCount === 1 && !notes.truncated ? '' : 's');
+        summary.append(label, headline, countLabel);
+        card.appendChild(summary);
+        const body = document.createElement('div');
+        body.className = 'pptx-notes-body';
+        for (const paragraph of notes.paragraphs) {
+          const p = document.createElement('p');
+          p.textContent = paragraph;
+          body.appendChild(p);
+        }
+        if (notes.truncated) {
+          const bounded = document.createElement('p');
+          bounded.className = 'pptx-notes-bounded';
+          bounded.textContent = 'Additional note content is not shown in this bounded preview.';
+          body.appendChild(bounded);
+        }
+        card.appendChild(body);
+        wrap.appendChild(card);
+      }
+      slidesEl.appendChild(wrap);
+    }
   if (count > max) {
     const note = document.createElement('p');
     note.className = 'pdf-note';
@@ -92,6 +153,8 @@ export async function render(intake, ctx) {
     slidesEl.appendChild(note);
   }
   infoEl.textContent = count + ' slide' + (count === 1 ? '' : 's');
+  const notesStatus = host.querySelector('.pptx-notes-status');
+  notesStatus.textContent = formatPptxNotesStatus(notesResult, { error: notesError });
   host.querySelector('.pptx-viewmode').addEventListener('click', () => {
     viewMode = viewMode === 'single' ? 'continuous' : 'single';
     updateSlideMode();
@@ -127,6 +190,10 @@ export async function render(intake, ctx) {
     if (Math.abs(dx) < 45 || Math.abs(dx) < Math.abs(dy) * 1.4) return;
     goToSlide(dx < 0 ? 1 : -1);
   }, { passive: true });
-  updateSlideMode();
-  return { parentNode: host };
+    updateSlideMode();
+    return { parentNode: host, revoke: destroyWhenIdle };
+  } finally {
+    busy = false;
+    if (disposeRequested) destroyWhenIdle();
+  }
 }

@@ -24,6 +24,7 @@ import { setJsonToolsVisible, wireJsonTools, setYamlToolsVisible, wireYamlTools,
 import { runMarkdownAction, closeTablePicker, onMarkdownContextMenu } from './rawpane-markdown.js';
 import { showEditDisclaimer, showAutosaveBanner, updateWordCount, hideWordCount } from './rawpane-banners.js';
 import { applyEditorMode } from './editor-mode.js';
+import { parserTextFromSource, sourceTextFromParser, sourceTextOf, withParserText, withSourceText } from './intake.js';
 
 let renderPreview = async () => {};
 export function initRawPane(deps) { renderPreview = deps.renderPreview; }
@@ -103,13 +104,13 @@ export async function toggleWysiwyg({ skipPersist = false } = {}) {
   if (!wysiwygMode) {
     // Switching TO WYSIWYG: capture current Monaco text, dispose Monaco, mount EasyMDE
     if (!state.rawview) return;
-    const text = state.rawview.getValue();
+    const text = parserTextFromSource(state.rawview.getValue());
     state.rawview.dispose();
     state.rawview = null;
     wysiwygMode = true;
     updateWysiwygBtn();
     await mountWysiwyg(document.getElementById('editor'), text, async (value) => {
-      state.intake = { ...state.intake, text: value };
+      state.intake = withParserText(state.intake, value);
       state.downloadedSinceEdit = false;
       if (state.currentFolderPath) {
         state.folderEdits.set(state.currentFolderPath, value);
@@ -134,7 +135,7 @@ export async function toggleWysiwyg({ skipPersist = false } = {}) {
     const text = getWysiwygValue();
     unmountWysiwyg();
     wysiwygMode = false;
-    state.intake = { ...state.intake, text };
+    state.intake = withParserText(state.intake, text);
     updateWysiwygBtn();
     // Persist 'monaco' BEFORE buildRawView: buildRawView's auto-activate step reads
     // settingsModel.markdownEditor and would immediately re-enter WYSIWYG (disposing the
@@ -159,7 +160,8 @@ export async function exitWysiwygForFeature() {
   return true;
 }
 
-export async function buildRawView() {
+export async function buildRawView({ isCurrent = () => true, signal } = {}) {
+  if (!isCurrent() || signal?.aborted) return false;
   stopAutosave();
   hideWordCount();
   // Tear down the alternate editor surfaces (HTML visual / CSV table) when rebuilding.
@@ -180,15 +182,17 @@ export async function buildRawView() {
     updateWysiwygBtn();
   }
   state.rawview?.dispose();
+  state.rawview = null;
   // syntaxLanguage may be a function(intake) for types that pick the language per file (code).
   const sl = state.type.syntaxLanguage;
   const lang = state.intake.isBinary ? 'plaintext' : ((typeof sl === 'function' ? sl(state.intake) : sl) || 'plaintext');
   // Binary files get a read-only hex dump (offset / hex / ASCII) instead of a placeholder.
   const text = state.intake.isBinary
     ? hexDump(state.intake.bytes)
-    : (state.intake.text || '');
-  state.rawview = await createRawView($('editor'), {
-    originalText: text, currentText: text, language: lang,
+    : sourceTextOf(state.intake);
+  const originalText = state.intake.isBinary ? text : (state.intake.originalText ?? text);
+  const nextRawview = await createRawView($('editor'), {
+    originalText, currentText: text, language: lang,
     theme: themeIsDark() ? 'dark' : 'light',
     options: { readOnly: state.intake.isBinary, ...monacoOptions(state.settingsModel) },
     onChange: debounce((value) => onRawEdited(value), 250),
@@ -213,7 +217,14 @@ export async function buildRawView() {
           (mod.render || mod.default)(host, original, current);
         }
       : undefined,
+    signal,
+    isCurrent,
   });
+  if (!nextRawview || !isCurrent() || signal?.aborted) {
+    nextRawview?.dispose();
+    return false;
+  }
+  state.rawview = nextRawview;
   if (!state.intake.isBinary) state.rawview.addCommand?.('ctrl+s', downloadCurrent);
   // Editor mode for Monaco-backed code types (code/dockerfile/dxf/gcode): explicitly editable
   // Monaco + Ctrl+S download. Additive — read view + Download button are untouched.
@@ -227,7 +238,9 @@ export async function buildRawView() {
   // Auto-activate WYSIWYG if the user's preference is set
   if (state.type?.id === 'markdown' && !state.intake.isBinary
       && state.settingsModel?.values?.markdownEditor === 'wysiwyg') {
+    if (!isCurrent() || signal?.aborted) return false;
     await toggleWysiwyg({ skipPersist: true });
+    if (!isCurrent() || signal?.aborted) return false;
   }
   wireJsonTools();
   setJsonToolsVisible(state.type?.id === 'json' && !state.intake.isBinary);
@@ -304,12 +317,13 @@ export async function buildRawView() {
   if (!state.intake?.isBinary) {
     const filename = state.intake?.filename || state.intake?.name;
     const saved = getAutosave(filename);
-    if (saved && saved.text !== (state.intake?.text || '')) {
+    if (saved && saved.text !== sourceTextOf(state.intake)) {
       showAutosaveBanner(saved);
     }
     startAutosave();
-    updateWordCount(state.intake?.text || '', state.type?.id);
+    updateWordCount(sourceTextOf(state.intake), state.type?.id);
   }
+  return true;
 }
 
 // §10A.3 — The Defragmenter cheat-disable toast. Prefer the app's toast; else a 3s DIY overlay.
@@ -339,7 +353,7 @@ export async function onRawEdited(value) {
   } catch { /* private mode */ }
 
   // Keep the working text in sync so download + preview reflect edits.
-  state.intake = { ...state.intake, text: value };
+  state.intake = withSourceText(state.intake, value);
   state.downloadedSinceEdit = false;   // there are now edits not yet saved to disk
   // Folder file: stash the edit so it survives navigation + feeds "Export folder as .zip".
   if (state.currentFolderPath) {
@@ -366,19 +380,19 @@ export async function onRawEdited(value) {
 export function hasUnsavedWork() {
   if (state.rawview?.isDirty() && !state.downloadedSinceEdit) return true;
   if (wysiwygMode && isWysiwygActive() && !state.downloadedSinceEdit &&
-      getWysiwygValue() !== (state.intake?.originalText ?? state.intake?.text ?? '')) return true;
+      sourceTextFromParser(state.intake, getWysiwygValue()) !== (state.intake?.originalText ?? sourceTextOf(state.intake))) return true;
   const htmlValue = getHtmlWysiwygValue();
   if (htmlValue != null && !state.downloadedSinceEdit &&
-      htmlValue !== (state.intake?.originalText ?? '')) return true;
+      sourceTextFromParser(state.intake, htmlValue) !== (state.intake?.originalText ?? sourceTextOf(state.intake))) return true;
   if (state.binaryEdit?.dirty && !state.downloadedSinceEdit) return true;
   // Table editor: dirty when current CSV differs from the original load
   const tableValue = getTableEditorValue();
   if (tableValue != null && !state.downloadedSinceEdit &&
-      tableValue !== (state.intake?.originalText ?? '')) return true;
+      sourceTextFromParser(state.intake, tableValue) !== (state.intake?.originalText ?? sourceTextOf(state.intake))) return true;
   // env/ini/toml/yaml form editor: dirty when the active form's text differs from the original load
   const formValue = getActiveFormValue();
   if (formValue != null && !state.downloadedSinceEdit &&
-      formValue !== (state.intake?.originalText ?? '')) return true;
+      sourceTextFromParser(state.intake, formValue) !== (state.intake?.originalText ?? sourceTextOf(state.intake))) return true;
   if (state.sessionEdits.size > 0) return true;
   // Folder edits stashed but not yet exported also count — closing the tab would lose them.
   return state.folderEdits.size > 0 && !state.folderExported;
@@ -425,6 +439,17 @@ export async function takeScreenshot() {
   }
 }
 
+export function currentEditableSource() {
+  const tableValue = getTableEditorValue();
+  if (tableValue != null) return sourceTextFromParser(state.intake, tableValue);
+  const formValue = getActiveFormValue();
+  if (formValue != null) return sourceTextFromParser(state.intake, formValue);
+  const htmlValue = getHtmlWysiwygValue();
+  if (htmlValue != null) return sourceTextFromParser(state.intake, htmlValue);
+  if (wysiwygMode && isWysiwygActive()) return sourceTextFromParser(state.intake, getWysiwygValue());
+  return state.rawview ? state.rawview.getValue() : sourceTextOf(state.intake);
+}
+
 export async function downloadCurrent() {
   // Stage-10 finale echo: downloading the entropy echo artifact witnesses its echo via the real
   // download feature (self-gates on the fixture; fires before the download work, so it's recorded
@@ -436,12 +461,7 @@ export async function downloadCurrent() {
     blob = new Blob([bytes], { type: state.binaryEdit.mimeType || state.intake.mimeType || 'application/octet-stream' });
     state.binaryEdit.dirty = false;
   } else {
-    const tableValue = getTableEditorValue(), formValue = getActiveFormValue(), htmlValue = getHtmlWysiwygValue();
-    const text = tableValue != null ? tableValue
-      : formValue != null ? formValue
-      : htmlValue != null ? htmlValue
-      : wysiwygMode && isWysiwygActive() ? getWysiwygValue()
-      : (state.rawview ? state.rawview.getValue() : (state.intake.text || ''));
+    const text = currentEditableSource();
     blob = new Blob([text], { type: state.intake.mimeType || 'text/plain' });
   }
   const a = document.createElement('a');
@@ -450,13 +470,8 @@ export async function downloadCurrent() {
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   if (state.sessionEdits.has(state.intake.filename)) {
-    const tableValue = getTableEditorValue(), formValue = getActiveFormValue(), htmlValue = getHtmlWysiwygValue();
-    const text = tableValue != null ? tableValue
-      : formValue != null ? formValue
-      : htmlValue != null ? htmlValue
-      : wysiwygMode && isWysiwygActive() ? getWysiwygValue()
-      : (state.rawview ? state.rawview.getValue() : state.sessionEdits.get(state.intake.filename));
-    state.sessionIntakes.set(state.intake.filename, { ...state.sessionIntakes.get(state.intake.filename), text });
+    const text = currentEditableSource();
+    state.sessionIntakes.set(state.intake.filename, withSourceText(state.sessionIntakes.get(state.intake.filename), text));
     state.sessionEdits.delete(state.intake.filename);
     state.treeApi?.setEdited?.(state.intake.filename, false);
   }

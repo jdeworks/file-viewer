@@ -6,6 +6,7 @@ import { state } from './state.js';
 import { HtmlWysiwygEditor } from '../types/html/wysiwyg-html.js';
 import { TableEditor } from '../types/text/csv/table-editor.js';
 import { syncHasToolsClass, buildRawView } from './rawpane.js';
+import { parserTextFromSource, sourceTextOf, withParserText } from './intake.js';
 
 // ── HTML visual (WYSIWYG) editor ───────────────────────────────────────────────
 let htmlWysiwyg = null;
@@ -37,14 +38,14 @@ export async function toggleHtmlWysiwyg() {
 
   if (!htmlWysiwyg) {
     // Enter visual mode: capture Monaco text, hide Monaco, mount contenteditable div
-    const text = state.rawview?.getValue?.() ?? (state.intake?.text || '');
+    const text = parserTextFromSource(state.rawview?.getValue?.() ?? sourceTextOf(state.intake));
     state.rawview?.dispose?.();
     state.rawview = null;
     const editorEl = document.getElementById('editor');
     if (editorEl) editorEl.style.display = 'none';
     const editorParent = editorEl?.parentElement || document.getElementById('rawPane');
     htmlWysiwyg = new HtmlWysiwygEditor(editorParent, text, async (newHtml) => {
-      state.intake = { ...state.intake, text: newHtml };
+      state.intake = withParserText(state.intake, newHtml);
       state.downloadedSinceEdit = false;
       if (state.currentFolderPath) {
         state.folderEdits.set(state.currentFolderPath, newHtml);
@@ -70,7 +71,7 @@ export async function toggleHtmlWysiwyg() {
     if (btn) { btn.classList.remove('active'); btn.setAttribute('aria-pressed', 'false'); }
     const editorEl = document.getElementById('editor');
     if (editorEl) editorEl.style.display = '';
-    state.intake = { ...state.intake, text: html };
+    state.intake = withParserText(state.intake, html);
     await buildRawView();
   }
 }
@@ -109,7 +110,7 @@ export function setTableMode(on) {
     } else {
       sep = (state.intake?.filename || '').toLowerCase().endsWith('.tsv') ? '\t' : ',';
     }
-    const text = state.rawview ? state.rawview.getValue() : (state.intake?.text || '');
+    const text = parserTextFromSource(state.rawview ? state.rawview.getValue() : sourceTextOf(state.intake));
     // Freeze Monaco while table is active so its model stays consistent
     state.rawview?.updateOptions?.({ readOnly: true });
     // Mount table editor in a sibling div that overlays the editor
@@ -124,7 +125,7 @@ export function setTableMode(on) {
     host.hidden = false;
     if (editorEl) editorEl.style.display = 'none';
     tableEditor = new TableEditor(host, text, sep, (newCsv) => {
-      state.intake = { ...state.intake, text: newCsv };
+      state.intake = withParserText(state.intake, newCsv);
       state.downloadedSinceEdit = false;
     });
   } else {
@@ -133,11 +134,11 @@ export function setTableMode(on) {
       const csv = tableEditor.getValue();
       tableEditor.destroy();
       tableEditor = null;
+      state.intake = withParserText(state.intake, csv);
       if (state.rawview) {
-        state.rawview.setValue(csv);
+        state.rawview.setValue(sourceTextOf(state.intake));
         state.rawview.updateOptions?.({ readOnly: false });
       }
-      state.intake = { ...state.intake, text: csv };
     }
     const host = document.getElementById('tableEditorHost');
     if (host) host.hidden = true;

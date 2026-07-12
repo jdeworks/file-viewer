@@ -1,3 +1,5 @@
+import { describeCollectionCap } from '../../../../core/collection-cap.js';
+
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 const CSS = `
@@ -69,14 +71,16 @@ function parseIsabelle(text) {
     methods[method] = (methods[method] || 0) + 1;
   }
   // Sort by count descending
-  const sortedMethods = Object.entries(methods).sort((a, b) => b[1] - a[1]).slice(0, 8);
+  const allSortedMethods = Object.entries(methods).sort((a, b) => b[1] - a[1]);
+  const sortedMethods = allSortedMethods.slice(0, 8);
+  const methodCap = describeCollectionCap(allSortedMethods, sortedMethods);
 
-  return { theoryName, imports, lemmaCount, theoremCount, corollaryCount, definitionCount, sortedMethods };
+  return { theoryName, imports, lemmaCount, theoremCount, corollaryCount, definitionCount, sortedMethods, methodCap };
 }
 
 export function render(intake) {
   const parsed = parseIsabelle(intake.text || '');
-  const { theoryName, imports, lemmaCount, theoremCount, corollaryCount, definitionCount, sortedMethods } = parsed;
+  const { theoryName, imports, lemmaCount, theoremCount, corollaryCount, definitionCount, sortedMethods, methodCap } = parsed;
 
   const host = document.createElement('div');
   host.className = 'isa-doc';
@@ -155,7 +159,7 @@ export function render(intake) {
     const sec = document.createElement('div');
     sec.className = 'isa-section';
     const h3 = document.createElement('h3');
-    h3.textContent = 'Proof Methods';
+    h3.textContent = `Proof Methods (${methodCap.label})`;
     sec.appendChild(h3);
     const bar = document.createElement('div');
     bar.className = 'isa-method-bar';

@@ -3,16 +3,7 @@
 import { downloadBlob } from '../../../core/exports.js';
 import { loadGlobal, vendor } from '../../../core/script-loader.js';
 import { parseCsv } from './renderer.js';
-
-function rowsToJson(rows, header) {
-  if (!rows.length) return [];
-  if (!header) {
-    const keys = rows[0].map((_, i) => 'col' + i);
-    return rows.map((r) => Object.fromEntries(keys.map((k, i) => [k, r[i] == null ? '' : r[i]])));
-  }
-  const keys = rows[0].map((k, i) => String(k == null || k === '' ? 'col' + i : k));
-  return rows.slice(1).map((r) => Object.fromEntries(keys.map((k, i) => [k, r[i] == null ? '' : r[i]])));
-}
+import { csvRowsToRecords } from './shape.js';
 
 export function getExports(intake, state) {
   const settings = (state && state.settingsModel && state.settingsModel.values) || {};
@@ -23,7 +14,7 @@ export function getExports(intake, state) {
       label: 'Download as JSON',
       run: async () => {
         const { rows } = await parseCsv(intake, settings);
-        downloadBlob(JSON.stringify(rowsToJson(rows, header), null, 2), base + '.json', 'application/json');
+        downloadBlob(JSON.stringify(csvRowsToRecords(rows, header), null, 2), base + '.json', 'application/json');
       },
     },
     {

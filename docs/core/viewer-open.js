@@ -1,4 +1,4 @@
-import { intakeFromFile, intakeFromText } from './intake.js';
+import { intakeFromFile, intakeFromText, sourceTextOf } from './intake.js';
 import { state } from './state.js';
 
 let loadIntakeCallback = null;
@@ -66,7 +66,9 @@ export async function openBlobFile(blob, name, opts = {}) {
 export async function searchViewerFile(path, query, opts = {}) {
   const target = String(path || '');
   const clean = target.replace(/^\/?docs\/examples\//, '').replace(/^\/?examples\//, '');
-  const text = opts.text || (state.intake?.filename === clean.split('/').pop() ? state.rawview?.getValue?.() || state.intake.text : null);
+  const text = opts.text ?? (state.intake?.filename === clean.split('/').pop()
+    ? (state.rawview?.getValue?.() ?? sourceTextOf(state.intake))
+    : null);
   const sourceText = text == null ? await fetch('examples/' + clean).then((r) => r.ok ? r.text() : '').catch(() => '') : text;
   const line = sourceText.split(/\r?\n/).find((entry) => entry.includes(query));
   const result = line && line.trim();

@@ -4,16 +4,22 @@ import { buildSchedulePlan, createNoiseBufferForMixer } from './mixer-audio-play
 const MAX_BROWSER_MIX_FRAMES = 48000 * 60 * 20;
 
 export function buildAudioMixExportPlan(project, options = {}) {
+  const format = options.format === 'mp3' ? 'mp3' : 'wav';
   const sampleRate = Math.round(options.sampleRate || project.project?.sampleRate || 48000);
   const channels = Math.max(1, Math.min(2, Math.round(options.channels || project.project?.channels || 1)));
+  const bitRate = format === 'mp3' ? (channels === 1 ? 128 : 192) : null;
   const plan = buildSchedulePlan(project, 0);
   const durationMs = Math.max(project.project?.durationMs || 0, ...plan.items.map((item) => item.element.timeline.startMs + item.durationMs));
   const frames = Math.ceil((durationMs / 1000) * sampleRate);
   const warnings = [];
   if (!plan.items.length) warnings.push('No audible audio elements are scheduled.');
-  if (frames > MAX_BROWSER_MIX_FRAMES) warnings.push('Browser WAV render is over the safe duration budget; use ffmpeg/proxy export when available.');
+  if (frames > MAX_BROWSER_MIX_FRAMES) warnings.push('Browser audio render is over the safe duration budget; use ffmpeg/proxy export when available.');
   const provenance = {
     renderPath: 'browser-offline-audio',
+    format,
+    mime: format === 'mp3' ? 'audio/mpeg' : 'audio/wav',
+    encoder: format === 'mp3' ? 'lamejs-1.2.1-worker' : 'pcm-s16le',
+    bitRate,
     sampleRate,
     channels,
     durationMs,
@@ -45,8 +51,10 @@ export function buildAudioMixExportPlan(project, options = {}) {
   };
   return {
     kind: 'audio-mix',
-    format: 'wav',
-    filename: options.filename || 'mixdown.wav',
+    format,
+    mime: format === 'mp3' ? 'audio/mpeg' : 'audio/wav',
+    bitRate,
+    filename: options.filename || `mixdown.${format}`,
     sampleRate,
     channels,
     durationMs,
@@ -59,9 +67,10 @@ export function buildAudioMixExportPlan(project, options = {}) {
   };
 }
 
-export async function renderAudioMixToWav(project, { runtimeFiles, cache, sampleRate, channels } = {}) {
-  const plan = buildAudioMixExportPlan(project, { sampleRate, channels });
+export async function renderAudioMixToBuffer(project, { runtimeFiles, cache, sampleRate, channels, format = 'wav', filename, signal } = {}) {
+  const plan = buildAudioMixExportPlan(project, { sampleRate, channels, format, filename });
   if (!plan.canRenderInBrowser) throw new Error(plan.warnings[0] || 'Mix cannot be rendered in this browser.');
+  throwIfAborted(signal);
   const OAC = window.OfflineAudioContext || window.webkitOfflineAudioContext;
   if (!OAC) throw new Error('OfflineAudioContext unavailable in this browser.');
   const context = new OAC(plan.channels, Math.max(1, plan.frames), plan.sampleRate);
@@ -71,6 +80,7 @@ export async function renderAudioMixToWav(project, { runtimeFiles, cache, sample
   let scheduled = 0;
   const skipped = [];
   for (const item of plan.schedule.items) {
+    throwIfAborted(signal);
     const source = await createOfflineSource(context, item, project, { runtimeFiles, cache });
     if (!source) {
       skipped.push(item.element.id);
@@ -85,9 +95,9 @@ export async function renderAudioMixToWav(project, { runtimeFiles, cache, sample
   }
   if (!scheduled) throw new Error('No mix elements could be decoded for browser export.');
   const rendered = await context.startRendering();
-  const blob = encodeWav(rendered);
+  throwIfAborted(signal);
   return {
-    blob,
+    audioBuffer: rendered,
     plan: {
       ...plan,
       provenance: {
@@ -98,6 +108,63 @@ export async function renderAudioMixToWav(project, { runtimeFiles, cache, sample
       },
     },
   };
+}
+
+export async function renderAudioMixToWav(project, options = {}) {
+  const { audioBuffer, plan } = await renderAudioMixToBuffer(project, { ...options, format: 'wav' });
+  return { blob: encodeWav(audioBuffer), plan };
+}
+
+export async function renderAudioMixToBlob(project, options = {}) {
+  const format = options.format === 'mp3' ? 'mp3' : 'wav';
+  const { audioBuffer, plan } = await renderAudioMixToBuffer(project, { ...options, format });
+  if (format === 'wav') return { blob: encodeWav(audioBuffer), plan };
+  const blob = await encodeMp3(audioBuffer, {
+    bitRate: plan.bitRate,
+    signal: options.signal,
+    onProgress: options.onProgress,
+  });
+  return { blob, plan };
+}
+
+export function encodeMp3(audioBuffer, { bitRate, signal, onProgress } = {}) {
+  throwIfAborted(signal);
+  if (typeof Worker === 'undefined') return Promise.reject(new Error('MP3 worker support is unavailable in this browser.'));
+  const channels = [];
+  const transfer = [];
+  for (let channel = 0; channel < Math.min(2, audioBuffer.numberOfChannels); channel += 1) {
+    const copy = new Float32Array(audioBuffer.getChannelData(channel));
+    channels.push(copy.buffer);
+    transfer.push(copy.buffer);
+  }
+  return new Promise((resolve, reject) => {
+    const worker = new Worker(new URL('./mixer-mp3-worker.js', import.meta.url));
+    let settled = false;
+    const finish = (callback, value) => {
+      if (settled) return;
+      settled = true;
+      signal?.removeEventListener('abort', onAbort);
+      worker.terminate();
+      callback(value);
+    };
+    const onAbort = () => finish(reject, abortError());
+    signal?.addEventListener('abort', onAbort, { once: true });
+    worker.onerror = (event) => finish(reject, new Error(event.message || 'The local MP3 encoder failed to load.'));
+    worker.onmessage = (event) => {
+      if (event.data?.type === 'progress') { onProgress?.(event.data.value); return; }
+      if (event.data?.type === 'error') { finish(reject, new Error(event.data.message || 'MP3 encoding failed.')); return; }
+      if (event.data?.type === 'done') finish(resolve, new Blob(event.data.chunks || [], { type: 'audio/mpeg' }));
+    };
+    worker.postMessage({ channels, sampleRate: audioBuffer.sampleRate, bitRate: bitRate || (channels.length === 1 ? 128 : 192) }, transfer);
+  });
+}
+
+function abortError() {
+  return new DOMException('Mix export was cancelled.', 'AbortError');
+}
+
+function throwIfAborted(signal) {
+  if (signal?.aborted) throw abortError();
 }
 
 async function createOfflineSource(context, item, project, { runtimeFiles, cache }) {

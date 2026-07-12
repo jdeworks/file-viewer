@@ -1,4 +1,7 @@
 import { parseNetcdfHeader } from './parser.js';
+import { partialSupportHtml } from '../../../core/partial-support.js';
+
+const CAPABILITY = 'Partial preview: for NetCDF-3, metadata, dimensions, variable names, types, shapes, and attributes are shown. Variable payload values are omitted and are not decoded or plotted; NetCDF-4/HDF5 contents are also unsupported.';
 
 function esc(s) { return String(s ?? '').replace(/[&<>"]/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 
@@ -39,10 +42,15 @@ body.fv-dark .nc4-note{background:#16351f;color:#a7e3b5;border-color:#397249}
 
 const MAX_DISPLAY_VARIABLES = 100;
 
+function attributeSummary(attributes) {
+  const full = attributes.map((attribute) => `${attribute.name}: ${attribute.value}`).join('; ');
+  return full.length > 80 ? full.slice(0, 79) + '…' : (full || '—');
+}
+
 export function render(intake) {
   const b = intake.bytes;
   if (!b || b.length < 4) {
-    return { bodyHtml: `<style>${STYLE}</style><div class="err">File too small.</div>` };
+    return { bodyHtml: `<style>${STYLE}</style>${partialSupportHtml(CAPABILITY)}<div class="err">File too small.</div>` };
   }
 
   const fmtBytes = (n) => {
@@ -56,12 +64,13 @@ export function render(intake) {
   if (b[0] === 0x89 && b[1] === 0x48 && b[2] === 0x44 && b[3] === 0x46) {
     return { bodyHtml: `<style>${STYLE}</style>
 <div class="nc-header"><span class="badge badge-nc">NetCDF</span><span class="badge badge-ver">HDF5 / NetCDF-4</span><span class="badge badge-size">${esc(fmtBytes(intake.size))}</span></div>
+${partialSupportHtml(CAPABILITY)}
 <div class="nc4-note">This is a NetCDF-4 file (HDF5 container). Header metadata is not yet parseable in this viewer — only NetCDF-3 classic format is supported. Use ncdump or a scientific data tool to inspect the contents.</div>`,
     };
   }
 
   if (!(b[0] === 0x43 && b[1] === 0x44 && b[2] === 0x46 && (b[3] === 0x01 || b[3] === 0x02))) {
-    return { bodyHtml: `<style>${STYLE}</style><div class="err">Not a NetCDF-3 file (missing CDF\\x01/\\x02 magic).</div>` };
+    return { bodyHtml: `<style>${STYLE}</style>${partialSupportHtml(CAPABILITY)}<div class="err">Not a NetCDF-3 file (missing CDF\\x01/\\x02 magic).</div>` };
   }
 
   let parsed;
@@ -82,6 +91,7 @@ export function render(intake) {
   html += `<span class="badge badge-ver">${esc(verLabel)}</span>`;
   html += `<span class="badge badge-size">${esc(fmtBytes(intake.size))}</span>`;
   html += `</div>`;
+  html += partialSupportHtml(CAPABILITY);
 
   if (parseError) {
     html += `<div class="err">Parse error: ${esc(parseError)}</div>`;
@@ -132,7 +142,7 @@ export function render(intake) {
     html += `<table><thead><tr><th>Name</th><th>Type</th><th>Shape</th><th>Attributes</th></tr></thead><tbody>`;
     for (const v of parsed.variables.slice(0, MAX_DISPLAY_VARIABLES)) {
       const shape = v.dims.length > 0 ? `(${v.dims.join(', ')})` : 'scalar';
-      const attrSummary = v.attrs.map((a) => `${a.name}: ${a.value.slice(0, 30)}`).join('; ').slice(0, 80) || '—';
+      const attrSummary = attributeSummary(v.attrs);
       html += `<tr>`;
       html += `<td>${esc(v.name)}</td>`;
       html += `<td class="td-type">${esc(v.type)}</td>`;

@@ -14,34 +14,65 @@ import { mountPreview } from './iframe.js';
 import { previewStyle } from './settings-schema.js';
 import { createRawView } from './rawview.js';
 import { buildPaneToolbar } from './sidebyside-toolbar.js';
+import { createLatestRequestController } from './request-lifecycle.js';
+import { sourceTextOf, withSourceText } from './intake.js';
+
+async function previewCheckpoint(stage, request) {
+  const hook = globalThis.__fvSideBySidePreviewTestHook;
+  if (typeof hook !== 'function') return;
+  await hook({
+    stage,
+    id: request.id,
+    snapshot: request.snapshot,
+    signal: request.signal,
+    onCleanup: (cleanup) => request.registerCleanup(cleanup),
+  });
+}
 
 // Render an intake's preview into an arbitrary host (standalone — does not touch global state).
 // Returns a controller with destroy() that tears down whatever it mounted.
-async function renderPreviewInto(host, intake) {
+async function renderPreviewInto(host, intake, request) {
   const { type } = pickType(intake);
   const known = matchKnown(intake, type);
   const useKnown = known && known.loadRenderer;
   const canPrev = (type.capabilities.preview || useKnown)
     && !(intake.isBinary && !type.capabilities.preview && !useKnown);
-  host.innerHTML = '';
   if (!canPrev || (!type.loadRenderer && !useKnown)) {
+    if (!request.isCurrent()) return null;
     host.innerHTML = '<p class="sbs-note">No preview for this file type.</p>';
-    return { destroy() { host.innerHTML = ''; } };
+    return { destroy() { request.dispose('side-by-side preview removed'); host.innerHTML = ''; } };
   }
   try {
+    await previewCheckpoint('request-started', request);
+    if (!request.isCurrent()) return null;
     const mod = useKnown ? await known.loadRenderer() : await type.loadRenderer();
-    const rendered = await mod.render(intake, { settings: {}, folder: null });
+    if (!request.isCurrent()) return null;
+    await previewCheckpoint('module-loaded', request);
+    if (!request.isCurrent()) return null;
+    const rendered = await mod.render(intake, {
+      settings: {}, folder: null, signal: request.signal,
+      onCleanup: (cleanup) => request.registerCleanup(cleanup),
+    });
+    if (rendered?.revoke) request.registerCleanup(rendered.revoke);
+    if (rendered?.destroy && rendered.destroy !== rendered.revoke) request.registerCleanup(rendered.destroy);
+    if (!request.isCurrent()) return null;
+    await previewCheckpoint('before-commit', request);
+    if (!request.isCurrent()) return null;
     if (rendered.parentNode) {
+      host.innerHTML = '';
       host.appendChild(rendered.parentNode);
-      return { destroy() { rendered.revoke?.(); host.innerHTML = ''; } };
+      return { destroy() { request.dispose('side-by-side preview removed'); host.innerHTML = ''; } };
     }
     const ctrl = mountPreview(host, {
       bodyHtml: rendered.bodyHtml, fullDoc: rendered.fullDoc, allowScripts: !!rendered.ranScripts,
-      theme: themeIsDark() ? 'dark' : 'light', style: previewStyle({}),
+      theme: request.snapshot.theme, style: previewStyle({}),
     });
-    return { destroy() { ctrl.destroy(); } };
+    request.registerCleanup(() => ctrl.destroy());
+    return { destroy() { request.dispose('side-by-side preview removed'); host.innerHTML = ''; } };
   } catch (e) {
+    if (!request.isCurrent()) return null;
     host.innerHTML = '<p class="sbs-note">Preview failed: ' + escapeHtml(e.message) + '</p>';
+    request.dispose('side-by-side render failed');
     return { destroy() { host.innerHTML = ''; } };
   }
 }
@@ -92,6 +123,8 @@ export function buildPane(paneEl, intake) {
   let rawview = null;        // lazily created Monaco controller
   let previewCtrl = null;    // lazily created preview controller
   let previewText = null;    // text the preview was last rendered from
+  let destroyed = false;
+  const previewRequests = createLatestRequestController();
   let view = editable ? 'source' : 'preview';
   let toggleBtns = [];
   // Non-editable panes can't show a Monaco source; the shared Raw mode reveals this note instead.
@@ -103,7 +136,7 @@ export function buildPane(paneEl, intake) {
 
   async function ensureRawview() {
     if (rawview) return rawview;
-    const text = intake.text || '';
+    const text = sourceTextOf(intake);
     rawview = await createRawView(sourceHost, {
       originalText: text, currentText: text,
       language: resolveLanguage(type, intake),
@@ -115,12 +148,19 @@ export function buildPane(paneEl, intake) {
 
   async function ensurePreview() {
     // Re-render when first shown OR when the (editable) source text changed since last render.
-    const text = rawview ? rawview.getValue() : (intake.text || '');
+    const text = rawview ? rawview.getValue() : sourceTextOf(intake);
     if (previewCtrl && previewText === text) return;
+    const request = previewRequests.begin({ intake, text, theme: themeIsDark() ? 'dark' : 'light' });
     previewCtrl?.destroy();
     previewCtrl = null;
-    const src = (editable && rawview) ? { ...intake, text } : intake;
-    previewCtrl = await renderPreviewInto(previewHost, src);
+    previewHost.innerHTML = '';
+    const src = (editable && rawview) ? withSourceText(intake, text) : intake;
+    const next = await renderPreviewInto(previewHost, src, request);
+    if (destroyed || !request.isCurrent() || !next) {
+      next?.destroy();
+      return;
+    }
+    previewCtrl = next;
     previewText = text;
   }
 
@@ -169,12 +209,12 @@ export function buildPane(paneEl, intake) {
   dlBtn.title = 'Download this pane';
   dlBtn.addEventListener('click', () => {
     if (editable) {
-      const text = rawview ? rawview.getValue() : (intake.text || '');
+      const text = rawview ? rawview.getValue() : sourceTextOf(intake);
       downloadBlob(text, filename, intake.mimeType || 'text/plain');
     } else if (intake.bytes) {
       downloadBlob(intake.bytes, filename, intake.mimeType || 'application/octet-stream');
     } else {
-      downloadBlob(intake.text || '', filename, intake.mimeType || 'text/plain');
+      downloadBlob(sourceTextOf(intake), filename, intake.mimeType || 'text/plain');
     }
   });
   controls.appendChild(dlBtn);
@@ -207,6 +247,8 @@ export function buildPane(paneEl, intake) {
     setView: (v) => show(v),
     setToggleVisible,
     destroy() {
+      destroyed = true;
+      previewRequests.invalidate('side-by-side pane destroyed');
       rawview?.dispose();
       rawview = null;
       previewCtrl?.destroy();

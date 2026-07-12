@@ -12,6 +12,10 @@
 //     children (recursive)
 //     null record (13 or 25 bytes)
 
+import { partialSupportHtml } from '../../../core/partial-support.js';
+
+const CAPABILITY = 'Partial preview: the FBX encoding/version and a bounded root-node summary are shown. Mesh geometry, hierarchy properties, materials, textures, skinning, blend shapes, cameras, and animation payloads are not decoded or rendered.';
+
 function esc(s) {
   return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
@@ -31,6 +35,7 @@ function parseRootNodes(b, version) {
   const NULL_RECORD_SIZE = is64bit ? 25 : 13;
   const nodes = [];
   let off = 27;
+  let limited = false;
 
   while (off + NULL_RECORD_SIZE < b.length) {
     const endOffset = r32le(b, off);
@@ -43,46 +48,47 @@ function parseRootNodes(b, version) {
     nodes.push({ name, numProps, endOffset });
     if (endOffset > b.length || endOffset <= off) break;
     off = endOffset;
-    if (nodes.length >= 50) break;
+    if (nodes.length >= 50) { limited = true; break; }
   }
-  return nodes;
+  return { nodes, limited };
 }
 
 export function render(intake) {
   const b = intake.bytes;
+  const text = intake.text || '';
+  if (/^;\s*FBX/m.test(text)) {
+    return {
+      bodyHtml: `
+        <style>.badge-fbx { background: #4527a0; color: #fff; }</style>
+        <div class="badge-row"><span class="badge badge-fbx">FBX</span></div>
+        ${partialSupportHtml(CAPABILITY)}
+        <div class="meta-section"><div class="meta-row"><span class="meta-key">Format</span><span class="meta-val">FBX (ASCII)</span></div></div>
+        <p class="viewer-message" style="margin-top:8px">ASCII FBX source detected; full scene semantics are not parsed by this preview.</p>`,
+      hadUnsafe: false,
+    };
+  }
   if (!b || b.length < 27) {
-    // Check ASCII FBX
-    const text = intake.text || '';
-    if (/^;\s*FBX/m.test(text)) {
-      return {
-        bodyHtml: `
-          <style>.badge-fbx { background: #4527a0; color: #fff; }</style>
-          <div class="badge-row"><span class="badge badge-fbx">FBX</span></div>
-          <div class="meta-section"><div class="meta-row"><span class="meta-key">Format</span><span class="meta-val">FBX (ASCII)</span></div></div>
-          <p class="viewer-message" style="margin-top:8px">ASCII FBX — switch to Raw view for content.</p>`,
-        hadUnsafe: false,
-      };
-    }
-    return { bodyHtml: '<p class="viewer-message">Not a valid FBX file.</p>', hadUnsafe: false };
+    return { bodyHtml: partialSupportHtml(CAPABILITY) + '<p class="viewer-message">Not a valid FBX file.</p>', hadUnsafe: false };
   }
 
   const MAGIC_STR = 'Kaydara FBX Binary  ';
   const fileMagic = new TextDecoder('ascii', { fatal: false }).decode(b.slice(0, 20));
   if (fileMagic !== MAGIC_STR) {
-    return { bodyHtml: '<p class="viewer-message">Missing FBX binary magic.</p>', hadUnsafe: false };
+    return { bodyHtml: partialSupportHtml(CAPABILITY) + '<p class="viewer-message">Missing FBX binary magic.</p>', hadUnsafe: false };
   }
 
   const version = r32le(b, 23);
   const versionStr = FBX_VERSION_NAMES[version] || `${(version / 1000) | 0}.${(version % 1000) / 100 | 0}`;
 
   let nodes = [];
-  try { nodes = parseRootNodes(b, version); } catch (_) {}
+  let nodeScanLimited = false;
+  try { ({ nodes, limited: nodeScanLimited } = parseRootNodes(b, version)); } catch (_) {}
 
   const metaRows = [
     ['Format', 'FBX (Filmbox 3D)'],
     ['FBX version', `${versionStr} (${version})`],
     ['Encoding', 'Binary'],
-    nodes.length > 0 ? ['Root nodes', String(nodes.length)] : null,
+    nodes.length > 0 ? ['Parsed root nodes', `${nodes.length}${nodeScanLimited ? ' (scan limit)' : ''}`] : null,
     ['File size', `${b.length.toLocaleString()} bytes`],
   ].filter(Boolean).map(([k, v]) =>
     `<div class="meta-row"><span class="meta-key">${esc(k)}</span><span class="meta-val">${esc(v)}</span></div>`
@@ -91,6 +97,7 @@ export function render(intake) {
   const nodeTableHtml = nodes.length ? `
     <div class="meta-section">
       <h4 class="meta-section-title">Root Nodes</h4>
+      ${nodeScanLimited ? '<p class="viewer-message">The root-node scan stops after 50 entries; additional nodes, if present, are not scanned.</p>' : ''}
       <table class="fbx-table">
         <thead><tr><th>Node</th><th>Properties</th></tr></thead>
         <tbody>${nodes.map((n) =>
@@ -109,6 +116,7 @@ export function render(intake) {
         .fbx-node { font-family: monospace; font-weight: 700; color: #4527a0; }
       </style>
       <div class="badge-row"><span class="badge badge-fbx">FBX</span></div>
+      ${partialSupportHtml(CAPABILITY)}
       <div class="meta-section">
         <h4 class="meta-section-title">File Info</h4>
         ${metaRows}

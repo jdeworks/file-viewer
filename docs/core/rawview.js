@@ -7,12 +7,15 @@ import { loadMonaco } from './monaco-loader.js';
 export const RAW_MODES = ['current', 'original', 'diff', 'movediff'];
 
 function fill(el) { el.style.position = 'absolute'; el.style.inset = '0'; return el; }
+const exactModelValue = (model) => model.getValue(undefined, true);
 
 export async function createRawView(host, {
   originalText, currentText, language, theme, options = {},
   onChange, onCursor, onScroll, onContextMenu, onPaste, onMoveDiff, onCustomDiff,
+  signal, isCurrent,
 }) {
   const monaco = await loadMonaco();
+  if (signal?.aborted || (isCurrent && !isCurrent())) return null;
   import('../types/text/code/codelens.js')
     .then((m) => m.registerCodeMetrics?.(monaco))
     .catch(() => {});
@@ -44,7 +47,7 @@ export async function createRawView(host, {
   let mode = 'current';
   let decorations = [];
 
-  modifiedModel.onDidChangeContent(() => onChange?.(modifiedModel.getValue()));
+  modifiedModel.onDidChangeContent(() => onChange?.(exactModelValue(modifiedModel)));
   std.onDidChangeCursorPosition((e) => { if (mode !== 'diff' && mode !== 'movediff') onCursor?.(e.position.lineNumber); });
   std.onDidScrollChange(() => { if (mode !== 'diff' && mode !== 'movediff') onScroll?.(); });
   std.onContextMenu((e) => {
@@ -84,14 +87,14 @@ export async function createRawView(host, {
     // A type can supply a custom diff (e.g. JSON key-tree) — it replaces Monaco's text diff.
     if (next === 'diff' && onCustomDiff) {
       customHost.style.display = '';
-      onCustomDiff(customHost, diffOriginal().getValue(), modifiedModel.getValue());
+      onCustomDiff(customHost, exactModelValue(diffOriginal()), exactModelValue(modifiedModel));
     } else if (next === 'diff') {
       ensureDiff().setModel({ original: diffOriginal(), modified: modifiedModel });
       diff.updateOptions({ renderSideBySide: !isNarrow() });
       diffHost.style.display = ''; diff.layout();
     } else if (next === 'movediff') {
       moveHost.style.display = '';
-      onMoveDiff?.(moveHost, diffOriginal().getValue(), modifiedModel.getValue());
+      onMoveDiff?.(moveHost, exactModelValue(diffOriginal()), exactModelValue(modifiedModel));
     } else {
       std.setModel(next === 'original' ? originalModel : modifiedModel);
       std.updateOptions({ readOnly: next === 'original' });
@@ -102,8 +105,8 @@ export async function createRawView(host, {
   return {
     monaco, mode: () => mode,
     setMode,
-    getValue: () => modifiedModel.getValue(),
-    originalValue: () => originalModel.getValue(),
+    getValue: () => exactModelValue(modifiedModel),
+    originalValue: () => exactModelValue(originalModel),
     setValue: (text) => modifiedModel.setValue(text),
     selectionText() {
       return modifiedModel.getValueInRange(std.getSelection());
@@ -128,18 +131,24 @@ export async function createRawView(host, {
     // Replace the WHOLE document via an undoable edit (so Ctrl+Z reverts it). Unlike
     // setValue(), this goes through executeEdits and stays on Monaco's undo stack.
     transformAll(transform, opts = {}) {
-      const result = transform(modifiedModel.getValue());
-      const text = typeof result === 'string' ? result : (result?.text ?? modifiedModel.getValue());
+      // Monaco stores a leading BOM outside the editable range. Transform only the editable
+      // content so replacing the full range cannot duplicate that separately preserved BOM.
+      const current = modifiedModel.getValue();
+      const result = transform(current);
+      const text = typeof result === 'string' ? result : (result?.text ?? current);
       replaceRange(modifiedModel.getFullModelRange(), text, { source: 'raw-textutil', ...opts });
     },
     setSelection(startLine, startColumn, endLine, endColumn) {
       std.setSelection(new monaco.Range(startLine, startColumn, endLine, endColumn));
       std.focus();
     },
-    isDirty: () => originalModel.getValue() !== modifiedModel.getValue(),
+    isDirty: () => exactModelValue(originalModel) !== exactModelValue(modifiedModel),
     // Adopt the current working copy as the new baseline (so isDirty() → false). Used after a
     // successful save-back to disk: the on-disk content now IS the original, nothing is unsaved.
-    markClean: () => { if (originalModel.getValue() !== modifiedModel.getValue()) originalModel.setValue(modifiedModel.getValue()); },
+    markClean: () => {
+      const current = exactModelValue(modifiedModel);
+      if (exactModelValue(originalModel) !== current) originalModel.setValue(current);
+    },
     setLanguage(lang) { monaco.editor.setModelLanguage(originalModel, lang); monaco.editor.setModelLanguage(modifiedModel, lang); if (compareModel) monaco.editor.setModelLanguage(compareModel, lang); },
     // Compare the current file against another file's text (current ↔ other). Switches to diff.
     setCompare(text, lang) {

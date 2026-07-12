@@ -35,8 +35,8 @@ export const GENERAL_DESCRIPTORS = [
     hint: 'Convert audio/video formats your browser cannot play natively (AVI, WMV, FLV, TS, ...) using ffmpeg.wasm. Downloads ~23 MB the first time; cached for subsequent uses. Transcoding runs entirely in-browser — no upload, no server.' },
   { key: 'enableArchiveWasm', label: 'Archive support (libarchive.wasm — ~1 MB download on first use)', category: 'advanced', type: 'bool', default: false,
     hint: 'List and extract 7z, RAR, tar, tar.gz archives using libarchive.wasm. Downloads ~1 MB the first time; cached for subsequent uses. Runs entirely in-browser.' },
-  { key: 'enableEmulators', label: 'Emulators (v86, EmulatorJS, Ruffle Flash — download per-engine on first use)', category: 'advanced', type: 'bool', default: false,
-    hint: 'Run retro console ROMs, DOS software, and Flash games in-browser. Each emulator engine downloads on first use (1–4 MB each). Only open files from sources you trust — emulated software runs with reduced but non-zero access.' },
+  { key: 'enableEmulators', label: 'Prefer emulators for supported game files', category: 'advanced', type: 'bool', default: false,
+    hint: 'Apply immediately. Uses same-origin emulator engines that are cached on first use; the complete optional EmulatorJS bundle is about 14 MB. Only open files from sources you trust — emulated software runs with reduced but non-zero access.' },
 ];
 
 // Shown for any type with capability.rawView. Apply to the Monaco raw editor.

@@ -13,11 +13,11 @@ import {
   summarizeReducedCapabilities,
 } from './index.js';
 import { moveElement, trimElement, updateElement } from './mixer-model.js';
-import { MIXER_LAYOUT } from './mixer-hit-test.js';
-import { laneRange } from './mixer-audio-multi-helpers.js';
 import { reflectMultiPlaybackState } from './mixer-audio-multi-decorators.js';
 import { renderVideoExportPlanPanel } from './mixer-video-export-ui.js';
 import { renderVideoProxyPlanPanel } from './mixer-video-proxy-ui.js';
+
+export const MIX_LANE_GUTTER_WIDTH = 56;
 
 // --- Pure project queries ---
 
@@ -48,7 +48,7 @@ export function selectedElementStart(project, elementId) {
 // --- Viewport helpers ---
 
 export function fitZoom(root, project) {
-  const width = Math.max(240, root.clientWidth - MIXER_LAYOUT.gutterWidth);
+  const width = Math.max(240, root.clientWidth - MIX_LANE_GUTTER_WIDTH);
   const duration = Math.max(1000, project.project.durationMs || 1000);
   return clamp(width / duration, 0.02, 0.8);
 }
@@ -114,35 +114,22 @@ export function buildLaneClips(project, laneId, cursorMs, pxPerSec = 0) {
 }
 
 // Build the per-lane controls row appended to .al-track-label.
-export function buildLaneControlsEl(laneModel, element) {
+export function buildLaneControlsEl(laneModel, laneIndex = laneModel.order ?? 0) {
   const controls = document.createElement('div');
   controls.className = 'al-lane-controls mmx-mix-lane-controls';
-  const index = document.createElement('span');
-  index.className = 'mmx-mix-lane-index al-mini';
-  index.textContent = String((laneModel.order ?? 0) + 1);
-  controls.append(index);
-  const mute = createButton('M', 'Mute lane', 'mmx-mix-mute al-btn');
-  mute.dataset.laneId = laneModel.id;
-  mute.setAttribute('aria-pressed', laneModel.muted ? 'true' : 'false');
-  const solo = createButton('S', 'Solo lane', 'mmx-mix-solo al-btn');
-  solo.dataset.laneId = laneModel.id;
-  solo.setAttribute('aria-pressed', laneModel.solo ? 'true' : 'false');
-  const gain = laneRange('mmx-mix-lane-gain', laneModel.id, laneModel.audio?.gain ?? 1, 0, 2, 0.01, 'Lane gain');
+  const number = document.createElement('span');
+  number.className = 'mmx-mix-lane-index al-mini';
+  number.textContent = String(laneIndex + 1);
   const editBtn = createButton('⚙', 'Edit lane settings', 'mmx-mix-lane-edit al-btn');
   editBtn.dataset.laneId = laneModel.id;
-  controls.append(mute, solo, gain, editBtn);
+  controls.append(number, editBtn);
   return controls;
 }
 
-// Sync per-lane gutter control values and aria states on each render.
-// Fade-in/out are in the per-lane modal (updated via updateLaneModalValues) so not synced here.
-export function updateLaneControlsState(laneEl, laneModel, element) {
-  const mute = laneEl.querySelector('.mmx-mix-mute');
-  const solo = laneEl.querySelector('.mmx-mix-solo');
-  const gain = laneEl.querySelector('.mmx-mix-lane-gain');
-  if (mute) mute.setAttribute('aria-pressed', laneModel.muted ? 'true' : 'false');
-  if (solo) solo.setAttribute('aria-pressed', laneModel.solo ? 'true' : 'false');
-  if (gain) gain.value = String(laneModel.audio?.gain ?? 1);
+// Keep visible numbering sequential even when lane order changes.
+export function updateLaneControlsState(laneEl, laneModel, index = laneModel.order ?? 0) {
+  const number = laneEl.querySelector('.mmx-mix-lane-index');
+  if (number) number.textContent = String(index + 1);
 }
 
 // Build a thumbnail strip for a visual element (mirrors renderThumbnailStrip in mixer-renderer).
@@ -213,27 +200,46 @@ export function buildMixToolbar() {
   Object.assign(masterSlider, { type: 'range', className: 'mmx-mix-master-slider', min: '0', max: '2', step: '0.01', value: '1' });
   const masterLabel = Object.assign(document.createElement('label'), { className: 'mmx-mix-master' });
   masterLabel.append('Master', masterSlider);
+  const formatSelect = document.createElement('select');
+  formatSelect.className = 'mmx-mix-format';
+  formatSelect.setAttribute('aria-label', 'Mix download format');
+  formatSelect.append(new Option('WAV', 'wav'), new Option('MP3', 'mp3'));
   const videoPlanBtn = mk('Plan video export', 'Plan ffmpeg-gated video export', 'mmx-mix-video-export-plan mmx-video-export-plan');
   videoPlanBtn.hidden = true;
   const dropZone = Object.assign(document.createElement('span'), { className: 'mmx-mix-drop-zone', textContent: 'Drop audio, image, or video to add lane' });
   const zoomGroup = document.createElement('span');
   zoomGroup.className = 'al-zoom';
   zoomGroup.append(mk('−', 'Zoom out', 'al-btn mmx-mix-zoom-out'), mk('Fit', 'Fit timeline', 'al-btn mmx-mix-fit'), mk('+', 'Zoom in', 'al-btn mmx-mix-zoom-in'));
+  const group = (name, ...children) => {
+    const el = document.createElement('div');
+    el.className = `mmx-mix-group mmx-mix-${name}-group`;
+    el.append(...children);
+    return el;
+  };
+  const transportGroup = group('transport',
+    mk('⏹', 'Stop and rewind mix preview', 'mmx-mix-stop al-btn al-stop'),
+    mk('▶', 'Play mix preview', 'mmx-mix-play al-btn al-play'));
+  const createGroup = group('create',
+    mk('+ Tone', 'Add generated tone lane', 'mmx-mix-add-tone al-btn'),
+    mk('+ Pink noise', 'Add pink-noise room-tone lane', 'mmx-mix-add-pink al-btn'));
+  const masterGroup = group('master', masterLabel);
+  const exportStatus = Object.assign(document.createElement('span'), { className: 'mmx-mix-export-status' });
+  exportStatus.setAttribute('role', 'status');
+  exportStatus.setAttribute('aria-live', 'polite');
+  const exportGroup = group('export', formatSelect,
+    mk('Download mix', 'Render and download the audio mix', 'mmx-mix-download al-btn'),
+    videoPlanBtn, exportStatus);
+  const projectGroup = group('project');
+  const fullscreenBtn = mk('⛶ Fullscreen', 'Enter Mix workspace fullscreen', 'mmx-mix-fullscreen al-btn');
+  fullscreenBtn.setAttribute('aria-pressed', 'false');
+  const viewGroup = group('view', fullscreenBtn);
   const controls = document.createElement('div');
   controls.className = 'mmx-mix-controls';
-  controls.append(
-    mk('Play', 'Play mix preview', 'mmx-mix-play al-btn'),
-    mk('Stop', 'Stop mix preview', 'mmx-mix-stop al-btn'),
-    mk('+ Tone', 'Add generated tone lane', 'mmx-mix-add-tone al-btn'),
-    mk('+ Pink noise', 'Add pink-noise room-tone lane', 'mmx-mix-add-pink al-btn'),
-    masterLabel,
-    mk('Mixdown → WAV', 'Download browser audio mixdown WAV', 'mmx-mix-download al-btn'),
-    videoPlanBtn, dropZone,
-  );
+  controls.append(transportGroup, createGroup, masterGroup, zoomGroup, exportGroup, projectGroup, viewGroup, dropZone);
   const toolbar = document.createElement('div');
   toolbar.className = 'al-toolbar mmx-toolbar';
-  toolbar.append(Object.assign(document.createElement('span'), { className: 'al-title mmx-title', textContent: 'Mix' }), zoomGroup, controls);
-  return { toolbar, masterSlider, videoPlanBtn };
+  toolbar.append(Object.assign(document.createElement('span'), { className: 'al-title mmx-title', textContent: 'Mix' }), controls);
+  return { toolbar, masterSlider, videoPlanBtn, formatSelect, fullscreenBtn, exportStatus };
 }
 
 // --- DOM decoration helpers ---
@@ -321,7 +327,7 @@ function niceStep(seconds) {
 export function updateMixRuler(rulerEl, project, viewport, scrollLeft = 0) {
   const timelineSec = Math.max(0.001, (project.project.durationMs || 1000) / 1000);
   const pxPerSec = (viewport.pxPerMs || 0) * 1000;
-  const fitWidth = Math.max(120, (viewport.width || 960) - 96);
+  const fitWidth = Math.max(120, (viewport.width || 960) - MIX_LANE_GUTTER_WIDTH);
   // contentWidth: match the lane canvas width at current zoom.
   const contentWidth = Math.max(fitWidth, timelineSec * pxPerSec);
   const stepSec = niceStep((80 * timelineSec) / Math.max(1, contentWidth));
@@ -329,7 +335,7 @@ export function updateMixRuler(rulerEl, project, viewport, scrollLeft = 0) {
   for (let t = 0; t <= timelineSec + 0.0001; t += stepSec) {
     const tick = document.createElement('div');
     tick.className = 'al-ruler-tick';
-    tick.style.left = `${96 + (t / timelineSec) * contentWidth}px`;
+    tick.style.left = `${MIX_LANE_GUTTER_WIDTH + (t / timelineSec) * contentWidth}px`;
     tick.textContent = fmtTime(t);
     rulerEl.append(tick);
   }

@@ -168,7 +168,7 @@ function hasAesExtra(bytes, start, length) {
 // List the zip from its central directory WITHOUT JSZip — so it works even for password-protected
 // archives (JSZip throws "Encrypted zip are not supported" at load). Reads name, sizes, date, the
 // directory flag, and the encrypted flag (general-purpose bit-flag bit 0). No decryption.
-export function listCentralDirectory(bytes) {
+export function listCentralDirectory(bytes, { maxEntries = Infinity } = {}) {
   if (!bytes || bytes.length < 22) return null;
   const dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
   let eocd = -1;
@@ -181,7 +181,7 @@ export function listCentralDirectory(bytes) {
   const files = [], folders = [];
   const methods = new Map();
   let totalU = 0, totalC = 0;
-  for (let n = 0; n < count && p + 46 <= bytes.length; n++) {
+  for (let n = 0; n < count && n < maxEntries && p + 46 <= bytes.length; n++) {
     if (dv.getUint32(p, true) !== 0x02014b50) break;                  // 'PK\1\2' central-dir header
     const gp = dv.getUint16(p + 8, true);
     const method = dv.getUint16(p + 10, true);
@@ -190,6 +190,7 @@ export function listCentralDirectory(bytes) {
     const compressedSize = dv.getUint32(p + 20, true), uncompressedSize = dv.getUint32(p + 24, true);
     const fnLen = dv.getUint16(p + 28, true), exLen = dv.getUint16(p + 30, true), cmLen = dv.getUint16(p + 32, true);
     const localHeaderOffset = dv.getUint32(p + 42, true);
+    const externalAttributes = dv.getUint32(p + 38, true);
     if (p + 46 + fnLen + exLen + cmLen > bytes.length) break;
     const name = dec.decode(bytes.subarray(p + 46, p + 46 + fnLen));
     let date = null;
@@ -207,6 +208,9 @@ export function listCentralDirectory(bytes) {
       encryption: encrypted ? (aes ? 'aes' : 'zipcrypto') : null,
       encryptionLabel: encrypted ? (aes ? 'AES' : 'ZipCrypto') : '',
       localHeaderOffset,
+      externalAttributes,
+      symlink: (((externalAttributes >>> 16) & 0o170000) === 0o120000),
+      index: n,
       dir: name.endsWith('/'),
       method,
     };
@@ -214,7 +218,14 @@ export function listCentralDirectory(bytes) {
     methods.set(method, (methods.get(method) || 0) + 1);
     p += 46 + fnLen + exLen + cmLen;
   }
-  return { files, folders, totalU, totalC, ratio: totalU > 0 ? Math.round((1 - totalC / totalU) * 100) : 0, encrypted: new Set(files.filter((f) => f.encrypted).map((f) => f.name)), methods };
+  return {
+    files, folders, totalU, totalC,
+    ratio: totalU > 0 ? Math.round((1 - totalC / totalU) * 100) : 0,
+    encrypted: new Set(files.filter((f) => f.encrypted).map((f) => f.name)),
+    methods,
+    declaredEntries: count,
+    truncated: count > files.length + folders.length,
+  };
 }
 
 // Repack a zip: load original, apply text + binary edits, return new Blob.

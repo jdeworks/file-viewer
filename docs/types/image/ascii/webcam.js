@@ -3,27 +3,17 @@
 // requestVideoFrameCallback, preview FPS follows the camera's delivered frames;
 // the RAF fallback is throttled to the target FPS.
 //
-// Mirrors image mode: it inherits the studio's current settings, exposes the
-// SAME full control panel (as a top overlay behind a ⚙ button), shows the
-// original feed on demand (eye toggle), and its export/reset buttons act on the
-// current frame. Adds pause + fullscreen.
+// The parent studio owns the single settings panel and canonical option object.
+// This module owns only camera transport, live rendering, recording and frame exports.
 
 import { createAsciiEngine } from './engine.js';
-import { buildControls, syncColorControls } from './studio-controls.js';
-import { PERFORMANCE_PRESETS, defaultOptions } from './state.js';
-import { downloadText, downloadHtml, downloadPng, copyText, copyHtml, ensureAsciiFont } from './render.js';
-import { makeFloatingPanel } from './floating-panel.js';
-import { loadLast, saveLast } from './presets.js';
-import { wirePresetUi } from './preset-ui.js';
+import { downloadText, downloadHtml, downloadPng, copyText, ensureAsciiFont } from './render.js';
 
 const now = () => (typeof performance !== 'undefined' ? performance.now() : 0);
 const BTN = (cls, label, title) => `<button class="asx-btn ${cls}" title="${title}">${label}</button>`;
 const EYE = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>';
 
 export function mountAsciiWebcam(host, opts = {}) {
-  // Inherit image-mode settings (or last-used when opened standalone); webcam prefers the
-  // fast sampler by default.
-  const startOpts = { ...(loadLast() || {}), ...(opts.initialOptions || {}), samplingMethod: 'downscale' };
   host.innerHTML = `
     <div class="asx-cam">
       <div class="asx-bar">
@@ -41,17 +31,10 @@ export function mountAsciiWebcam(host, opts = {}) {
         ${BTN('cam-rot-r', '↻', 'Rotate 90° right')}
         ${BTN('cam-flip-h', '↔', 'Flip horizontal')}
         ${BTN('cam-flip-v', '↕', 'Flip vertical')}
-        ${BTN('cam-gear', '⚙ Settings', 'Show all settings')}
-        <select class="asx-perf cam-perf" title="Performance preset"><option value="">Preset…</option>
-          <option value="fast">Fast</option><option value="balanced">Balanced</option><option value="quality">Quality</option></select>
-        <select class="asx-preset cam-preset" title="Load a saved settings preset"><option value="">Preset…</option></select>
-        ${BTN('cam-preset-save', '💾', 'Save current settings as a preset')}
-        ${BTN('cam-preset-del', '🗑', 'Delete the selected preset')}
         ${BTN('cam-copy', 'Copy', 'Copy current frame as text')}
         ${BTN('cam-txt', '↓ TXT', 'Download current frame .txt')}
         ${BTN('cam-html', '↓ HTML', 'Download current frame .html')}
         ${BTN('cam-png', '↓ PNG', 'Download current frame .png')}
-        ${BTN('cam-reset', 'Reset', 'Reset all settings')}
         <span class="cam-stats"></span>
       </div>
       <div class="asx-cam-stage">
@@ -59,7 +42,6 @@ export function mountAsciiWebcam(host, opts = {}) {
         <canvas class="cam-out"></canvas>
         <button class="cam-eye" title="Show original feed">${EYE}</button>
         <figure class="cam-orig-peek" hidden><figcaption>Original</figcaption><canvas></canvas></figure>
-        <div class="cam-settings" hidden></div>
       </div>
     </div>`;
   const q = (s) => host.querySelector(s);
@@ -69,7 +51,6 @@ export function mountAsciiWebcam(host, opts = {}) {
   const stats = q('.cam-stats');
   const peek = q('.cam-orig-peek');
   const peekCanvas = peek.querySelector('canvas');
-  const settings = q('.cam-settings');
   const recDownload = q('.cam-rec-dl');
   const recStudio = q('.cam-rec-studio');
   recDownload.hidden = true;
@@ -77,8 +58,9 @@ export function mountAsciiWebcam(host, opts = {}) {
   recStudio.hidden = true;
   recStudio.disabled = true;
 
-  const engine = createAsciiEngine(startOpts);
+  const engine = createAsciiEngine(opts.options || {}, { shareOptions: !!opts.options });
   let stream = null, running = false, paused = false, eyeOn = false;
+  let destroyed = false, startAttempt = 0;
   let last = 0, frames = 0, fpsClock = now();
   const targetFps = opts.targetFps || 30;
   const minInterval = 1000 / targetFps;
@@ -159,19 +141,31 @@ export function mountAsciiWebcam(host, opts = {}) {
   }
 
   async function start() {
-    if (running) return;
+    if (running || destroyed) return;
+    const attempt = ++startAttempt;
+    let nextStream;
     try {
-      stream = await navigator.mediaDevices.getUserMedia({ video: cameraConstraints(), audio: false });
+      nextStream = await navigator.mediaDevices.getUserMedia({ video: cameraConstraints(), audio: false });
     } catch (e) { stats.textContent = 'Camera access denied: ' + (e.message || e); return; }
+    if (destroyed || attempt !== startAttempt) { nextStream.getTracks().forEach((track) => track.stop()); return; }
+    stream = nextStream;
     video.srcObject = stream;
-    await video.play();
-    await ensureAsciiFont();   // canvas measureText needs the mono font ready
+    try {
+      await video.play();
+      await ensureAsciiFont();   // canvas measureText needs the mono font ready
+    } catch (error) {
+      stop();
+      if (!destroyed) stats.textContent = 'Camera could not start: ' + (error?.message || error);
+      return;
+    }
+    if (destroyed || attempt !== startAttempt) { stop(); return; }
     engine.setSource(video);
     running = true; paused = false;
     const sb = q('.cam-start'); sb.textContent = '⏹ Stop'; sb.classList.remove('cam-flash');
     if (video.requestVideoFrameCallback) loopRVFC(); else requestAnimationFrame(loopRAF);
   }
   function stop() {
+    startAttempt++;
     running = false; paused = false;
     if (stream) { stream.getTracks().forEach((t) => t.stop()); stream = null; }
     video.srcObject = null;
@@ -179,23 +173,6 @@ export function mountAsciiWebcam(host, opts = {}) {
     q('.cam-pause').textContent = '⏸ Pause';
   }
 
-  // ── controls (full panel, shown on demand) ──
-  const floatingSettings = makeFloatingPanel(settings, { title: 'Camera ASCII settings' });
-  let saveTimer = 0;
-  const rememberSoon = () => { clearTimeout(saveTimer); saveTimer = setTimeout(() => saveLast({ ...engine.options }), 400); };
-  const controls = buildControls(floatingSettings.body, engine.options, (key, value, dirty, displayOnly) => {
-    engine.options[key] = value;
-    if (key === 'transparentBackground' && controls?.inputs.backgroundColor) controls.inputs.backgroundColor.disabled = !!value;
-    if (key === 'colorMode') syncColorControls(controls, value);
-    rememberSoon();
-    if (displayOnly) { if (key === 'zoom') applyFit(); else if (!running || paused) renderOnce(); return; }
-    engine.markDirty(...dirty);
-    if (!running || paused) renderOnce();
-  });
-  controls.inputs.backgroundColor.disabled = !!engine.options.transparentBackground;
-  syncColorControls(controls, engine.options.colorMode);   // initial state
-  // Named user presets (shared wiring with the studio).
-  wirePresetUi({ sel: q('.cam-preset'), saveBtn: q('.cam-preset-save'), delBtn: q('.cam-preset-del'), controls, getOptions: () => ({ ...engine.options }) });
   // Keep the feed fitted to the stage as it resizes (responsive / fullscreen).
   const ro = new ResizeObserver(() => applyFit());
   ro.observe(stage);
@@ -221,6 +198,14 @@ export function mountAsciiWebcam(host, opts = {}) {
     recStudio.hidden = !(blob && opts.onRecorded);
     recStudio.disabled = !(blob && opts.onRecorded);
   }
+  function releaseRecordingStreams() {
+    recStream?.getTracks().forEach((track) => track.stop());
+    audioStream?.getTracks().forEach((track) => track.stop());
+    recStream = null;
+    audioStream = null;
+    clearInterval(recTimer);
+    recTimer = null;
+  }
   async function startRec() {
     const wantAudio = !!q('.cam-audio').checked;
     if (!out.captureStream) { stats.textContent = 'Recording is not supported by this browser.'; return; }
@@ -229,6 +214,7 @@ export function mountAsciiWebcam(host, opts = {}) {
       recStream = out.captureStream(recordFps());
       if (wantAudio) {
         audioStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+        if (destroyed) { releaseRecordingStreams(); return; }
         audioStream.getAudioTracks().forEach((track) => recStream.addTrack(track));
       }
     } catch (e) {
@@ -237,6 +223,7 @@ export function mountAsciiWebcam(host, opts = {}) {
       recStream = null; audioStream = null;
       return;
     }
+    if (destroyed) { releaseRecordingStreams(); return; }
     const mime = ['video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm']
       .find((t) => window.MediaRecorder && MediaRecorder.isTypeSupported(t)) || 'video/webm';
     recChunks = [];
@@ -244,14 +231,13 @@ export function mountAsciiWebcam(host, opts = {}) {
     recorder.ondataavailable = (e) => { if (e.data && e.data.size) recChunks.push(e.data); };
     recorder.onstop = () => {
       const blob = new Blob(recChunks, { type: mime }); recChunks = [];
-      setLastRecording(blob);
-      if (recStream) { recStream.getTracks().forEach((t) => t.stop()); recStream = null; }
-      if (audioStream) { audioStream.getTracks().forEach((t) => t.stop()); audioStream = null; }
-      clearInterval(recTimer); recTimer = null;
-      const rb = q('.cam-rec'); rb.classList.remove('active'); rb.textContent = '● Record';
+      if (!destroyed) setLastRecording(blob);
+      releaseRecordingStreams();
+      const rb = q('.cam-rec');
+      if (rb) { rb.classList.remove('active'); rb.textContent = '● Record'; }
       // In the app, keep the user in webcam mode so they can download first, then
       // choose Studio. Standalone mode has no studio bridge, so auto-download.
-      if (!opts.onRecorded) dl(blob, 'webcam-recording.webm');
+      if (!destroyed && !opts.onRecorded) dl(blob, 'webcam-recording.webm');
     };
     recorder.start(1000);
     recStart = now();
@@ -279,25 +265,20 @@ export function mountAsciiWebcam(host, opts = {}) {
   });
   out.addEventListener('fullscreenchange', applyFit);
   document.addEventListener('fullscreenchange', applyFit);
-  // Geometric transforms drive the WEBCAM's own engine (these were previously only
-  // wired to the image-studio engine, so they appeared to do nothing on camera).
-  q('.cam-rot-l').addEventListener('click', () => transform(() => { engine.options.rotate = ((engine.options.rotate || 0) + 270) % 360; }));
-  q('.cam-rot-r').addEventListener('click', () => transform(() => { engine.options.rotate = ((engine.options.rotate || 0) + 90) % 360; }));
-  q('.cam-flip-h').addEventListener('click', () => transform(() => { engine.options.flipH = !engine.options.flipH; }));
-  q('.cam-flip-v').addEventListener('click', () => transform(() => { engine.options.flipV = !engine.options.flipV; }));
-  q('.cam-gear').addEventListener('click', () => {
-    settings.hidden = !settings.hidden;
-    q('.cam-gear').classList.toggle('active', !settings.hidden);
+  // Transforms update the parent's canonical state, then redraw this live frame.
+  const sharedTransform = (key, value) => transform(() => {
+    if (opts.setOption) opts.setOption(key, value, { regrab: true });
+    else engine.options[key] = value;
   });
+  q('.cam-rot-l').addEventListener('click', () => sharedTransform('rotate', ((engine.options.rotate || 0) + 270) % 360));
+  q('.cam-rot-r').addEventListener('click', () => sharedTransform('rotate', ((engine.options.rotate || 0) + 90) % 360));
+  q('.cam-flip-h').addEventListener('click', () => sharedTransform('flipH', !engine.options.flipH));
+  q('.cam-flip-v').addEventListener('click', () => sharedTransform('flipV', !engine.options.flipV));
   q('.cam-eye').addEventListener('click', () => {
     eyeOn = !eyeOn;
     q('.cam-eye').classList.toggle('active', eyeOn);
     peek.hidden = !eyeOn;
     if (eyeOn) paintOrig();
-  });
-  q('.cam-perf').addEventListener('change', (e) => {
-    const preset = PERFORMANCE_PRESETS[e.target.value]; if (!preset) return;
-    Object.entries(preset).forEach(([k, v]) => controls.setValue(k, v));
   });
   // Exports act on the CURRENT frame (engine.result).
   q('.cam-copy').addEventListener('click', () => engine.result && copyText(engine.result.text));
@@ -307,16 +288,23 @@ export function mountAsciiWebcam(host, opts = {}) {
     if (!engine.result) return;
     const c = document.createElement('canvas'); engine.renderToCanvas(c); downloadPng('webcam-ascii.png', c);
   });
-  q('.cam-reset').addEventListener('click', () => {
-    const defs = defaultOptions();
-    Object.keys(engine.options).forEach((k) => {
-      // rotate/flip aren't in the control panel (toolbar buttons) — reset directly.
-      if (k === 'rotate' || k === 'flipH' || k === 'flipV') engine.options[k] = defs[k];
-      else if (k in defs) controls.setValue(k, defs[k]);
-    });
-    if (engine.grabFrame()) { engine.markDirty('processedImage'); renderOnce(); }
-  });
-
   return { engine, start, stop, isRunning: () => running,
-    destroy() { stopRec(); stop(); ro.disconnect(); floatingSettings.destroy(); document.removeEventListener('fullscreenchange', applyFit); host.innerHTML = ''; } };
+    optionsChanged(key, dirty = [], displayOnly = false) {
+      if (displayOnly) {
+        if (key === 'zoom') applyFit();
+        else if (!running || paused) renderOnce();
+        return;
+      }
+      if (key === 'transform') engine.grabFrame();
+      engine.markDirty(...dirty);
+      if (!running || paused) renderOnce();
+    },
+    destroy() {
+      destroyed = true;
+      stopRec(); releaseRecordingStreams(); stop();
+      ro.disconnect();
+      document.removeEventListener('fullscreenchange', applyFit);
+      engine.terminate();
+      host.innerHTML = '';
+    } };
 }

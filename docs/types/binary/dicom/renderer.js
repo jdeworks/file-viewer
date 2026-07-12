@@ -1,3 +1,7 @@
+import { partialSupportHtml } from '../../../core/partial-support.js';
+
+const CAPABILITY = 'Partial preview: up to the first 200 Explicit VR Little Endian tags before Pixel Data are inspected for selected patient, study, equipment, and image metadata. Pixel data, frames, overlays, sequences, presentation state, and the diagnostic image are not decoded or rendered.';
+
 function esc(s) { return String(s ?? '').replace(/[&<>"]/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 
 function readU16(b, off) { return b[off] | (b[off+1] << 8); }
@@ -142,16 +146,16 @@ dl.kv dd{padding:6px 12px;word-break:break-all}
 export function render(intake) {
   const b = intake.bytes;
   if (!b || b.length < 132) {
-    return { bodyHtml: `<style>${STYLE}</style><div class="err">File too small to be DICOM (${b?.length ?? 0} bytes).</div>` };
+    return { bodyHtml: `<style>${STYLE}</style>${partialSupportHtml(CAPABILITY)}<div class="err">File too small to be DICOM (${b?.length ?? 0} bytes).</div>` };
   }
 
   if (b[128] !== 0x44 || b[129] !== 0x49 || b[130] !== 0x43 || b[131] !== 0x4D) {
-    return { bodyHtml: `<style>${STYLE}</style><div class="err">Missing DICM signature at offset 128. File may be pre-DICOM ACR-NEMA format.</div>` };
+    return { bodyHtml: `<style>${STYLE}</style>${partialSupportHtml(CAPABILITY)}<div class="err">Missing DICM signature at offset 128. File may be pre-DICOM ACR-NEMA format.</div>` };
   }
 
   const tags = parseDicom(b);
   if (!tags) {
-    return { bodyHtml: `<style>${STYLE}</style><div class="err">Could not parse DICOM tags.</div>` };
+    return { bodyHtml: `<style>${STYLE}</style>${partialSupportHtml(CAPABILITY)}<div class="err">Could not parse DICOM tags.</div>` };
   }
 
   const fmtBytes = (n) => {
@@ -196,6 +200,7 @@ export function render(intake) {
   if (modalityLabel) html += `<span class="badge badge-mod">${esc(modalityLabel)}</span>`;
   html += `<span class="badge badge-size">${esc(fmtBytes(intake.size ?? b.length))}</span>`;
   html += `</div>`;
+  html += partialSupportHtml(CAPABILITY);
 
   // PHI warning if patient data present
   if (patientName || patientId || patientDob) {
