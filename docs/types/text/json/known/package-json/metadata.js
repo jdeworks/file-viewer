@@ -10,8 +10,9 @@ function count(obj) {
 }
 
 export function extract(intake) {
-  const pkg = parse(intake.text);
-  const duplicateKeys = diagnoseDuplicateJsonKeys(intake.text || '').totalDuplicates;
+  const source = intake.sourceText ?? intake.text ?? '';
+  const pkg = parse(source);
+  const duplicateKeys = diagnoseDuplicateJsonKeys(source).totalDuplicates;
   const deps = count(pkg.dependencies);
   const dev = count(pkg.devDependencies);
   const peer = count(pkg.peerDependencies);

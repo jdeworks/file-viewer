@@ -2,9 +2,10 @@ import { parseJsonLike } from './jsonparse.js';
 import { diagnoseDuplicateJsonKeys } from './duplicate-keys.js';
 
 export function extract(intake) {
-  const duplicates = diagnoseDuplicateJsonKeys(intake.text || '');
+  const source = intake.sourceText ?? intake.text ?? '';
+  const duplicates = diagnoseDuplicateJsonKeys(source);
   let parsed, data, ok = true;
-  try { parsed = parseJsonLike(intake.text || '', ''); data = parsed.data; } catch { ok = false; }
+  try { parsed = parseJsonLike(source, ''); data = parsed.data; } catch { ok = false; }
   if (!ok) return [
     { label: 'Valid JSON', value: 'no' },
     ...(duplicates.totalDuplicates ? [{ label: 'Duplicate keys before error', value: String(duplicates.totalDuplicates) }] : []),

@@ -3,7 +3,7 @@
 // Settings here are intentionally minimal; WP03 replaces buildSettings() with the
 // full descriptor-driven system. The contract this file consumes is frozen.
 
-import { wireIntake, intakeFromFile, intakeFromText, LARGE_FILE_BYTES } from './intake.js';
+import { wireIntake, intakeFromFile, withSourceText, LARGE_FILE_BYTES } from './intake.js';
 import { getDraggedTreeNode, TREE_DRAG_TYPE } from './filetree.js';
 import { initOffline, offlineMissHtml, initOfflineBadge } from './offline.js';
 import * as persistence from './persistence.js';
@@ -226,9 +226,8 @@ async function openSidebarDropSideBySide(node) {
   try {
     const path = node.path || node.sidebarInnerPath || node.file.name;
     const edited = state.folderEdits?.get(path) ?? state.sessionEdits?.get(path);
-    const intake2 = edited != null
-      ? intakeFromText(edited, path.split('/').pop())
-      : await intakeFromFile(node.file);
+    const originalIntake = await intakeFromFile(node.file);
+    const intake2 = edited != null ? withSourceText(originalIntake, edited) : originalIntake;
     const { openSideBySideWithIntake } = await import('./sidebyside.js');
     await openSideBySideWithIntake(intake2);
   } catch (err) {
@@ -505,9 +504,9 @@ function updateEnhanceChip() {
   if (!state.known) { chip.hidden = true; return; }
   chip.hidden = false;
   const showingEnhanced = !state.forceBase;
-  chip.querySelector('.ec-label').textContent = (showingEnhanced ? '✦ Enhanced: ' : 'Plain view — ') + state.known.label;
+  chip.querySelector('.ec-label').textContent = (showingEnhanced ? '✦ Enhanced summary: ' : 'Plain view — ') + state.known.label;
   const btn = chip.querySelector('.ec-toggle');
-  btn.textContent = showingEnhanced ? 'Show default view' : 'Show enhanced view';
+  btn.textContent = showingEnhanced ? 'Show default view' : 'Show enhanced summary';
 }
 
 async function toggleEnhance() {

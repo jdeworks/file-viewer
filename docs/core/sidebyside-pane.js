@@ -15,6 +15,7 @@ import { previewStyle } from './settings-schema.js';
 import { createRawView } from './rawview.js';
 import { buildPaneToolbar } from './sidebyside-toolbar.js';
 import { createLatestRequestController } from './request-lifecycle.js';
+import { sourceTextOf, withSourceText } from './intake.js';
 
 async function previewCheckpoint(stage, request) {
   const hook = globalThis.__fvSideBySidePreviewTestHook;
@@ -135,7 +136,7 @@ export function buildPane(paneEl, intake) {
 
   async function ensureRawview() {
     if (rawview) return rawview;
-    const text = intake.text || '';
+    const text = sourceTextOf(intake);
     rawview = await createRawView(sourceHost, {
       originalText: text, currentText: text,
       language: resolveLanguage(type, intake),
@@ -147,13 +148,13 @@ export function buildPane(paneEl, intake) {
 
   async function ensurePreview() {
     // Re-render when first shown OR when the (editable) source text changed since last render.
-    const text = rawview ? rawview.getValue() : (intake.text || '');
+    const text = rawview ? rawview.getValue() : sourceTextOf(intake);
     if (previewCtrl && previewText === text) return;
     const request = previewRequests.begin({ intake, text, theme: themeIsDark() ? 'dark' : 'light' });
     previewCtrl?.destroy();
     previewCtrl = null;
     previewHost.innerHTML = '';
-    const src = (editable && rawview) ? { ...intake, text } : intake;
+    const src = (editable && rawview) ? withSourceText(intake, text) : intake;
     const next = await renderPreviewInto(previewHost, src, request);
     if (destroyed || !request.isCurrent() || !next) {
       next?.destroy();
@@ -208,12 +209,12 @@ export function buildPane(paneEl, intake) {
   dlBtn.title = 'Download this pane';
   dlBtn.addEventListener('click', () => {
     if (editable) {
-      const text = rawview ? rawview.getValue() : (intake.text || '');
+      const text = rawview ? rawview.getValue() : sourceTextOf(intake);
       downloadBlob(text, filename, intake.mimeType || 'text/plain');
     } else if (intake.bytes) {
       downloadBlob(intake.bytes, filename, intake.mimeType || 'application/octet-stream');
     } else {
-      downloadBlob(intake.text || '', filename, intake.mimeType || 'text/plain');
+      downloadBlob(sourceTextOf(intake), filename, intake.mimeType || 'text/plain');
     }
   });
   controls.appendChild(dlBtn);

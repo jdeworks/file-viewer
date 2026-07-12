@@ -8,10 +8,11 @@ import { EnvFormEditor } from '../types/text/env/form-editor.js';
 import { IniFormEditor } from '../types/text/ini/form-editor.js';
 import { TomlFormEditor } from '../types/text/toml/form-editor.js';
 import { YamlFormEditor } from '../types/text/yaml/form-editor.js';
+import { parserTextFromSource, sourceTextOf, withParserText } from './intake.js';
 
 // Edit-tracking callback for the editors that report changes live (env, ini).
 function editTrack(newText) {
-  state.intake = { ...state.intake, text: newText };
+  state.intake = withParserText(state.intake, newText);
   state.downloadedSinceEdit = false;
 }
 
@@ -41,7 +42,7 @@ function setFormMode(kind, on) {
       state.mode = 'raw'; state.tab = 'raw';
       applyLayout();
     }
-    const text = state.rawview ? state.rawview.getValue() : (state.intake?.text || '');
+    const text = parserTextFromSource(state.rawview ? state.rawview.getValue() : sourceTextOf(state.intake));
     state.rawview?.updateOptions?.({ readOnly: true });   // freeze Monaco while form is active
     let host = document.getElementById(cfg.hostId);
     if (!host) {
@@ -58,11 +59,11 @@ function setFormMode(kind, on) {
       const text = instances[kind].getValue();
       instances[kind].destroy();
       instances[kind] = null;
+      state.intake = withParserText(state.intake, text);
       if (state.rawview) {
-        state.rawview.setValue(text);
+        state.rawview.setValue(sourceTextOf(state.intake));
         state.rawview.updateOptions?.({ readOnly: false });
       }
-      state.intake = { ...state.intake, text };
     }
     const host = document.getElementById(cfg.hostId);
     if (host) host.hidden = true;

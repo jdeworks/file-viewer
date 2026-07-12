@@ -188,7 +188,7 @@ function escapeRegExp(value) {
 }
 
 export async function render(intake, ctx) {
-  const source = intake.text || '';
+  const source = intake.sourceText ?? intake.text ?? '';
   const duplicateReport = diagnoseDuplicateJsonKeys(source);
   let parsed;
   try {

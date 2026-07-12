@@ -21,6 +21,30 @@ var MEDIA_EXT = /\.(mp3|wav|m4a|m4b|aac|oga|ogg|opus|flac|weba|mp4|m4v|webm|ogv|
 function looksLikeMedia(file) {
   return MEDIA_EXT.test(file.name || "") || /^(audio|video)\//.test(file.type || "");
 }
+function parserTextFromSource(sourceText) {
+  const source = String(sourceText ?? "");
+  return source.startsWith("\uFEFF") ? source.slice(1) : source;
+}
+function sourceTextOf(intake) {
+  return intake?.sourceText ?? intake?.text ?? "";
+}
+function sourceTextFromParser(intake, parserText) {
+  const text = parserTextFromSource(parserText);
+  return sourceTextOf(intake).startsWith("\uFEFF") ? "\uFEFF" + text : text;
+}
+function withSourceText(intake, sourceText) {
+  const source = String(sourceText ?? "");
+  const text = parserTextFromSource(source);
+  return {
+    ...intake,
+    sourceText: source,
+    text,
+    textSample: text.slice(0, TEXT_SNIFF_BYTES)
+  };
+}
+function withParserText(intake, parserText) {
+  return withSourceText(intake, sourceTextFromParser(intake, parserText));
+}
 function decodeText(bytes) {
   let start = 0;
   if (bytes.length >= 3 && bytes[0] === 239 && bytes[1] === 187 && bytes[2] === 191) start = 3;
@@ -29,13 +53,16 @@ function decodeText(bytes) {
     if (window2[i] === 0) return null;
   }
   try {
-    return new TextDecoder("utf-8", { fatal: false }).decode(bytes.subarray(start));
+    const sourceText = new TextDecoder("utf-8", { fatal: false, ignoreBOM: true }).decode(bytes);
+    return { sourceText, text: parserTextFromSource(sourceText) };
   } catch {
     return null;
   }
 }
 function buildIntake({ filename, mimeType, bytes, isPaste, lastModified, file = null, size, streamed = false, truncated = false }) {
-  const text = streamed ? null : decodeText(bytes);
+  const decoded = streamed ? null : decodeText(bytes);
+  const text = decoded?.text ?? null;
+  const sourceText = decoded?.sourceText ?? null;
   return {
     filename: filename || (isPaste ? "pasted" : "untitled"),
     mimeType: mimeType || "",
@@ -43,6 +70,11 @@ function buildIntake({ filename, mimeType, bytes, isPaste, lastModified, file = 
     // for streamed media this is only a header slice
     text,
     // null => binary
+    sourceText,
+    // exact decoded working source (retains a leading BOM)
+    originalText: sourceText,
+    // immutable as-opened decoded baseline
+    hadBom: sourceText?.startsWith("\uFEFF") || false,
     textSample: text ? text.slice(0, TEXT_SNIFF_BYTES) : "",
     isBinary: text === null,
     isPaste: !!isPaste,
@@ -2647,6 +2679,7 @@ function fill(el) {
   el.style.inset = "0";
   return el;
 }
+var exactModelValue = (model) => model.getValue(void 0, true);
 async function createRawView(host, {
   originalText,
   currentText,
@@ -2691,7 +2724,7 @@ async function createRawView(host, {
   let diff = null;
   let mode = "current";
   let decorations = [];
-  modifiedModel.onDidChangeContent(() => onChange?.(modifiedModel.getValue()));
+  modifiedModel.onDidChangeContent(() => onChange?.(exactModelValue(modifiedModel)));
   std.onDidChangeCursorPosition((e) => {
     if (mode !== "diff" && mode !== "movediff") onCursor?.(e.position.lineNumber);
   });
@@ -2738,7 +2771,7 @@ async function createRawView(host, {
     customHost.style.display = "none";
     if (next === "diff" && onCustomDiff) {
       customHost.style.display = "";
-      onCustomDiff(customHost, diffOriginal().getValue(), modifiedModel.getValue());
+      onCustomDiff(customHost, exactModelValue(diffOriginal()), exactModelValue(modifiedModel));
     } else if (next === "diff") {
       ensureDiff().setModel({ original: diffOriginal(), modified: modifiedModel });
       diff.updateOptions({ renderSideBySide: !isNarrow() });
@@ -2746,7 +2779,7 @@ async function createRawView(host, {
       diff.layout();
     } else if (next === "movediff") {
       moveHost.style.display = "";
-      onMoveDiff?.(moveHost, diffOriginal().getValue(), modifiedModel.getValue());
+      onMoveDiff?.(moveHost, exactModelValue(diffOriginal()), exactModelValue(modifiedModel));
     } else {
       std.setModel(next === "original" ? originalModel : modifiedModel);
       std.updateOptions({ readOnly: next === "original" });
@@ -2758,8 +2791,8 @@ async function createRawView(host, {
     monaco,
     mode: () => mode,
     setMode,
-    getValue: () => modifiedModel.getValue(),
-    originalValue: () => originalModel.getValue(),
+    getValue: () => exactModelValue(modifiedModel),
+    originalValue: () => exactModelValue(originalModel),
     setValue: (text) => modifiedModel.setValue(text),
     selectionText() {
       return modifiedModel.getValueInRange(std.getSelection());
@@ -2784,19 +2817,21 @@ async function createRawView(host, {
     // Replace the WHOLE document via an undoable edit (so Ctrl+Z reverts it). Unlike
     // setValue(), this goes through executeEdits and stays on Monaco's undo stack.
     transformAll(transform, opts = {}) {
-      const result = transform(modifiedModel.getValue());
-      const text = typeof result === "string" ? result : result?.text ?? modifiedModel.getValue();
+      const current = modifiedModel.getValue();
+      const result = transform(current);
+      const text = typeof result === "string" ? result : result?.text ?? current;
       replaceRange(modifiedModel.getFullModelRange(), text, { source: "raw-textutil", ...opts });
     },
     setSelection(startLine, startColumn, endLine, endColumn) {
       std.setSelection(new monaco.Range(startLine, startColumn, endLine, endColumn));
       std.focus();
     },
-    isDirty: () => originalModel.getValue() !== modifiedModel.getValue(),
+    isDirty: () => exactModelValue(originalModel) !== exactModelValue(modifiedModel),
     // Adopt the current working copy as the new baseline (so isDirty() → false). Used after a
     // successful save-back to disk: the on-disk content now IS the original, nothing is unsaved.
     markClean: () => {
-      if (originalModel.getValue() !== modifiedModel.getValue()) originalModel.setValue(modifiedModel.getValue());
+      const current = exactModelValue(modifiedModel);
+      if (exactModelValue(originalModel) !== current) originalModel.setValue(current);
     },
     setLanguage(lang) {
       monaco.editor.setModelLanguage(originalModel, lang);
@@ -3511,14 +3546,14 @@ function wireHtmlToolbar() {
 async function toggleHtmlWysiwyg() {
   if (state6.type?.id !== "html") return;
   if (!htmlWysiwyg) {
-    const text = state6.rawview?.getValue?.() ?? (state6.intake?.text || "");
+    const text = parserTextFromSource(state6.rawview?.getValue?.() ?? sourceTextOf(state6.intake));
     state6.rawview?.dispose?.();
     state6.rawview = null;
     const editorEl = document.getElementById("editor");
     if (editorEl) editorEl.style.display = "none";
     const editorParent = editorEl?.parentElement || document.getElementById("rawPane");
     htmlWysiwyg = new HtmlWysiwygEditor(editorParent, text, async (newHtml) => {
-      state6.intake = { ...state6.intake, text: newHtml };
+      state6.intake = withParserText(state6.intake, newHtml);
       state6.downloadedSinceEdit = false;
       if (state6.currentFolderPath) {
         state6.folderEdits.set(state6.currentFolderPath, newHtml);
@@ -3549,7 +3584,7 @@ async function toggleHtmlWysiwyg() {
     }
     const editorEl = document.getElementById("editor");
     if (editorEl) editorEl.style.display = "";
-    state6.intake = { ...state6.intake, text: html };
+    state6.intake = withParserText(state6.intake, html);
     await buildRawView();
   }
 }
@@ -3583,7 +3618,7 @@ function setTableMode(on) {
     } else {
       sep = (state6.intake?.filename || "").toLowerCase().endsWith(".tsv") ? "	" : ",";
     }
-    const text = state6.rawview ? state6.rawview.getValue() : state6.intake?.text || "";
+    const text = parserTextFromSource(state6.rawview ? state6.rawview.getValue() : sourceTextOf(state6.intake));
     state6.rawview?.updateOptions?.({ readOnly: true });
     let host = document.getElementById("tableEditorHost");
     if (!host) {
@@ -3595,7 +3630,7 @@ function setTableMode(on) {
     host.hidden = false;
     if (editorEl) editorEl.style.display = "none";
     tableEditor = new TableEditor(host, text, sep, (newCsv) => {
-      state6.intake = { ...state6.intake, text: newCsv };
+      state6.intake = withParserText(state6.intake, newCsv);
       state6.downloadedSinceEdit = false;
     });
   } else {
@@ -3603,11 +3638,11 @@ function setTableMode(on) {
       const csv = tableEditor.getValue();
       tableEditor.destroy();
       tableEditor = null;
+      state6.intake = withParserText(state6.intake, csv);
       if (state6.rawview) {
-        state6.rawview.setValue(csv);
+        state6.rawview.setValue(sourceTextOf(state6.intake));
         state6.rawview.updateOptions?.({ readOnly: false });
       }
-      state6.intake = { ...state6.intake, text: csv };
     }
     const host = document.getElementById("tableEditorHost");
     if (host) host.hidden = true;
@@ -5009,7 +5044,7 @@ var YamlFormEditor = class {
 
 // ../../docs/core/rawpane-forms.js
 function editTrack(newText) {
-  state7.intake = { ...state7.intake, text: newText };
+  state7.intake = withParserText(state7.intake, newText);
   state7.downloadedSinceEdit = false;
 }
 var FORMS = {
@@ -5041,7 +5076,7 @@ function setFormMode(kind, on) {
       state7.tab = "raw";
       applyLayout();
     }
-    const text = state7.rawview ? state7.rawview.getValue() : state7.intake?.text || "";
+    const text = parserTextFromSource(state7.rawview ? state7.rawview.getValue() : sourceTextOf(state7.intake));
     state7.rawview?.updateOptions?.({ readOnly: true });
     let host = document.getElementById(cfg.hostId);
     if (!host) {
@@ -5058,11 +5093,11 @@ function setFormMode(kind, on) {
       const text = instances[kind].getValue();
       instances[kind].destroy();
       instances[kind] = null;
+      state7.intake = withParserText(state7.intake, text);
       if (state7.rawview) {
-        state7.rawview.setValue(text);
+        state7.rawview.setValue(sourceTextOf(state7.intake));
         state7.rawview.updateOptions?.({ readOnly: false });
       }
-      state7.intake = { ...state7.intake, text };
     }
     const host = document.getElementById(cfg.hostId);
     if (host) host.hidden = true;
@@ -5755,7 +5790,7 @@ function showAutosaveBanner(saved) {
     el.querySelector(".autosave-restore").addEventListener("click", () => {
       if (!_currentSaved) return;
       state10.rawview?.setValue?.(_currentSaved.text);
-      state10.intake = { ...state10.intake, text: _currentSaved.text };
+      state10.intake = withSourceText(state10.intake, _currentSaved.text);
       el.hidden = true;
       $5("rawPane")?.classList.remove("has-autosave");
     });
@@ -5887,13 +5922,13 @@ async function toggleWysiwyg({ skipPersist = false } = {}) {
   if (state11.type?.id !== "markdown") return;
   if (!wysiwygMode) {
     if (!state11.rawview) return;
-    const text = state11.rawview.getValue();
+    const text = parserTextFromSource(state11.rawview.getValue());
     state11.rawview.dispose();
     state11.rawview = null;
     wysiwygMode = true;
     updateWysiwygBtn();
     await mountWysiwyg(document.getElementById("editor"), text, async (value) => {
-      state11.intake = { ...state11.intake, text: value };
+      state11.intake = withParserText(state11.intake, value);
       state11.downloadedSinceEdit = false;
       if (state11.currentFolderPath) {
         state11.folderEdits.set(state11.currentFolderPath, value);
@@ -5915,7 +5950,7 @@ async function toggleWysiwyg({ skipPersist = false } = {}) {
     const text = getWysiwygValue();
     unmountWysiwyg();
     wysiwygMode = false;
-    state11.intake = { ...state11.intake, text };
+    state11.intake = withParserText(state11.intake, text);
     updateWysiwygBtn();
     if (!skipPersist && state11.settingsModel) {
       state11.settingsModel.values.markdownEditor = "monaco";
@@ -5950,9 +5985,10 @@ async function buildRawView({ isCurrent = () => true, signal } = {}) {
   state11.rawview = null;
   const sl = state11.type.syntaxLanguage;
   const lang = state11.intake.isBinary ? "plaintext" : (typeof sl === "function" ? sl(state11.intake) : sl) || "plaintext";
-  const text = state11.intake.isBinary ? hexDump(state11.intake.bytes) : state11.intake.text || "";
+  const text = state11.intake.isBinary ? hexDump(state11.intake.bytes) : sourceTextOf(state11.intake);
+  const originalText = state11.intake.isBinary ? text : state11.intake.originalText ?? text;
   const nextRawview = await createRawView($6("editor"), {
-    originalText: text,
+    originalText,
     currentText: text,
     language: lang,
     theme: themeIsDark() ? "dark" : "light",
@@ -6068,11 +6104,11 @@ async function buildRawView({ isCurrent = () => true, signal } = {}) {
   if (!state11.intake?.isBinary) {
     const filename2 = state11.intake?.filename || state11.intake?.name;
     const saved = getAutosave(filename2);
-    if (saved && saved.text !== (state11.intake?.text || "")) {
+    if (saved && saved.text !== sourceTextOf(state11.intake)) {
       showAutosaveBanner(saved);
     }
     startAutosave();
-    updateWordCount(state11.intake?.text || "", state11.type?.id);
+    updateWordCount(sourceTextOf(state11.intake), state11.type?.id);
   }
   return true;
 }
@@ -6107,7 +6143,7 @@ async function onRawEdited(value) {
     }
   } catch {
   }
-  state11.intake = { ...state11.intake, text: value };
+  state11.intake = withSourceText(state11.intake, value);
   state11.downloadedSinceEdit = false;
   if (state11.currentFolderPath) {
     state11.folderEdits.set(state11.currentFolderPath, value);
@@ -6128,14 +6164,14 @@ async function onRawEdited(value) {
 }
 function hasUnsavedWork() {
   if (state11.rawview?.isDirty() && !state11.downloadedSinceEdit) return true;
-  if (wysiwygMode && isWysiwygActive() && !state11.downloadedSinceEdit && getWysiwygValue() !== (state11.intake?.originalText ?? state11.intake?.text ?? "")) return true;
+  if (wysiwygMode && isWysiwygActive() && !state11.downloadedSinceEdit && sourceTextFromParser(state11.intake, getWysiwygValue()) !== (state11.intake?.originalText ?? sourceTextOf(state11.intake))) return true;
   const htmlValue = getHtmlWysiwygValue();
-  if (htmlValue != null && !state11.downloadedSinceEdit && htmlValue !== (state11.intake?.originalText ?? "")) return true;
+  if (htmlValue != null && !state11.downloadedSinceEdit && sourceTextFromParser(state11.intake, htmlValue) !== (state11.intake?.originalText ?? sourceTextOf(state11.intake))) return true;
   if (state11.binaryEdit?.dirty && !state11.downloadedSinceEdit) return true;
   const tableValue = getTableEditorValue();
-  if (tableValue != null && !state11.downloadedSinceEdit && tableValue !== (state11.intake?.originalText ?? "")) return true;
+  if (tableValue != null && !state11.downloadedSinceEdit && sourceTextFromParser(state11.intake, tableValue) !== (state11.intake?.originalText ?? sourceTextOf(state11.intake))) return true;
   const formValue = getActiveFormValue();
-  if (formValue != null && !state11.downloadedSinceEdit && formValue !== (state11.intake?.originalText ?? "")) return true;
+  if (formValue != null && !state11.downloadedSinceEdit && sourceTextFromParser(state11.intake, formValue) !== (state11.intake?.originalText ?? sourceTextOf(state11.intake))) return true;
   if (state11.sessionEdits.size > 0) return true;
   return state11.folderEdits.size > 0 && !state11.folderExported;
 }
@@ -6175,6 +6211,16 @@ async function takeScreenshot() {
     toast6("Screenshot failed: " + err.message);
   }
 }
+function currentEditableSource() {
+  const tableValue = getTableEditorValue();
+  if (tableValue != null) return sourceTextFromParser(state11.intake, tableValue);
+  const formValue = getActiveFormValue();
+  if (formValue != null) return sourceTextFromParser(state11.intake, formValue);
+  const htmlValue = getHtmlWysiwygValue();
+  if (htmlValue != null) return sourceTextFromParser(state11.intake, htmlValue);
+  if (wysiwygMode && isWysiwygActive()) return sourceTextFromParser(state11.intake, getWysiwygValue());
+  return state11.rawview ? state11.rawview.getValue() : sourceTextOf(state11.intake);
+}
 async function downloadCurrent() {
   viewerActions().then(({ recordStage10EchoDownload }) => recordStage10EchoDownload({ file: state11.intake?.filename || "" }));
   let blob;
@@ -6183,8 +6229,7 @@ async function downloadCurrent() {
     blob = new Blob([bytes], { type: state11.binaryEdit.mimeType || state11.intake.mimeType || "application/octet-stream" });
     state11.binaryEdit.dirty = false;
   } else {
-    const tableValue = getTableEditorValue(), formValue = getActiveFormValue(), htmlValue = getHtmlWysiwygValue();
-    const text = tableValue != null ? tableValue : formValue != null ? formValue : htmlValue != null ? htmlValue : wysiwygMode && isWysiwygActive() ? getWysiwygValue() : state11.rawview ? state11.rawview.getValue() : state11.intake.text || "";
+    const text = currentEditableSource();
     blob = new Blob([text], { type: state11.intake.mimeType || "text/plain" });
   }
   const a = document.createElement("a");
@@ -6193,9 +6238,8 @@ async function downloadCurrent() {
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 1e3);
   if (state11.sessionEdits.has(state11.intake.filename)) {
-    const tableValue = getTableEditorValue(), formValue = getActiveFormValue(), htmlValue = getHtmlWysiwygValue();
-    const text = tableValue != null ? tableValue : formValue != null ? formValue : htmlValue != null ? htmlValue : wysiwygMode && isWysiwygActive() ? getWysiwygValue() : state11.rawview ? state11.rawview.getValue() : state11.sessionEdits.get(state11.intake.filename);
-    state11.sessionIntakes.set(state11.intake.filename, { ...state11.sessionIntakes.get(state11.intake.filename), text });
+    const text = currentEditableSource();
+    state11.sessionIntakes.set(state11.intake.filename, withSourceText(state11.sessionIntakes.get(state11.intake.filename), text));
     state11.sessionEdits.delete(state11.intake.filename);
     state11.treeApi?.setEdited?.(state11.intake.filename, false);
   }
@@ -6856,7 +6900,7 @@ function captureActiveSidebarRoot() {
     const entry = (root.treeEntries || [])[0];
     const path = entry?.path || root.label;
     const text = state12.rawview.getValue();
-    const intake = intakeFromText(text, path.split("/").pop() || root.label);
+    const intake = withSourceText(entry?.intake || state12.intake, text);
     root.treeEntries = [{
       ...entry || {},
       path,
@@ -7009,7 +7053,7 @@ function renderSidebarRoots(activeRoot = null, activeInnerPath = null, { skipCap
             const edited = root.folderEdits?.get(innerPath);
             state12._skipDiscardGuard = true;
             state12._skipSidebarRoot = true;
-            loaded = await loadIntake(edited != null ? intakeFromText(edited, innerPath.split("/").pop()) : entry.intake, { sidebarNavigationToken: navigationToken }) !== false;
+            loaded = await loadIntake(edited != null ? withSourceText(entry.intake, edited) : entry.intake, { sidebarNavigationToken: navigationToken }) !== false;
           }
           if (loaded) {
             state12.currentFolderPath = root.kind === "file" ? null : innerPath;
@@ -7352,7 +7396,8 @@ async function openTreeFile(node, {
       });
       await nextFrame();
     }
-    const intake = stashed != null ? intakeFromText(stashed, node.path.split("/").pop()) : await intakeFromFile(node.file);
+    const originalIntake = await intakeFromFile(node.file);
+    const intake = stashed != null ? withSourceText(originalIntake, stashed) : originalIntake;
     state13._skipDiscardGuard = true;
     state13._skipSidebarRoot = true;
     const loaded = await loadIntake2(intake, { sidebarNavigationToken });
@@ -7594,7 +7639,9 @@ function mountArchiveTree(archive, openEntry, loadIntake4, archiveIntake) {
         (state14.binaryEdits = state14.binaryEdits || /* @__PURE__ */ new Map()).set(state14.currentFolderPath, state14.binaryEdit);
       }
       const stashed = state14.folderEdits.get(node.path);
-      const intake = stashed != null ? intakeFromText(stashed, node.file.name) : await openEntry(node.path);
+      const originalIntake = node.intake || await openEntry(node.path);
+      if (originalIntake && !node.intake) node.intake = originalIntake;
+      const intake = stashed != null && originalIntake ? withSourceText(originalIntake, stashed) : originalIntake;
       if (!intake) {
         toast9("Could not open " + node.path);
         return false;
@@ -9073,7 +9120,7 @@ ${absPath}
 This replaces the original file with the edited image bytes.` : `Save to:
 ${absPath}?`;
     if (!isCreate && !confirm(msg)) return;
-    const bytes = isBinaryEdit ? await binaryEdit.getBytes() : state16.rawview ? new TextEncoder().encode(state16.rawview.getValue()) : context.intake.bytes || new TextEncoder().encode(context.intake.text || "");
+    const bytes = isBinaryEdit ? await binaryEdit.getBytes() : new TextEncoder().encode(currentEditableSource());
     if (!operationContextCurrent(context, token) || isBinaryEdit && state16.binaryEdit !== binaryEdit) return;
     const savedFile = new File([bytes], filename, {
       type: context.intake.mimeType || "",
@@ -9096,6 +9143,10 @@ ${absPath}?`;
       Object.assign(context.intake, {
         bytes: savedIntake.bytes,
         text: savedIntake.text,
+        sourceText: savedIntake.sourceText,
+        originalText: savedIntake.originalText,
+        hadBom: savedIntake.hadBom,
+        textSample: savedIntake.textSample,
         size: savedIntake.size,
         loadedBytes: savedIntake.loadedBytes,
         truncated: false
@@ -9103,7 +9154,10 @@ ${absPath}?`;
       if (!state16.currentFolderPath) setCompanionLinked(absPath);
       if (isBinaryEdit) state16.binaryEdit.dirty = false;
       if (state16.sessionEdits.has(state16.intake.filename)) {
-        state16.sessionIntakes.set(state16.intake.filename, { ...state16.sessionIntakes.get(state16.intake.filename), text: state16.rawview?.getValue?.() || state16.sessionEdits.get(state16.intake.filename) });
+        state16.sessionIntakes.set(state16.intake.filename, withSourceText(
+          savedIntake,
+          state16.rawview?.getValue?.() ?? state16.sessionEdits.get(state16.intake.filename)
+        ));
         state16.sessionEdits.delete(state16.intake.filename);
         state16.treeApi?.setEdited?.(state16.intake.filename, false);
       }
@@ -9396,7 +9450,8 @@ function updateSessionTree(intake, { skipSidebarRoot = false } = {}) {
   state17.treeApi = renderTree($11("ftBody"), buildTree(entries), { onOpen: (node) => {
     flushSessionEdit();
     const edited = state17.sessionEdits.get(node.path);
-    const si = edited != null ? intakeFromText(edited, node.path) : state17.sessionIntakes.get(node.path);
+    const base = state17.sessionIntakes.get(node.path);
+    const si = edited != null && base ? withSourceText(base, edited) : base;
     if (!si) return;
     state17._skipDiscardGuard = true;
     loadIntakeCallback2(si);
@@ -9417,7 +9472,7 @@ function flushSessionEdit() {
   if (!filename || !state17.sessionIntakes.has(filename)) return false;
   const text = state17.rawview.getValue();
   state17.sessionEdits.set(filename, text);
-  state17.sessionIntakes.set(filename, { ...state17.sessionIntakes.get(filename), text });
+  state17.sessionIntakes.set(filename, withSourceText(state17.sessionIntakes.get(filename), text));
   state17.treeApi?.setEdited?.(filename, true);
   return true;
 }
@@ -9425,13 +9480,19 @@ async function createNewFile() {
   const name = prompt("New file name (include an extension, e.g. notes.md, script.js, data.json):", "untitled.txt");
   if (name == null) return;
   const filename = name.trim() || "untitled.txt";
+  let nextIntake = null;
   if (state17.type && !$11("workspace").hidden) {
     flushFolderEdit();
     const prevName = state17.intake.filename;
-    const prevText = state17.rawview ? state17.rawview.getValue() : state17.intake.text || "";
-    const prevFile = new File([prevText], prevName, { type: "text/plain" });
-    const newFile = new File([""], filename, { type: "text/plain" });
-    const entries = [{ file: prevFile, path: prevName }, { file: newFile, path: filename }];
+    const prevText = state17.rawview ? state17.rawview.getValue() : sourceTextOf(state17.intake);
+    const prevIntake = state17.intake;
+    nextIntake = intakeFromText("", filename);
+    const prevFile = new File([prevIntake.bytes], prevName, { type: prevIntake.mimeType || "text/plain" });
+    const newFile = new File([nextIntake.bytes], filename, { type: "text/plain" });
+    const entries = [
+      { file: prevFile, path: prevName, intake: prevIntake },
+      { file: newFile, path: filename, intake: nextIntake }
+    ];
     state17.sessionTree = false;
     state17.sessionIntakes = /* @__PURE__ */ new Map();
     state17.sessionEdits = /* @__PURE__ */ new Map();
@@ -9442,7 +9503,8 @@ async function createNewFile() {
     const tree = buildTree(entries);
     state17.treeApi = renderTree($11("ftBody"), tree, { onOpen: (node) => {
       const stashed = state17.folderEdits.get(node.path);
-      const intake = stashed != null ? intakeFromText(stashed, node.path.split("/").pop()) : intakeFromText("", node.path.split("/").pop());
+      const base = node.intake || intakeFromText("", node.path.split("/").pop());
+      const intake = stashed != null ? withSourceText(base, stashed) : base;
       state17._skipDiscardGuard = true;
       loadIntakeCallback2(intake).then(() => {
         state17.currentFolderPath = node.path;
@@ -9457,7 +9519,7 @@ async function createNewFile() {
     setTree(true);
     state17._skipDiscardGuard = true;
   }
-  await loadIntakeCallback2(intakeFromText("", filename));
+  await loadIntakeCallback2(nextIntake || intakeFromText("", filename));
   if (state17.treeEntries) {
     state17.currentFolderPath = filename;
     state17.treeApi?.setActive?.(filename);
@@ -9522,7 +9584,7 @@ async function openBlobFile(blob, name, opts = {}) {
 async function searchViewerFile(path, query, opts = {}) {
   const target = String(path || "");
   const clean = target.replace(/^\/?docs\/examples\//, "").replace(/^\/?examples\//, "");
-  const text = opts.text || (state18.intake?.filename === clean.split("/").pop() ? state18.rawview?.getValue?.() || state18.intake.text : null);
+  const text = opts.text ?? (state18.intake?.filename === clean.split("/").pop() ? state18.rawview?.getValue?.() ?? sourceTextOf(state18.intake) : null);
   const sourceText = text == null ? await fetch("examples/" + clean).then((r) => r.ok ? r.text() : "").catch(() => "") : text;
   const line = sourceText.split(/\r?\n/).find((entry) => entry.includes(query));
   const result = line && line.trim();
@@ -9905,7 +9967,8 @@ async function openSidebarDropSideBySide(node) {
   try {
     const path = node.path || node.sidebarInnerPath || node.file.name;
     const edited = state19.folderEdits?.get(path) ?? state19.sessionEdits?.get(path);
-    const intake2 = edited != null ? intakeFromText(edited, path.split("/").pop()) : await intakeFromFile(node.file);
+    const originalIntake = await intakeFromFile(node.file);
+    const intake2 = edited != null ? withSourceText(originalIntake, edited) : originalIntake;
     const { openSideBySideWithIntake } = await import("./sidebyside.js");
     await openSideBySideWithIntake(intake2);
   } catch (err) {
@@ -10159,9 +10222,9 @@ function updateEnhanceChip() {
   }
   chip.hidden = false;
   const showingEnhanced = !state19.forceBase;
-  chip.querySelector(".ec-label").textContent = (showingEnhanced ? "✦ Enhanced: " : "Plain view — ") + state19.known.label;
+  chip.querySelector(".ec-label").textContent = (showingEnhanced ? "✦ Enhanced summary: " : "Plain view — ") + state19.known.label;
   const btn = chip.querySelector(".ec-toggle");
-  btn.textContent = showingEnhanced ? "Show default view" : "Show enhanced view";
+  btn.textContent = showingEnhanced ? "Show default view" : "Show enhanced summary";
 }
 async function toggleEnhance() {
   if (!state19.known) return;

@@ -1,6 +1,6 @@
 import { buildTree, renderTree } from './filetree.js';
 import { flushFolderEdit, setTree } from './folder.js';
-import { intakeFromText } from './intake.js';
+import { withSourceText } from './intake.js';
 import { $, isMobile, state, toast } from './state.js';
 import { addArchiveRoot, captureActiveSidebarRoot } from './sidebar-roots.js';
 
@@ -64,9 +64,11 @@ export function mountArchiveTree(archive, openEntry, loadIntake, archiveIntake) 
         (state.binaryEdits = state.binaryEdits || new Map()).set(state.currentFolderPath, state.binaryEdit);
       }
       const stashed = state.folderEdits.get(node.path);
-      const intake = stashed != null
-        ? intakeFromText(stashed, node.file.name)
-        : await openEntry(node.path);
+      const originalIntake = node.intake || await openEntry(node.path);
+      if (originalIntake && !node.intake) node.intake = originalIntake;
+      const intake = stashed != null && originalIntake
+        ? withSourceText(originalIntake, stashed)
+        : originalIntake;
       if (!intake) {
         toast('Could not open ' + node.path);
         return false;

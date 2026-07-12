@@ -11,6 +11,7 @@
 import { themeIsDark } from './state.js';
 import { pickType } from './detect.js';
 import { createRawView } from './rawview.js';
+import { sourceTextOf } from './intake.js';
 
 const MODES = ['current', 'raw', 'preview', 'diff', 'merge'];
 const KV_TYPES = new Set(['env', 'ini']);   // key=value types that support the missing-aware Merge
@@ -87,8 +88,8 @@ export function initModeBar(headEl, body, panes, { initialMode } = {}) {
     if (diffRv) return diffRv;
     const { type } = pickType(intake1);
     diffRv = await createRawView(diffHost, {
-      originalText: intake1.text || '',
-      currentText: panes[1].intake.text || '',
+      originalText: sourceTextOf(intake1),
+      currentText: sourceTextOf(panes[1].intake),
       language: resolveLanguage(type, intake1),
       theme: themeIsDark() ? 'dark' : 'light',
       options: { readOnly: true, originalEditable: false },

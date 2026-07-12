@@ -3,6 +3,7 @@
 // these are self-contained DOM/state helpers (no callbacks into the editor core).
 import { state, $ } from './state.js';
 import { clearAutosave } from './autosave.js';
+import { withSourceText } from './intake.js';
 
 const DISCLAIMER_KEY = 'fv:edit-disclaimer';
 
@@ -61,7 +62,7 @@ export function showAutosaveBanner(saved) {
     el.querySelector('.autosave-restore').addEventListener('click', () => {
       if (!_currentSaved) return;
       state.rawview?.setValue?.(_currentSaved.text);
-      state.intake = { ...state.intake, text: _currentSaved.text };
+      state.intake = withSourceText(state.intake, _currentSaved.text);
       el.hidden = true;
       $('rawPane')?.classList.remove('has-autosave');
     });

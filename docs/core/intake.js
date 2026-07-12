@@ -18,7 +18,42 @@ function looksLikeMedia(file) {
   return MEDIA_EXT.test(file.name || '') || /^(audio|video)\//.test(file.type || '');
 }
 
-// Decode bytes as UTF-8, stripping a BOM if present. Returns null if it looks binary.
+export function parserTextFromSource(sourceText) {
+  const source = String(sourceText ?? '');
+  return source.startsWith('\ufeff') ? source.slice(1) : source;
+}
+
+export function sourceTextOf(intake) {
+  return intake?.sourceText ?? intake?.text ?? '';
+}
+
+// Structured/visual editors consume parser text, so a UTF-8 BOM must not become a visible field
+// or document character. When they return edited parser text, retain the current source's BOM
+// state. Raw editing remains the one surface where the BOM itself can be added or removed.
+export function sourceTextFromParser(intake, parserText) {
+  const text = parserTextFromSource(parserText);
+  return sourceTextOf(intake).startsWith('\ufeff') ? '\ufeff' + text : text;
+}
+
+// Update the editable source without replacing the immutable as-opened bytes/originalText.
+// Renderers keep receiving BOM-free `text`; RawView/downloads use exact `sourceText`.
+export function withSourceText(intake, sourceText) {
+  const source = String(sourceText ?? '');
+  const text = parserTextFromSource(source);
+  return {
+    ...intake,
+    sourceText: source,
+    text,
+    textSample: text.slice(0, TEXT_SNIFF_BYTES),
+  };
+}
+
+export function withParserText(intake, parserText) {
+  return withSourceText(intake, sourceTextFromParser(intake, parserText));
+}
+
+// Decode bytes as UTF-8. Returns null if it looks binary. A leading BOM is retained in
+// sourceText for exact-source/edit/download fidelity and omitted only from parser-facing text.
 function decodeText(bytes) {
   let start = 0;
   if (bytes.length >= 3 && bytes[0] === 0xef && bytes[1] === 0xbb && bytes[2] === 0xbf) start = 3;
@@ -28,19 +63,25 @@ function decodeText(bytes) {
     if (window[i] === 0) return null;
   }
   try {
-    return new TextDecoder('utf-8', { fatal: false }).decode(bytes.subarray(start));
+    const sourceText = new TextDecoder('utf-8', { fatal: false, ignoreBOM: true }).decode(bytes);
+    return { sourceText, text: parserTextFromSource(sourceText) };
   } catch {
     return null;
   }
 }
 
 function buildIntake({ filename, mimeType, bytes, isPaste, lastModified, file = null, size, streamed = false, truncated = false }) {
-  const text = streamed ? null : decodeText(bytes);
+  const decoded = streamed ? null : decodeText(bytes);
+  const text = decoded?.text ?? null;
+  const sourceText = decoded?.sourceText ?? null;
   return {
     filename: filename || (isPaste ? 'pasted' : 'untitled'),
     mimeType: mimeType || '',
     bytes,                                  // for streamed media this is only a header slice
     text,                                   // null => binary
+    sourceText,                             // exact decoded working source (retains a leading BOM)
+    originalText: sourceText,               // immutable as-opened decoded baseline
+    hadBom: sourceText?.startsWith('\ufeff') || false,
     textSample: text ? text.slice(0, TEXT_SNIFF_BYTES) : '',
     isBinary: text === null,
     isPaste: !!isPaste,

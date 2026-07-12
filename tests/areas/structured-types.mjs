@@ -1,4 +1,5 @@
 import { runJsonDuplicateFidelity } from './json-duplicate-fidelity.mjs';
+import { runExactSourceFidelity } from './exact-source-fidelity.mjs';
 
 export async function run(ctx) {
   const { page, origin, frameOf, pass, fail, openExample } = ctx;
@@ -176,6 +177,7 @@ export async function run(ctx) {
   pass('JSON secret review links open redacted source');
 
   await runJsonDuplicateFidelity(ctx);
+  await runExactSourceFidelity(ctx);
 
   // ── HAR ── JSON-shaped HTTP archive gets a waterfall, filters, sortable request table.
   await page.goto(origin, { waitUntil: 'load' });

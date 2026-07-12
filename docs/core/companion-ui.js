@@ -1,4 +1,5 @@
-import { intakeFromFile } from './intake.js';
+import { intakeFromFile, withSourceText } from './intake.js';
+import { currentEditableSource } from './rawpane.js';
 import { layoutTopbar } from './layout.js';
 import { $, state, toast, escapeHtml } from './state.js';
 import { detectCompanion, findFile, findFolder, saveFile, deleteFile, pickFolder, getToken, setToken, isEnabled as companionEnabled, setEnabled as setCompanionEnabled, getWatchedPaths, addWatchedPath, removeWatchedPath, watchFile, revealFile } from './companion.js';
@@ -517,9 +518,7 @@ export async function onSaveClick() {
     if (!isCreate && !confirm(msg)) return;
     const bytes = isBinaryEdit
       ? await binaryEdit.getBytes()
-      : (state.rawview
-        ? new TextEncoder().encode(state.rawview.getValue())
-        : (context.intake.bytes || new TextEncoder().encode(context.intake.text || '')));
+      : new TextEncoder().encode(currentEditableSource());
     if (!operationContextCurrent(context, token) || (isBinaryEdit && state.binaryEdit !== binaryEdit)) return;
     const savedFile = new File([bytes], filename, {
       type: context.intake.mimeType || '',
@@ -546,6 +545,10 @@ export async function onSaveClick() {
       Object.assign(context.intake, {
         bytes: savedIntake.bytes,
         text: savedIntake.text,
+        sourceText: savedIntake.sourceText,
+        originalText: savedIntake.originalText,
+        hadBom: savedIntake.hadBom,
+        textSample: savedIntake.textSample,
         size: savedIntake.size,
         loadedBytes: savedIntake.loadedBytes,
         truncated: false,
@@ -553,7 +556,10 @@ export async function onSaveClick() {
       if (!state.currentFolderPath) setCompanionLinked(absPath);
       if (isBinaryEdit) state.binaryEdit.dirty = false;
       if (state.sessionEdits.has(state.intake.filename)) {
-        state.sessionIntakes.set(state.intake.filename, { ...state.sessionIntakes.get(state.intake.filename), text: state.rawview?.getValue?.() || state.sessionEdits.get(state.intake.filename) });
+        state.sessionIntakes.set(state.intake.filename, withSourceText(
+          savedIntake,
+          state.rawview?.getValue?.() ?? state.sessionEdits.get(state.intake.filename),
+        ));
         state.sessionEdits.delete(state.intake.filename);
         state.treeApi?.setEdited?.(state.intake.filename, false);
       }

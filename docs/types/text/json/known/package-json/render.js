@@ -50,7 +50,7 @@ function repoUrl(repo) {
 }
 
 export async function render(intake, _ctx) {
-  const source = intake.text || '{}';
+  const source = intake.sourceText ?? intake.text ?? '{}';
   const duplicateReport = diagnoseDuplicateJsonKeys(source);
   let parsed, pkg;
   try {
