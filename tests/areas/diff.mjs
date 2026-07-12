@@ -1,5 +1,15 @@
 export async function run(ctx) {
-  const { page, origin, frameOf, pass, fail } = ctx;
+  const { page, origin, frameOf, pass, fail, openExample } = ctx;
+
+  // Baseline: this area needs the Welcome.md Markdown document open in the raw editor (it edits
+  // rawview, reorders its paragraphs, and typo-swaps the word "Viewer"). In the aggregate the
+  // preceding core-ui area leaves that open; run standalone (tests/smoke-area.mjs diff) nothing
+  // has navigated yet, so open it here. Every area must establish its own baseline to honour the
+  // "each area is an independent run(ctx)" contract — otherwise `page.evaluate(window.__fv…)`
+  // runs against about:blank and throws "Cannot read properties of undefined (reading 'state')".
+  await openExample('Welcome.md');
+  await page.waitForSelector('#editor .monaco-editor', { timeout: 20000 });
+  await page.waitForFunction(() => /Viewer/.test(window.__fv?.state?.rawview?.getValue?.() || ''), null, { timeout: 10000 });
 
   // ── Diff (WP13/WP14) ──
   // Edit the working copy programmatically (robust vs. simulating Monaco keystrokes),
