@@ -2097,6 +2097,7 @@ function installBoardFit(root, host, {
 }
 
 // ../../docs/games/metagame/stages/stage4/ui-combat.js
+import { createFrameLoop } from "../../shared/frame-loop.js";
 var PLACEABLE = [
   "pulse_node",
   "scatter_array",
@@ -2167,7 +2168,7 @@ function mountCombat({ host, state, controller, mode = "map" }) {
   let pendingCell = null;
   let touchMode = false;
   let speed = 1;
-  let raf = null;
+  let frameLoop = null;
   let lastPersistMs = -Infinity;
   let alive = true;
   const fx = createCombatFx();
@@ -2295,23 +2296,34 @@ function mountCombat({ host, state, controller, mode = "map" }) {
       playFx(deltas, { board, bar: cmdbar, floatHost: boardWrap });
       checkpointWave();
       if (settleWave()) {
-        raf = null;
+        stopLoop();
         return;
       }
       if ((state.combatClockMs || 0) - lastPersistMs >= PERSIST_THROTTLE_MS) {
         lastPersistMs = state.combatClockMs;
         controller.persist?.();
       }
-      repaint();
-      raf = requestAnimationFrame(stepFn);
+      paintCombatFrame();
     };
-    raf = requestAnimationFrame(stepFn);
+    frameLoop = createFrameLoop({ onFrame: stepFn });
+    frameLoop.start();
   }
   function stopLoop() {
-    if (raf != null) {
-      cancelAnimationFrame(raf);
-      raf = null;
+    if (frameLoop) {
+      frameLoop.stop();
+      frameLoop = null;
     }
+  }
+  let paintSig = null;
+  function paintCombatFrame() {
+    const sig = `${state.cycles}|${state.integrity}|${state.towers.length}|${(state.log || []).length}|${state.wavePeak}|${state.waveActive}`;
+    if (sig !== paintSig) {
+      paintSig = sig;
+      repaint();
+      return;
+    }
+    paintBoard();
+    syncPopover();
   }
   function settleWave() {
     if (state.waveFailed) {

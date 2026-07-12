@@ -23,6 +23,7 @@ import { combatDisclosed } from './run4.js';
 import { openTowerPopover, closeTowerPopover, popoverTowerId } from './combat-popover.js';
 import { createCombatFx, playFx, fxBanner } from './combat-fx.js';
 import { installBoardFit } from './s4fit.js';
+import { createFrameLoop } from '../../shared/frame-loop.js';
 
 const PLACEABLE = [
   'pulse_node', 'scatter_array', 'null_spike', 'attractor_field',
@@ -89,7 +90,7 @@ export function mountCombat({ host, state, controller, mode = 'map' }) {
   let pendingCell = null;     // touch two-step: first tap previews, second tap on the same cell confirms
   let touchMode = false;      // set when the last pointer interaction was touch (→ tap-once-preview)
   let speed = 1;
-  let raf = null;
+  let frameLoop = null; // shared capped-rAF driver — non-null only while a wave runs
   let lastPersistMs = -Infinity;
   let alive = true;
   const fx = createCombatFx();
@@ -217,14 +218,26 @@ export function mountCombat({ host, state, controller, mode = 'map' }) {
       lastFired = deltas.firedCells;
       playFx(deltas, { board, bar: cmdbar, floatHost: boardWrap });
       checkpointWave();
-      if (settleWave()) { raf = null; return; }
+      if (settleWave()) { stopLoop(); return; }
       if ((state.combatClockMs || 0) - lastPersistMs >= PERSIST_THROTTLE_MS) { lastPersistMs = state.combatClockMs; controller.persist?.(); }
-      repaint();
-      raf = requestAnimationFrame(stepFn);
+      paintCombatFrame();
     };
-    raf = requestAnimationFrame(stepFn);
+    frameLoop = createFrameLoop({ onFrame: stepFn }); // fps 30 default, pauses while hidden
+    frameLoop.start();
   }
-  function stopLoop() { if (raf != null) { cancelAnimationFrame(raf); raf = null; } }
+  function stopLoop() { if (frameLoop) { frameLoop.stop(); frameLoop = null; } }
+
+  // Per-frame paint split (CPU budget, 2026-07-12): inside the frame loop only the BOARD is redrawn
+  // each frame; the panels (shop/roster/ticker/buttons/hint) rerun the full repaint() only when a
+  // cheap signature of their mid-wave-mutable inputs changes (kills granting cycles, integrity hits,
+  // tower count, log lines, wave peak/active). Event-driven call sites keep calling repaint() directly.
+  let paintSig = null;
+  function paintCombatFrame() {
+    const sig = `${state.cycles}|${state.integrity}|${state.towers.length}|${(state.log || []).length}|${state.wavePeak}|${state.waveActive}`;
+    if (sig !== paintSig) { paintSig = sig; repaint(); return; }
+    paintBoard();
+    syncPopover();
+  }
 
   function settleWave() {
     if (state.waveFailed) {

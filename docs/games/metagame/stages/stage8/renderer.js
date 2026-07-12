@@ -333,7 +333,8 @@ export function renderStage9({ host, state, actions, achievements, bell, bts, vi
       }
     }
     if (launchAnimExpired(launchAnim, elapsedMs)) launchAnim = null;
-    paintArena();
+    // Idle skip: defeated freezes elapsedMs, so with no launch anim the gap/trails/ship are all static.
+    if (!(state.boss.defeated && launchAnim === null)) paintArena();
   });
 
   repaint();

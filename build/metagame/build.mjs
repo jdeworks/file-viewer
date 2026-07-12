@@ -59,6 +59,10 @@ const ALLOWED_SHARED = new Set([
   // Shared on-screen touch-control component (d-pad / verb toggle). Stateless factory reused across
   // stages (S5 steering, S3 verb toggle); kept external like the other shared singletons.
   '../../touch-controls.js',
+  // Shared capped-30fps rAF driver + hidden-tab guard (CPU budget fix 2026-07-12). Stateless
+  // factory used by every stage with a continuous loop (S4/S5/S8 rAF, S1/S2 interval guards);
+  // kept external like the other shared singletons.
+  '../../shared/frame-loop.js',
 ]);
 
 // Every stageN/ directory that has an index.js entry, in numeric order.

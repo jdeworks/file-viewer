@@ -529,38 +529,25 @@ var serviceWorkerNotesText = [
 ].join("\n");
 
 // ../../docs/games/metagame/stages/stage8/loop.js
+import { createFrameLoop } from "../../shared/frame-loop.js";
 function startLoop(onFrame) {
   const now = () => typeof performance !== "undefined" && performance.now ? performance.now() : Date.now();
-  const hasRAF = typeof requestAnimationFrame === "function";
   let last = now();
-  let stopped = false;
-  let handle = null;
-  function frame() {
-    if (stopped) return;
-    const t = now();
-    let dt = t - last;
-    last = t;
-    if (!(dt >= 0)) dt = 0;
-    if (dt > 100) dt = 100;
-    try {
-      onFrame(dt);
-    } catch {
+  const loop = createFrameLoop({
+    onFrame() {
+      const t = now();
+      let dt = t - last;
+      last = t;
+      if (!(dt >= 0)) dt = 0;
+      if (dt > 100) dt = 100;
+      try {
+        onFrame(dt);
+      } catch {
+      }
     }
-    schedule();
-  }
-  function schedule() {
-    if (stopped) return;
-    handle = hasRAF ? requestAnimationFrame(frame) : setTimeout(frame, 16);
-  }
-  schedule();
-  return {
-    stop() {
-      stopped = true;
-      if (handle == null) return;
-      if (hasRAF) cancelAnimationFrame(handle);
-      else clearTimeout(handle);
-    }
-  };
+  });
+  loop.start();
+  return { stop: () => loop.stop() };
 }
 
 // ../../docs/games/metagame/stages/stage8/aids.js
@@ -1312,7 +1299,7 @@ function renderStage9({ host, state, actions, achievements, bell, bts, viewer, s
       }
     }
     if (launchAnimExpired(launchAnim, elapsedMs)) launchAnim = null;
-    paintArena();
+    if (!(state.boss.defeated && launchAnim === null)) paintArena();
   });
   repaint();
   const uninstallHook = installTestHook({

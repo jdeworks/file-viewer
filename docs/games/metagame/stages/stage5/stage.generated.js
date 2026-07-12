@@ -1119,46 +1119,39 @@ function clampLane3(lane) {
 }
 
 // ../../docs/games/metagame/stages/stage5/engine.js
+import { createFrameLoop } from "../../shared/frame-loop.js";
 function createEngine({ onTick, getTickMs }) {
-  const raf = typeof requestAnimationFrame === "function" ? requestAnimationFrame : null;
-  const caf = typeof cancelAnimationFrame === "function" ? cancelAnimationFrame : () => {
-  };
-  let handle = null;
   let last = null;
   let acc = 0;
   let tick = 0;
-  let running = false;
-  function frame(ts) {
-    if (!running) return;
-    if (last === null) last = ts;
-    acc += Math.max(0, ts - last);
-    last = ts;
-    acc = Math.min(acc, 8 * getTickMs());
-    let guard = 0;
-    while (acc >= getTickMs() && guard < 8) {
-      acc -= getTickMs();
-      guard += 1;
-      onTick(tick);
-      tick += 1;
-      if (!running) return;
+  const loop = createFrameLoop({
+    onFrame(ts) {
+      if (last === null) last = ts;
+      acc += Math.max(0, ts - last);
+      last = ts;
+      acc = Math.min(acc, 8 * getTickMs());
+      let guard = 0;
+      while (acc >= getTickMs() && guard < 8) {
+        acc -= getTickMs();
+        guard += 1;
+        onTick(tick);
+        tick += 1;
+        if (!loop.running) return;
+      }
     }
-    if (running && raf) handle = raf(frame);
-  }
+  });
   return {
     start() {
-      if (running || !raf) return;
-      running = true;
+      if (loop.running) return;
       last = null;
       acc = 0;
-      handle = raf(frame);
+      loop.start();
     },
     stop() {
-      running = false;
-      if (handle) caf(handle);
-      handle = null;
+      loop.stop();
     },
     get running() {
-      return running;
+      return loop.running;
     }
   };
 }

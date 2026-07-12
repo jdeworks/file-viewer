@@ -2833,6 +2833,9 @@ function escapeChar(ch) {
   return ch;
 }
 
+// ../../docs/games/metagame/stages/stage2/renderer.js
+import { hiddenTab } from "../../shared/frame-loop.js";
+
 // ../../docs/games/metagame/stages/stage2/runloop.js
 var MAX_FLOOR = FINAL_FLOOR;
 function runMods(state) {
@@ -3320,6 +3323,7 @@ function renderStage2({
     return { floor: state.run.floor, reached: state.run.boss.reached };
   }
   function tickBucket(bucket) {
+    if (hiddenTab()) return;
     if (overlay || state.run.boss.reached || state.run.boss.defeated) return;
     const world = state.run.world;
     if (!world || !world.grid) return;

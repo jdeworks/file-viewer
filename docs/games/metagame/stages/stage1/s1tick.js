@@ -11,6 +11,7 @@ import { checkAchievements } from './s1achievements.js';
 import { tickMechanics, incomeMult } from './s1mechanics.js';
 import { coreAutoMult } from './s1cores.js';
 import { paintResetPanel as paintS1ResetPanel } from './s1reset.js';
+import { hiddenTab } from '../../shared/frame-loop.js';
 
 // createTickLoop(deps) → { tick }. deps wires the live DOM + the economy/UI callbacks the loop
 // drives. getActiveTab() returns the live active-tab id (mutable in the orchestrator); onTeardown()
@@ -22,10 +23,18 @@ export function createTickLoop(deps) {
     renderTabs, paintShop, paintTimed, paintStats, onTeardown,
   } = deps;
   let tickAcc = 0;
+  let wasHidden = false;
 
   function tick() {
     // Self-terminate if our DOM was torn down (orchestrator switched to boss/another stage).
     if (!host.isConnected || !grid.isConnected) { onTeardown(); return; }
+    // Hidden-tab guard (CPU fix): intervals keep firing while hidden (browsers only throttle to
+    // ~1s). Accrual/mechanics are fixed-per-TICK, not timestamp-based, so a plain skip would lose
+    // that progress for good — instead STATE below keeps advancing and only PAINTS are skipped;
+    // the first visible tick redoes the event-driven paints (tab bar / echo) deferred while hidden.
+    const hidden = hiddenTab();
+    if (hidden) wasHidden = true;
+    else if (wasHidden) { wasHidden = false; if (state.tabsUnlocked) renderTabs(); updateEcho(); }
     const activeTab = getActiveTab();
     // 1. Passive accrual (scaled by the post-prestige income multiplier: Cores yield × Flux × Resonance).
     const incMult = incomeMult(state, cfg);
@@ -62,7 +71,7 @@ export function createTickLoop(deps) {
     }
     if (timedDone) checkMessages('bit-earn', state, bellLoad(), bell);
     // A built unit can unlock a tier row or tab — repaint in place (no full rebuild → no flicker).
-    if (builtUnits && state.tabsUnlocked) {
+    if (builtUnits && state.tabsUnlocked && !hidden) {
       renderTabs();
       if (activeTab === 'bits') { paintShop(); paintTimed(); }
     }
@@ -70,11 +79,11 @@ export function createTickLoop(deps) {
     managersController.runAutoFire();
     // 3c. Post-prestige mechanics (pipeline/flux/entropy/echoes/resonance) — deterministic, tick-driven.
     const mech = tickMechanics(state, cfg);
-    if (mech.producedUnits && state.tabsUnlocked) {
+    if (mech.producedUnits && state.tabsUnlocked && !hidden) {
       renderTabs();
       if (activeTab === 'bits') { paintShop(); paintTimed(); }
     }
-    if (mech.echo) updateEcho();
+    if (mech.echo && !hidden) updateEcho();
     // 3d. Auto-Tapper Cores upgrade: buy a Multiplier whenever affordable.
     if (coreAutoMult(state) && multTier) {
       const lvl = state.owned[multTier.id] || 0;
@@ -85,20 +94,21 @@ export function createTickLoop(deps) {
         state.totalBought = (state.totalBought || 0) + 1;
       }
     }
-    // 4. Reveal (phase 1 only; reveal() no-ops when tabsUnlocked).
-    reveal();
+    // 4. Reveal (phase 1 only; reveal() no-ops when tabsUnlocked). Paint-only — fully state-derived.
+    if (!hidden) reveal();
     // 4b. Tab unlock check (passive rate could push bits to 150 without a tap).
     checkTabUnlock();
     // 4c. Score HUD / helper unlock + live bit count (guarded, so a steady state writes nothing).
-    updateHud();
+    if (!hidden) updateHud();
     // 5. Partial re-render of the live tab (phase 2 only — tabs are hidden in phase 1).
-    if (state.tabsUnlocked) {
+    if (state.tabsUnlocked && !hidden) {
       if (activeTab === 'bits') { paintShop(); paintTimed(); paintStats(); }
       else if (activeTab === 'managers') managersController.paint();
       else if (activeTab === 'reset') paintS1ResetPanel(panelsEl, state);
     }
-    // A newly-unlocked achievement may reveal the Achievements tab — refresh the tab bar so it appears.
-    if (checkAchievements(state, cfg, bellLoad()) && state.tabsUnlocked) renderTabs();
+    // A newly-unlocked achievement may reveal the Achievements tab — refresh the tab bar so it
+    // appears (achievement CHECK always runs; only the repaint waits for a visible tick).
+    if (checkAchievements(state, cfg, bellLoad()) && state.tabsUnlocked && !hidden) renderTabs();
     // 6. Periodic save.
     if (++tickAcc >= 10) { tickAcc = 0; save(state); }
   }

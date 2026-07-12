@@ -13,6 +13,7 @@ import { buildShopPanel } from "./shop.js";
 import { buildHelpPanel } from "./help.js";
 import { buildRunePickupPanel } from "./rune-pickup.js";
 import { createView, renderHpBar } from "./view.js";
+import { hiddenTab } from "../../shared/frame-loop.js";
 import { BTS_PATH, bellMessages, combatLines } from "./messages.js";
 import { MAX_FLOOR, ensureWorld, descend, resetRun, appendLog, damageNoise, openCipher, openBts, once, DIR_ARROW } from "./runloop.js";
 
@@ -430,6 +431,8 @@ export function renderStage2({
   // without the player. A monster's bucket is fixed at generation. Paused while a panel is open
   // or once the boss is reached.
   function tickBucket(bucket) {
+    // Hidden tab: pause the dungeon (intervals keep firing while hidden — CPU fix; nothing accrues).
+    if (hiddenTab()) return;
     if (overlay || state.run.boss.reached || state.run.boss.defeated) return;
     const world = state.run.world;
     if (!world || !world.grid) return;

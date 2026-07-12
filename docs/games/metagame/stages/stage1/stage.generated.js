@@ -3810,6 +3810,7 @@ function tickMechanics(state, cfg) {
 }
 
 // ../../docs/games/metagame/stages/stage1/s1tick.js
+import { hiddenTab } from "../../shared/frame-loop.js";
 function createTickLoop(deps) {
   const {
     host,
@@ -3834,10 +3835,18 @@ function createTickLoop(deps) {
     onTeardown
   } = deps;
   let tickAcc = 0;
+  let wasHidden = false;
   function tick() {
     if (!host.isConnected || !grid.isConnected) {
       onTeardown();
       return;
+    }
+    const hidden = hiddenTab();
+    if (hidden) wasHidden = true;
+    else if (wasHidden) {
+      wasHidden = false;
+      if (state.tabsUnlocked) renderTabs();
+      updateEcho();
     }
     const activeTab = getActiveTab();
     const incMult = incomeMult(state, cfg);
@@ -3871,7 +3880,7 @@ function createTickLoop(deps) {
       }
     }
     if (timedDone) checkMessages("bit-earn", state, bellLoad(), bell);
-    if (builtUnits && state.tabsUnlocked) {
+    if (builtUnits && state.tabsUnlocked && !hidden) {
       renderTabs();
       if (activeTab === "bits") {
         paintShop();
@@ -3880,14 +3889,14 @@ function createTickLoop(deps) {
     }
     managersController.runAutoFire();
     const mech = tickMechanics(state, cfg);
-    if (mech.producedUnits && state.tabsUnlocked) {
+    if (mech.producedUnits && state.tabsUnlocked && !hidden) {
       renderTabs();
       if (activeTab === "bits") {
         paintShop();
         paintTimed();
       }
     }
-    if (mech.echo) updateEcho();
+    if (mech.echo && !hidden) updateEcho();
     if (coreAutoMult(state) && multTier) {
       const lvl = state.owned[multTier.id] || 0;
       const cost = totalCost(multTier, lvl, 1);
@@ -3897,10 +3906,10 @@ function createTickLoop(deps) {
         state.totalBought = (state.totalBought || 0) + 1;
       }
     }
-    reveal();
+    if (!hidden) reveal();
     checkTabUnlock();
-    updateHud();
-    if (state.tabsUnlocked) {
+    if (!hidden) updateHud();
+    if (state.tabsUnlocked && !hidden) {
       if (activeTab === "bits") {
         paintShop();
         paintTimed();
@@ -3908,7 +3917,7 @@ function createTickLoop(deps) {
       } else if (activeTab === "managers") managersController.paint();
       else if (activeTab === "reset") paintResetPanel(panelsEl, state);
     }
-    if (checkAchievements(state, cfg, bellLoad()) && state.tabsUnlocked) renderTabs();
+    if (checkAchievements(state, cfg, bellLoad()) && state.tabsUnlocked && !hidden) renderTabs();
     if (++tickAcc >= 10) {
       tickAcc = 0;
       save(state);
