@@ -1,8 +1,9 @@
-/* styles-race.css — Stage 5 Signal Racer: the RACE-MODE takeover + track visuals (UX audit #1–#4).
-   Split out of styles.css to hold both under the soft LOC cap. On mode='playing' the root carries
-   .s5-mode-playing: the side column, boss panel, chip, log and controls collapse; the road centers and
-   scales into a real strip; the HUD shows only ROUND·POS·INTEGRITY·progress. select/result restore the
-   full screen. */
+/* styles-race.css — Stage 5 Signal Racer: the RACE-MODE takeover + the canvas track frame. Split out
+   of styles.css to hold both under the soft LOC cap. On mode='playing' the root carries
+   .s5-mode-playing: the side column, boss panel, chip, log and controls collapse; the road canvas
+   grows to fill the stage; the HUD shows only ROUND·POS·INTEGRITY·progress. select/result restore the
+   full screen. (2026-07-12 canvas rebuild: the old ASCII <pre> road + its per-glyph colours, beat-pulse
+   flash, edge-static box-shadow and attract scanline are gone — all of that is now drawn on the canvas.) */
 
 .s5-track-col {
   display: flex;
@@ -10,66 +11,32 @@
   align-items: center;
   gap: 8px;
   min-height: 0;
-  min-width: 0;                    /* the white-space:pre road must not force the column past the host */
+  min-width: 0;
   position: relative;              /* .mg-float pops (race-fx) are absolutely placed over this */
 }
 
-.s5-track-grid {
-  background: var(--s5-track);
+/* The canvas track frame. A responsive box (aspect-locked) the <canvas> fills; the canvas is sized in
+   device pixels by canvas-race.js from this box's layout size (ResizeObserver), so it stays crisp. */
+.s5-track-stage {
+  position: relative;
+  width: 100%;
+  max-width: 620px;
+  aspect-ratio: 3 / 2;
+  min-height: 180px;
   border: 2px solid var(--s5-wall);
-  color: var(--s5-fg);
-  font: 16px/1.3 ui-monospace, SFMono-Regular, Menlo, monospace;
-  letter-spacing: 1px;
-  margin: 0;
-  padding: 12px 16px;
-  white-space: pre;
-  width: max-content;
-  max-width: 100%;
-  overflow: auto;
+  border-radius: 4px;
+  background: var(--s5-bg);
+  overflow: hidden;
 }
-
-/* Per-glyph colour (renderTrackGrid html mode). The road used to be one flat white, so hazards read
-   only by fill density (░ ▒ ▓) — the commonest hazard (░) the least visible. Now DANGER is the red
-   family (bright, bold for the −5 ▓) and REWARDS are cool/warm accents, so threat vs. pickup reads at a
-   glance. `.s5g` spans are inline; only colour/weight change (no layout) so monospace alignment holds. */
-.s5-track-grid .s5g-static  { color: #ff8a5b; }                 /* ░ static  (−2), the common hazard — lifted well off the road */
-.s5-track-grid .s5g-pulse   { color: #ff5d7e; }                 /* ▒ pulse   (−2, off-beat) — distinct pink-red */
-.s5-track-grid .s5g-block   { color: #ff2f2f; font-weight: 700; text-shadow: 0 0 6px rgba(255, 47, 47, 0.55); } /* ▓ dense (−5) — hottest, boldest */
-.s5-track-grid .s5g-gate    { color: #57e0ff; font-weight: 700; } /* » boost gate — reward */
-.s5-track-grid .s5g-repair  { color: #5fe08a; font-weight: 700; } /* + repair — heal green */
-.s5-track-grid .s5g-cache   { color: #ffd24d; font-weight: 700; } /* $ packets — gold */
-.s5-track-grid .s5g-buff    { color: #b98cff; font-weight: 700; } /* U/O/E powerups — purple */
-.s5-track-grid .s5g-player  { color: #ffffff; font-weight: 700; text-shadow: 0 0 8px rgba(120, 220, 255, 0.9); } /* ▲ you — pops */
-.s5-track-grid .s5g-rival   { color: #ffb02e; }                 /* o rival car — amber threat */
-.s5-track-grid .s5g-ghost   { color: #7b7ba6; }                 /* p/g time-trial ghosts — faint */
-.s5-track-grid .s5g-shield  { color: var(--s5-counter); }        /* ~ shield/counter-phase lane */
-.s5-track-grid .s5g-beat    { color: #ffe066; }                 /* * beat-open marker */
-.s5-track-grid .s5g-empty   { color: #3c3c5c; }                 /* · road dots — recede */
-
-/* Beat-pulse: the genre's sensory promise — the beat is FELT, not just read as '*'. Toggled by the
-   renderer from view.beatOpen (game-state-driven); the animation is pure presentation. */
-.s5-track-grid.s5-beat-open { animation: s5-beat-pulse 0.5s ease-in-out infinite alternate; }
-@keyframes s5-beat-pulse {
-  from { border-color: var(--s5-wall); box-shadow: none; }
-  to   { border-color: var(--s5-counter); box-shadow: 0 0 16px -2px var(--s5-counter); }
+.s5-track-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;                 /* tap the left/right half of the road to switch lanes */
 }
-
-/* Boss suppression (uncalibrated): screen-edge static bleeds in (#4). */
-.s5-track-grid.s5-suppressed { box-shadow: inset 0 0 26px rgba(239, 159, 39, 0.55); border-color: var(--s5-jammer); }
 
 .s5-jammer { color: var(--s5-jammer); font-size: 12px; letter-spacing: 1px; text-align: center; min-height: 14px;
   opacity: calc(0.5 + 0.5 * var(--s5-close, 0)); }
-.s5-race-legend { color: var(--s5-counter); font-size: 12px; letter-spacing: 0.3px; min-height: 14px; text-align: center; }
-
-/* Attract road (select/result): a subtle scanline sheen so the idle road reads as alive, not a stamp. */
-.s5-mode-select .s5-track-grid,
-.s5-mode-result .s5-track-grid {
-  position: relative;
-  background-image: linear-gradient(transparent 50%, rgba(93, 202, 165, 0.05) 50%);
-  background-size: 100% 6px;
-  animation: s5-attract-drift 1.4s linear infinite;
-}
-@keyframes s5-attract-drift { from { background-position: 0 0; } to { background-position: 0 6px; } }
 
 /* HUD progress bar (#1). */
 .s5-progress { flex: 1 1 120px; min-width: 90px; max-width: 260px; height: 8px; background: #241a3d;
@@ -84,15 +51,12 @@
 .s5-mode-playing .s5-controls { display: none; }
 
 .s5-mode-playing .s5-layout { grid-template-columns: 1fr; }
-.s5-mode-playing .s5-track-col { justify-content: center; }
-.s5-mode-playing .s5-track-grid { font-size: clamp(19px, 3vw, 26px); letter-spacing: 2px; padding: 14px 20px; }
+.s5-mode-playing .s5-track-col { justify-content: center; flex: 1; }
+.s5-mode-playing .s5-track-stage { max-width: min(820px, 100%); aspect-ratio: 16 / 10; }
 
-/* Desktop (≥1000px stage): the road becomes a real full-height strip — bigger glyphs fill the vertical
-   budget and wider letter-spacing fills the stage's dead side-margins. Height-capped (font + slim
-   vertical padding) so the whole 10-line road stays visible without the panel scrolling. Below 1000px
-   the clamp above (and the phone override) still governs, so phone sizing is untouched. */
+/* Desktop (≥1000px stage): the road fills the vertical budget. */
 @media (min-width: 1000px) {
-  .s5-mode-playing .s5-track-grid { font-size: 30px; letter-spacing: 4px; padding: 10px 26px; }
+  .s5-mode-playing .s5-track-stage { max-width: 900px; aspect-ratio: 16 / 9; }
 }
 
 /* ── RESULT / PIT-STOP OVERLAY ──────────────────────────────────────────────────────────────────── */
@@ -130,13 +94,7 @@
 }
 .s5-overlay-continue { border-color: var(--s5-counter) !important; color: var(--s5-counter) !important; }
 
-@media (prefers-reduced-motion: reduce) {
-  .s5-track-grid.s5-beat-open { animation: none; border-color: var(--s5-counter); }
-  .s5-mode-select .s5-track-grid, .s5-mode-result .s5-track-grid { animation: none; }
-}
-
 @media (max-width: 720px) {
   .s5-layout { grid-template-columns: 1fr; }
-  .s5-mode-playing .s5-track-grid { font-size: clamp(15px, 4.4vw, 21px); letter-spacing: 1px; padding: 12px 10px; }
-  .s5-race-legend { font-size: 11px; }
+  .s5-mode-playing .s5-track-stage { aspect-ratio: 4 / 3; }
 }

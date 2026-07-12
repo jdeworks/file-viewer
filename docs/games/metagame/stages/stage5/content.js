@@ -1,5 +1,6 @@
-// content.js — Stage 5 Signal Racer: narrative + presentation helpers (pure). One signal-warfare log
-// line per round, plus the glyph legend shown in the HUD. No game state lives here.
+// content.js — Stage 5 Signal Racer: narrative helpers (pure). One signal-warfare log line + one
+// mechanic-intro line per round. No game state lives here. (The old glyph legend is gone with the
+// 2.5D canvas rebuild — hazards/pickups/gates now read as drawn sprites, not ASCII glyphs.)
 
 export const roundLogLines = [
   'signal corridor acquired. static interference at standard density.',
@@ -33,46 +34,4 @@ export const roundIntros = [
 
 export function roundIntro(roundIdx) {
   return roundIntros[Math.max(0, Math.min(roundIntros.length - 1, Number(roundIdx) || 0))];
-}
-
-export const GLYPH_LEGEND = [
-  ['░', 'static (−2)'],
-  ['▒', 'pulse (−2, off-beat hurts)'],
-  ['▓', 'dense block (−5)'],
-  ['»', 'boost gate (+packets)'],
-  ['~', 'shield lane (phase through)'],
-  ['o', 'rival racer (bump = −integrity)'],
-  ['U', 'shield buff'],
-  ['O', 'overclock (speed burst)'],
-  ['+', 'repair (+12 hull)'],
-  ['$', 'packet cache (+15p)'],
-  ['E', 'EMP (set a rival back)'],
-  ['p', 'par ghost (the clock to beat)'],
-  ['g', 'your prior-best ghost'],
-  ['↑↓', 'commit HI / LO route at a fork'],
-];
-
-// The display glyph the renderer draws for each obstacle-config glyph (mirrors render-track's DISP).
-const OBSTACLE_DISPLAY = { '░': '░', '▒': '▒', '▓': '▓', '>>': '»' };
-const LEGEND_TEXT = new Map(GLYPH_LEGEND);
-
-// The IN-RACE legend (UX audit #5): only the glyphs actually present in THIS round — its obstacle
-// glyphs (+ the shield lane when it uses counter-phase, + the rival marker). Returns [glyph,text]
-// pairs; the renderer draws them as one short 12px line under the road. Pure.
-export function roundGlyphLegend(round) {
-  const glyphs = [];
-  for (const g of (round?.glyphs || [])) {
-    const shown = OBSTACLE_DISPLAY[g] || g;
-    if (LEGEND_TEXT.has(shown)) glyphs.push(shown);
-  }
-  if (round?.counterPhaseShift) glyphs.push('~');
-  if (Number(round?.rivals) > 0) glyphs.push('o');
-  const seen = new Set();
-  const out = [];
-  for (const g of glyphs) {
-    if (seen.has(g)) continue;
-    seen.add(g);
-    out.push([g, LEGEND_TEXT.get(g)]);
-  }
-  return out;
 }

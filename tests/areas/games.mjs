@@ -1056,6 +1056,17 @@ export async function run(ctx) {
   // still gone (no "simulate full loop" calibrate button); the engine hook is still wired.
   const s5NoBypass = await page.evaluate(() => !document.querySelector('[data-action="calibrate"]') && Boolean(window.__fvStage5) && document.querySelectorAll('[data-start-round]').length === 1);
   if (s5NoBypass) pass('Stage 5 opens on play: one primed START (round 1), no simulate-loop bypass'); else fail('Stage 5 bypass present, list not diet-gated, or game not wired');
+  // 2026-07-12 canvas rebuild: the race renders on a 2.5D <canvas> (the ASCII <pre> grid is gone).
+  // Assert the canvas is live (real backing store) and a frame was actually drawn (non-blank attract
+  // road) — everything deeper stays testhook-driven below, same as before the rebuild.
+  const s5Canvas = await page.evaluate(() => {
+    const c = document.querySelector('.stage5-signal-racer canvas.s5-track-canvas');
+    if (!c || !c.width || !c.height) return false;
+    const px = c.getContext('2d').getImageData(0, 0, c.width, Math.min(c.height, 200)).data;
+    for (let i = 3; i < px.length; i += 4) if (px[i] !== 0) return true;
+    return false;
+  });
+  if (s5Canvas) pass('Stage 5 canvas road drawn (2.5D rebuild: live backing store + non-blank frame)'); else fail('Stage 5 canvas missing or blank');
   // Ascension ladder is wired (shared/ascension.js): 4 cumulative difficulty rungs available for replay.
   const s5Asc = await page.evaluate(() => window.__fvStage5.ascension());
   if (s5Asc.maxLevel === 4) pass('Stage 5 ascension ladder wired: 4 rungs (opt-in replay depth)'); else fail(`Stage 5 ascension maxLevel ${s5Asc.maxLevel}`);

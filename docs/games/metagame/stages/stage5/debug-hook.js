@@ -9,14 +9,17 @@ import { runCalibrationTimeline } from './calibration.js';
 import { TRANSMISSION_HUM_PATH } from './messages.js';
 
 export function installDebugHook(h) {
+  // Wrap a synchronous solve so the renderer can suppress per-frame draws while it runs (h.solve is
+  // provided by renderer.js; falls back to a bare call in any context that doesn't pass it).
+  const solve = (fn) => (h.solve ? h.solve(fn) : fn());
   window.__fvStage5 = {
     state: () => h.state,
     startRound: h.startRound,
-    solveRound() { const loop = h.getLoop(); if (loop && h.getMode() === 'playing') return loop.autoSolve(); return null; },
+    solveRound() { const loop = h.getLoop(); if (loop && h.getMode() === 'playing') return solve(() => loop.autoSolve()); return null; },
     solveRun() {
       // startRound auto-clears any pending result/pit-stop card, so the loop never blocks; we also
       // dismiss the final round's card at the end so it can't sit over the boss flow / audio button.
-      for (let i = 0; i < h.bossIdx; i += 1) { h.startRound(i); const loop = h.getLoop(); if (loop && h.getMode() === 'playing') loop.autoSolve(); }
+      for (let i = 0; i < h.bossIdx; i += 1) { h.startRound(i); const loop = h.getLoop(); if (loop && h.getMode() === 'playing') solve(() => loop.autoSolve()); }
       h.dismissResult?.();
       return Number(h.state.run.clearedRounds || 0);
     },
@@ -26,7 +29,7 @@ export function installDebugHook(h) {
       h.persistAndPaint();
       return h.calibrated();
     },
-    solveBoss() { h.startRound(h.bossIdx); const loop = h.getLoop(); if (loop && h.getMode() === 'playing') return loop.autoSolve(); return null; },
+    solveBoss() { h.startRound(h.bossIdx); const loop = h.getLoop(); if (loop && h.getMode() === 'playing') return solve(() => loop.autoSolve()); return null; },
     ascension: () => ({ ...h.ascension.state(), mods: h.ascensionMods() }),
     setAscension(n) { h.ascension.setLevel(n); h.persistAndPaint(); return h.ascension.level(); },
     raceCheckpoint: () => h.raceRun.restore(),

@@ -5,9 +5,17 @@
 // the tab is hidden; logical tick cadence is unchanged since getTickMs() intervals are longer than
 // a frame. Browser-only (tests drive step() directly via the game-loop) — createFrameLoop's start()
 // is already a no-op where rAF is unavailable.
+//
+// TWO CADENCES (2026-07-12, canvas racer rebuild): LOGIC runs per tick (onTick, fixed getTickMs()
+// cadence); DRAWING runs per FRAME (onRender, every capped rAF frame). onRender receives the render
+// interpolation factor alpha = leftover-accumulator / tickMs ∈ [0,1) — how far the visible frame is
+// between the last consumed tick and the next — so the canvas draws at 30fps with positions
+// interpolated between the discrete logical ticks (classic fixed-timestep interpolation). onRender is
+// OPTIONAL: callers that don't draw (or run in node) simply omit it, preserving the prior API and the
+// rAF-less no-op behaviour (tests still drive game-loop.step() directly).
 import { createFrameLoop } from '../../shared/frame-loop.js';
 
-export function createEngine({ onTick, getTickMs }) {
+export function createEngine({ onTick, onRender, getTickMs }) {
   let last = null;
   let acc = 0;
   let tick = 0;
@@ -29,6 +37,9 @@ export function createEngine({ onTick, getTickMs }) {
         tick += 1;
         if (!loop.running) return; // onTick may stop us (round ended)
       }
+      // Per-frame draw with the sub-tick interpolation factor. Fired AFTER the tick loop so onRender
+      // always sees the freshest logical state; skipped if a tick stopped the loop (handled above).
+      if (onRender) onRender(Math.max(0, Math.min(1, acc / getTickMs())));
     },
   });
 

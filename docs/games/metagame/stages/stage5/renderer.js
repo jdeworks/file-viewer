@@ -1,11 +1,11 @@
 import { getBossLockState, raceTheJammer } from './boss.js';
 import { createGameLoop } from './game-loop.js';
 import { createEngine } from './engine.js';
-import { renderTrackGrid, attractGrid } from './render-track.js';
+import { createCanvasRace } from './canvas-race.js';
 import { ROUNDS, roundByIdx, isBossRound, FINAL_ROUND_ID } from './rounds.js';
 import { buyUpgrade, applyUpgrades } from './shop.js';
 import { estimateRoundPackets } from './economy.js';
-import { roundLogLine, roundIntro, roundGlyphLegend, GLYPH_LEGEND } from './content.js';
+import { roundLogLine, roundIntro } from './content.js';
 import { calibrationProgressStr } from './calibration.js';
 import { BTS_PATH, TRANSMISSION_HUM_PATH } from './messages.js';
 import { createAscension } from '../../shared/ascension.js';
@@ -21,7 +21,8 @@ import { buildResultOverlay } from './overlay.js';
 import { createRaceFx } from './race-fx.js';
 
 const BOSS_IDX = ROUNDS.length - 1;
-const RACE_LANE_WIDTH = 5; // wide lanes so the strip scales into a road at race-mode font (#1/#3)
+const CK_SCHEMA = 2; // resume-checkpoint schema tag: bumped for the 2.5D canvas rebuild so pre-rebuild
+                     // (ASCII-era) checkpoints are rejected cleanly instead of desyncing on resume.
 
 export function renderStage5(ctx) {
   const { host, state, actions, achievements, bell, bts, viewer, save, onStageComplete, orchestrator } = ctx;
@@ -45,16 +46,11 @@ export function renderStage5(ctx) {
     <div class="s5-layout">
       <div class="s5-track-col" data-field="trackCol">
         <div class="s5-jammer" data-field="jammer" hidden></div>
-        <pre class="s5-track-grid" data-field="arena" aria-label="signal racer track"></pre>
-        <div class="s5-race-legend" data-field="raceLegend"></div>
+        <div class="s5-track-stage" data-field="stage"></div>
       </div>
       <aside class="s5-side">
         <div class="s5-primary" data-field="primary"></div>
         <div class="s5-rounds" data-field="rounds"></div>
-        <details class="s5-legend-wrap" data-field="legendWrap">
-          <summary>❓ glyph legend</summary>
-          <pre class="s5-legend" data-field="legend"></pre>
-        </details>
         <div class="s5-ascension" data-field="ascension"></div>
       </aside>
     </div>
@@ -83,17 +79,21 @@ export function renderStage5(ctx) {
   let mode = 'select'; // 'select' | 'playing' | 'result'
   let resultCtx = null; // { roundIdx, summary, canRetry, resolved, note } while the result card is up
 
+  // The 2.5D canvas racer. renderPrev/renderCur are the two most recent per-tick paint snapshots; the
+  // engine's onRender interpolates between them each frame (see startRound). autoSolving suppresses the
+  // per-tick HUD churn + canvas draws while the debug hook fast-forwards a whole round synchronously.
+  const canvasRace = createCanvasRace(state.calibration.seed);
+  fields.stage.append(canvasRace.el);
+  let renderPrev = null;
+  let renderCur = null;
+  let autoSolving = false;
+
   // Touch steering docked DIRECTLY under the road (#2): the pad lives inside the track column so the
   // road and its controls always share the viewport. Same loop.handleKey() seam the arrow keys use.
   const steer = createSteer({ getMode: () => mode, getLoop: () => loop });
   fields.trackCol.append(steer.el);
 
-  const fx = createRaceFx({ trackCol: fields.trackCol, arena: fields.arena, integrityChip: fields.integrityBox });
-
-  fields.legend.textContent = GLYPH_LEGEND.map(([g, t]) => `${g}  ${t}`).join('\n');
-
-  const reducedMotion = () => Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches);
-  const speedParam = (tickMs) => Math.max(0, Math.min(1, (180 - (Number(tickMs) || 160)) / 80));
+  const fx = createRaceFx({ trackCol: fields.trackCol });
 
   function calibrated() { return getBossLockState({ actions, state }).unlocked; }
   function unlockedRounds() { return Math.min(BOSS_IDX, Number(state.run.clearedRounds || 0)); }
@@ -101,6 +101,7 @@ export function renderStage5(ctx) {
   function pendingResume() {
     const ck = raceRun.restore();
     if (!ck || typeof ck.lanes !== 'string' || !ck.lanes.length) return null;
+    if (ck.schema !== CK_SCHEMA) return null; // reject pre-rebuild (ASCII-era) checkpoints cleanly
     if (ck.ascLevel !== ascension.level() || ck.seed !== state.calibration.seed) return null;
     const idx = Number(ck.roundIdx);
     if (!(idx >= 0) || idx > unlockedRounds() || isBossRound(idx)) return null;
@@ -117,6 +118,9 @@ export function renderStage5(ctx) {
     const prevGhost = state.timeTrial?.[round.id] || null;
     pushLog(roundIntro(roundIdx));
     fx.reset();
+    renderPrev = null;
+    renderCur = null;
+    canvasRace.setSeed(`${state.calibration.seed}:${round.id}`); // a distinct road per round
     loop = createGameLoop({
       state, seed: state.calibration.seed, roundIdx, calibrated: calibrated(),
       prevGhost, mods: ascensionMods(), resume: opts.resume || null,
@@ -124,15 +128,22 @@ export function renderStage5(ctx) {
       onEnd: handleEnd,
     });
     mode = 'playing';
-    engine = createEngine({ onTick: () => loop.step(), getTickMs: () => loop.round.tickMs });
+    // Two cadences: onTick advances the LOGIC and rolls the snapshot pair; onRender draws the canvas
+    // every capped frame, interpolating the sub-tick motion between the two snapshots (see engine.js).
+    engine = createEngine({
+      onTick: () => { renderPrev = renderCur; loop.step(); },
+      onRender: (alpha) => { if (!autoSolving && mode === 'playing') canvasRace.renderFrame(renderPrev, renderCur, alpha); },
+      getTickMs: () => loop.round.tickMs,
+    });
     engine.start();
+    canvasRace.resize();
     loop.paint();
     repaint();
   }
 
   function checkpointRace(view) {
     if (!loop || (view.tick % 24 !== 0)) return;
-    raceRun.checkpoint({ ...loop.path(), ascLevel: ascension.level(), seed: state.calibration.seed });
+    raceRun.checkpoint({ ...loop.path(), schema: CK_SCHEMA, ascLevel: ascension.level(), seed: state.calibration.seed });
   }
 
   function handleEnd({ result, round, roundIdx, packets, medal, finishTick, parTick, ghostRecording, position, fieldSize }) {
@@ -201,18 +212,20 @@ export function renderStage5(ctx) {
     }));
   }
 
+  // Per-TICK paint: roll the snapshot pair the canvas interpolates between, then refresh the DOM HUD.
+  // The canvas itself is drawn per FRAME by the engine's onRender, not here. During a synchronous
+  // autoSolve burst (debug hook) we skip everything but the snapshot roll — no HUD/checkpoint churn.
   function paintArena(view) {
+    renderCur = view;
+    if (renderPrev === null) renderPrev = view;
+    if (autoSolving) return;
     checkpointRace(view);
-    fields.arena.innerHTML = renderTrackGrid({
-      table: view.table, tick: view.tick, lane: view.lane, lookAhead: view.lookAhead,
-      wrap: view.archetype === 'circuit', rivals: view.rivals || [], channel: view.channel || 'lo',
-      laneWidth: RACE_LANE_WIDTH, speed: speedParam(view.round?.tickMs), reducedMotion: reducedMotion(),
-      html: true, // colour each glyph by kind (hazard/pickup/rival/player) for legibility
-    });
-    fields.arena.classList.toggle('s5-beat-open', Boolean(view.beatOpen));
-    fields.arena.classList.toggle('s5-suppressed', Boolean(view.suppressionActive)); // boss edge-static (#4)
     paintJammer(view);
     fx.onPaint(view);
+    updateHud(view);
+  }
+
+  function updateHud(view) {
     fields.integrity.textContent = `${Math.round(view.integrity)}%`;
     const pct = Math.round((view.progress || 0) * 100);
     fields.progressFill.style.width = `${pct}%`;
@@ -223,8 +236,8 @@ export function renderStage5(ctx) {
     fields.position.textContent = view.fieldSize > 1 ? `${view.position}/${view.fieldSize}` : '—';
   }
 
-  // Boss pursuit (#4): a jammer glyph rides the top of the road and closes as the race progresses; when
-  // suppression is active (uncalibrated) the road takes the edge-static class above. Presentation only.
+  // Boss pursuit (#4): a jammer chip rides above the road and closes as the race progresses; the boss
+  // edge-static itself is drawn on the canvas from view.suppressionActive. Presentation only.
   function paintJammer(view) {
     const boss = view.archetype === 'boss';
     fields.jammer.hidden = !boss;
@@ -232,10 +245,6 @@ export function renderStage5(ctx) {
     const closing = Math.max(0, Math.min(1, view.progress || 0));
     fields.jammer.style.setProperty('--s5-close', String(closing));
     fields.jammer.textContent = `⟪ THE JAMMER ${'▓'.repeat(2 + Math.round(closing * 6))} ⟫`;
-  }
-
-  function raceLegendLine(round) {
-    return roundGlyphLegend(round).map(([g, t]) => `${g} ${t}`).join('   ');
   }
 
   function repaint() {
@@ -256,14 +265,12 @@ export function renderStage5(ctx) {
     fields.calibBox.hidden = playing || !disc.showCalibration;
     steer.el.hidden = !playing;
 
-    if (playing) {
-      fields.raceLegend.textContent = raceLegendLine(roundByIdx(Number(state.run.roundIdx || idx)));
-    } else {
-      // SELECT/RESULT: an idle attract road instead of an empty void (#6/M3).
-      fields.arena.textContent = attractGrid({ seed: `${state.calibration.seed}:attract`, laneWidth: RACE_LANE_WIDTH, lane: state.run.lane });
-      fields.arena.classList.remove('s5-beat-open', 's5-suppressed');
+    if (!playing) {
+      // SELECT/RESULT: a single static attract frame of the empty road instead of an empty void (#6/M3).
+      canvasRace.setSeed(`${state.calibration.seed}:${r.id}`);
+      canvasRace.resize();
+      canvasRace.drawAttract(state.run.lane);
       fields.jammer.hidden = true;
-      fields.raceLegend.textContent = '';
       fields.integrity.textContent = `${Math.round(state.run.integrity)}%`;
       fields.race.textContent = r.archetype || 'sprint';
       fields.position.textContent = '—';
@@ -280,7 +287,6 @@ export function renderStage5(ctx) {
       : `${lock.jammerSuppression} / ${lock.unlocked ? 'beatable' : 'suppression dominant'}`;
     fields.hint.textContent = lock.hint;
 
-    fields.legendWrap.hidden = disc.attract; // legend behind ❓, hidden entirely on first contact (R5)
     renderPrimary(disc);
     renderRoundButtons(disc);
     renderAscension();
@@ -378,9 +384,9 @@ export function renderStage5(ctx) {
   });
 
   // Tap the left/right half of the road itself = lane switch (#2) — a bigger target than the pad.
-  fields.arena.addEventListener('click', (event) => {
+  canvasRace.el.addEventListener('click', (event) => {
     if (mode !== 'playing' || !loop) return;
-    const rect = fields.arena.getBoundingClientRect();
+    const rect = canvasRace.el.getBoundingClientRect();
     loop.handleKey((event.clientX - rect.left) < rect.width / 2 ? 'ArrowLeft' : 'ArrowRight');
   });
 
@@ -399,6 +405,9 @@ export function renderStage5(ctx) {
     state, startRound, getLoop: () => loop, getMode: () => mode, bossIdx: BOSS_IDX,
     actions, achievements, bell, persistAndPaint, calibrated, ascension, ascensionMods, raceRun,
     dismissResult: () => { resultCtx = null; renderOverlay(); repaint(); },
+    // Run a synchronous full-round solve with per-frame canvas draws + per-tick HUD churn suppressed
+    // (the round completes in one burst; drawing each intermediate frame would be pure waste).
+    solve: (fn) => { autoSolving = true; try { return fn(); } finally { autoSolving = false; } },
   });
 
   function dev(id) { if (applyDev(id, state, actions)) persistAndPaint(); }
@@ -410,6 +419,7 @@ export function renderStage5(ctx) {
       engine?.stop();
       raceRun.destroy();
       steer.destroy();
+      canvasRace.destroy();
       if (window.__fvStage5) delete window.__fvStage5;
       root.removeEventListener('keydown', onKey);
       root.remove();
