@@ -91,10 +91,22 @@ export function forkStatMult(tower, key) {
   return Number.isFinite(m) ? m : 1;
 }
 
-// A tower's effective numeric stat = base × fork mult. Engine reads damage/fireRate/range/aoe/etc here.
+// Damage multiplier from a tower's LEVEL: L1 ×1.0, L2 ×1.25, L3 ×1.5 (undefined level = L1, so legacy
+// save objects and bare test towers are unchanged). This fixes a trap: levels previously granted ZERO
+// combat stats — an upgrade cost real Cycles (×2/×4 base) but only unlocked the L3 ability/fork, so
+// buying L2 was strictly worse than placing a second tower. DAMAGE ONLY: range/fireRate/aoe/slow/etc
+// stay level-flat (forks remain the stat-shaping choice).
+const LEVEL_DAMAGE_MULT = { 1: 1, 2: 1.25, 3: 1.5 };
+export function levelDamageMult(tower) {
+  return LEVEL_DAMAGE_MULT[tower?.level] || 1;
+}
+
+// A tower's effective numeric stat = base × fork mult (× level mult, damage only). Engine reads
+// damage/fireRate/range/aoe/etc here.
 export function towerStat(tower, key) {
   const base = Number(TOWER_TYPES[tower?.type]?.[key]) || 0;
-  return base * forkStatMult(tower, key);
+  const level = key === 'damage' ? levelDamageMult(tower) : 1;
+  return base * forkStatMult(tower, key) * level;
 }
 
 // The on-hit status payload a tower applies: the fork's override, else the tower's default.

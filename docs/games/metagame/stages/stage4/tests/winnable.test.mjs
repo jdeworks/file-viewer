@@ -20,7 +20,10 @@ function fortify(state, tiles) {
     if (i % 2 === 0) state.towers.push({ id: `t${id++}`, type: 'null_spike', x: t.x, y: t.y, level: 3, targetMode: 'first', lastFiredMs: -Infinity });
   });
   for (let k = 0; k < 10; k++) state.towers.push({ id: `m${id++}`, type: 'glyph_mortar', x: 2 + k, y: 38, level: 3, targetMode: 'strongest', lastFiredMs: -Infinity });
-  state.damageMult = 3; // Armory: overclocked emitters maxed
+  // Armory ceiling: overclocked-emitters maxed = 5 levels × +8% = ×1.4 (armory.js). The old value
+  // here (×3) was an ILLEGAL multiplier no real campaign could ever reach — it silently proved
+  // winnability with more than double the damage a maxed player actually has.
+  state.damageMult = 1.4;
 }
 
 // Play one wave to completion (or failure) under a 12-minute sim budget. Returns the end state.

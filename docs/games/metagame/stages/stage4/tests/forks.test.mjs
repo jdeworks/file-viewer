@@ -33,6 +33,16 @@ for (const type of Object.keys(TOWER_TYPES)) assert.equal(forksFor(type).length,
   assert.equal(towerStat({ type: 'pulse_node' }, 'damage'), TOWER_TYPES.pulse_node.damage, 'unforked = base');
 }
 
+// ── level damage mult composes with the fork mult (damage only; other stats level-flat) ─────────
+{
+  const lanceL3 = { type: 'pulse_node', fork: 'emp_lance', level: 3 };
+  assert.equal(towerStat(lanceL3, 'damage'), TOWER_TYPES.pulse_node.damage * 2 * 1.5, 'L3 ×1.5 composes with emp_lance ×2 (20→60)');
+  assert.equal(towerStat({ type: 'pulse_node', level: 2 }, 'damage'), TOWER_TYPES.pulse_node.damage * 1.25, 'L2 = ×1.25 damage');
+  assert.equal(towerStat({ type: 'pulse_node', level: 3 }, 'range'), TOWER_TYPES.pulse_node.range, 'range is level-flat at L3');
+  const stormyL3 = { type: 'pulse_node', fork: 'pulse_storm', level: 3 };
+  assert.equal(towerStat(stormyL3, 'fireRate'), TOWER_TYPES.pulse_node.fireRate * 1.8, 'fire rate takes the fork mult but NO level mult');
+}
+
 // ── onHit override (fork changes the applied status) ─────────────────────────────────────────────
 {
   const def = TOWER_TYPES.thermal_loop;

@@ -684,9 +684,14 @@ function forkStatMult(tower, key) {
   const m = forkDef(tower)?.mods?.[key];
   return Number.isFinite(m) ? m : 1;
 }
+var LEVEL_DAMAGE_MULT = { 1: 1, 2: 1.25, 3: 1.5 };
+function levelDamageMult(tower) {
+  return LEVEL_DAMAGE_MULT[tower?.level] || 1;
+}
 function towerStat(tower, key) {
   const base = Number(TOWER_TYPES[tower?.type]?.[key]) || 0;
-  return base * forkStatMult(tower, key);
+  const level = key === "damage" ? levelDamageMult(tower) : 1;
+  return base * forkStatMult(tower, key) * level;
 }
 function effectiveOnHit(tower, def) {
   return forkDef(tower)?.onHit || def?.onHit || null;
@@ -868,9 +873,13 @@ var MAPS = [
     name: "Fractal Atrium",
     glyph: "✦",
     theme: "an open court that folds back on itself at the edges",
+    // startCycles 680→940 (2026-07-12 full-clear rebalance): the first map whose wave 1 already
+    // fields 14 enemies AND whose mid waves add armor/shield. A diversified cost-respecting bot
+    // (tests/economy.test.mjs) full-clears the map at 940 with a real margin; at 680 it lost the
+    // core by wave 6 — the starting board was simply too small for the map's opening density.
     waveCount: 15,
     depth: 2,
-    startCycles: 680,
+    startCycles: 940,
     startIntegrity: 110,
     subBosses: { 8: "mirror-prefect", 15: "atrium-regent" }
   },
@@ -879,9 +888,12 @@ var MAPS = [
     name: "Depth Cascade",
     glyph: "❈",
     theme: "a stairwell that descends faster than you climb it",
+    // startCycles 840→960 (2026-07-12 full-clear rebalance): same reasoning as fractal-atrium —
+    // wave 1 fields 17 enemies; 960 lets the same diversified bot full-clear all 25 waves with
+    // ~40% integrity left instead of dying to early trash bleed plus one leaked guardian.
     waveCount: 25,
     depth: 2,
-    startCycles: 840,
+    startCycles: 960,
     startIntegrity: 120,
     subBosses: { 10: "cascade-anchor", 18: "descent-marshal", 25: "cascade-sovereign" }
   },

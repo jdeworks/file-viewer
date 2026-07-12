@@ -29,6 +29,9 @@
 // a real player diversifying tower types (armor/shield counters) does meaningfully better than the
 // single-tower-type bot used to validate this, and the existing fortify()-based winnable.test.mjs
 // already independently proves the late-game numbers support a real winning strategy.
+// (2026-07-12 update: economy.test.mjs was then extended from wave-1 sanity to FULL-CLEAR runs of
+// every map with a diversified bot — that surfaced maps 2–3 as genuinely unaffordable at their
+// proportional values, so those two WERE individually re-tuned; see their per-map comments.)
 export const MAPS = [
   {
     id: 'outer-shell', name: 'Outer Shell', glyph: '◇',
@@ -45,13 +48,20 @@ export const MAPS = [
   {
     id: 'fractal-atrium', name: 'Fractal Atrium', glyph: '✦',
     theme: 'an open court that folds back on itself at the edges',
-    waveCount: 15, depth: 2, startCycles: 680, startIntegrity: 110,
+    // startCycles 680→940 (2026-07-12 full-clear rebalance): the first map whose wave 1 already
+    // fields 14 enemies AND whose mid waves add armor/shield. A diversified cost-respecting bot
+    // (tests/economy.test.mjs) full-clears the map at 940 with a real margin; at 680 it lost the
+    // core by wave 6 — the starting board was simply too small for the map's opening density.
+    waveCount: 15, depth: 2, startCycles: 940, startIntegrity: 110,
     subBosses: { 8: 'mirror-prefect', 15: 'atrium-regent' },
   },
   {
     id: 'depth-cascade', name: 'Depth Cascade', glyph: '❈',
     theme: 'a stairwell that descends faster than you climb it',
-    waveCount: 25, depth: 2, startCycles: 840, startIntegrity: 120,
+    // startCycles 840→960 (2026-07-12 full-clear rebalance): same reasoning as fractal-atrium —
+    // wave 1 fields 17 enemies; 960 lets the same diversified bot full-clear all 25 waves with
+    // ~40% integrity left instead of dying to early trash bleed plus one leaked guardian.
+    waveCount: 25, depth: 2, startCycles: 960, startIntegrity: 120,
     subBosses: { 10: 'cascade-anchor', 18: 'descent-marshal', 25: 'cascade-sovereign' },
   },
   {
