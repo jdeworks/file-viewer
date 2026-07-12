@@ -12,29 +12,30 @@ const STAGE5_REQUIRED_MS = 14000;
 const STAGE6_FILE = 'protocols_of_the_entity.epub';
 const STAGE3_ASCII_FILE = 'entity_f_verification.png';
 const STAGE4_BLUEPRINT_FILE = 'recursion_points.json';
-const STAGE7_FILE = 'entity_f_verification.jpg';
-const STAGE7_ANCHOR_FILE = 'entity_anchor_0043.txt';
-// Case 2 (Duplicate Roster) source files — opening each in the real viewer mints one evidence-board
-// fact card. fact:route (route_table.csv) is load-bearing: the rule-of-three triad cannot complete
-// without it, so the second case can only be solved by a genuine file-open.
+const STAGE7_ANCHOR_FILE = 'rescinded_appointment.txt';
+// Case 2 (The Second Claim) source files — opening each in the real viewer mints one evidence-board
+// fact card. fact:route (household_register.csv) is load-bearing: the rule-of-three triad cannot
+// complete without it, so the second case can only be solved by a genuine file-open. Action strings
+// are internal engine ids shared with stage7/content.js — the filenames were re-themed for the human
+// detective rework (2026-07-12, Meridian Estate Affair) but the ids deliberately kept.
 const STAGE7_SOURCE_FILES = [
-  ['system_spec.json', 'spec_examined'],
-  ['route_table.csv', 'route_table_examined'],
-  ['access_log.csv', 'access_log_examined'],
-  ['comms_transcript.txt', 'comms_examined'],
-  // Case 3 (Quorum Ghost) open-minted facts. session_ledger opens to a hint card; its DECISIVE fact is
-  // search-gated below (recordStage7Search), so opening the ledger is not enough to solve Case 3.
-  ['quorum_spec.json', 'quorum_spec_examined'],
-  ['audit_trail.txt', 'audit_examined'],
-  ['handshake_log.csv', 'handshake_examined'],
-  ['session_ledger.csv', 'ledger_examined'],
+  ['estate_rules.txt', 'spec_examined'],
+  ['household_register.csv', 'route_table_examined'],
+  ['visitors_book.csv', 'access_log_examined'],
+  ['parlour_interview.txt', 'comms_examined'],
+  // Case 3 (The Distant Relations) open-minted facts. The ledger opens to a hint card; its DECISIVE
+  // fact is search-gated below (recordStage7Search), so opening the ledger is not enough for Case 3.
+  ['inheritance_customs.txt', 'quorum_spec_examined'],
+  ['solicitor_memo.txt', 'audit_examined'],
+  ['mourners_register.csv', 'handshake_examined'],
+  ['estate_ledger.csv', 'ledger_examined'],
 ];
 
-// Case 3 SEARCH un-cheat: the decisive deduction requires SEARCHING session_ledger.csv (not just
-// opening it) for the claimed token; the matching line proves the session is REVOKED.
-const STAGE7_SEARCH_FILE = 'session_ledger.csv';
-const STAGE7_SEARCH_QUERY = 'S-7741';
-const STAGE7_SEARCH_TOKEN = 'REVOKED';
+// Case 3 SEARCH un-cheat: the decisive deduction requires SEARCHING estate_ledger.csv (not just
+// opening it) for the claimed voucher; the matching line proves the annuity is VOID.
+const STAGE7_SEARCH_FILE = 'estate_ledger.csv';
+const STAGE7_SEARCH_QUERY = 'VOUCHER 214';
+const STAGE7_SEARCH_TOKEN = 'VOID';
 
 const FALSY_CHEAT_VALUES = new Set(['false', '0', 'no', 'off', '']);
 const TRUTHY_CHEAT_VALUES = new Set(['true', '1', 'yes', 'on']);
@@ -216,25 +217,11 @@ export function recordStage6CodexOpen({ file, setAction = sharedSetAction } = {}
   return true;
 }
 
-export function shouldSetStage7ExifContradiction({ file, field, entity } = {}) {
-  return basename(file) === STAGE7_FILE
-    && String(field || '').toLowerCase() === 'gpsinfo'
-    && String(entity || 'F').toUpperCase() === 'F';
-}
-
-// Stage 7 boss un-cheat. NOT fired at file-open — it is called from the image metadata renderer
-// (docs/types/image/metadata.js) only when the GPS row actually renders in the metadata pane, i.e.
-// when the player navigates there and reads Entity F's embedded EXIF. Self-gates on the fixture.
-export function recordStage7MetadataInspection({ file, field, entity = 'F', setAction = sharedSetAction } = {}) {
-  if (!shouldSetStage7ExifContradiction({ file, field, entity })) return false;
-  setAction?.(7, 'exif_contradiction_found', {
-    source: 'viewer-metadata',
-    file: STAGE7_FILE,
-    field: 'GPSInfo',
-    entity: 'F',
-  });
-  return true;
-}
+// The stage-7 boss un-cheat is no longer viewer-fired: the Meridian rework (2026-07-12) replaced the
+// EXIF/GPS metadata read with an in-stage evidence-board gate — pinning + CONNECTING the alibi
+// statement and the postmarked torn letter fires `7.alibi_contradiction_pinned` from stage7/boss.js
+// through the same actions bus. The old shouldSetStage7ExifContradiction/recordStage7MetadataInspection
+// recorders (and their hook in docs/types/image/metadata.js) were removed with it.
 
 export function isStage7AnchorFile(file) {
   return basename(file) === STAGE7_ANCHOR_FILE;
@@ -245,7 +232,7 @@ export function recordStage7AnchorOpen({ file, setAction = sharedSetAction } = {
   setAction?.(7, 'anchor_chain_examined', {
     source: 'viewer-open',
     file: STAGE7_ANCHOR_FILE,
-    anchor: 'ENTITY_ANCHOR_0043',
+    anchor: 'RESCINDED_APPOINTMENT',
   });
   return true;
 }
@@ -367,8 +354,8 @@ export function recordStage9EchoNested({ file, path, setAction = sharedSetAction
 
 // METADATA echoes (identity → read the buried EXIF). Called from the image metadata renderer
 // (docs/types/image/metadata.js) only when the named EXIF row actually renders in the metadata
-// drawer — never on a bare file-open. Self-gates on the artifact basename + field. Mirrors
-// recordStage7MetadataInspection but keyed by the verb spec's file (a real image, not an _echo name).
+// drawer — never on a bare file-open. Self-gates on the artifact basename + field. Keyed by the
+// verb spec's file (a real image, not an _echo name).
 export function recordStage10EchoMetadata({ file, field, setAction = sharedSetAction } = {}) {
   const id = echoIdByFile(file);
   if (!id) return false;
@@ -390,9 +377,9 @@ export function recordMetagameViewerOpen({ file, path, opts = {}, setAction = sh
     // Nested-navigation echo needs the FULL opened path (not just the basename) to verify the player
     // reached the artifact through its repeating nested folders, so pass path explicitly.
     recordStage9EchoNested({ file: target, path: path || file, setAction }),
-    // NOTE: Stage 7's EXIF contradiction is deliberately NOT recorded here. It fires only from the
-    // image metadata renderer (docs/types/image/metadata.js → recordStage7MetadataInspection) when
-    // the player navigates to the metadata pane and the GPS row renders — never on file-open.
+    // NOTE: Stage 7's boss contradiction is deliberately NOT recorded here. Since the Meridian
+    // rework it fires in-stage from the evidence board (stage7/boss.js connectAlibiContradiction)
+    // — never on file-open.
   ];
   return results.some(Boolean);
 }

@@ -1,5 +1,0 @@
-entity,last_seen_cycle,last_event
-G,0047,SYNC
-H,0047,PING
-J,0047,WATCHDOG
-K,0047,BOOT

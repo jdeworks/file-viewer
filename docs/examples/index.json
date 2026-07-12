@@ -1184,9 +1184,9 @@
     ]
   },
   {
-    "label": "Identity Arbiter metadata sidecar",
-    "file": "metagame/stage7/entity_metadata.json",
-    "mime": "application/json",
+    "label": "Identity Arbiter estate ledger",
+    "file": "metagame/stage7/estate_ledger.csv",
+    "mime": "text/csv",
     "category": "Metagame",
     "categories": [
       "Metagame"

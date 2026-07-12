@@ -592,7 +592,7 @@ var MEMORY_UNCHEAT = Object.freeze({
   pattern: { stage: 4, key: "4.recursion_blueprint_read" },
   signal: { stage: 5, key: "5.counter_wave_calibrated" },
   protocol: { stage: 6, key: "6.protocol_ch9_read" },
-  identity: { stage: 7, key: "7.exif_contradiction_found" },
+  identity: { stage: 7, key: "7.alibi_contradiction_pinned" },
   observation: { stage: 8, key: "8.offline_mode_activated" }
 });
 function uncheatForMemory(save, memoryId) {

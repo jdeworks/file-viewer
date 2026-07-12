@@ -1,8 +1,0 @@
-{
-  "system": "CORE_ENTITY credential registry",
-  "current_cycle": "0047",
-  "valid_tiers": ["TIER-1", "TIER-2", "TIER-3", "TIER-3-LEGACY"],
-  "valid_layers": [0, 1, 2],
-  "max_active_routes_per_entity": 1,
-  "note": "TIER-3-LEGACY is a valid grandfathered tier-3 credential, not an anomaly."
-}

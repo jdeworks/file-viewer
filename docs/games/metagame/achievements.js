@@ -9,7 +9,7 @@ export const ACTION_ACHIEVEMENTS = Object.freeze({
   '4.recursion_blueprint_read': { id: 'stage4.recursion_blueprint_read', stage: 4, title: 'I looked deeper.' },
   '5.counter_wave_calibrated': { id: 'stage5.counter_wave_calibrated', stage: 5, title: 'I listened before I drove.' },
   '6.protocol_ch9_read': { id: 'stage6.protocol_ch9_read', stage: 6, title: 'I read the fine print.' },
-  '7.exif_contradiction_found': { id: 'stage7.exif_contradiction_found', stage: 7, title: 'I looked beyond the surface of the image.' },
+  '7.alibi_contradiction_pinned': { id: 'stage7.alibi_contradiction_pinned', stage: 7, title: 'Two documents, one lie. The postmark broke the alibi.' },
   '8.salvage_archived': { id: 'stage8.salvage_archived', stage: 8, title: 'I sorted the wreckage.' },
   '9.offline_mode_activated': { id: 'stage9.offline_mode_activated', stage: 9, title: 'I learned the shape of the silence.' },
   '10.memory_resolved': { id: 'stage10.memory_resolved', stage: 10, title: 'I read my own history.' },

@@ -8,7 +8,6 @@ import {
   recordStage5MediaPlayback,
   recordStage6CodexOpen,
   recordStage7AnchorOpen,
-  recordStage7MetadataInspection,
   recordStage7Search,
   recordStage7SourceOpen,
   isStage7SessionSearch,
@@ -118,23 +117,13 @@ const ok = (cond, msg) => { console.log((cond ? '✓ ' : '✗ ') + msg); if (!co
   ok(calls.length === 1, 'Stage 6 recorder: no extra calls for wrong file');
 }
 
-{
-  const calls = [];
-  const setAction = (...args) => calls.push(args);
-  ok(recordStage7MetadataInspection({ file: 'entity_f_verification.jpg', field: 'GPSInfo', entity: 'F', setAction }), 'Stage 7 metadata recorder returns true');
-  ok(calls.length === 1, 'Stage 7 recorder: setAction called once');
-  ok(calls[0][0] === 7 && calls[0][1] === 'exif_contradiction_found', 'Stage 7 recorder: action id set');
-  ok(calls[0][2].source === 'viewer-metadata' && calls[0][2].field === 'GPSInfo', 'Stage 7 recorder: payload set');
-  ok(!recordStage7MetadataInspection({ file: 'entity_f_verification.jpg', field: 'DateTimeOriginal', entity: 'F', setAction }), 'Stage 7 recorder rejects non-contradictory metadata');
-  ok(!recordStage7MetadataInspection({ file: 'entity_f_verification.png', field: 'GPSInfo', entity: 'F', setAction }), 'Stage 7 recorder rejects the old PNG stub');
-  ok(!recordStage7MetadataInspection({ file: 'entity_a_verification.png', field: 'GPSInfo', entity: 'A', setAction }), 'Stage 7 recorder rejects wrong entity/file');
-  ok(calls.length === 1, 'Stage 7 recorder: no extra calls for rejected metadata');
-}
+// The stage-7 EXIF metadata recorder was removed with the Meridian rework (2026-07-12): the boss
+// un-cheat now fires in-stage from the evidence board (stage7/boss.js), not from the image viewer.
 
 {
   const calls = [];
   const setAction = (...args) => calls.push(args);
-  ok(recordStage7AnchorOpen({ file: 'entity_anchor_0043.txt', setAction }), 'Stage 7 anchor recorder returns true');
+  ok(recordStage7AnchorOpen({ file: 'rescinded_appointment.txt', setAction }), 'Stage 7 anchor recorder returns true');
   ok(calls.length === 1 && calls[0][0] === 7 && calls[0][1] === 'anchor_chain_examined', 'Stage 7 anchor recorder: action id set');
   ok(!recordStage7AnchorOpen({ file: 'something_else.txt', setAction }), 'Stage 7 anchor recorder rejects other files');
   ok(calls.length === 1, 'Stage 7 anchor recorder: no extra calls for wrong file');
@@ -142,66 +131,66 @@ const ok = (cond, msg) => { console.log((cond ? '✓ ' : '✗ ') + msg); if (!co
 
 {
   // Stage 7 Case 2 source-file recorders (load-bearing evidence un-cheats).
-  ok(stage7SourceAction('route_table.csv') === 'route_table_examined', 'Stage 7 source: route table mapped');
-  ok(stage7SourceAction('/docs/examples/metagame/stage7/system_spec.json') === 'spec_examined', 'Stage 7 source: spec mapped by path');
-  ok(stage7SourceAction('access_log.csv') === 'access_log_examined', 'Stage 7 source: access log mapped');
-  ok(stage7SourceAction('comms_transcript.txt') === 'comms_examined', 'Stage 7 source: comms mapped');
+  ok(stage7SourceAction('household_register.csv') === 'route_table_examined', 'Stage 7 source: household register mapped');
+  ok(stage7SourceAction('/docs/examples/metagame/stage7/estate_rules.txt') === 'spec_examined', 'Stage 7 source: estate rules mapped by path');
+  ok(stage7SourceAction('visitors_book.csv') === 'access_log_examined', 'Stage 7 source: visitors book mapped');
+  ok(stage7SourceAction('parlour_interview.txt') === 'comms_examined', 'Stage 7 source: parlour interview mapped');
   ok(stage7SourceAction('unrelated.csv') === null, 'Stage 7 source: unrelated file unmapped');
 
   const calls = [];
   const setAction = (...args) => calls.push(args);
-  ok(recordStage7SourceOpen({ file: 'route_table.csv', setAction }), 'Stage 7 source recorder returns true for route table');
+  ok(recordStage7SourceOpen({ file: 'household_register.csv', setAction }), 'Stage 7 source recorder returns true for the register');
   ok(calls.length === 1 && calls[0][0] === 7 && calls[0][1] === 'route_table_examined', 'Stage 7 source recorder: route action id set');
-  ok(calls[0][2].source === 'viewer-open' && calls[0][2].file === 'route_table.csv', 'Stage 7 source recorder: payload set');
-  ok(!recordStage7SourceOpen({ file: 'entity_metadata.json', setAction }), 'Stage 7 source recorder rejects non-source files');
+  ok(calls[0][2].source === 'viewer-open' && calls[0][2].file === 'household_register.csv', 'Stage 7 source recorder: payload set');
+  ok(!recordStage7SourceOpen({ file: 'unrelated_notes.json', setAction }), 'Stage 7 source recorder rejects non-source files');
   ok(calls.length === 1, 'Stage 7 source recorder: no extra calls for wrong file');
 }
 
 {
   const calls = [];
   const setAction = (...args) => calls.push(args);
-  ok(recordMetagameViewerOpen({ path: '/docs/examples/metagame/stage7/route_table.csv', opts: {}, setAction }), 'Viewer-open aggregate records Stage 7 source file');
+  ok(recordMetagameViewerOpen({ path: '/docs/examples/metagame/stage7/household_register.csv', opts: {}, setAction }), 'Viewer-open aggregate records Stage 7 source file');
   ok(calls.length === 1 && calls[0][0] === 7 && calls[0][1] === 'route_table_examined', 'Viewer-open aggregate: Stage 7 source action id set');
 }
 
 {
   // Stage 7 Case 3 (Quorum Ghost) source-file recorders — extra load-bearing opens.
-  ok(stage7SourceAction('quorum_spec.json') === 'quorum_spec_examined', 'Stage 7 Case 3 source: quorum spec mapped');
-  ok(stage7SourceAction('/docs/examples/metagame/stage7/audit_trail.txt') === 'audit_examined', 'Stage 7 Case 3 source: audit mapped by path');
-  ok(stage7SourceAction('handshake_log.csv') === 'handshake_examined', 'Stage 7 Case 3 source: handshake mapped');
-  ok(stage7SourceAction('session_ledger.csv') === 'ledger_examined', 'Stage 7 Case 3 source: ledger maps to hint card (open)');
+  ok(stage7SourceAction('inheritance_customs.txt') === 'quorum_spec_examined', 'Stage 7 Case 3 source: customs mapped');
+  ok(stage7SourceAction('/docs/examples/metagame/stage7/solicitor_memo.txt') === 'audit_examined', 'Stage 7 Case 3 source: memo mapped by path');
+  ok(stage7SourceAction('mourners_register.csv') === 'handshake_examined', 'Stage 7 Case 3 source: mourners register mapped');
+  ok(stage7SourceAction('estate_ledger.csv') === 'ledger_examined', 'Stage 7 Case 3 source: ledger maps to hint card (open)');
 
   const calls = [];
   const setAction = (...args) => calls.push(args);
-  ok(recordStage7SourceOpen({ file: 'quorum_spec.json', setAction }), 'Stage 7 Case 3 source recorder returns true for quorum spec');
+  ok(recordStage7SourceOpen({ file: 'inheritance_customs.txt', setAction }), 'Stage 7 Case 3 source recorder returns true for customs');
   ok(calls.length === 1 && calls[0][1] === 'quorum_spec_examined', 'Stage 7 Case 3 source recorder: quorum action id set');
 }
 
 {
   // Stage 7 Case 3 SEARCH un-cheat — the decisive deduction needs a real search, not just an open.
-  ok(isStage7SessionSearch({ file: 'session_ledger.csv', query: 'S-7741', result: 'S-7741,N,REVOKED,0036,0045' }), 'Stage 7 search matcher: revoked line accepted');
-  ok(isStage7SessionSearch({ file: '/docs/examples/metagame/stage7/session_ledger.csv', query: 's-7741', match: { text: 'S-7741,N,REVOKED,0036,0045' } }), 'Stage 7 search matcher: path + object + case-insensitive');
-  ok(!isStage7SessionSearch({ file: 'session_ledger.csv', query: 'S-7702', result: 'S-7702,L,ACTIVE,0031,' }), 'Stage 7 search matcher: an ACTIVE token is not the un-cheat');
-  ok(!isStage7SessionSearch({ file: 'route_table.csv', query: 'S-7741', result: 'S-7741,N,REVOKED,0036,0045' }), 'Stage 7 search matcher: wrong file ignored');
+  const VOID_LINE = 'Voucher 214,Mr. Sennett,annuity,\u00a360 a year,VOID (cancelled the 15th)';
+  ok(isStage7SessionSearch({ file: 'estate_ledger.csv', query: 'Voucher 214', result: VOID_LINE }), 'Stage 7 search matcher: void voucher line accepted');
+  ok(isStage7SessionSearch({ file: '/docs/examples/metagame/stage7/estate_ledger.csv', query: 'voucher 214', match: { text: VOID_LINE } }), 'Stage 7 search matcher: path + object + case-insensitive');
+  ok(!isStage7SessionSearch({ file: 'estate_ledger.csv', query: 'Voucher 202', result: 'Voucher 202,Mrs. Trevisick,allowance,\u00a324 a year,honoured' }), 'Stage 7 search matcher: an honoured voucher is not the un-cheat');
+  ok(!isStage7SessionSearch({ file: 'household_register.csv', query: 'Voucher 214', result: VOID_LINE }), 'Stage 7 search matcher: wrong file ignored');
 
   const calls = [];
   const setAction = (...args) => calls.push(args);
-  ok(recordStage7Search({ file: 'session_ledger.csv', query: 'S-7741', result: 'S-7741,N,REVOKED,0036,0045', setAction }), 'Stage 7 search recorder returns true for the revoked line');
+  ok(recordStage7Search({ file: 'estate_ledger.csv', query: 'Voucher 214', result: VOID_LINE, setAction }), 'Stage 7 search recorder returns true for the void line');
   ok(calls.length === 1 && calls[0][0] === 7 && calls[0][1] === 'session_revoked_found', 'Stage 7 search recorder: action id set');
-  ok(calls[0][2].source === 'search' && calls[0][2].file === 'session_ledger.csv' && calls[0][2].value === 'S-7741', 'Stage 7 search recorder: payload set');
-  ok(!recordStage7Search({ file: 'session_ledger.csv', query: 'S-7741', result: 'S-7741,N,ACTIVE,0036,', setAction }), 'Stage 7 search recorder rejects non-revoked result');
-  ok(calls.length === 1, 'Stage 7 search recorder: no extra calls for non-revoked result');
+  ok(calls[0][2].source === 'search' && calls[0][2].file === 'estate_ledger.csv' && calls[0][2].value === 'VOUCHER 214', 'Stage 7 search recorder: payload set');
+  ok(!recordStage7Search({ file: 'estate_ledger.csv', query: 'Voucher 214', result: 'Voucher 214,Mr. Sennett,annuity,\u00a360 a year,honoured', setAction }), 'Stage 7 search recorder rejects an honoured result');
+  ok(calls.length === 1, 'Stage 7 search recorder: no extra calls for an honoured result');
 }
 
 {
   const calls = [];
   const setAction = (...args) => calls.push(args);
   ok(recordMetagameViewerOpen({ path: 'protocols_of_the_entity.epub', opts: {}, setAction }), 'Viewer-open aggregate records Stage 6');
-  // Stage 7's EXIF contradiction is NO LONGER fired at file-open. Opening Entity F's photo (even with
-  // the old-style metadata opts) must record nothing — the boss un-cheat fires only from the metadata
-  // renderer when the player navigates to the GPS row (see metadata.js / uncheat.test.mjs).
-  ok(!recordMetagameViewerOpen({ path: 'entity_f_verification.jpg', opts: { metadataField: 'GPSInfo', entity: 'F' }, setAction }), 'Viewer-open aggregate does NOT fire Stage 7 exif at open');
-  ok(calls.length === 1, 'Viewer-open aggregate: only Stage 6 fired (Stage 7 is metadata-gated)');
+  // The stage-7 boss gate never fires from the viewer at all since the Meridian rework — it is an
+  // in-stage evidence-board connect (stage7/boss.js). Opening the old photo records nothing.
+  ok(!recordMetagameViewerOpen({ path: 'entity_f_verification.jpg', opts: { metadataField: 'GPSInfo', entity: 'F' }, setAction }), 'Viewer-open aggregate does NOT fire any Stage 7 boss action at open');
+  ok(calls.length === 1, 'Viewer-open aggregate: only Stage 6 fired (Stage 7 boss is board-gated)');
 }
 
 {

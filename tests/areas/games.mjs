@@ -576,10 +576,10 @@ export async function run(ctx) {
   });
   if (bellInHeader) pass('Defragmenter bell control sits in header before Back to arcade'); else fail('Defragmenter bell control is not in header next to Back to arcade');
   const freshSave = await page.evaluate(() => JSON.parse(localStorage.getItem('fv:games:metagame:v3')));
-  if (freshSave?.version === 6 && freshSave.unlockedStages?.includes(1) && freshSave.stageState?.[1]) {
-    pass('Defragmenter initializes fresh v6 save with Stage 1');
+  if (freshSave?.version === 7 && freshSave.unlockedStages?.includes(1) && freshSave.stageState?.[1]) {
+    pass('Defragmenter initializes fresh v7 save with Stage 1');
   } else {
-    fail('Defragmenter v6 save invalid: ' + JSON.stringify(freshSave));
+    fail('Defragmenter v7 save invalid: ' + JSON.stringify(freshSave));
   }
   await page.click('.games-back');
   await page.waitForSelector('.games-grid:not([hidden])', { timeout: 4000 });
@@ -1347,72 +1347,57 @@ export async function run(ctx) {
   // SS4 Reference Chase: opening the real decommissioned-anchor exhibit breaks the chain → Case 2.
   await page.click('[data-action="open-anchor"]');
   await page.waitForFunction(() => window.__fvStage7?.state().substage === 5, null, { timeout: 5000 });
-  pass('Stage 7 SS4: opening the anchor exhibit breaks the chain and opens Case 2 (Duplicate Roster)');
+  pass('Stage 7 SS4: opening the rescinded appointment breaks the paper trail and opens Case 2 (The Second Claim)');
   // Continuity: closing Case 1 carries its four deductions onto the board as established facts.
   const s7Carried = await page.evaluate(() => window.__fvStage7.state().board.established.filter((f) => f.id.startsWith('case1:')).length);
   if (s7Carried === 4) pass('Stage 7 continuity: Case-1 deductions carried onto the board as established facts'); else fail(`Stage 7 Case-1 continuity missing (${s7Carried}/4)`);
   // Case 2 is load-bearing: the rule-of-three triad cannot be completed until the route table is
   // actually opened in the viewer (the decisive fact card only exists after a real file-open).
   const s7Premature = await page.evaluate(() => window.__fvStage7.solveCase2());
-  if (s7Premature.ok === false && s7Premature.substage === 5) pass('Stage 7 Case 2: accusation impossible before opening the route table (load-bearing)'); else fail('Stage 7 Case 2 solvable without the real file-open');
-  // Open the real route table → mints the fact:route evidence card.
+  if (s7Premature.ok === false && s7Premature.substage === 5) pass('Stage 7 Case 2: accusation impossible before opening the household register (load-bearing)'); else fail('Stage 7 Case 2 solvable without the real file-open');
+  // Open the real household register → mints the fact:route evidence card.
   await page.click('[data-action="open-source"][data-source="route_table_examined"]');
   await page.waitForFunction(() => Boolean(window.__fvStage7?.state().board.cards.some((c) => c.id === 'fact:route')), null, { timeout: 5000 });
-  pass('Stage 7 Case 2: opening route_table.csv mints the decisive fact card on the evidence board');
+  pass('Stage 7 Case 2: opening household_register.csv mints the decisive fact card on the evidence board');
   // Now the rule-of-three triad (entity K + route claim + route-table fact) confirms and opens Case 3.
   const s7Case2 = await page.evaluate(() => window.__fvStage7.solveCase2());
-  if (s7Case2.solved && s7Case2.substage === 6) pass('Stage 7 Case 2: correct triad names the duplicate and opens Case 3 (Quorum Ghost)'); else fail(`Stage 7 Case 2 accusation failed (${JSON.stringify(s7Case2)})`);
+  if (s7Case2.solved && s7Case2.substage === 6) pass('Stage 7 Case 2: correct triad names the second claimant and opens Case 3 (The Distant Relations)'); else fail(`Stage 7 Case 2 accusation failed (${JSON.stringify(s7Case2)})`);
 
-  // Case 3 (Quorum Ghost): a larger roster with a SEARCH-gated decisive fact. The triad cannot complete
-  // by merely OPENING the ledger — it must be SEARCHED for the claimed token.
+  // Case 3 (The Distant Relations): a larger roster with a SEARCH-gated decisive fact. The triad
+  // cannot complete by merely OPENING the ledger — it must be SEARCHED for the claimed voucher.
   await page.waitForSelector('[data-accuse="3"]', { timeout: 5000 });
   await page.click('[data-action="open-source"][data-source="ledger_examined"]');
   await page.waitForFunction(() => Boolean(window.__fvStage7?.state().board.cards.some((c) => c.id === 'fact:ledgerhint')), null, { timeout: 5000 });
   const s7Case3Pre = await page.evaluate(() => window.__fvStage7.solveCase3());
   if (s7Case3Pre.ok === false && s7Case3Pre.substage === 6) pass('Stage 7 Case 3: accusation impossible after only OPENING the ledger (search is load-bearing)'); else fail('Stage 7 Case 3 solvable without a real search');
-  // Run the REAL viewer search of the session ledger → mints the decisive fact:session card.
-  await page.evaluate(async () => { await window.__fv.searchViewerFile('/docs/examples/metagame/stage7/session_ledger.csv', 'S-7741'); });
+  // Run the REAL viewer search of the estate ledger → mints the decisive fact:session card.
+  await page.evaluate(async () => { await window.__fv.searchViewerFile('/docs/examples/metagame/stage7/estate_ledger.csv', 'Voucher 214'); });
   await page.waitForFunction(() => Boolean(window.__fvStage7?.state().board.cards.some((c) => c.id === 'fact:session')), null, { timeout: 5000 });
-  pass('Stage 7 Case 3: SEARCHING session_ledger.csv mints the decisive fact card');
+  pass('Stage 7 Case 3: SEARCHING estate_ledger.csv for the voucher mints the decisive fact card');
   const s7Case3 = await page.evaluate(() => window.__fvStage7.solveCase3());
-  if (s7Case3.solved && s7Case3.substage === 7) pass('Stage 7 Case 3: correct triad names the ghost and reaches the EXIF boss'); else fail(`Stage 7 Case 3 accusation failed (${JSON.stringify(s7Case3)})`);
+  if (s7Case3.solved && s7Case3.substage === 7) pass('Stage 7 Case 3: correct triad names the false annuitant and reaches the verdict board'); else fail(`Stage 7 Case 3 accusation failed (${JSON.stringify(s7Case3)})`);
 
-  // The GPS contradiction now lives in the REAL JPEG's EXIF (52.3N, 4.8E), parsed by the app's own
-  // exif reader — no staged sidecar. Confirm the image parser surfaces it.
-  const gpsExif = await page.evaluate(async () => {
-    const res = await fetch('examples/metagame/stage7/entity_f_verification.jpg');
-    if (!res.ok) return null;
-    const bytes = new Uint8Array(await res.arrayBuffer());
-    const { parseExif } = await import('/types/image/exif.js');
-    return parseExif(bytes);
-  });
-  if (gpsExif && Math.abs(gpsExif.gpsLat - 52.3) < 0.05 && Math.abs(gpsExif.gpsLon - 4.8) < 0.05) pass('Stage 7 boss evidence: Entity F JPEG EXIF GPS is outside known layers'); else fail(`Stage 7 JPEG EXIF GPS missing contradiction (${JSON.stringify(gpsExif)})`);
-  // Boss un-cheat (load-bearing, NOT bypassable): opening Entity F's photo is necessary but NOT
-  // sufficient. The action fires ONLY when the player navigates to the Metadata pane and the GPS row
-  // renders. First open the photo…
-  await page.click('[data-action="photo"]');
-  await page.waitForFunction(() => window.__fv.state.intake?.filename === 'entity_f_verification.jpg' && window.__fv.state.type.id === 'image', null, { timeout: 5000 });
-  // …and prove that merely opening it did NOT unlock the boss.
-  const firedOnOpen = await page.evaluate(() => {
+  // Boss un-cheat (Meridian rework 2026-07-12, load-bearing + NOT bypassable): the contradiction
+  // lives INSIDE the case documents. Pinning the alibi statement and the postmarked torn letter is
+  // necessary but NOT sufficient — only CONNECTING them fires the action.
+  await page.waitForSelector('[data-pin="boss:alibi"]', { timeout: 5000 });
+  await page.click('[data-pin="boss:alibi"]');
+  await page.click('[data-pin="boss:letter"]');
+  const s7PinnedOnly = await page.evaluate(() => {
     try {
       const save = JSON.parse(localStorage.getItem('fv:games:metagame:v3'));
-      return Boolean(save.actions?.['7.exif_contradiction_found']);
+      return Boolean(save.actions?.['7.alibi_contradiction_pinned']);
     } catch { return false; }
   });
-  if (firedOnOpen === false) pass('Stage 7 boss: opening the photo does NOT unlock the boss (open is not enough)'); else fail('Stage 7 boss unlocked on file-open — un-cheat is bypassable');
-  // Now navigate to the Metadata pane (the real metaBtn handler builds it the same way) — extracting
-  // the EXIF renders the GPS row, which fires the contradiction from the metadata renderer.
-  await page.evaluate(async () => {
-    const m = await import('/core/meta-drawer.js');
-    await m.buildMetadata();
-  });
+  if (s7PinnedOnly === false) pass('Stage 7 boss: pinning both documents does NOT unlock (pin is not enough)'); else fail('Stage 7 boss unlocked on pin — connect gate is bypassable');
+  await page.click('[data-action="connect-alibi"]');
   await page.waitForFunction(() => {
     try {
       const save = JSON.parse(localStorage.getItem('fv:games:metagame:v3'));
-      return Boolean(save.actions?.['7.exif_contradiction_found'] && save.achievements?.['stage7.exif_contradiction_found']);
+      return Boolean(save.actions?.['7.alibi_contradiction_pinned'] && save.achievements?.['stage7.alibi_contradiction_pinned']);
     } catch { return false; }
   }, null, { timeout: 5000 });
-  pass('Stage 7 boss: inspecting the Metadata pane (GPS row) unlocks the boss');
+  pass('Stage 7 boss: CONNECTING the alibi against the postmark unlocks the verdict');
   await page.click('button[data-commit="A"]');
   await page.waitForFunction(() => {
     try {
@@ -1420,7 +1405,7 @@ export async function run(ctx) {
       return save.defeated?.includes(7) && save.unlockedStages?.includes(8);
     } catch { return false; }
   }, null, { timeout: 5000 });
-  pass('Stage 7: full investigation + EXIF un-cheat clears Identity Arbiter');
+  pass('Stage 7: full investigation + the postmark contradiction clears Identity Arbiter');
 
   // NOTE (2026-07-11): Entropy Field (the old stage 8, "survival sim") was removed from the game
   // entirely — playtesters found it too hard to understand/use. Observer State moved 9→8 (below);

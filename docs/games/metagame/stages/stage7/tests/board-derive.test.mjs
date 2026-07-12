@@ -37,24 +37,24 @@ import { defaultState } from "../state.js";
   assert.equal(s.complete, false, "a conflicted socket is not a clean triad");
 }
 
-// ── Search hint-ladder label (#6): the token S-7741 is hidden until step 2 ──────────────────────────
+// ── Search hint-ladder label (#6): the voucher "Voucher 214" is hidden until step 2 ─────────────────
 {
   const state = defaultState();
   state.evidence.case3HintStep = 0;
   let l = searchLabelState(state);
   assert.equal(l.revealsToken, false);
-  assert.ok(!l.label.includes("S-7741"), "step 0 names only the file, not the token");
-  assert.ok(l.label.includes("session_ledger.csv"));
+  assert.ok(!l.label.includes("Voucher 214"), "step 0 names only the file, not the voucher");
+  assert.ok(l.label.includes("estate_ledger.csv"));
 
   state.evidence.case3HintStep = 1;
   l = searchLabelState(state);
   assert.equal(l.revealsToken, false);
-  assert.ok(/session/i.test(l.label) && !l.label.includes("S-7741"), "step 1 names the column, still no token");
+  assert.ok(/voucher/i.test(l.label) && !l.label.includes("Voucher 214"), "step 1 names the column, still no voucher");
 
   state.evidence.case3HintStep = 2;
   l = searchLabelState(state);
-  assert.equal(l.revealsToken, true, "step 2 reveals the token → the button may carry the full query");
-  assert.ok(l.label.includes("S-7741"));
+  assert.equal(l.revealsToken, true, "step 2 reveals the voucher → the button may carry the full query");
+  assert.ok(l.label.includes("Voucher 214"));
 }
 
 // ── Relevant-facts filter (M1): a fact archives once its subject entity is eliminated ───────────────

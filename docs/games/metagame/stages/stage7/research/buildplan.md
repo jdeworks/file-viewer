@@ -1,3 +1,8 @@
+> **SUPERSEDED (2026-07-12).** This documents the old computer-forensics / EXIF-boss design. Stage 7
+> was reworked into the human detective case "The Meridian Estate Affair" (see the stage `README.md`
+> and `research/case-fixtures/README.md`); the EXIF/GPS boss was replaced by an in-case document
+> contradiction (`7.alibi_contradiction_pinned`). Kept for history only.
+
 # Stage 7 — Identity Arbiter: Build Plan
 
 **Status:** THIN GATE → full 5-sub-stage investigation  

@@ -2,16 +2,16 @@
 // Imported by renderer.js (dev(id) dispatcher) and testable without a browser.
 //
 // CONTROLS
-//   skip-case1       Fast-forward SS1–SS4 (Credential Scan → Dup → Timeline → Chain) → land at
-//                    Case 2 accusation (substage 5). Sets all upstream satisfied flags.
+//   skip-case1       Fast-forward SS1–SS4 (Witness Statements → Two Statements → Movements → Paper
+//                    Trail) → land at Case 2 accusation (substage 5). Sets all upstream satisfied flags.
 //   mint-case-facts  Mint every source-fact card for both cases, including the search-gated
 //                    decisive fact (fact:session for Case 3). No accusation is attempted.
 //   solve-accusation At SS5: mint decisive fact:route, pin correct triad, submit Case 2 accusation.
 //                    At SS6: mint fact:session, pin correct triad, submit Case 3 accusation.
 //                    No-op at any other substage.
-//   mark-uncheat     Set state.boss.unlocked = true (the flag applyExifContradictionUnlock sets
-//                    when the GPS row renders in the Metadata pane — an optional buff, not a gate:
-//                    it pre-eliminates Entity F for free). Also marks Entity F contradicted.
+//   mark-uncheat     Set state.boss.unlocked = true (the flag applyAlibiContradictionUnlock sets when
+//                    the alibi statement is connected to the postmarked letter — an optional buff, not
+//                    a gate: it pre-eliminates Miss Marchmain for free). Also marks her contradicted.
 
 import { flagField, diffField, markImpossible, markChainBroken } from "./substages.js";
 import { mintSourceFact, ensureCase2, ensureCase3, attemptAccusationForCase } from "./accusation.js";
@@ -30,7 +30,7 @@ const impossibleEvId = entityFEventLog.find((e) => e.impossible)?.id;
 // early; chainBroken guard in markChainBroken; advance() uses < so it never regresses substage).
 export function devSkipCase1(state) {
   for (const id of SCAN_ENTITIES) flagField({ state, entityId: id, fieldId: wrongField(id) });
-  diffField({ state, fieldName: "GPSInfo" });
+  diffField({ state, fieldName: "Where on the night of the 12th" });
   markImpossible({ state, evId: impossibleEvId });
   markChainBroken({ state }); // sets chainBroken + carries case1 facts + advances to SS5
   ensureCase2(state);         // idempotent — seeds Case 2 entity/field clue cards
@@ -75,7 +75,7 @@ export function devSolveAccusation(state) {
 
 // ── mark-uncheat ────────────────────────────────────────────────────────────────────────────────────
 // Set the boss un-cheat satisfied flag directly. Replicates exactly the state mutations that
-// applyExifContradictionUnlock performs (minus DOM bell/achievement side-effects that require a
+// applyAlibiContradictionUnlock performs (minus DOM bell/achievement side-effects that require a
 // browser). The production gating in commitIdentity (substage 7 check) is untouched.
 export function devMarkUncheat(state) {
   state.boss.unlocked = true;
@@ -89,7 +89,7 @@ export const devControls = [
   { id: "skip-case1",       label: "Skip Case 1 (SS1–SS4)" },
   { id: "mint-case-facts",  label: "Mint all case fact cards" },
   { id: "solve-accusation", label: "Solve current accusation" },
-  { id: "mark-uncheat",     label: "Mark EXIF un-cheat satisfied" }
+  { id: "mark-uncheat",     label: "Mark alibi contradiction found" }
 ];
 
 export function applyDev(state, id) {

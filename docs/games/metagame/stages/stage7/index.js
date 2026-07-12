@@ -1,7 +1,7 @@
 import {
-  applyExifContradictionUnlock,
+  applyAlibiContradictionUnlock,
   getBossLockState,
-  hasExifContradiction
+  hasAlibiContradiction
 } from "./boss.js";
 import { renderStage7 } from "./renderer.js";
 import { markChainBroken } from "./substages.js";
@@ -41,18 +41,18 @@ export function mountStage(ctx) {
 
   ensureStyles();
 
-  if (hasExifContradiction(ctx.actions)) {
-    applyExifContradictionUnlock({ state, achievements: ctx.achievements, bell: ctx.bell });
+  if (hasAlibiContradiction(ctx.actions)) {
+    applyAlibiContradictionUnlock({ state, achievements: ctx.achievements, bell: ctx.bell });
   }
 
   const unsubscribe = subscribeToActionName(ctx.actions, ACTION_NAME, () => {
-    applyExifContradictionUnlock({ state, achievements: ctx.achievements, bell: ctx.bell });
+    applyAlibiContradictionUnlock({ state, achievements: ctx.achievements, bell: ctx.bell });
     if (typeof ctx.save === "function") ctx.save();
     if (view && typeof view.repaint === "function") view.repaint();
   });
 
-  // SS4 Reference Chase: opening the decommissioned anchor record (a real viewer file-open) breaks
-  // Entity F's credential chain and opens Case 2 (the Duplicate Roster accusation).
+  // SS4 Paper Trail: opening the rescinded appointment record (a real viewer file-open) breaks Miss
+  // Marchmain's paper trail and opens Case 2 (The Second Claim accusation).
   const unsubscribeAnchor = subscribeToActionName(ctx.actions, ANCHOR_ACTION, () => {
     markChainBroken({ state });
     if (typeof ctx.save === "function") ctx.save();
@@ -119,9 +119,9 @@ function injectSheet(id, rel) {
 }
 
 export {
-  applyExifContradictionUnlock,
+  applyAlibiContradictionUnlock,
   commitIdentity,
+  connectAlibiContradiction,
   getBossLockState,
-  inspectContradictoryExif,
   recordLockedBossAttempt
 } from "./boss.js";

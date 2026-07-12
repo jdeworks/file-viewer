@@ -1,5 +1,5 @@
 import { applyDev } from "./s7dev.js";
-import { commitIdentity, getBossLockState } from "./boss.js";
+import { commitIdentity, connectAlibiContradiction, ensureBossBoard, getBossLockState } from "./boss.js";
 import {
   SUBSTAGE,
   diffField,
@@ -17,32 +17,33 @@ import { banner } from "../../shared/feedback.js";
 import { installStage7Hook, removeStage7Hook } from "./test-hook.js";
 import { CASES } from "./content.js";
 import {
+  ALIBI_STATEMENT_PATH,
   BTS_PATH,
   CASE2_SOURCE_PATHS,
   CASE3_SOURCE_PATHS,
   CASE3_SEARCH_PATH,
   CASE3_SEARCH_QUERY,
   ENTITY_ANCHOR_PATH,
-  ENTITY_F_IMAGE_PATH,
+  TORN_LETTER_PATH,
   substageHints
 } from "./messages.js";
 
 const SOURCE_PATHS = { ...CASE2_SOURCE_PATHS, ...CASE3_SOURCE_PATHS };
 
 const SUBSTAGE_LABEL = {
-  1: "1/7 CREDENTIAL SCAN",
-  2: "2/7 DUPLICATE TEST",
-  3: "3/7 TIMELINE AUDIT",
-  4: "4/7 REFERENCE CHASE",
-  5: "5/7 DUPLICATE ROSTER",
-  6: "6/7 QUORUM GHOST",
-  7: "7/7 EXIF ARBITER (BOSS)"
+  1: "1/7 WITNESS STATEMENTS",
+  2: "2/7 TWO STATEMENTS",
+  3: "3/7 MOVEMENTS AUDIT",
+  4: "4/7 PAPER TRAIL",
+  5: "5/7 THE SECOND CLAIM",
+  6: "6/7 THE DISTANT RELATIONS",
+  7: "7/7 THE VERDICT"
 };
 
 // Light one-line arrival banner (00-F5) fired when the player advances to a NEW sub-stage.
 const ARRIVAL = {
-  1: "CREDENTIAL SCAN", 2: "DUPLICATE TEST", 3: "TIMELINE AUDIT", 4: "REFERENCE CHASE",
-  5: "CASE 2 — DUPLICATE ROSTER", 6: "CASE 3 — QUORUM GHOST", 7: "EXIF ARBITER"
+  1: "WITNESS STATEMENTS", 2: "TWO STATEMENTS", 3: "MOVEMENTS AUDIT", 4: "PAPER TRAIL",
+  5: "CASE 2 — THE SECOND CLAIM", 6: "CASE 3 — THE DISTANT RELATIONS", 7: "THE VERDICT"
 };
 
 const BOARD_SUBSTAGES = new Set([SUBSTAGE.ACCUSE, SUBSTAGE.ACCUSE3]);
@@ -54,7 +55,7 @@ export function renderStage7({ host, state, actions, achievements, bell, bts, vi
     <header class="s7-hud">
       <div><strong>IDENTITY ARBITER</strong></div>
       <div>stage <span data-field="substage"></span></div>
-      <div>addresses <span data-field="addresses"></span></div>
+      <div>leads <span data-field="addresses"></span></div>
     </header>
     <section class="s7-main" aria-label="investigation"></section>
     <p class="s7-hint" data-field="hint"></p>
@@ -90,7 +91,9 @@ export function renderStage7({ host, state, actions, achievements, bell, bts, vi
     else if (d.action === "open-source") openSource(d.source);
     else if (d.action === "search-source") searchSource();
     else if (d.action === "open-anchor") openInViewer(ENTITY_ANCHOR_PATH, { mime: "text/plain", source: "stage7" });
-    else if (d.action === "photo") openInViewer(ENTITY_F_IMAGE_PATH, buildEntityFPhotoOpenOptions());
+    else if (d.action === "open-alibi") openInViewer(ALIBI_STATEMENT_PATH, { mime: "text/plain", source: "stage7" });
+    else if (d.action === "open-letter") openInViewer(TORN_LETTER_PATH, { mime: "text/plain", source: "stage7" });
+    else if (d.action === "connect-alibi") connectAlibiContradiction({ state, actions, achievements, bell });
     else if (d.action === "bts") openBts({ bts, viewer });
     verdictInFlight = Boolean(verdict);
     persistAndPaint();
@@ -164,6 +167,7 @@ export function renderStage7({ host, state, actions, achievements, bell, bts, vi
     if (state.substage === SUBSTAGE.CHAIN) return main.replaceChildren(renderChain());
     if (state.substage === SUBSTAGE.ACCUSE) { ensureCase2(state); main.replaceChildren(renderAccusation(state, 2)); return paintStrings(2); }
     if (state.substage === SUBSTAGE.ACCUSE3) { ensureCase3(state); main.replaceChildren(renderAccusation(state, 3)); return paintStrings(3); }
+    ensureBossBoard(state);
     return main.replaceChildren(renderBoss(state, lock));
   }
 
@@ -201,14 +205,6 @@ export function renderStage7({ host, state, actions, achievements, bell, bts, vi
 const ACCUSE_REWARD = { 2: 40, 3: 60 };
 function rewardFor(cid, result) {
   return result.solved ? (ACCUSE_REWARD[cid] || 40) : 0;
-}
-
-// Open the REAL Entity-F JPEG in the image viewer. No sidecar, no pre-staged metadata: the GPS
-// contradiction lives in the file's actual EXIF. The un-cheat fires from the image metadata
-// renderer when the player navigates to the Metadata pane (docs/types/image/metadata.js), NOT from
-// this open — so opening the photo is necessary but not sufficient; inspection is required.
-export function buildEntityFPhotoOpenOptions() {
-  return { mime: "image/jpeg", source: "stage7", entity: "F" };
 }
 
 function openBts({ bts, viewer }) {

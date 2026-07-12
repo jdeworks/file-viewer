@@ -86,7 +86,7 @@ function validStageModule(id = 2) {
 {
   const save = createFreshSave(1000);
   ok(isValidSave(save), 'save: fresh v6 validates');
-  ok(save.version === 6 && save.currentStage === 1, 'save: fresh v6 starts at stage 1');
+  ok(save.version === 7 && save.currentStage === 1, 'save: fresh v7 starts at stage 1');
   ok(save.unlockedStages.join(',') === '1,2,3,4,5,6,7,8', 'save: fresh v6 unlocks stages 1–8 (stage 9 gated)');
   ok(!save.unlockedStages.includes(9), 'save: fresh v6 does NOT unlock stage 9');
   ok(Object.keys(save.stageState).length === 9 && save.stageState[9], 'save: fresh v6 creates all stageState slots');
@@ -120,7 +120,7 @@ function validStageModule(id = 2) {
   };
   const storage = new MemoryStorage({ [SAVE_KEY]: JSON.stringify(v3) });
   const save = loadSave({ storage, timestamp: 3000 });
-  ok(isValidSave(save) && save.version === 6, 'save: a valid v3 save migrates forward to v6');
+  ok(isValidSave(save) && save.version === 7, 'save: a valid v3 save migrates forward to v7');
   ok(save.defeated.join(',') === '1,2', 'migrate: defeated preserved');
   ok(save.unlockedStages.join(',') === '1,2,3,4,5,6,7,8', 'migrate: an old [1,2,3] save normalizes to 1–8 unlocked (stage 9 still gated)');
   ok(save.achievements['stage1.cheat_disabled'] && save.actions['2.search_passage'].detail.value === 'PASSAGE', 'migrate: achievements/actions preserved');
@@ -128,7 +128,7 @@ function validStageModule(id = 2) {
   ok(save.global.loopCount === 3 && save.global.createdAt === 111, 'migrate: global data preserved (not reset to fresh)');
   ok(save.runs && Object.keys(save.runs).length === 0, 'migrate: v3->v6 backfills an empty runs map');
   ok(save.global.maxAscension === 0 && save.global.ascensionCleared && Object.keys(save.global.ascensionCleared).length === 0, 'migrate: v3->v6 backfills the ascension summary');
-  ok(JSON.parse(storage.getItem(SAVE_KEY)).version === 6, 'migrate: the upgraded save is persisted back');
+  ok(JSON.parse(storage.getItem(SAVE_KEY)).version === 7, 'migrate: the upgraded save is persisted back');
 }
 
 {
@@ -149,11 +149,11 @@ function validStageModule(id = 2) {
   };
   const storage = new MemoryStorage({ [SAVE_KEY]: JSON.stringify(v4) });
   const save = loadSave({ storage, timestamp: 4200 });
-  ok(isValidSave(save) && save.version === 6, 'save: a valid v4 save migrates forward to v6');
+  ok(isValidSave(save) && save.version === 7, 'save: a valid v4 save migrates forward to v7');
   ok(save.runs[1] === 3 && save.stageState[1].economy.balance === 88, 'migrate: v4 runs/stage substate preserved');
   ok(save.global.loopCount === 1 && save.global.crashCourseUnlocked === true && save.global.createdAt === 5, 'migrate: v4 global data preserved');
   ok(save.global.maxAscension === 0 && save.global.ascensionCleared && Object.keys(save.global.ascensionCleared).length === 0, 'migrate: v4->v5 backfills the ascension summary');
-  ok(JSON.parse(storage.getItem(SAVE_KEY)).version === 6, 'migrate: the upgraded v4 save is persisted back');
+  ok(JSON.parse(storage.getItem(SAVE_KEY)).version === 7, 'migrate: the upgraded v4 save is persisted back');
 }
 
 {
@@ -180,7 +180,7 @@ function validStageModule(id = 2) {
 {
   // Legacy/degenerate older versions are shape-upgraded (backfilled), not discarded.
   const up = migrateSave({ version: 1, defeated: [4], stageState: { 4: { kept: true } } }, 500);
-  ok(up && up.version === 6, 'migrate: v1 walks the full ladder to v6');
+  ok(up && up.version === 7, 'migrate: v1 walks the full ladder to v7');
   ok(up.defeated.join(',') === '4' && up.stageState[4].kept === true, 'migrate: v1 player data survives the ladder');
   ok(Object.keys(up.stageState).length === 9, 'migrate: v1 upgrade fills all 9 stage slots');
   ok(up.global.maxAscension === 0 && Object.keys(up.global.ascensionCleared).length === 0, 'migrate: v1 ladder ends with the ascension summary');
@@ -222,7 +222,7 @@ function validStageModule(id = 2) {
     global: { loopCount: 9, maxAscension: 2, ascensionCleared: {}, createdAt: 1, updatedAt: 1 },
   };
   const up = migrateSave(v5, 900);
-  ok(up && up.version === 6, 'migrate: v5 walks the 5->6 stage-renumbering step');
+  ok(up && up.version === 7, 'migrate: v5 walks the 5->6 renumbering step (and on to v7)');
   ok(up.defeated.join(',') === '1,7,8', 'migrate: defeated remaps 9->8 (1/7 untouched)');
   ok(up.unlockedStages.join(',') === '1,2,3,4,5,6,7,8,9', 'migrate: unlockedStages remaps and drops old stage 8, de-dupes/sorts');
   ok(up.currentStage === 9, 'migrate: currentStage 10->9');
@@ -236,6 +236,27 @@ function validStageModule(id = 2) {
   ok(up.achievements['stage8.offline_mode_activated'] && up.achievements['stage9.full_capstone'], 'migrate: achievement ids remap stage9->stage8, stage10->stage9');
   ok(!up.achievements['stage8.salvage_archived'] && !up.achievements['stage9.offline_mode_activated'] && !up.achievements['stage10.full_capstone'], 'migrate: dropped/old achievement ids are gone');
   ok(up.achievements['stage1.cheat_disabled'], 'migrate: unaffected stage-1 achievement untouched');
+}
+
+
+{
+  // 6->7: the Meridian rework renames the stage-7 boss action + achievement (EXIF -> evidence-board
+  // alibi contradiction) and resets in-progress stage-7 case state; completion signals survive.
+  const v6 = {
+    ...createFreshSave(700),
+    version: 6,
+    defeated: [1, 7],
+    actions: { '1.cheat_disabled': { detail: {} }, '7.exif_contradiction_found': { detail: { v: 'old-exif' } } },
+    achievements: { 'stage7.exif_contradiction_found': { id: 'stage7.exif_contradiction_found' } },
+  };
+  v6.stageState[7] = { caseProgress: 'midway', substage: 4 };
+  const up = migrateSave(v6, 950);
+  ok(up && up.version === 7, 'migrate: v6 walks the 6->7 Meridian rename step');
+  ok(up.actions['7.alibi_contradiction_pinned']?.detail.v === 'old-exif' && !up.actions['7.exif_contradiction_found'], 'migrate: stage-7 boss action renamed, old key gone');
+  ok(up.achievements['stage7.alibi_contradiction_pinned'] && !up.achievements['stage7.exif_contradiction_found'], 'migrate: stage-7 achievement renamed, old id gone');
+  ok(Object.keys(up.stageState[7]).length === 0, 'migrate: in-progress stage-7 case state resets (content changed wholesale)');
+  ok(up.defeated.join(',') === '1,7', 'migrate: stage-7 completion (defeated) preserved');
+  ok(up.actions['1.cheat_disabled'], 'migrate: unrelated actions untouched');
 }
 
 {

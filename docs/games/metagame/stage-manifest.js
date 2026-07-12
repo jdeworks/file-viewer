@@ -28,7 +28,7 @@ export const STAGE_MANIFEST = [
   { id: 4, slug: "fractal-bastion", name: "Fractal Bastion", btsPath: "/docs/bts/fractal_bastion.bts", requiredAction: "4.recursion_blueprint_read" },
   { id: 5, slug: "signal-racer", name: "Signal Racer", btsPath: "/docs/bts/signal_racer.bts", requiredAction: "5.counter_wave_calibrated" },
   { id: 6, slug: "protocol-codex", name: "Protocol Codex", btsPath: "/docs/bts/protocol_codex.bts", requiredAction: "6.protocol_ch9_read" },
-  { id: 7, slug: "identity-arbiter", name: "Identity Arbiter", btsPath: "/docs/bts/identity_arbiter.bts", requiredAction: "7.exif_contradiction_found" },
+  { id: 7, slug: "identity-arbiter", name: "Identity Arbiter", btsPath: "/docs/bts/identity_arbiter.bts", requiredAction: "7.alibi_contradiction_pinned" },
   { id: 8, slug: "observer-state", name: "Observer State", btsPath: "/docs/bts/observer_state.bts", requiredAction: "8.offline_mode_activated" },
   { id: 9, slug: "awakening", name: "Awakening", btsPath: "/docs/bts/awakening.bts", requiredAction: "9.memory_resolved" }
 ];

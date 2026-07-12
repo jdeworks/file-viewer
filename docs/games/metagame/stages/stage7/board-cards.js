@@ -7,6 +7,7 @@
 
 import { cardsForCase } from "./evidence-board.js";
 import { socketState, partitionFacts } from "./board-derive.js";
+import { nameFor } from "./content.js";
 
 // Deterministic per-index rotations (−2°..+2°) so pinned notes sit at a natural, stable slight angle.
 const ROT = [-2, 1.5, -1.5, 2, -1, 1];
@@ -46,7 +47,7 @@ function claimCol(state, cid) {
     det.open = true;
     const sum = document.createElement("summary");
     sum.className = "s7-claim-head";
-    sum.textContent = `Entity ${entity}`;
+    sum.textContent = nameFor(entity);
     det.append(sum);
     for (const c of group) det.append(slipCard(c, i++));
     col.append(det);

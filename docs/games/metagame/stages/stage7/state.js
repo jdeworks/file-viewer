@@ -9,18 +9,18 @@ export function defaultState() {
       eliminated: [],             // populated incrementally as entities are flagged / accused
       contradicted: [],
       selectedEntity: null,
-      flags: {},                  // { B:"fieldId", C:"fieldId", ... } from the credential scan
+      flags: {},                  // { B:"fieldId", C:"fieldId", ... } from the witness-statement scan
       wrongFlagCount: 0,
       dupTestComplete: false,
       timelineContradictionCycle: null,
       chainBroken: false,
-      partialContra: [],          // e.g. ["F.GPSInfo"]
-      // Case 2 (Duplicate Roster) — the rule-of-three accusation.
+      partialContra: [],          // e.g. ["F.whereabouts"]
+      // Case 2 (The Second Claim) — the rule-of-three accusation.
       case2Seeded: false,         // entity/field clue cards minted onto the board
       case2Solved: false,         // the correct triad confirmed
       case2Attempts: 0,           // complete-but-wrong accusations
       case2HintStep: 0,           // accusation hint ladder
-      // Case 3 (Quorum Ghost) — a larger roster + a SEARCH-gated decisive fact.
+      // Case 3 (The Distant Relations) — a larger roster + a SEARCH-gated decisive fact.
       case3Seeded: false,
       case3Solved: false,
       case3Attempts: 0,
@@ -38,7 +38,7 @@ export function defaultState() {
     },
     log: [
       bellMessages.start,
-      "Six dossiers claim one name: CORE_ENTITY_001."
+      "Six claimants swear they are the true heir of Meridian House."
     ],
     meta: {
       firstClearComplete: false

@@ -1,5 +1,5 @@
-// board-render.js — Stage 7 accusation view: the evidence BOARD, shared by Case 2 (Duplicate Roster)
-// and Case 3 (Quorum Ghost). A dark board surface (styles-board.css) holding three distinct card
+// board-render.js — Stage 7 accusation view: the evidence BOARD, shared by Case 2 (The Second Claim)
+// and Case 3 (The Distant Relations). A dark board surface (styles-board.css) holding three distinct card
 // surfaces (board-cards.js), a red-string SVG overlay painted by the renderer (board-strings.js), the
 // DOSSIER/CLAIM/FACT socket plate + armed Accuse button (#3, M3), a status strip with the last judgment
 // line (#5), and a collapsing case-file accordion of settled evidence (#5, M1). Pure render — all state
@@ -9,14 +9,14 @@ import { cardsForCase } from "./evidence-board.js";
 import { caseHint, pinnedTriad } from "./accusation.js";
 import { renderColumns, renderSockets } from "./board-cards.js";
 import { searchLabelState, accusedMonogram, partitionFacts } from "./board-derive.js";
-import { CASE2_SOURCES, CASE3_SOURCES, CASE3_SEARCH } from "./content.js";
+import { CASE2_SOURCES, CASE3_SOURCES, CASE3_SEARCH, nameFor } from "./content.js";
 
 const SOURCES_FOR_CASE = { 2: CASE2_SOURCES, 3: CASE3_SOURCES };
 const ACCUSE_COST = 10;
 
 const HEADERS = {
-  2: "CASE 2 — DUPLICATE ROSTER. Open the system files, pin a triad, name the duplicate.",
-  3: "CASE 3 — QUORUM GHOST. Two anomalies are decoys (different files clear them). SEARCH the ledger to expose the real lie."
+  2: "CASE 2 — THE SECOND CLAIM. Open the estate records, pin a triad, name the impostor.",
+  3: "CASE 3 — THE DISTANT RELATIONS. Two oddities are decoys (different records clear them). SEARCH the ledger to expose the real lie."
 };
 
 export function renderAccusation(state, caseId = 2) {
@@ -81,8 +81,8 @@ function renderPlate(state, cid) {
   accuse.className = "s7-accuse-btn" + (triad ? " is-armed" : "");
   accuse.disabled = !triad;
   accuse.innerHTML = triad
-    ? `NAME THE DUPLICATE — <strong>${esc(mono)}</strong> <small>&middot; costs ${ACCUSE_COST} if wrong</small>`
-    : "Pin one dossier, one claim, one fact";
+    ? `NAME THE IMPOSTOR — <strong>${esc(nameFor(mono))}</strong> <small>&middot; costs ${ACCUSE_COST} leads if wrong</small>`
+    : "Pin one claimant, one claim, one fact";
   row.append(accuse);
   plate.append(row);
 

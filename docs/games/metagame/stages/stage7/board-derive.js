@@ -6,8 +6,8 @@
 import { pinnedCards, cardsForCase } from "./evidence-board.js";
 import { CASE3_SEARCH } from "./content.js";
 
-const SEARCH_FILE = CASE3_SEARCH.file;    // session_ledger.csv
-const SEARCH_QUERY = CASE3_SEARCH.query;  // S-7741
+const SEARCH_FILE = CASE3_SEARCH.file;    // estate_ledger.csv
+const SEARCH_QUERY = CASE3_SEARCH.query;  // Voucher 214
 
 // Socket state for the accuse plate. Each of the three sockets is FILLED by exactly one pinned card of
 // its kind; a socket with 2+ pinned cards of that kind is CONFLICTED — the "4th pin" case (#3), where
@@ -31,14 +31,14 @@ export function accusedMonogram(state, caseId = 2) {
   return s.complete ? (s.dossier.card?.entity || null) : null;
 }
 
-// Case-3 SEARCH hint-ladder LABEL state (#6). The decisive token (S-7741) is NOT printed until the
-// ladder reaches its token step; before that the button only NAMES the file (step 0) then the COLUMN
-// (step 1). Driven by the SAME case3HintStep the wrong-accusation ladder advances — so earning the
-// token costs the (unchanged) ladder economics. `revealsToken` gates the button carrying the query.
+// Case-3 SEARCH hint-ladder LABEL state (#6). The decisive voucher (Voucher 214) is NOT printed until
+// the ladder reaches its token step; before that the button only NAMES the file (step 0) then the
+// vouchers column (step 1). Driven by the SAME case3HintStep the wrong-accusation ladder advances — so
+// earning the token costs the (unchanged) ladder economics. `revealsToken` gates the button's query.
 export function searchLabelState(state) {
   const step = Math.max(0, Number(state?.evidence?.case3HintStep || 0));
   if (step >= 2) return { step, revealsToken: true, label: `search ${SEARCH_FILE} for "${SEARCH_QUERY}"` };
-  if (step === 1) return { step, revealsToken: false, label: `search the SESSION column of ${SEARCH_FILE}` };
+  if (step === 1) return { step, revealsToken: false, label: `search ${SEARCH_FILE} by voucher` };
   return { step, revealsToken: false, label: `search ${SEARCH_FILE}` };
 }
 

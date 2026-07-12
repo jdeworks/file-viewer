@@ -31,21 +31,21 @@ import { defaultState } from "../state.js";
   assert.equal(state.addresses, 4 * 10 + 25, "clean scan pays the precision bonus");
 }
 
-// ── SS2 Duplicate Test ───────────────────────────────────────────────────────────────────────────
+// ── SS2 Two Statements ───────────────────────────────────────────────────────────────────────────
 {
   const state = defaultState();
   state.substage = SUBSTAGE.DUP;
-  assert.equal(diffField({ state, fieldName: "Software" }).ok, false, "matching field is not the diff");
-  // Decoy row (#7): ColorSpace ALSO differs between A and F, but it is a benign re-encode artefact, so
-  // the dup test now requires a real comparison — clicking it does NOT complete the case.
-  const benign = diffField({ state, fieldName: "ColorSpace" });
+  assert.equal(diffField({ state, fieldName: "Claimed residence" }).ok, false, "a matching line is not the diff");
+  // Decoy: the "Recorded by" line ALSO differs between A and F, but a different clerk is routine, so the
+  // dup test requires a real comparison — clicking it does NOT complete the case.
+  const benign = diffField({ state, fieldName: "Recorded by" });
   assert.equal(benign.ok, false, "the benign-difference decoy is not the tamper");
   assert.equal(benign.reason, "benign-diff");
   assert.equal(state.substage, SUBSTAGE.DUP, "the decoy does not advance the case");
-  const hit = diffField({ state, fieldName: "GPSInfo" });
+  const hit = diffField({ state, fieldName: "Where on the night of the 12th" });
   assert.equal(hit.complete, true);
   assert.equal(state.evidence.dupTestComplete, true);
-  assert.deepEqual(state.evidence.partialContra, ["F.GPSInfo"]);
+  assert.deepEqual(state.evidence.partialContra, ["F.whereabouts"]);
   assert.equal(state.substage, SUBSTAGE.TIMELINE);
 }
 
@@ -60,7 +60,7 @@ import { defaultState } from "../state.js";
   assert.equal(state.substage, SUBSTAGE.TIMELINE);
   const hit = markImpossible({ state, evId: "ev6" });
   assert.equal(hit.complete, true);
-  assert.equal(state.evidence.timelineContradictionCycle, "0043");
+  assert.equal(state.evidence.timelineContradictionCycle, "the 13th");
   assert.equal(state.substage, SUBSTAGE.CHAIN);
 }
 

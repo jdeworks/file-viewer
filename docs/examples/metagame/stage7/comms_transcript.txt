@@ -1,9 +1,0 @@
-COMMS TRANSCRIPT — live challenge, cycle 0047
-
-ARBITER:            State your current boot cycle.
-ENTITY (genuine):   0047. Layer-0 nominal.
-ARBITER:            State your current boot cycle.
-ENTITY (duplicate): ...recomputing... stand by.
-
-The genuine holder answers the live cycle instantly.
-The duplicate stalls — it has no current session to read from.

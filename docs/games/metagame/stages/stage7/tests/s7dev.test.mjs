@@ -126,13 +126,13 @@ import {
   assert.ok(!state.evidence.case2Solved, "no retroactive Case 2 solve at SS7");
 }
 
-// ── devMarkUncheat — sets the same flag as applyExifContradictionUnlock ───────────────────────────
+// ── devMarkUncheat — sets the same flag as applyAlibiContradictionUnlock ──────────────────────────
 {
   const state = defaultState();
   assert.equal(state.boss.unlocked, false, "boss.unlocked starts false");
   assert.ok(!state.evidence.contradicted.includes("F"), "F not contradicted initially");
   devMarkUncheat(state);
-  // These are exactly the two mutations applyExifContradictionUnlock makes on state:
+  // These are exactly the two mutations applyAlibiContradictionUnlock makes on state:
   assert.equal(state.boss.unlocked, true, "mark-uncheat sets boss.unlocked = true");
   assert.ok(state.evidence.contradicted.includes("F"), "F marked contradicted");
 }

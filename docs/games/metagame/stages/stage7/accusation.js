@@ -1,12 +1,12 @@
 // accusation.js — Stage 7 rule-of-three accusation engine (Obra-Dinn style), shared by Case 2
-// (Duplicate Roster) and Case 3 (Quorum Ghost). The impostor is confirmed ONLY by a COMPLETE CORRECT
-// triad of pinned cards (entity + wrong-field + source-fact). Partial selections are SILENT (no
+// (The Second Claim) and Case 3 (The Distant Relations). The impostor is confirmed ONLY by a COMPLETE
+// CORRECT triad of pinned cards (claimant + wrong-claim + source-fact). Partial selections are SILENT (no
 // feedback → no guess-spam by elimination). A complete-but-wrong commit costs a small penalty and
 // advances the hint ladder but NEVER reveals which part is wrong and NEVER wipes progress. The decisive
-// fact card only exists once the player engages the REAL file (open for Case 2's route table; a genuine
-// SEARCH for Case 3's session ledger), so a triad cannot be completed by guessing. Pure + deterministic.
+// fact card only exists once the arbiter engages the REAL file (open for Case 2's household register; a
+// genuine SEARCH for Case 3's estate ledger), so a triad cannot be completed by guessing. Deterministic.
 
-import { CASE2, CASE3, CASE2_SOURCES, CASE3_SOURCES, CASE3_SEARCH, CASES } from "./content.js";
+import { CASE2, CASE3, CASE2_SOURCES, CASE3_SOURCES, CASE3_SEARCH, CASES, nameFor } from "./content.js";
 import {
   drawLink,
   ensureBoard,
@@ -25,16 +25,16 @@ const ALL_SOURCE_CARDS = [...CASE2_SOURCES, ...CASE3_SOURCES, CASE3_SEARCH];
 
 const HINT_LADDERS = {
   2: [
-    "Six dossiers became four. One of G/H/J/K wears a name it cannot hold.",
-    "A clean dossier is not proof. Open the system files — a claim only breaks against a source fact.",
-    "One looks wrong but checks out; one looks clean but cannot be. Compare each ROUTE against the route table.",
-    "An entity claiming an ACTIVE route the route table closed is the duplicate. Pin entity + route + the route-table fact."
+    "A second set of claimants (G/H/J/K) presses the estate. One wears a claim it cannot hold.",
+    "A tidy claim is not proof. Open the estate records — a claim only breaks against a source fact.",
+    "One looks wrong but checks out; one looks clean but cannot be. Compare each ENGAGEMENT against the household register.",
+    "A claimant swearing a standing engagement the register shows given up is the impostor. Pin claimant + engagement + the register fact."
   ],
   3: [
-    "Five claim CORE_ENTITY_002. Two anomalies are decoys — each is cleared by a DIFFERENT file.",
-    "Open quorum_spec.json and audit_trail.txt: a 'wrong' tier and a 'wrong' layer are both sanctioned.",
-    "The real lie hides in a session token. Opening the ledger is not enough — SEARCH it for the claimed token.",
-    "Search session_ledger.csv for the token N claims active; it is REVOKED. Pin entity + session + the ledger fact."
+    "A wider circle (L/M/N/P/Q) claims a share. Two oddities are decoys — each cleared by a DIFFERENT record.",
+    "Open the estate customs and the solicitor's memo: an odd kinship and an odd standing are both recognised.",
+    "The real lie hides in a voucher. Opening the ledger is not enough — SEARCH it for the claimed voucher.",
+    "Search the estate ledger for the voucher Mr. Sennett claims honoured; it is VOID. Pin claimant + provision + the ledger fact."
   ]
 };
 
@@ -65,11 +65,11 @@ export function ensureCaseBoard(state, caseCfg) {
   const seededKey = `case${caseCfg.id}Seeded`;
   if (state.evidence[seededKey]) return;
   for (const id of caseCfg.roster) {
-    mintCard(state, { id: `entity:${id}`, kind: "entity", caseId: caseCfg.id, entity: id, label: `Entity ${id}` });
+    mintCard(state, { id: `entity:${id}`, kind: "entity", caseId: caseCfg.id, entity: id, label: nameFor(id) });
     for (const f of caseCfg.fields[id]) {
       mintCard(state, {
         id: `field:${id}:${f.id}`, kind: "field", caseId: caseCfg.id, entity: id, fieldId: f.id,
-        label: `${id} · ${f.label}: ${f.value}`
+        label: `${nameFor(id)} · ${f.label}: ${f.value}`
       });
     }
   }
@@ -137,16 +137,16 @@ export function attemptAccusationForCase(state, caseId, { entityId, fieldId, fac
   establishFact(state, {
     id: `triad:${entityId}`,
     label: caseCfg.id === 3
-      ? `Entity ${entityId} is the duplicate — an active-session claim the ledger reports revoked.`
-      : `Entity ${entityId} is the duplicate — an active-route claim the route table refutes.`,
+      ? `${nameFor(entityId)} is the impostor — a settled-provision claim the ledger records as void.`
+      : `${nameFor(entityId)} is the impostor — a standing-engagement claim the household register refutes.`,
     cards: [entityCard.id, fieldCard.id, factCard.id]
   });
   state.evidence[`case${caseCfg.id}Solved`] = true;
   state.evidence.eliminated = [...new Set([...(state.evidence.eliminated || []), entityId])];
   state.addresses = Number(state.addresses || 0) + (ACCUSE_REWARD[caseCfg.id] || 40);
   pushLog(state, caseCfg.id === 3
-    ? `Entity ${entityId}'s active-session claim is refuted by the ledger search. The ghost is named.`
-    : `Entity ${entityId}'s active-route claim is refuted by the route table. The duplicate is named.`);
+    ? `${nameFor(entityId)}'s provision claim is refuted by the ledger search. The false relation is named.`
+    : `${nameFor(entityId)}'s engagement claim is refuted by the household register. The false claimant is named.`);
   if (Number(state.substage || 1) < caseCfg.nextSubstage) state.substage = caseCfg.nextSubstage;
   return { ok: true, solved: true };
 }

@@ -2,7 +2,7 @@
 // though the in-save schema is now v4 — old saves were written under this key, and migrating them
 // forward (rather than orphaning them by changing the key) is the whole point of the ladder below.
 export const SAVE_KEY = 'fv:games:metagame:v3';
-export const SAVE_VERSION = 6;
+export const SAVE_VERSION = 7;
 // NOTE (2026-07-11): the game used to have 10 stages. Entropy Field (the old stage 8) was removed
 // entirely; Observer State moved 9→8; Awakening (the finale) moved 10→9. See MIGRATIONS[5] below for
 // how an existing save's stage-numbered data (stageState/unlockedStages/defeated/runs/actions/
@@ -235,6 +235,24 @@ const MIGRATIONS = {
     value.actions = remapKeyedObject(value.actions);
     value.achievements = remapKeyedObject(value.achievements);
     value.version = 6;
+    return value;
+  },
+  // 6->7: Stage 7's Meridian rework (2026-07-12) replaced the EXIF/GPS boss un-cheat with the
+  // in-stage evidence-board gate. Rename the boss action + achievement so a player who already
+  // beat the old boss keeps completion AND stage 9's cross-stage read; reset any in-progress
+  // stage-7 case state (the case content changed wholesale — metagame.js lazy-reseeds it) while
+  // preserving defeated/unlocked/achievements.
+  6: (value) => {
+    if (plainObject(value.actions) && plainObject(value.actions['7.exif_contradiction_found'])) {
+      value.actions['7.alibi_contradiction_pinned'] = value.actions['7.exif_contradiction_found'];
+      delete value.actions['7.exif_contradiction_found'];
+    }
+    if (plainObject(value.achievements) && plainObject(value.achievements['stage7.exif_contradiction_found'])) {
+      value.achievements['stage7.alibi_contradiction_pinned'] = value.achievements['stage7.exif_contradiction_found'];
+      delete value.achievements['stage7.exif_contradiction_found'];
+    }
+    if (plainObject(value.stageState)) value.stageState[7] = {};
+    value.version = 7;
     return value;
   },
 };

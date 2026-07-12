@@ -111,7 +111,7 @@ function fullBody(now = 1000) {
   // Build the real keys from crossstage mapping by re-deriving via fragStatus: set all done.
   const allDone = { actions: {
     "1.cheat_disabled": {}, "2.search_passage": {}, "3.diff_key_restored": {}, "4.recursion_blueprint_read": {},
-    "5.counter_wave_calibrated": {}, "6.protocol_ch9_read": {}, "7.exif_contradiction_found": {},
+    "5.counter_wave_calibrated": {}, "6.protocol_ch9_read": {}, "7.alibi_contradiction_pinned": {},
     "8.offline_mode_activated": {}
   } };
   // A single advance trigger (one more rewitness no-op won't fire wrong-phase since already fragmentation)
@@ -124,7 +124,7 @@ function fullBody(now = 1000) {
   const state = fullBody();
   startConfront(state);
   for (const m of memories) answerCompaction({ state, memoryId: m.id, choice: state.memories[m.id].choice });
-  const save = { actions: { "1.cheat_disabled": {}, "2.search_passage": {}, "3.diff_key_restored": {}, "4.recursion_blueprint_read": {}, "5.counter_wave_calibrated": {}, "6.protocol_ch9_read": {}, "7.exif_contradiction_found": {}, "8.offline_mode_activated": {} } };
+  const save = { actions: { "1.cheat_disabled": {}, "2.search_passage": {}, "3.diff_key_restored": {}, "4.recursion_blueprint_read": {}, "5.counter_wave_calibrated": {}, "6.protocol_ch9_read": {}, "7.alibi_contradiction_pinned": {}, "8.offline_mode_activated": {} } };
   rewitnessFragmentation({ state, memoryId: "genesis", save });
   assert.equal(getConfrontState(state, save).phase, "core");
   // answer all "seeker"

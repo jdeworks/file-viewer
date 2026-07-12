@@ -6,401 +6,318 @@
 
 
 // ../../docs/games/metagame/stages/stage7/messages.js
-var ACTION_NAME = "exif_contradiction_found";
-var REQUIRED_ACTION = "7.exif_contradiction_found";
-var ACHIEVEMENT_ID = "stage7.exif_contradiction_found";
-var ACHIEVEMENT_TEXT = "I looked beyond the surface of the image.";
+var ACTION_NAME = "alibi_contradiction_pinned";
+var REQUIRED_ACTION = "7.alibi_contradiction_pinned";
+var ACHIEVEMENT_ID = "stage7.alibi_contradiction_pinned";
+var ACHIEVEMENT_TEXT = "Two documents, one lie. The postmark broke the alibi.";
 var BTS_PATH = "/docs/bts/identity_arbiter.bts";
-var ENTITY_F_IMAGE_PATH = "/docs/examples/metagame/stage7/entity_f_verification.jpg";
-var ENTITY_ANCHOR_PATH = "/docs/examples/metagame/stage7/entity_anchor_0043.txt";
+var ALIBI_STATEMENT_PATH = "/docs/examples/metagame/stage7/alibi_statement.txt";
+var TORN_LETTER_PATH = "/docs/examples/metagame/stage7/torn_letter.txt";
+var ENTITY_ANCHOR_PATH = "/docs/examples/metagame/stage7/rescinded_appointment.txt";
 var ANCHOR_ACTION = "anchor_chain_examined";
 var CASE2_SOURCE_PATHS = {
-  spec_examined: "/docs/examples/metagame/stage7/system_spec.json",
-  route_table_examined: "/docs/examples/metagame/stage7/route_table.csv",
-  access_log_examined: "/docs/examples/metagame/stage7/access_log.csv",
-  comms_examined: "/docs/examples/metagame/stage7/comms_transcript.txt"
+  spec_examined: "/docs/examples/metagame/stage7/estate_rules.txt",
+  route_table_examined: "/docs/examples/metagame/stage7/household_register.csv",
+  access_log_examined: "/docs/examples/metagame/stage7/visitors_book.csv",
+  comms_examined: "/docs/examples/metagame/stage7/parlour_interview.txt"
 };
 var CASE2_SOURCE_ACTIONS = Object.keys(CASE2_SOURCE_PATHS);
 var CASE3_SOURCE_PATHS = {
-  quorum_spec_examined: "/docs/examples/metagame/stage7/quorum_spec.json",
-  audit_examined: "/docs/examples/metagame/stage7/audit_trail.txt",
-  handshake_examined: "/docs/examples/metagame/stage7/handshake_log.csv",
-  ledger_examined: "/docs/examples/metagame/stage7/session_ledger.csv"
+  quorum_spec_examined: "/docs/examples/metagame/stage7/inheritance_customs.txt",
+  audit_examined: "/docs/examples/metagame/stage7/solicitor_memo.txt",
+  handshake_examined: "/docs/examples/metagame/stage7/mourners_register.csv",
+  ledger_examined: "/docs/examples/metagame/stage7/estate_ledger.csv"
 };
 var CASE3_SOURCE_ACTIONS = Object.keys(CASE3_SOURCE_PATHS);
 var CASE3_SEARCH_ACTION = "session_revoked_found";
-var CASE3_SEARCH_PATH = "/docs/examples/metagame/stage7/session_ledger.csv";
-var CASE3_SEARCH_QUERY = "S-7741";
+var CASE3_SEARCH_PATH = "/docs/examples/metagame/stage7/estate_ledger.csv";
+var CASE3_SEARCH_QUERY = "Voucher 214";
 var substageHints = {
-  1: "Six dossiers, one identity. Read B, C, D, E — flag the one detail that contradicts something you already know to be true.",
-  2: "A and F match on paper. Compare the two dossiers side by side and find the one detail that's been altered.",
-  3: "Check Entity F's movements. One entry in the log couldn't have happened.",
-  4: "Follow F's paper trail. Open the record it points to.",
-  5: "A second suspect claims the same identity. Open the case files, pin the evidence to the board, and name the impostor with three things: who, what they claimed, and the fact that disproves it.",
-  6: "A THIRD group of suspects (L/M/N/P/Q) claims the same identity. Two odd details turn out to be innocent, cleared by different records — the impostor's lie is only exposed by SEARCHING the sign-in ledger.",
-  7: "Open Entity F's photograph, then check where and when it was really taken — a photo remembers more than it shows. Then name the real one."
+  1: "Six claim the estate; one is the heir. Read the rival statements (B, C, D, E) and flag the one line in each that contradicts something you already know to be true.",
+  2: "Miss Vane and Miss Marchmain are tied on paper. Compare the two statements side by side and find the one detail that's been altered.",
+  3: "Check Miss Marchmain's movements. One entry could not have happened.",
+  4: "Follow Miss Marchmain's paper trail. Open the record her claim rests upon.",
+  5: "A second set of claimants presses the estate. Open the records, pin the evidence, and name the impostor with three things: who, what they claimed, and the fact that disproves it.",
+  6: "A wider circle of distant relations (L/M/N/P/Q) claims a share. Two odd details turn out innocent, cleared by different records — the impostor's lie is exposed only by SEARCHING the estate ledger.",
+  7: "Open Miss Marchmain's alibi statement and her torn letter, pin both to the board, and CONNECT them — the postmark breaks the alibi. Then name the true heir."
 };
 var bellMessages = {
-  start: "something presented itself. I had to decide.",
-  unlock: "the photograph knew more than it showed. it had been somewhere it claimed it hadn't.",
-  wrongCommit: "incorrect. one of them was not what it appeared.",
-  defeated: "I know which one. I chose. I was right."
+  start: "the claimants were assembled. I had to decide.",
+  unlock: "the postmark broke her alibi. she could not have been at sea and in Harwick both.",
+  wrongCommit: "incorrect. one of them was not who they claimed.",
+  defeated: "I know the heir. I chose. I was right."
 };
 var lockedHintLadder = [
-  "one of them looks exactly like the description. that does not mean it is real.",
-  "the paperwork leaves Entity A and Entity F tied.",
-  "the photo shows something the paperwork doesn't. its hidden details hold the answer.",
-  "open Entity F's photo details and check where it claims to be from, then commit to Entity A."
+  "one of them tells the story exactly as the will does. that does not make her the heir.",
+  "on paper Miss Vane and Miss Marchmain cannot be told apart.",
+  "the alibi and the letter cannot both be true — pin them together and the contradiction shows.",
+  "connect Miss Marchmain's alibi statement to her postmarked letter, then name Miss Vane."
 ];
 var arbiterLines = {
-  fContradicted: "Entity F contradicted: the photo's location doesn't match anywhere it claims to be.",
-  stillChoose: "Entity F is eliminated. Judgment still requires selecting Entity A.",
-  defeated: "The Name Collision resolves to Entity A."
+  fContradicted: "Miss Marchmain contradicted: her alibi puts her at sea while her own postmark keeps her in Harwick.",
+  stillChoose: "Miss Marchmain is eliminated. The verdict still requires naming the true heir.",
+  defeated: "The Meridian inheritance is settled upon Miss Rosalind Vane."
 };
 
-// ../../docs/games/metagame/stages/stage7/boss.js
-function hasExifContradiction(actions) {
-  return Boolean(actions && typeof actions.hasAction === "function" && actions.hasAction(7, ACTION_NAME));
-}
-var ACCUSE_PENALTY = 10;
-function getBossLockState({ actions, state }) {
-  const unlocked = hasExifContradiction(actions) || Boolean(state?.boss?.unlocked);
-  const hintIndex = Math.min(Math.max(Number(state?.boss?.lockHintStep || 0), 0), lockedHintLadder.length - 1);
-  return {
-    unlocked,
-    defeated: Boolean(state?.boss?.defeated),
-    informationState: unlocked ? "Entity F contradicted" : "A/F unresolved",
-    contradicted: [...state?.evidence?.contradicted || []],
-    defeatPossible: true,
-    requiredSelection: "A",
-    hint: unlocked ? bellMessages.unlock : lockedHintLadder[hintIndex]
-  };
-}
-function recordLockedBossAttempt(state) {
-  const boss = state.boss;
-  boss.reached = true;
-  boss.attempts = Number(boss.attempts || 0) + 1;
-  boss.lockHintStep = Math.min(Number(boss.lockHintStep || 0) + 1, lockedHintLadder.length - 1);
-  pushLog(state, bellMessages.wrongCommit);
-  return getBossLockState({ actions: null, state });
-}
-function applyExifContradictionUnlock({ state, achievements, bell }) {
-  const boss = state.boss;
-  const firstUnlock = !boss.unlocked;
-  boss.unlocked = true;
-  markContradicted(state, "F");
-  if (firstUnlock) {
-    pushLog(state, arbiterLines.fContradicted);
-    pushLog(state, arbiterLines.stillChoose);
-    notifyBell(bell, bellMessages.unlock, "stage7.exif_contradiction_found");
-    unlockAchievement(achievements, ACHIEVEMENT_ID, {
-      id: ACHIEVEMENT_ID,
-      stage: 7,
-      text: ACHIEVEMENT_TEXT,
-      action: "7.exif_contradiction_found",
-      entity: "F"
-    });
-  }
-  return firstUnlock;
-}
-function inspectContradictoryExif({ state, actions, achievements, bell, field = "GPSInfo", entity = "F" }) {
-  if (entity !== "F" || field !== "GPSInfo") {
-    pushLog(state, "metadata inspected. no decisive contradiction found.");
-    return { ok: false };
-  }
-  actions?.setAction?.(7, ACTION_NAME, {
-    source: "image-metadata",
-    file: "entity_f_verification.jpg",
-    field: "GPSInfo",
-    entity: "F"
-  });
-  applyExifContradictionUnlock({ state, achievements, bell });
-  return { ok: true, contradicted: "F" };
-}
-function commitIdentity({ state, entity }) {
-  const selected = String(entity || "").trim().toUpperCase();
-  if (Number(state.substage || 1) < 7) return { ok: false, reason: "not-yet-boss" };
-  state.boss.reached = true;
-  state.evidence.selectedEntity = selected;
-  state.boss.attempts = Number(state.boss.attempts || 0) + 1;
-  if (selected !== "A") {
-    markContradicted(state, selected);
-    state.addresses = Math.max(0, Number(state.addresses || 0) - ACCUSE_PENALTY);
-    state.boss.lockHintStep = Math.min(Number(state.boss.lockHintStep || 0) + 1, lockedHintLadder.length - 1);
-    if (selected === "F") {
-      pushLog(state, "Entity F is already contradicted — the GPS places it outside every known layer. Commit to the entity that survives all five investigations.");
-    } else {
-      pushLog(state, `${selected || "unknown"} is not the real credential holder — eliminated (-${ACCUSE_PENALTY} addresses). the field narrows.`);
-    }
-    return { ok: false, reason: "wrong-entity" };
-  }
-  state.boss.defeated = true;
-  state.addresses = Number(state.addresses || 0) + 150;
-  state.meta.firstClearComplete = true;
-  pushLog(state, arbiterLines.defeated);
-  return { ok: true, defeated: true };
-}
-function pushLog(state, line2) {
-  state.log = [...state.log || [], line2].slice(-8);
-}
-function markContradicted(state, entity) {
-  const set = new Set(state.evidence.contradicted || []);
-  set.add(entity);
-  state.evidence.contradicted = [...set];
-}
-function notifyBell(bell, text, id) {
-  if (bell && typeof bell.push === "function") bell.push({ id, stage: 7, text });
-  else if (bell && typeof bell.say === "function") bell.say(text, { id, stage: 7 });
-  else if (bell && typeof bell.add === "function") bell.add(text, { id, stage: 7 });
-  else if (bell && typeof bell.showBell === "function") bell.showBell(id, text, { stage: 7 });
-}
-function unlockAchievement(achievements, id, detail) {
-  if (achievements && typeof achievements.unlockAchievement === "function") {
-    achievements.unlockAchievement(id, detail);
-  } else if (achievements && typeof achievements.unlock === "function") {
-    achievements.unlock(id, detail);
-  }
-}
-
 // ../../docs/games/metagame/stages/stage7/content.js
+var NAMES = {
+  A: "Miss Rosalind Vane",
+  B: "Mr. Cassius Merrow",
+  C: "Mrs. Dorothea Ashby",
+  D: "Mr. Ambrose Kelate",
+  E: "Mr. Lucian Frost",
+  F: "Miss Isolde Marchmain",
+  G: "Mr. Halloran",
+  H: "Mrs. Trevisick",
+  J: "Mr. Onslow",
+  K: "Mr. Peverell",
+  L: "Mr. Ashworth",
+  M: "Miss Calder",
+  N: "Mr. Sennett",
+  P: "Mr. Iveson",
+  Q: "Miss Blakeney"
+};
+function nameFor(id) {
+  return NAMES[id] || `Claimant ${id}`;
+}
 var candidates = [
-  { id: "A", claim: "consistent EXIF, consistent credentials", status: "real" },
-  { id: "B", claim: "photo software exposes editing", status: "impostor" },
-  { id: "C", claim: "response timing is scripted", status: "impostor" },
-  { id: "D", claim: "activity log names an impossible event", status: "impostor" },
-  { id: "E", claim: "route is inactive since cycle 0043", status: "impostor" },
-  { id: "F", claim: "documents are clean; GPSInfo is outside any known layer", status: "impostor" }
+  { id: "A", name: NAMES.A, claim: "her account holds against every record", status: "real" },
+  { id: "B", name: NAMES.B, claim: "reached the House by a road not yet open", status: "impostor" },
+  { id: "C", name: NAMES.C, claim: "recites the claim word for word", status: "impostor" },
+  { id: "D", name: NAMES.D, claim: "names a witness long dead", status: "impostor" },
+  { id: "E", name: NAMES.E, claim: "was away on the night of the reading", status: "impostor" },
+  { id: "F", name: NAMES.F, claim: "her alibi cannot survive the postmark", status: "impostor" }
 ];
-var metadataRows = {
+var statementRows = {
   A: [
-    ["DateTimeOriginal", "Boot cycle 0047"],
-    ["GPSInfo", "Layer-0 coordinates"],
-    ["ColorSpace", "sRGB"],
-    ["Software", "Boot Vision 1.0"]
+    ["Claimed residence", "Meridian House, west wing"],
+    ["Where on the night of the 12th", "at Meridian House"],
+    ["Attesting witness", "Mrs. Deane, housekeeper"],
+    ["Recorded by", "the day-clerk"]
   ],
   F: [
-    ["DateTimeOriginal", "Boot cycle 0047"],
-    ["GPSInfo", "52.3N, 4.8E / outside known layers"],
-    // Decoy row (UX audit #7): ColorSpace ALSO differs from A, but it is a benign re-encode artefact —
-    // so the dup test now needs a real comparison (which divergence is TAMPERING vs routine).
-    ["ColorSpace", "Display-P3"],
-    ["Software", "Boot Vision 1.0"]
+    ["Claimed residence", "Meridian House, west wing"],
+    // Tamper: F's whereabouts were altered — a detail she will need at the verdict, and cannot keep.
+    ["Where on the night of the 12th", "at the House, then away by the late coach"],
+    ["Attesting witness", "Mrs. Deane, housekeeper"],
+    // Decoy: a different clerk took F's statement down — a routine difference of hand, not a forgery.
+    ["Recorded by", "the night-clerk"]
   ]
 };
 var DUP_FIELDS = {
-  GPSInfo: { tamper: true },
-  ColorSpace: {
+  "Where on the night of the 12th": { tamper: true },
+  "Recorded by": {
     benignDiff: true,
-    note: "ColorSpace differs (sRGB vs Display-P3) — a routine re-encode artefact, not tampering. Look again."
+    note: "The two statements were taken down by different clerks — a routine difference of hand, not a forgery. Look again."
   }
 };
 var entityFields = {
   B: [
-    { id: "credential_class", label: "Role", value: "TIER-1-PROXY" },
+    { id: "kinship", label: "Kinship", value: "second cousin" },
     {
-      id: "route_active_since",
-      label: "Last Seen Active",
-      value: "cycle 0043",
+      id: "road",
+      label: "How she reached the House",
+      value: "by the Calbourne road, the 9th",
       wrong: true,
-      reason: "Route ENTITY_ANCHOR_0043 was decommissioned at cycle 0043."
+      reason: "The Calbourne road was impassable until the 10th — no one reached the House by it on the 9th."
     },
-    { id: "software", label: "Software", value: "Boot Vision 1.0" }
+    { id: "witness", label: "Attesting witness", value: "the parson" }
   ],
   C: [
     {
-      id: "response_timing",
-      label: "How They Answer",
-      value: "scripted: 0ms variance",
+      id: "recital",
+      label: "How she answers",
+      value: "word for word, identical each telling",
       wrong: true,
-      reason: "All entities exhibit non-zero timing variance in this system."
+      reason: "Her account is recited word for word each time — rehearsed, not remembered."
     },
-    { id: "credential_class", label: "Role", value: "TIER-1-PROXY" },
-    { id: "layer_tag", label: "Clearance Level", value: "LAYER-0" }
+    { id: "kinship", label: "Kinship", value: "niece" },
+    { id: "residence", label: "Residence", value: "the east lodge" }
   ],
   D: [
-    { id: "credential_class", label: "Role", value: "TIER-1-PROXY" },
-    { id: "software", label: "Software", value: "Boot Vision 1.0" },
+    { id: "kinship", label: "Kinship", value: "nephew" },
+    { id: "residence", label: "Residence", value: "the county town" },
     {
-      id: "log_event",
-      label: "What Happened",
-      value: "LAYER_MERGE",
+      id: "witness",
+      label: "Attesting witness",
+      value: "Mr. Colby, the steward",
       wrong: true,
-      reason: "LAYER_MERGE is not a valid event type in this system."
+      reason: "Mr. Colby, the steward, died last spring; he attested nothing."
     }
   ],
   E: [
     {
-      id: "route_status",
-      label: "Current Whereabouts",
-      value: "active since cycle 0044",
+      id: "whereabouts",
+      label: "Where on the night of the 12th",
+      value: "in the county town",
       wrong: true,
-      reason: "Route inactive since cycle 0043; activity after 0043 is impossible."
+      reason: "The will was read at the House on the 12th; she cannot have been in the county town."
     },
-    { id: "layer_tag", label: "Clearance Level", value: "LAYER-0" },
-    { id: "software", label: "Software", value: "Boot Vision 1.0" }
+    { id: "kinship", label: "Kinship", value: "second cousin" },
+    { id: "witness", label: "Attesting witness", value: "the housekeeper" }
   ]
 };
 var SCAN_ENTITIES = ["B", "C", "D", "E"];
 var ambientFacts = [
-  "Current cycle: 0047",
-  "Valid event types: BOOT, SHUTDOWN, SYNC, PING, WATCHDOG",
-  "All entities exhibit non-zero timing variance",
-  "ENTITY_ANCHOR_0043 decommissioned at cycle 0043"
+  "The will was read at Meridian House on the evening of the 12th.",
+  "Mr. Colby, the estate steward, died last spring.",
+  "The Calbourne road was impassable — washed out — until the 10th.",
+  "A true heir speaks from memory; a claim recited word for word is rehearsed."
 ];
 var AMBIENT_TRIGGERS = [
   ["E"],
-  // "Current cycle: 0047"           — E's post-0043 route status
+  // "The will was read … on the 12th"           — E's away-on-the-12th claim
   ["D"],
-  // "Valid event types…"            — D's invalid LAYER_MERGE event
-  ["C"],
-  // "…non-zero timing variance"     — C's scripted 0ms timing
-  ["B", "E"]
-  // "ENTITY_ANCHOR_0043 decommissioned" — B's route-active + E's route-status claims
+  // "Mr. Colby … died last spring"              — D's dead-witness claim
+  ["B"],
+  // "The Calbourne road was impassable …"       — B's washed-out-road arrival
+  ["C"]
+  // "A claim recited word for word is rehearsed" — C's word-perfect recital
 ];
 var entityFEventLog = [
-  { cycle: "0039", event: "BOOT", id: "ev1" },
-  { cycle: "0040", event: "SYNC", id: "ev2" },
-  // Decoy (UX audit #7): a SECOND event at cycle 0040 LOOKS like a duplicate-cycle anomaly, but two
-  // events sharing a cycle is routine — the only IMPOSSIBLE entry is a contradictory ACTIVE/DORMANT.
-  { cycle: "0040", event: "PING", id: "ev2b" },
-  { cycle: "0041", event: "PING", id: "ev3" },
-  { cycle: "0042", event: "WATCHDOG", id: "ev4" },
-  { cycle: "0043", event: "ACTIVE", id: "ev5" },
+  { when: "the 9th", event: "arrived at Meridian House", id: "ev1" },
+  { when: "the 10th", event: "dined with the solicitor", id: "ev2" },
+  // Decoy: a SECOND entry on the 10th LOOKS like a duplicate-day anomaly, but two engagements in one
+  // day is routine — the only IMPOSSIBLE entry places her in two places at once.
+  { when: "the 10th", event: "walked the east grounds", id: "ev2b" },
+  { when: "the 11th", event: "received in the drawing room", id: "ev3" },
+  { when: "the 12th", event: "attended the reading of the will", id: "ev4" },
+  { when: "the 13th", event: "at Meridian House all evening", id: "ev5" },
   {
-    cycle: "0043",
-    event: "DORMANT",
+    when: "the 13th",
+    event: "boarded the Harwick packet, forty miles distant",
     id: "ev6",
     impossible: true,
-    reason: "Simultaneous ACTIVE/DORMANT states at cycle 0043 — a logical impossibility."
+    reason: "Placed at Meridian House and aboard the Harwick packet on the same evening — forty miles apart. She cannot be in both."
   },
-  { cycle: "0044", event: "SYNC", id: "ev7" },
-  { cycle: "0045", event: "PING", id: "ev8" },
-  { cycle: "0046", event: "WATCHDOG", id: "ev9" },
-  { cycle: "0047", event: "BOOT", id: "ev10" }
+  { when: "the 14th", event: "called on the notary", id: "ev7" },
+  { when: "the 15th", event: "returned to the House", id: "ev8" },
+  { when: "the 16th", event: "walked with the parson", id: "ev9" },
+  { when: "the 17th", event: "sat for the family portrait", id: "ev10" }
 ];
 var CASE2 = {
   id: 2,
-  name: "DUPLICATE ROSTER",
+  name: "THE SECOND CLAIM",
   nextSubstage: 6,
-  // correct accusation → Case 3 (the Quorum Ghost), then the boss
+  // correct accusation → Case 3 (the distant relations), then the verdict
   roster: ["G", "H", "J", "K"],
   impostor: "K",
   // Dossier fields shown on the board as clue cards once Case 2 begins.
   fields: {
     G: [
-      { id: "tier", label: "Standing", value: "TIER-2" },
-      { id: "layer", label: "Clearance Level", value: "LAYER-1" },
-      { id: "route", label: "Assignment", value: "R-0102 (active)" }
+      { id: "tier", label: "Kinship", value: "second cousin" },
+      { id: "layer", label: "Standing", value: "named in the will" },
+      { id: "route", label: "Engagement", value: "steward, pensioned off (closed)" }
     ],
     H: [
-      // Red herring: TIER-3-LEGACY LOOKS anomalous but system_spec confirms -LEGACY is a valid tier-3.
-      { id: "tier", label: "Standing", value: "TIER-3-LEGACY" },
-      { id: "layer", label: "Clearance Level", value: "LAYER-0" },
-      { id: "route", label: "Assignment", value: "R-0110 (active)" }
+      // Red herring: "great-aunt by marriage" LOOKS an invalid claim, but the estate rules recognise it.
+      { id: "tier", label: "Kinship", value: "great-aunt by marriage" },
+      { id: "layer", label: "Standing", value: "not named" },
+      { id: "route", label: "Engagement", value: "companion to the late lady (closed)" }
     ],
     J: [
-      { id: "tier", label: "Standing", value: "TIER-1" },
-      { id: "layer", label: "Clearance Level", value: "LAYER-2" },
-      { id: "route", label: "Assignment", value: "R-0118 (active)" }
+      { id: "tier", label: "Kinship", value: "nephew" },
+      { id: "layer", label: "Standing", value: "named in the codicil" },
+      { id: "route", label: "Engagement", value: "solicitor's clerk (closed)" }
     ],
     K: [
-      { id: "tier", label: "Standing", value: "TIER-2" },
-      { id: "layer", label: "Clearance Level", value: "LAYER-1" },
-      // The decisive lie: claims an ACTIVE route the route table proves was closed at cycle 0044.
-      { id: "route", label: "Assignment", value: "R-0091 (active)", suspect: true }
+      { id: "tier", label: "Kinship", value: "second cousin" },
+      { id: "layer", label: "Standing", value: "named in the will" },
+      // The decisive lie: claims a standing engagement the household register shows was given up.
+      { id: "route", label: "Engagement", value: "estate agent, still in service", suspect: true }
     ]
   },
-  // The unique correct triad: K's "active route R-0091" claim is refuted by the route_table fact.
+  // The unique correct triad: K's "still in service" engagement is refuted by the register fact.
   triad: { entity: "K", fieldId: "route", factId: "fact:route" },
-  // For authoring/clarity (not used by the matcher): H's tier looks wrong but fact:spec exonerates it.
+  // For authoring/clarity (not used by the matcher): H's kinship looks wrong but the rules exonerate it.
   redHerring: { entity: "H", fieldId: "tier", factId: "fact:spec" }
 };
 var CASE2_SOURCES = [
   {
     action: "spec_examined",
-    file: "system_spec.json",
+    file: "estate_rules.txt",
     card: {
       id: "fact:spec",
       kind: "fact",
       caseId: 2,
-      stamp: "system_spec.json",
+      stamp: "estate_rules.txt",
       about: ["H"],
-      label: "Spec: valid tiers TIER-1..3 (incl. -LEGACY); layers {0,1,2}; one active route/entity."
+      label: "Estate rules: kinship by marriage is a recognised claim; each person may hold but one engagement to the estate."
     }
   },
   {
     action: "route_table_examined",
-    file: "route_table.csv",
+    file: "household_register.csv",
     card: {
       id: "fact:route",
       kind: "fact",
       caseId: 2,
-      stamp: "route_table.csv",
+      stamp: "household_register.csv",
       about: ["K"],
-      label: "Route table: R-0091 = INACTIVE (closed cycle 0044)."
+      label: "Household register: the estate-agent's post was given up in the spring — Mr. Peverell holds no engagement."
     }
   },
   {
     action: "access_log_examined",
-    file: "access_log.csv",
+    file: "visitors_book.csv",
     card: {
       id: "fact:activity",
       kind: "fact",
       caseId: 2,
-      stamp: "access_log.csv",
-      label: "Access log: G/H/J/K all last-seen cycle 0047."
+      stamp: "visitors_book.csv",
+      label: "Visitors' book: Halloran, Trevisick, Onslow and Peverell all called at the House this week."
     }
   },
   {
     action: "comms_examined",
-    file: "comms_transcript.txt",
+    file: "parlour_interview.txt",
     card: {
       id: "fact:comms",
       kind: "fact",
       caseId: 2,
-      stamp: "comms_transcript.txt",
-      label: "Comms: the real holder answers the cycle-0047 challenge; the duplicate stalls."
+      stamp: "parlour_interview.txt",
+      label: "Parlour interview: the true claimant answered the housekeeper plainly; the false one faltered."
     }
   }
 ];
 var CASE3 = {
   id: 3,
-  name: "QUORUM GHOST",
+  name: "THE DISTANT RELATIONS",
   roster: ["L", "M", "N", "P", "Q"],
   impostor: "N",
   nextSubstage: 7,
-  // correct accusation → the EXIF boss (substage 7)
+  // correct accusation → the verdict (substage 7)
   fields: {
     L: [
-      { id: "tier", label: "Standing", value: "TIER-1" },
-      { id: "layer", label: "Clearance Level", value: "LAYER-0" },
-      { id: "session", label: "Check-in", value: "S-7702 (active)" }
+      { id: "tier", label: "Kinship", value: "first cousin" },
+      { id: "layer", label: "Standing", value: "named in the will" },
+      { id: "session", label: "Provision", value: "legacy of £200, paid" }
     ],
     M: [
-      { id: "tier", label: "Standing", value: "TIER-2" },
-      { id: "layer", label: "Clearance Level", value: "LAYER-1" },
-      { id: "session", label: "Check-in", value: "S-7715 (active)" }
+      { id: "tier", label: "Kinship", value: "second cousin" },
+      { id: "layer", label: "Standing", value: "named in the codicil" },
+      { id: "session", label: "Provision", value: "annuity, paid" }
     ],
     N: [
-      { id: "tier", label: "Standing", value: "TIER-2" },
-      { id: "layer", label: "Clearance Level", value: "LAYER-1" },
-      // The decisive lie: claims an ACTIVE session the ledger proves was REVOKED at cycle 0045.
-      { id: "session", label: "Check-in", value: "S-7741 (active)", suspect: true }
+      { id: "tier", label: "Kinship", value: "second cousin" },
+      { id: "layer", label: "Standing", value: "named in the codicil" },
+      // The decisive lie: claims a settled annuity the ledger records as void.
+      { id: "session", label: "Provision", value: "annuity under Voucher 214, honoured", suspect: true }
     ],
     P: [
-      { id: "tier", label: "Standing", value: "TIER-1" },
-      // Red herring #1: LAYER-3 LOOKS out-of-spec, but audit_trail.txt records a sanctioned elevation.
-      { id: "layer", label: "Clearance Level", value: "LAYER-3" },
-      { id: "session", label: "Check-in", value: "S-7720 (active)" }
+      { id: "tier", label: "Kinship", value: "nephew" },
+      // Red herring #1: "principal legatee" LOOKS too high a standing, but a late codicil sanctions it.
+      { id: "layer", label: "Standing", value: "named principal legatee" },
+      { id: "session", label: "Provision", value: "residuary share, pending" }
     ],
     Q: [
-      // Red herring #2: TIER-0-ROOT LOOKS anomalous, but quorum_spec.json lists it as a valid tier.
-      { id: "tier", label: "Standing", value: "TIER-0-ROOT" },
-      { id: "layer", label: "Clearance Level", value: "LAYER-0" },
-      { id: "session", label: "Check-in", value: "S-7708 (active)" }
+      // Red herring #2: "natural daughter" LOOKS an irregular claim, but the estate custom recognises it.
+      { id: "tier", label: "Kinship", value: "natural daughter" },
+      { id: "layer", label: "Standing", value: "named in the will" },
+      { id: "session", label: "Provision", value: "legacy of £500, paid" }
     ]
   },
-  // The unique correct triad: N's "active session S-7741" is refuted by the searched ledger fact.
+  // The unique correct triad: N's "honoured" annuity is refuted by the searched ledger fact.
   triad: { entity: "N", fieldId: "session", factId: "fact:session" },
   // Authoring notes (not used by the matcher): each red herring is cleared by a DIFFERENT file.
   redHerrings: [
@@ -411,75 +328,86 @@ var CASE3 = {
 var CASE3_SOURCES = [
   {
     action: "quorum_spec_examined",
-    file: "quorum_spec.json",
+    file: "inheritance_customs.txt",
     card: {
       id: "fact:qspec",
       kind: "fact",
       caseId: 3,
-      stamp: "quorum_spec.json",
+      stamp: "inheritance_customs.txt",
       about: ["Q"],
-      label: "Spec: valid tiers TIER-0-ROOT..TIER-3; layers {0,1,2}; one active session/entity."
+      label: "Custom of the estate: a natural child, if acknowledged, is a recognised heir."
     }
   },
   {
     action: "audit_examined",
-    file: "audit_trail.txt",
+    file: "solicitor_memo.txt",
     card: {
       id: "fact:audit",
       kind: "fact",
       caseId: 3,
-      stamp: "audit_trail.txt",
+      stamp: "solicitor_memo.txt",
       about: ["P"],
-      label: "Audit: P holds a SANCTIONED temporary LAYER-3 elevation (cycle 0046)."
+      label: "Solicitor's memo: a late codicil (the 6th) names the nephew principal legatee — sanctioned and witnessed."
     }
   },
   {
     action: "handshake_examined",
-    file: "handshake_log.csv",
+    file: "mourners_register.csv",
     card: {
       id: "fact:handshake",
       kind: "fact",
       caseId: 3,
-      stamp: "handshake_log.csv",
-      label: "Handshake log: L/M/N/P/Q all completed the cycle-0047 handshake."
+      stamp: "mourners_register.csv",
+      label: "Register at the reading: Ashworth, Calder, Sennett, Iveson and Blakeney all attended."
     }
   },
   {
     action: "ledger_examined",
-    file: "session_ledger.csv",
+    file: "estate_ledger.csv",
     card: {
       id: "fact:ledgerhint",
       kind: "fact",
       caseId: 3,
-      stamp: "session_ledger.csv",
-      label: "Ledger lists session tokens — SEARCH it for a claimed token to learn its true status."
+      stamp: "estate_ledger.csv",
+      label: "The estate ledger lists every disbursement — SEARCH it by voucher to learn whether a payment was honoured or void."
     }
   }
 ];
 var CASE3_SEARCH = {
   action: "session_revoked_found",
-  file: "session_ledger.csv",
-  query: "S-7741",
+  file: "estate_ledger.csv",
+  query: "Voucher 214",
   card: {
     id: "fact:session",
     kind: "fact",
     caseId: 3,
-    stamp: "session_ledger.csv",
+    stamp: "estate_ledger.csv",
     about: ["N"],
-    label: "Ledger search: token S-7741 = REVOKED (cycle 0045). N's 'active' claim is false."
+    label: "Ledger search: Voucher 214 — the annuity Mr. Sennett claims — is marked VOID (cancelled, the 15th). His claim is false."
   }
 };
 var CASES = { 2: CASE2, 3: CASE3 };
-var metadataArtifact = {
-  format: "stage7-image-metadata-sidecar",
-  note: "The current app image metadata reader extracts EXIF from JPEG APP1 but not PNG text chunks. Stage 7 therefore uses real same-origin PNG fixtures plus this local sidecar for the authored EXIF-style evidence.",
-  decisiveField: "GPSInfo",
-  decisiveEntity: "F",
-  entities: {
-    A: Object.fromEntries(metadataRows.A),
-    F: Object.fromEntries(metadataRows.F)
+var BOSS_DOCS = [
+  {
+    id: "boss:alibi",
+    kind: "document",
+    caseId: 7,
+    entity: "F",
+    stamp: "alibi_statement.txt",
+    file: "alibi_statement.txt",
+    label: "Alibi statement — Miss Marchmain left Harwick on the 12th, at sea when the codicil was signed."
+  },
+  {
+    id: "boss:letter",
+    kind: "document",
+    caseId: 7,
+    entity: "F",
+    stamp: "torn_letter.txt",
+    file: "torn_letter.txt",
+    label: "Torn letter — in her hand, postmarked HARWICK the 14th: she never sailed."
   }
-};
+];
+var BOSS_DOC_PAIR = ["boss:alibi", "boss:letter"];
 
 // ../../docs/games/metagame/stages/stage7/evidence-board.js
 function ensureBoard(state) {
@@ -556,6 +484,118 @@ function establishFact(state, { id, label, cards = [] }) {
   return fact;
 }
 
+// ../../docs/games/metagame/stages/stage7/boss.js
+function hasAlibiContradiction(actions) {
+  return Boolean(actions && typeof actions.hasAction === "function" && actions.hasAction(7, ACTION_NAME));
+}
+var ACCUSE_PENALTY = 10;
+function getBossLockState({ actions, state }) {
+  const unlocked = hasAlibiContradiction(actions) || Boolean(state?.boss?.unlocked);
+  const hintIndex = Math.min(Math.max(Number(state?.boss?.lockHintStep || 0), 0), lockedHintLadder.length - 1);
+  return {
+    unlocked,
+    defeated: Boolean(state?.boss?.defeated),
+    informationState: unlocked ? "Miss Marchmain contradicted" : "Vane / Marchmain unresolved",
+    contradicted: [...state?.evidence?.contradicted || []],
+    defeatPossible: true,
+    requiredSelection: "A",
+    hint: unlocked ? bellMessages.unlock : lockedHintLadder[hintIndex]
+  };
+}
+function recordLockedBossAttempt(state) {
+  const boss = state.boss;
+  boss.reached = true;
+  boss.attempts = Number(boss.attempts || 0) + 1;
+  boss.lockHintStep = Math.min(Number(boss.lockHintStep || 0) + 1, lockedHintLadder.length - 1);
+  pushLog(state, bellMessages.wrongCommit);
+  return getBossLockState({ actions: null, state });
+}
+function ensureBossBoard(state) {
+  for (const doc of BOSS_DOCS) mintCard(state, doc);
+}
+function applyAlibiContradictionUnlock({ state, achievements, bell }) {
+  const boss = state.boss;
+  const firstUnlock = !boss.unlocked;
+  boss.unlocked = true;
+  markContradicted(state, "F");
+  if (firstUnlock) {
+    pushLog(state, arbiterLines.fContradicted);
+    pushLog(state, arbiterLines.stillChoose);
+    notifyBell(bell, bellMessages.unlock, ACHIEVEMENT_ID);
+    unlockAchievement(achievements, ACHIEVEMENT_ID, {
+      id: ACHIEVEMENT_ID,
+      stage: 7,
+      text: ACHIEVEMENT_TEXT,
+      action: REQUIRED_ACTION,
+      entity: "F"
+    });
+  }
+  return firstUnlock;
+}
+function connectAlibiContradiction({ state, actions, achievements, bell }) {
+  ensureBossBoard(state);
+  const [alibiId, letterId] = BOSS_DOC_PAIR;
+  const alibi = getCard(state, alibiId);
+  const letter = getCard(state, letterId);
+  if (!alibi?.pinned || !letter?.pinned) {
+    pushLog(state, "Pin both the alibi statement and the postmarked letter to connect them.");
+    return { ok: false, reason: "not-both-pinned" };
+  }
+  const link = drawLink(state, alibiId, letterId);
+  if (!link.ok) return { ok: false, reason: link.reason };
+  actions?.setAction?.(7, ACTION_NAME, {
+    source: "evidence-board",
+    documents: ["alibi_statement", "torn_letter"],
+    entity: "F"
+  });
+  applyAlibiContradictionUnlock({ state, achievements, bell });
+  return { ok: true, contradicted: "F" };
+}
+function commitIdentity({ state, entity }) {
+  const selected = String(entity || "").trim().toUpperCase();
+  if (Number(state.substage || 1) < 7) return { ok: false, reason: "not-yet-boss" };
+  state.boss.reached = true;
+  state.evidence.selectedEntity = selected;
+  state.boss.attempts = Number(state.boss.attempts || 0) + 1;
+  if (selected !== "A") {
+    markContradicted(state, selected);
+    state.addresses = Math.max(0, Number(state.addresses || 0) - ACCUSE_PENALTY);
+    state.boss.lockHintStep = Math.min(Number(state.boss.lockHintStep || 0) + 1, lockedHintLadder.length - 1);
+    if (selected === "F") {
+      pushLog(state, "Miss Marchmain is already contradicted — her own postmark keeps her in Harwick. Name the claimant who survives every test.");
+    } else {
+      pushLog(state, `${nameFor(selected)} is not the heir — eliminated (-${ACCUSE_PENALTY} leads). the field narrows.`);
+    }
+    return { ok: false, reason: "wrong-entity" };
+  }
+  state.boss.defeated = true;
+  state.addresses = Number(state.addresses || 0) + 150;
+  state.meta.firstClearComplete = true;
+  pushLog(state, arbiterLines.defeated);
+  return { ok: true, defeated: true };
+}
+function pushLog(state, line2) {
+  state.log = [...state.log || [], line2].slice(-8);
+}
+function markContradicted(state, entity) {
+  const set = new Set(state.evidence.contradicted || []);
+  set.add(entity);
+  state.evidence.contradicted = [...set];
+}
+function notifyBell(bell, text, id) {
+  if (bell && typeof bell.push === "function") bell.push({ id, stage: 7, text });
+  else if (bell && typeof bell.say === "function") bell.say(text, { id, stage: 7 });
+  else if (bell && typeof bell.add === "function") bell.add(text, { id, stage: 7 });
+  else if (bell && typeof bell.showBell === "function") bell.showBell(id, text, { stage: 7 });
+}
+function unlockAchievement(achievements, id, detail) {
+  if (achievements && typeof achievements.unlockAchievement === "function") {
+    achievements.unlockAchievement(id, detail);
+  } else if (achievements && typeof achievements.unlock === "function") {
+    achievements.unlock(id, detail);
+  }
+}
+
 // ../../docs/games/metagame/stages/stage7/substages.js
 var SUBSTAGE = { SCAN: 1, DUP: 2, TIMELINE: 3, CHAIN: 4, ACCUSE: 5, ACCUSE3: 6, BOSS: 7 };
 function flagField({ state, entityId, fieldId }) {
@@ -563,19 +603,19 @@ function flagField({ state, entityId, fieldId }) {
   if (!field) return { ok: false, reason: "unknown" };
   if (!field.wrong) {
     state.evidence.wrongFlagCount = Number(state.evidence.wrongFlagCount || 0) + 1;
-    pushLog2(state, "insufficient evidence — cross-check the ambient facts.");
+    pushLog2(state, "not enough to disprove it — check it against what you already know.");
     return { ok: false, reason: "not-contradiction" };
   }
   if (state.evidence.flags[entityId]) return { ok: true, already: true };
   state.evidence.flags[entityId] = fieldId;
   state.evidence.eliminated = [.../* @__PURE__ */ new Set([...state.evidence.eliminated || [], entityId])];
   state.addresses = Number(state.addresses || 0) + 10;
-  pushLog2(state, `Entity ${entityId}: ${field.reason}`);
+  pushLog2(state, `${nameFor(entityId)}: ${field.reason}`);
   const complete = SCAN_ENTITIES.every((e) => state.evidence.flags[e]);
   if (complete) {
     if (Number(state.evidence.wrongFlagCount || 0) === 0) {
       state.addresses += 25;
-      pushLog2(state, "clean scan. +25 precision bonus.");
+      pushLog2(state, "a clean reading. +25 for precision.");
     }
     advance(state, SUBSTAGE.DUP);
   }
@@ -584,13 +624,13 @@ function flagField({ state, entityId, fieldId }) {
 function diffField({ state, fieldName }) {
   const info = DUP_FIELDS[fieldName];
   if (!info?.tamper) {
-    pushLog2(state, info?.benignDiff ? info.note : "this field matches across both dossiers.");
+    pushLog2(state, info?.benignDiff ? info.note : "this line matches across both statements.");
     return { ok: false, reason: info?.benignDiff ? "benign-diff" : "match" };
   }
-  state.evidence.partialContra = [.../* @__PURE__ */ new Set([...state.evidence.partialContra || [], "F.GPSInfo"])];
+  state.evidence.partialContra = [.../* @__PURE__ */ new Set([...state.evidence.partialContra || [], "F.whereabouts"])];
   state.evidence.dupTestComplete = true;
   state.addresses = Number(state.addresses || 0) + 15;
-  pushLog2(state, "Entity F's GPSInfo diverges from Entity A. Not yet decisive — the case continues.");
+  pushLog2(state, "Miss Marchmain's whereabouts differ from Miss Vane's. Not yet decisive — the case continues.");
   advance(state, SUBSTAGE.TIMELINE);
   return { ok: true, complete: true };
 }
@@ -600,7 +640,7 @@ function markImpossible({ state, evId }) {
     pushLog2(state, "this entry is plausible. keep looking.");
     return { ok: false };
   }
-  state.evidence.timelineContradictionCycle = ev.cycle;
+  state.evidence.timelineContradictionCycle = ev.when;
   state.addresses = Number(state.addresses || 0) + 15;
   pushLog2(state, ev.reason);
   advance(state, SUBSTAGE.CHAIN);
@@ -610,8 +650,8 @@ function markChainBroken({ state }) {
   if (state.evidence.chainBroken) return { ok: true, already: true };
   state.evidence.chainBroken = true;
   state.addresses = Number(state.addresses || 0) + 15;
-  pushLog2(state, "Entity F's credential chain references a decommissioned anchor. The chain is invalid.");
-  pushLog2(state, "A second roster claims the name. Open the system files and name the duplicate.");
+  pushLog2(state, "Miss Marchmain's claim rests on an appointment the estate rescinded. The trail is broken.");
+  pushLog2(state, "A second set of claimants presses the estate. Open the records and name the impostor.");
   carryCase1Facts(state);
   advance(state, SUBSTAGE.ACCUSE);
   return { ok: true, complete: true };
@@ -619,10 +659,10 @@ function markChainBroken({ state }) {
 function carryCase1Facts(state) {
   if (state.evidence.case1Carried) return;
   const facts = [
-    { id: "case1:scan", label: "B/C/D/E each carried one contradicted credential — eliminated in the scan." },
-    { id: "case1:dup", label: "Entity F's GPSInfo diverges from Entity A — a tampered dossier field." },
-    { id: "case1:timeline", label: "Entity F's log holds an impossible ACTIVE/DORMANT collision at cycle 0043." },
-    { id: "case1:chain", label: "Entity F's chain cites the decommissioned ENTITY_ANCHOR_0043 — chain invalid." }
+    { id: "case1:scan", label: "The rival statements (B/C/D/E) each held one contradiction — all four eliminated." },
+    { id: "case1:dup", label: "Miss Marchmain's whereabouts differ from Miss Vane's — an altered statement." },
+    { id: "case1:timeline", label: "Miss Marchmain's movements place her at the House and at Harwick on the same evening." },
+    { id: "case1:chain", label: "Miss Marchmain's claim rests on a rescinded appointment — the paper trail is broken." }
   ];
   for (const f of facts) establishFact(state, f);
   state.evidence.case1Carried = true;
@@ -640,16 +680,16 @@ var ACCUSE_REWARD = { 2: 40, 3: 60 };
 var ALL_SOURCE_CARDS = [...CASE2_SOURCES, ...CASE3_SOURCES, CASE3_SEARCH];
 var HINT_LADDERS = {
   2: [
-    "Six dossiers became four. One of G/H/J/K wears a name it cannot hold.",
-    "A clean dossier is not proof. Open the system files — a claim only breaks against a source fact.",
-    "One looks wrong but checks out; one looks clean but cannot be. Compare each ROUTE against the route table.",
-    "An entity claiming an ACTIVE route the route table closed is the duplicate. Pin entity + route + the route-table fact."
+    "A second set of claimants (G/H/J/K) presses the estate. One wears a claim it cannot hold.",
+    "A tidy claim is not proof. Open the estate records — a claim only breaks against a source fact.",
+    "One looks wrong but checks out; one looks clean but cannot be. Compare each ENGAGEMENT against the household register.",
+    "A claimant swearing a standing engagement the register shows given up is the impostor. Pin claimant + engagement + the register fact."
   ],
   3: [
-    "Five claim CORE_ENTITY_002. Two anomalies are decoys — each is cleared by a DIFFERENT file.",
-    "Open quorum_spec.json and audit_trail.txt: a 'wrong' tier and a 'wrong' layer are both sanctioned.",
-    "The real lie hides in a session token. Opening the ledger is not enough — SEARCH it for the claimed token.",
-    "Search session_ledger.csv for the token N claims active; it is REVOKED. Pin entity + session + the ledger fact."
+    "A wider circle (L/M/N/P/Q) claims a share. Two oddities are decoys — each cleared by a DIFFERENT record.",
+    "Open the estate customs and the solicitor's memo: an odd kinship and an odd standing are both recognised.",
+    "The real lie hides in a voucher. Opening the ledger is not enough — SEARCH it for the claimed voucher.",
+    "Search the estate ledger for the voucher Mr. Sennett claims honoured; it is VOID. Pin claimant + provision + the ledger fact."
   ]
 };
 var case2HintLadder = HINT_LADDERS[2];
@@ -671,7 +711,7 @@ function ensureCaseBoard(state, caseCfg) {
   const seededKey = `case${caseCfg.id}Seeded`;
   if (state.evidence[seededKey]) return;
   for (const id of caseCfg.roster) {
-    mintCard(state, { id: `entity:${id}`, kind: "entity", caseId: caseCfg.id, entity: id, label: `Entity ${id}` });
+    mintCard(state, { id: `entity:${id}`, kind: "entity", caseId: caseCfg.id, entity: id, label: nameFor(id) });
     for (const f of caseCfg.fields[id]) {
       mintCard(state, {
         id: `field:${id}:${f.id}`,
@@ -679,7 +719,7 @@ function ensureCaseBoard(state, caseCfg) {
         caseId: caseCfg.id,
         entity: id,
         fieldId: f.id,
-        label: `${id} · ${f.label}: ${f.value}`
+        label: `${nameFor(id)} · ${f.label}: ${f.value}`
       });
     }
   }
@@ -735,13 +775,13 @@ function attemptAccusationForCase(state, caseId, { entityId, fieldId, factId } =
   drawLink(state, fieldCard.id, factCard2.id);
   establishFact(state, {
     id: `triad:${entityId}`,
-    label: caseCfg.id === 3 ? `Entity ${entityId} is the duplicate — an active-session claim the ledger reports revoked.` : `Entity ${entityId} is the duplicate — an active-route claim the route table refutes.`,
+    label: caseCfg.id === 3 ? `${nameFor(entityId)} is the impostor — a settled-provision claim the ledger records as void.` : `${nameFor(entityId)} is the impostor — a standing-engagement claim the household register refutes.`,
     cards: [entityCard.id, fieldCard.id, factCard2.id]
   });
   state.evidence[`case${caseCfg.id}Solved`] = true;
   state.evidence.eliminated = [.../* @__PURE__ */ new Set([...state.evidence.eliminated || [], entityId])];
   state.addresses = Number(state.addresses || 0) + (ACCUSE_REWARD[caseCfg.id] || 40);
-  pushLog3(state, caseCfg.id === 3 ? `Entity ${entityId}'s active-session claim is refuted by the ledger search. The ghost is named.` : `Entity ${entityId}'s active-route claim is refuted by the route table. The duplicate is named.`);
+  pushLog3(state, caseCfg.id === 3 ? `${nameFor(entityId)}'s provision claim is refuted by the ledger search. The false relation is named.` : `${nameFor(entityId)}'s engagement claim is refuted by the household register. The false claimant is named.`);
   if (Number(state.substage || 1) < caseCfg.nextSubstage) state.substage = caseCfg.nextSubstage;
   return { ok: true, solved: true };
 }
@@ -754,7 +794,7 @@ var wrongField = (id) => (entityFields[id] || []).find((f) => f.wrong)?.id;
 var impossibleEvId = entityFEventLog.find((e) => e.impossible)?.id;
 function devSkipCase1(state) {
   for (const id of SCAN_ENTITIES) flagField({ state, entityId: id, fieldId: wrongField(id) });
-  diffField({ state, fieldName: "GPSInfo" });
+  diffField({ state, fieldName: "Where on the night of the 12th" });
   markImpossible({ state, evId: impossibleEvId });
   markChainBroken({ state });
   ensureCase2(state);
@@ -795,7 +835,7 @@ var devControls = [
   { id: "skip-case1", label: "Skip Case 1 (SS1–SS4)" },
   { id: "mint-case-facts", label: "Mint all case fact cards" },
   { id: "solve-accusation", label: "Solve current accusation" },
-  { id: "mark-uncheat", label: "Mark EXIF un-cheat satisfied" }
+  { id: "mark-uncheat", label: "Mark alibi contradiction found" }
 ];
 function applyDev(state, id) {
   if (id === "skip-case1") devSkipCase1(state);
@@ -826,7 +866,7 @@ function accusedMonogram(state, caseId = 2) {
 function searchLabelState(state) {
   const step = Math.max(0, Number(state?.evidence?.case3HintStep || 0));
   if (step >= 2) return { step, revealsToken: true, label: `search ${SEARCH_FILE} for "${SEARCH_QUERY}"` };
-  if (step === 1) return { step, revealsToken: false, label: `search the SESSION column of ${SEARCH_FILE}` };
+  if (step === 1) return { step, revealsToken: false, label: `search ${SEARCH_FILE} by voucher` };
   return { step, revealsToken: false, label: `search ${SEARCH_FILE}` };
 }
 function partitionFacts(state, caseId = 2) {
@@ -874,7 +914,7 @@ function claimCol(state, cid) {
     det.open = true;
     const sum = document.createElement("summary");
     sum.className = "s7-claim-head";
-    sum.textContent = `Entity ${entity}`;
+    sum.textContent = nameFor(entity);
     det.append(sum);
     for (const c of group) det.append(slipCard(c, i++));
     col.append(det);
@@ -967,8 +1007,8 @@ function esc(value) {
 var SOURCES_FOR_CASE = { 2: CASE2_SOURCES, 3: CASE3_SOURCES };
 var ACCUSE_COST = 10;
 var HEADERS = {
-  2: "CASE 2 — DUPLICATE ROSTER. Open the system files, pin a triad, name the duplicate.",
-  3: "CASE 3 — QUORUM GHOST. Two anomalies are decoys (different files clear them). SEARCH the ledger to expose the real lie."
+  2: "CASE 2 — THE SECOND CLAIM. Open the estate records, pin a triad, name the impostor.",
+  3: "CASE 3 — THE DISTANT RELATIONS. Two oddities are decoys (different records clear them). SEARCH the ledger to expose the real lie."
 };
 function renderAccusation(state, caseId = 2) {
   const cid = Number(caseId);
@@ -1017,7 +1057,7 @@ function renderPlate(state, cid) {
   const accuse = button({ "data-accuse": String(cid) });
   accuse.className = "s7-accuse-btn" + (triad ? " is-armed" : "");
   accuse.disabled = !triad;
-  accuse.innerHTML = triad ? `NAME THE DUPLICATE — <strong>${esc2(mono)}</strong> <small>&middot; costs ${ACCUSE_COST} if wrong</small>` : "Pin one dossier, one claim, one fact";
+  accuse.innerHTML = triad ? `NAME THE IMPOSTOR — <strong>${esc2(nameFor(mono))}</strong> <small>&middot; costs ${ACCUSE_COST} leads if wrong</small>` : "Pin one claimant, one claim, one fact";
   row.append(accuse);
   plate.append(row);
   const strip = el2("div", "s7-status-strip");
@@ -1078,12 +1118,12 @@ function renderScan(state) {
   const facts = el3("aside", "s7-ambient-facts");
   const revealed = revealedAmbient(state);
   const items = ambientFacts.map((f, i) => revealed.has(i) ? `<li class="is-revealed">${esc3(f)}</li>` : "").join("");
-  facts.innerHTML = `<h3>Ambient facts</h3>` + (items ? `<ul>${items}</ul>` : `<p class="s7-ambient-empty">Facts surface as you flag contradictions.</p>`);
+  facts.innerHTML = `<h3>What you already know</h3>` + (items ? `<ul>${items}</ul>` : `<p class="s7-ambient-empty">Facts surface as you flag contradictions.</p>`);
   const cards = el3("div", "s7-cards");
   for (const id of SCAN_ENTITIES) {
     const card = el3("article", "s7-card");
     if (state.evidence.flags[id]) card.classList.add("is-flagged");
-    card.innerHTML = `<strong>Entity ${esc3(id)}</strong>`;
+    card.innerHTML = `<strong>${esc3(nameFor(id))}</strong>`;
     for (const f of entityFields[id]) {
       const b = document.createElement("button");
       b.type = "button";
@@ -1102,10 +1142,10 @@ function renderDup(state) {
   const wrap = el3("div", "s7-ss2");
   const panel = el3("div", "s7-duptest-panel");
   const colA = el3("div", "s7-duptest-col");
-  colA.innerHTML = `<h3>Entity A</h3>${metadataRows.A.map(([f, v]) => `<div class="s7-row"><span>${esc3(f)}</span><em>${esc3(v)}</em></div>`).join("")}`;
+  colA.innerHTML = `<h3>${esc3(nameFor("A"))}</h3>${statementRows.A.map(([f, v]) => `<div class="s7-row"><span>${esc3(f)}</span><em>${esc3(v)}</em></div>`).join("")}`;
   const colF = el3("div", "s7-duptest-col");
-  colF.innerHTML = `<h3>Entity F</h3>`;
-  for (const [f, v] of metadataRows.F) {
+  colF.innerHTML = `<h3>${esc3(nameFor("F"))}</h3>`;
+  for (const [f, v] of statementRows.F) {
     const b = document.createElement("button");
     b.type = "button";
     b.dataset.diff = f;
@@ -1114,17 +1154,17 @@ function renderDup(state) {
   }
   panel.append(colA, colF);
   const note = el3("p", "s7-duptest-hint");
-  note.textContent = "DIFF DOSSIERS — two fields differ, but only one is tampering. Identify it on Entity F.";
+  note.textContent = "TWO STATEMENTS — two lines differ, but only one was altered. Find it on Miss Marchmain's.";
   wrap.append(panel, note);
   return wrap;
 }
 function renderTimeline() {
   const wrap = el3("div", "s7-ss3");
-  wrap.innerHTML = `<p class="s7-audit-header">TIMELINE AUDIT — Entity F activity log. One entry is logically impossible; the rest are plausible. Mark it.</p>`;
+  wrap.innerHTML = `<p class="s7-audit-header">MOVEMENTS AUDIT — Miss Marchmain's stated movements. One entry could not have happened; the rest are plausible. Mark it.</p>`;
   const list = el3("ol", "s7-timeline");
   for (const ev of entityFEventLog) {
     const li = document.createElement("li");
-    li.innerHTML = `<span>cycle ${esc3(ev.cycle)}</span><span>${esc3(ev.event)}</span>`;
+    li.innerHTML = `<span>${esc3(ev.when)}</span><span>${esc3(ev.event)}</span>`;
     const b = document.createElement("button");
     b.type = "button";
     b.dataset.ev = ev.id;
@@ -1139,47 +1179,75 @@ function renderChain() {
   const wrap = el3("div", "s7-ss4");
   wrap.innerHTML = `
     <article class="s7-dossier-chain">
-      <h3>Entity F — Credential Chain</h3>
-      <p>Route active via: <strong>ENTITY_ANCHOR_0043</strong></p>
-      <p>Chain reference:
-        <button type="button" data-action="open-anchor">CREDENTIAL_CHAIN &rarr; ENTITY_ANCHOR_0043 [open exhibit]</button>
+      <h3>Miss Marchmain — her claim to the estate</h3>
+      <p>Rests upon: <strong>a letter of appointment to Meridian House</strong></p>
+      <p>The record itself:
+        <button type="button" data-action="open-anchor">letter of appointment &rarr; rescinded_appointment.txt [open record]</button>
       </p>
     </article>
-    <p class="s7-chase-hint">Follow the citation. Open the referenced anchor record in the viewer.</p>`;
+    <p class="s7-chase-hint">Follow the reference. Open the appointment record in the viewer.</p>`;
   return wrap;
 }
 function renderBoss(state, lock) {
   const wrap = el3("div", "s7-ss5");
   const header = el3("header", "s7-boss-header");
-  header.textContent = "IDENTITY REQUIRES PRIMARY SOURCE VERIFICATION";
+  header.textContent = "NAME THE TRUE HEIR OF MERIDIAN HOUSE";
   wrap.append(header);
   const intro = el3("p");
-  intro.textContent = "Entity F presents a verification image. Inspect its embedded metadata.";
+  intro.textContent = "Miss Vane and Miss Marchmain are still tied. The documents cannot both be true — pin them and connect them.";
   wrap.append(intro);
-  const controls = el3("div", "s7-controls");
-  controls.innerHTML = `<button type="button" data-action="photo">open Entity F photo</button>`;
-  wrap.append(controls);
-  if (lock.unlocked) {
-    const verdict = el3("div", "s7-verdict");
-    verdict.innerHTML = `<p>Entity F's image GPS is outside every known entity layer. F is eliminated.</p>
-      <p>Commit to the real credential holder.</p>`;
-    const row = el3("div", "s7-commit-row");
-    for (const c of candidates) {
-      const b = document.createElement("button");
-      b.type = "button";
-      b.dataset.commit = c.id;
-      b.disabled = state.boss.defeated;
-      b.textContent = `commit ${c.id}`;
-      row.append(b);
-    }
-    verdict.append(row);
-    wrap.append(verdict);
-  } else {
+  if (!lock.unlocked) {
+    wrap.append(renderVerdictBoard(state));
     const waiting = el3("p", "s7-hint");
     waiting.textContent = lock.hint;
     wrap.append(waiting);
+    return wrap;
   }
+  const verdict = el3("div", "s7-verdict");
+  verdict.innerHTML = `<p>Miss Marchmain's alibi cannot survive her own postmark. She is eliminated.</p>
+    <p>Name the true heir.</p>`;
+  const row = el3("div", "s7-commit-row");
+  for (const c of candidates) {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.dataset.commit = c.id;
+    b.disabled = state.boss.defeated;
+    b.textContent = `name ${c.name}`;
+    row.append(b);
+  }
+  verdict.append(row);
+  wrap.append(verdict);
   return wrap;
+}
+function renderVerdictBoard(state) {
+  const board = el3("div", "s7-verdict-board");
+  let bothPinned = true;
+  for (const doc of BOSS_DOCS) {
+    const card = getCard(state, doc.id);
+    const pinned = Boolean(card?.pinned);
+    if (!pinned) bothPinned = false;
+    const row = el3("div", "s7-verdict-doc");
+    const pin2 = document.createElement("button");
+    pin2.type = "button";
+    pin2.dataset.pin = doc.id;
+    pin2.className = "s7-cardface s7-cardface--document" + (pinned ? " is-pinned" : "");
+    pin2.innerHTML = `<span class="s7-fact-stamp" aria-hidden="true">${esc3(doc.stamp)}</span><span class="s7-cardface-body">${esc3(doc.label)}</span>`;
+    const open = document.createElement("button");
+    open.type = "button";
+    open.dataset.action = doc.id === "boss:alibi" ? "open-alibi" : "open-letter";
+    open.className = "s7-doc-open";
+    open.textContent = `read ${doc.file}`;
+    row.append(pin2, open);
+    board.append(row);
+  }
+  const connect = document.createElement("button");
+  connect.type = "button";
+  connect.dataset.action = "connect-alibi";
+  connect.className = "s7-connect-btn" + (bothPinned ? " is-armed" : "");
+  connect.disabled = !bothPinned;
+  connect.textContent = bothPinned ? "CONNECT — the alibi against the postmark" : "Pin both documents to connect them";
+  board.append(connect);
+  return board;
 }
 function el3(tag, className) {
   const node = document.createElement(tag);
@@ -1291,7 +1359,7 @@ function installStage7Hook({ state, persistAndPaint }) {
     state: () => state,
     solveInvestigation() {
       for (const id of SCAN_ENTITIES) flagField({ state, entityId: id, fieldId: entityFields[id].find((f) => f.wrong).id });
-      diffField({ state, fieldName: "GPSInfo" });
+      diffField({ state, fieldName: "Where on the night of the 12th" });
       markImpossible({ state, evId: entityFEventLog.find((e) => e.impossible).id });
       persistAndPaint();
       return state.substage;
@@ -1322,22 +1390,22 @@ function removeStage7Hook() {
 // ../../docs/games/metagame/stages/stage7/renderer.js
 var SOURCE_PATHS = { ...CASE2_SOURCE_PATHS, ...CASE3_SOURCE_PATHS };
 var SUBSTAGE_LABEL = {
-  1: "1/7 CREDENTIAL SCAN",
-  2: "2/7 DUPLICATE TEST",
-  3: "3/7 TIMELINE AUDIT",
-  4: "4/7 REFERENCE CHASE",
-  5: "5/7 DUPLICATE ROSTER",
-  6: "6/7 QUORUM GHOST",
-  7: "7/7 EXIF ARBITER (BOSS)"
+  1: "1/7 WITNESS STATEMENTS",
+  2: "2/7 TWO STATEMENTS",
+  3: "3/7 MOVEMENTS AUDIT",
+  4: "4/7 PAPER TRAIL",
+  5: "5/7 THE SECOND CLAIM",
+  6: "6/7 THE DISTANT RELATIONS",
+  7: "7/7 THE VERDICT"
 };
 var ARRIVAL = {
-  1: "CREDENTIAL SCAN",
-  2: "DUPLICATE TEST",
-  3: "TIMELINE AUDIT",
-  4: "REFERENCE CHASE",
-  5: "CASE 2 — DUPLICATE ROSTER",
-  6: "CASE 3 — QUORUM GHOST",
-  7: "EXIF ARBITER"
+  1: "WITNESS STATEMENTS",
+  2: "TWO STATEMENTS",
+  3: "MOVEMENTS AUDIT",
+  4: "PAPER TRAIL",
+  5: "CASE 2 — THE SECOND CLAIM",
+  6: "CASE 3 — THE DISTANT RELATIONS",
+  7: "THE VERDICT"
 };
 var BOARD_SUBSTAGES = /* @__PURE__ */ new Set([SUBSTAGE.ACCUSE, SUBSTAGE.ACCUSE3]);
 function renderStage7({ host, state, actions, achievements, bell, bts, viewer, save, onStageComplete }) {
@@ -1347,7 +1415,7 @@ function renderStage7({ host, state, actions, achievements, bell, bts, viewer, s
     <header class="s7-hud">
       <div><strong>IDENTITY ARBITER</strong></div>
       <div>stage <span data-field="substage"></span></div>
-      <div>addresses <span data-field="addresses"></span></div>
+      <div>leads <span data-field="addresses"></span></div>
     </header>
     <section class="s7-main" aria-label="investigation"></section>
     <p class="s7-hint" data-field="hint"></p>
@@ -1381,7 +1449,9 @@ function renderStage7({ host, state, actions, achievements, bell, bts, viewer, s
     else if (d.action === "open-source") openSource(d.source);
     else if (d.action === "search-source") searchSource();
     else if (d.action === "open-anchor") openInViewer(ENTITY_ANCHOR_PATH, { mime: "text/plain", source: "stage7" });
-    else if (d.action === "photo") openInViewer(ENTITY_F_IMAGE_PATH, buildEntityFPhotoOpenOptions());
+    else if (d.action === "open-alibi") openInViewer(ALIBI_STATEMENT_PATH, { mime: "text/plain", source: "stage7" });
+    else if (d.action === "open-letter") openInViewer(TORN_LETTER_PATH, { mime: "text/plain", source: "stage7" });
+    else if (d.action === "connect-alibi") connectAlibiContradiction({ state, actions, achievements, bell });
     else if (d.action === "bts") openBts({ bts, viewer });
     verdictInFlight = Boolean(verdict);
     persistAndPaint();
@@ -1449,6 +1519,7 @@ function renderStage7({ host, state, actions, achievements, bell, bts, viewer, s
       main.replaceChildren(renderAccusation(state, 3));
       return paintStrings(3);
     }
+    ensureBossBoard(state);
     return main.replaceChildren(renderBoss(state, lock));
   }
   function paintStrings(cid) {
@@ -1478,9 +1549,6 @@ var ACCUSE_REWARD2 = { 2: 40, 3: 60 };
 function rewardFor(cid, result) {
   return result.solved ? ACCUSE_REWARD2[cid] || 40 : 0;
 }
-function buildEntityFPhotoOpenOptions() {
-  return { mime: "image/jpeg", source: "stage7", entity: "F" };
-}
 function openBts({ bts, viewer }) {
   if (bts && typeof bts.open === "function") bts.open(7);
   else if (bts && typeof bts.openBts === "function") bts.openBts(7);
@@ -1509,14 +1577,14 @@ function defaultState() {
       contradicted: [],
       selectedEntity: null,
       flags: {},
-      // { B:"fieldId", C:"fieldId", ... } from the credential scan
+      // { B:"fieldId", C:"fieldId", ... } from the witness-statement scan
       wrongFlagCount: 0,
       dupTestComplete: false,
       timelineContradictionCycle: null,
       chainBroken: false,
       partialContra: [],
-      // e.g. ["F.GPSInfo"]
-      // Case 2 (Duplicate Roster) — the rule-of-three accusation.
+      // e.g. ["F.whereabouts"]
+      // Case 2 (The Second Claim) — the rule-of-three accusation.
       case2Seeded: false,
       // entity/field clue cards minted onto the board
       case2Solved: false,
@@ -1525,7 +1593,7 @@ function defaultState() {
       // complete-but-wrong accusations
       case2HintStep: 0,
       // accusation hint ladder
-      // Case 3 (Quorum Ghost) — a larger roster + a SEARCH-gated decisive fact.
+      // Case 3 (The Distant Relations) — a larger roster + a SEARCH-gated decisive fact.
       case3Seeded: false,
       case3Solved: false,
       case3Attempts: 0,
@@ -1544,7 +1612,7 @@ function defaultState() {
     },
     log: [
       bellMessages.start,
-      "Six dossiers claim one name: CORE_ENTITY_001."
+      "Six claimants swear they are the true heir of Meridian House."
     ],
     meta: {
       firstClearComplete: false
@@ -1603,11 +1671,11 @@ function mountStage(ctx) {
   const state = normalizeState(ctx.state);
   let view = null;
   ensureStyles();
-  if (hasExifContradiction(ctx.actions)) {
-    applyExifContradictionUnlock({ state, achievements: ctx.achievements, bell: ctx.bell });
+  if (hasAlibiContradiction(ctx.actions)) {
+    applyAlibiContradictionUnlock({ state, achievements: ctx.achievements, bell: ctx.bell });
   }
   const unsubscribe = subscribeToActionName(ctx.actions, ACTION_NAME, () => {
-    applyExifContradictionUnlock({ state, achievements: ctx.achievements, bell: ctx.bell });
+    applyAlibiContradictionUnlock({ state, achievements: ctx.achievements, bell: ctx.bell });
     if (typeof ctx.save === "function") ctx.save();
     if (view && typeof view.repaint === "function") view.repaint();
   });
@@ -1676,11 +1744,11 @@ function injectSheet(id, rel) {
   document.head.append(link);
 }
 export {
-  applyExifContradictionUnlock,
+  applyAlibiContradictionUnlock,
   commitIdentity,
+  connectAlibiContradiction,
   defaultState2 as defaultState,
   getBossLockState,
-  inspectContradictoryExif,
   mountStage,
   recordLockedBossAttempt,
   stageMeta

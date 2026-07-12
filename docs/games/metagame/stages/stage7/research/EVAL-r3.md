@@ -1,3 +1,6 @@
+> **SUPERSEDED (2026-07-12).** Evaluates the old EXIF-boss design, which was replaced by the human
+> detective case "The Meridian Estate Affair" (in-case document contradiction). Kept for history only.
+
 # Stage 7 — Identity Arbiter: Round-3 Self-Evaluation
 
 **Evaluator:** Claude Sonnet 4.6 (read-only)

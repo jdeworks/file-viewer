@@ -1,8 +1,0 @@
-{
-  "system": "CORE_ENTITY_002 quorum registry",
-  "current_cycle": "0047",
-  "valid_tiers": ["TIER-0-ROOT", "TIER-1", "TIER-2", "TIER-3"],
-  "valid_layers": [0, 1, 2],
-  "max_active_sessions_per_entity": 1,
-  "note": "TIER-0-ROOT is the valid bootstrap tier, not an anomaly."
-}

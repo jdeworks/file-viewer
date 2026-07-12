@@ -1,3 +1,7 @@
+> **SUPERSEDED (2026-07-12).** Old computer-forensics / EXIF-boss design. Stage 7 is now the human
+> detective case "The Meridian Estate Affair" (EXIF boss → in-case document contradiction). Kept for
+> history only; see the stage `README.md` and `research/case-fixtures/README.md`.
+
 # Stage 7 — Identity Arbiter: Design Research
 
 **Audit verdict on current build:** THIN GATE (worst). A 2-click investigation: open Entity F photo,

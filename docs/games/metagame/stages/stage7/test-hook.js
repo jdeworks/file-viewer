@@ -1,7 +1,7 @@
 // test-hook.js — Stage 7 window.__fvStage7 debug/smoke hook. Split out of renderer.js to keep it under
 // the LOC cap. Fast-forwards the IN-GAME deductions, but the load-bearing real-file gates are NOT
-// bypassed: solveCase2 needs the route table OPENED and solveCase3 needs the ledger SEARCHED before the
-// correct triad's fact card exists, so each returns ok:false until the player engages the real file.
+// bypassed: solveCase2 needs the household register OPENED and solveCase3 needs the estate ledger
+// SEARCHED before the correct triad's fact card exists, so each returns ok:false until the file is engaged.
 
 import { flagField, diffField, markImpossible } from "./substages.js";
 import { accuseFromBoard, ensureCase2, ensureCase3 } from "./accusation.js";
@@ -13,7 +13,7 @@ export function installStage7Hook({ state, persistAndPaint }) {
     state: () => state,
     solveInvestigation() {
       for (const id of SCAN_ENTITIES) flagField({ state, entityId: id, fieldId: entityFields[id].find((f) => f.wrong).id });
-      diffField({ state, fieldName: "GPSInfo" });
+      diffField({ state, fieldName: "Where on the night of the 12th" });
       markImpossible({ state, evId: entityFEventLog.find((e) => e.impossible).id });
       persistAndPaint();
       return state.substage;
