@@ -22,6 +22,30 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
+# Pre-flight: stray headless-Chromium from a dead/hung earlier run starves every suite below into
+# timeouts or OOM (2026-07-12: two orphaned browser trees made the gate hang for 100 minutes with no
+# recorded failure). Reap clearly-orphaned ones (>45 min — no single suite legitimately keeps one
+# browser that long); younger ones mean another gate may genuinely be running — fail fast instead of
+# silently fighting it for CPU/RAM (override with FV_ALLOW_STRAY=1).
+preflight_reap_stray_browsers() {
+  local pid age young=()
+  for pid in $(pgrep -f chrome-headless 2>/dev/null || true); do
+    age=$(ps -o etimes= -p "$pid" 2>/dev/null | tr -d ' ' || echo 0)
+    if [ "${age:-0}" -gt 2700 ]; then
+      echo "  reaping orphaned headless-Chromium pid $pid (age ${age}s)"
+      kill "$pid" 2>/dev/null || true
+    elif [ -n "$age" ]; then
+      young+=("$pid")
+    fi
+  done
+  if [ "${#young[@]}" -gt 0 ] && [ "${FV_ALLOW_STRAY:-0}" != 1 ]; then
+    echo "✗ live headless-Chromium detected (pids: ${young[*]}) — another gate/smoke may be running."
+    echo "  Running two gates concurrently starves both. Wait for it, or FV_ALLOW_STRAY=1 to proceed."
+    exit 1
+  fi
+}
+preflight_reap_stray_browsers
+
 FAST=0
 case "${1:-}" in
   --fast|-f) FAST=1 ;;
@@ -340,7 +364,9 @@ print_fast_changed_paths() {
 
 is_generated_cache_artifact() {
   case "$1" in
-    docs/asset-manifest.json|docs/sw.js) return 0 ;;
+    # summary.json is regenerated wholesale from docs/examples/ contents (gen-examples-summary) — a
+    # diff here is pure fallout of whatever fixture change caused it, never its own test owner.
+    docs/asset-manifest.json|docs/sw.js|docs/examples/summary.json) return 0 ;;
     *) return 1 ;;
   esac
 }
@@ -437,8 +463,16 @@ run_fast_unit_tests() {
       docs/types/image/*|tests/image-*.test.mjs|tests/areas/media-3d.mjs)
         add_image_unit_tests
         ;;
-      docs/games/metagame/*|docs/examples/metagame/*|tests/metagame-platform.test.mjs|tests/metagame-viewer-actions.test.mjs)
+      docs/games/metagame/*|tests/metagame-platform.test.mjs|tests/metagame-viewer-actions.test.mjs)
         add_fast_game_unit_tests
+        ;;
+      docs/examples/metagame/*)
+        # Metagame example fixtures: owned by the game units PLUS the catalog-integrity units (a
+        # deleted/renamed fixture must fail example-compatibility, not slip through to aggregate).
+        add_fast_game_unit_tests
+        add_unit_test tests/example-compatibility.test.mjs
+        add_unit_test tests/example-fixture-quality.test.mjs
+        add_unit_test tests/rich-example-fixtures.test.mjs
         ;;
       docs/games/*|tests/areas/games.mjs)
         add_unit_note "no non-exhaustive unit owner for $path; game smoke selection still applies"
@@ -605,6 +639,11 @@ run_smoke_core() {
       package.json|package-lock.json|npm-shrinkwrap.json|pnpm-lock.yaml|yarn.lock|docs/vendor/*|vendor/*)
         require_full_smoke "$path affects package/vendor runtime"
         ;;
+      docs/examples/metagame/*)
+        # Metagame fixtures are exercised end-to-end by the games area (which opens them through the
+        # real viewer); catalog integrity is covered by the unit selection above.
+        add_smoke_area games
+        ;;
       examples/index.json|docs/examples/index.json|docs/examples/*)
         require_full_smoke "$path affects the examples catalog"
         ;;
@@ -652,17 +691,73 @@ fi
 run_phase "smoke test: core areas (headless Chromium, zero off-origin)…" \
   run_smoke_core
 
-run_phase "Markdown remote-resource privacy (headless Chromium)…" \
-  node tests/markdown-remote-resources.test.mjs
+# The four standalone Chromium suites below each boot their own browser+server (~1-2 min apiece).
+# In --fast mode they are path-gated like units/smoke: each runs only when a changed path touches
+# what it actually asserts; shared shell/vendor/infra changes conservatively run all four. Full mode
+# always runs all four.
+run_privacy_and_offline_suites() {
+  local run_markdown=0 run_html=0 run_embedded=0 run_offline=0
+  local full_reason=""
 
-run_phase "HTML remote-resource privacy (headless Chromium)…" \
-  node tests/html-remote-resources.test.mjs
+  if [ "$FAST" != 1 ]; then
+    run_markdown=1; run_html=1; run_embedded=1; run_offline=1
+  else
+    local changed_paths=()
+    local collected_path path
+    while IFS= read -r collected_path; do
+      changed_paths+=("$collected_path")
+    done < <(collect_changed_paths)
 
-run_phase "Embedded SVG/email/EPUB remote-resource privacy (headless Chromium)…" \
-  node tests/embedded-remote-resources.test.mjs
+    if [ "${#changed_paths[@]}" -eq 0 ]; then
+      full_reason="no changed paths detected — aggregate behavior"
+    fi
+    for path in "${changed_paths[@]}"; do
+      if is_generated_cache_artifact "$path"; then
+        # sw.js regen churns on every docs change; the offline suite only needs to run when the
+        # OFFLINE LOGIC changes, not when the VERSION stamp moves. Skip as neutral.
+        continue
+      fi
+      case "$path" in
+        docs/types/markdown/*|tests/markdown-remote-resources.test.mjs) run_markdown=1 ;;
+        docs/types/html/*|tests/html-remote-resources.test.mjs) run_html=1 ;;
+        docs/types/image/*|docs/types/eml/*|docs/types/mbox/*|docs/types/ebook/*|tests/embedded-remote-resources.test.mjs) run_embedded=1 ;;
+        docs/core/offline.js|docs/core/sw-*.js|scripts/gen-asset-manifest.mjs|tests/release-readiness-offline.mjs) run_offline=1 ;;
+        docs/games/*|docs/examples/metagame/*|docs/types/*) ;; # owned elsewhere (their own areas/units)
+        tests/areas/*.mjs|tests/*.test.mjs) ;;                 # owned by unit/smoke selection
+        docs/core/*|docs/assets/*.css|docs/index.html|docs/vendor/*|vendor/*|package.json|package-lock.json|tests/harness.mjs|tests/smoke.mjs|tests/smoke-area.mjs|scripts/check.sh)
+          full_reason="$path is shared shell/vendor/infra" ;;
+        *) ;; # everything else has no privacy/offline surface
+      esac
+      if [ -n "$full_reason" ]; then break; fi
+    done
+    if [ -n "$full_reason" ]; then
+      echo "  (fast) privacy/offline suites: running all four ($full_reason)"
+      run_markdown=1; run_html=1; run_embedded=1; run_offline=1
+    fi
+  fi
 
-run_phase "Offline save/update readiness (headless Chromium)…" \
-  node tests/release-readiness-offline.mjs
+  local selected=""
+  [ "$run_markdown" = 1 ] && selected="$selected markdown"
+  [ "$run_html" = 1 ] && selected="$selected html"
+  [ "$run_embedded" = 1 ] && selected="$selected embedded"
+  [ "$run_offline" = 1 ] && selected="$selected offline"
+  if [ -z "$selected" ]; then
+    echo "→ privacy/offline suites: none selected (no changed path touches their surfaces)"
+    return
+  fi
+  echo "→ privacy/offline suites selected:${selected}"
+  [ "$run_markdown" = 1 ] && run_phase "Markdown remote-resource privacy (headless Chromium)…" \
+    node tests/markdown-remote-resources.test.mjs
+  [ "$run_html" = 1 ] && run_phase "HTML remote-resource privacy (headless Chromium)…" \
+    node tests/html-remote-resources.test.mjs
+  [ "$run_embedded" = 1 ] && run_phase "Embedded SVG/email/EPUB remote-resource privacy (headless Chromium)…" \
+    node tests/embedded-remote-resources.test.mjs
+  [ "$run_offline" = 1 ] && run_phase "Offline save/update readiness (headless Chromium)…" \
+    node tests/release-readiness-offline.mjs
+  return 0
+}
+
+run_privacy_and_offline_suites
 
 if [ "$FAST" = 1 ]; then
   echo "→ fast mode: SKIPPING known-file + binary smoke suites + exhaustive Sokoban replay suite (the heaviest)."
