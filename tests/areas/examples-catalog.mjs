@@ -200,8 +200,23 @@ export async function run(ctx) {
     fail('XCF sample should be marked partial');
   }
 
+  // FV_SMOKE_SUBSET=1 (set by check.sh --fast when examples-catalog is a path-owned area): open a
+  // DETERMINISTIC representative subset — the first sample (by file name) of each declared type —
+  // instead of all ~1,100. This keeps the "every registered type has coverage" assertion meaningful
+  // (one open per type) while cutting the ~1,100-open sweep (the area's dominant cost) to ~one-per-type.
+  // The exhaustive sweep still runs in the full gate (no FV_SMOKE_SUBSET) and asserts every sample opens.
+  const SUBSET = process.env.FV_SMOKE_SUBSET === '1';
+  let toOpen = examples;
+  if (SUBSET) {
+    const byType = new Map();
+    for (const ex of [...examples].sort((a, b) => String(a.file).localeCompare(String(b.file)))) {
+      if (!byType.has(ex.type)) byType.set(ex.type, ex);
+    }
+    toOpen = [...byType.values()];
+    pass(`fast subset: opening ${toOpen.length} representative samples (one per type) of ${examples.length} — full sweep runs in the full gate`);
+  }
   const seenTypes = new Set();
-  for (const ex of examples) {
+  for (const ex of toOpen) {
     const opened = await page.evaluate((file) => window.__fv.openExampleFile(file), ex.file);
     if (!opened) { fail('sample did not open: ' + ex.file); continue; }
     await page.waitForFunction(() => document.querySelector('#fileName')?.textContent && !/—/.test(document.querySelector('#fileName')?.textContent || ''), null, { timeout: 10000 }).catch(() => {});
@@ -216,17 +231,28 @@ export async function run(ctx) {
     if (crashed && !ex.partial) fail('sample preview crashed: ' + ex.file + ' :: ' + previewText.replace(/\s+/g, ' ').slice(0, 160));
     await page.waitForTimeout(10);
   }
-  pass('all indexed samples open without preview crashes');
-  const missingTypes = REGISTRY.map((t) => t.id).filter((id) => !seenTypes.has(id));
-  if (missingTypes.length) {
-    fail('registered types without indexed sample coverage: ' + missingTypes.join(', '));
-  } else {
-    pass('all registered types have indexed sample coverage (' + REGISTRY.length + ')');
+  pass(`all ${SUBSET ? 'representative' : 'indexed'} samples open without preview crashes (${toOpen.length})`);
+  // "Every registered type has a working sample" is a FULL-SWEEP guarantee — a per-type subset opens
+  // only ~36 of ~146 registry types (declared ex.type does not map 1:1 to registry ids), so this check
+  // only runs in the full gate. Under --fast it would spuriously fail; the full gate still enforces it.
+  if (!SUBSET) {
+    const missingTypes = REGISTRY.map((t) => t.id).filter((id) => !seenTypes.has(id));
+    if (missingTypes.length) {
+      fail('registered types without indexed sample coverage: ' + missingTypes.join(', '));
+    } else {
+      pass('all registered types have indexed sample coverage (' + REGISTRY.length + ')');
+    }
   }
   if (ctx.consoleErrors.length) fail('sample catalog console/page errors:\n  ' + ctx.consoleErrors.join('\n  '));
   else pass('sample catalog produced no console/page errors');
   if (ctx.offOrigin.length) fail('sample catalog off-origin requests:\n  ' + ctx.offOrigin.join('\n  '));
   else pass('sample catalog made zero off-origin requests');
+
+  // Fast path stops here: catalog index integrity + a representative per-type open sweep are what a
+  // path-owned example change needs to validate. The remaining badge checks and — especially — the
+  // heavy ASCII-Studio tool sweep (repeated full-page image→ASCII canvas conversions, which can crash
+  // the renderer on a constrained host) are full-gate concerns, not fast-gate ones.
+  if (SUBSET) return;
 
   // Quality badges: sourced and partial examples display visual indicators
   await page.evaluate(() => { try { sessionStorage.clear(); } catch {} });

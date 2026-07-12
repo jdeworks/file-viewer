@@ -505,18 +505,16 @@ run_fast_unit_tests() {
       docs/games/*|docs/assets/games.css|tests/areas/games.mjs)
         add_unit_note "no non-exhaustive unit owner for $path; game smoke selection still applies"
         ;;
-      docs/examples/index.json)
-        # Metagame-scoped index edit → the catalog-integrity units (same as a metagame fixture); a
-        # genuine catalog change falls through to the full unit set below. Must precede the generic
-        # scripts/known/examples case.
+      docs/examples/index.json|docs/examples/*)
+        # A catalog/example change (metagame or not) is owned by the catalog-integrity units, which
+        # validate the index + fixtures without a browser. Metagame edits add the fast game units too.
+        # Must precede the generic scripts/known/examples case below.
         if examples_change_is_metagame_scoped "${changed_paths[@]}"; then
           add_fast_game_unit_tests
-          add_unit_test tests/example-compatibility.test.mjs
-          add_unit_test tests/example-fixture-quality.test.mjs
-          add_unit_test tests/rich-example-fixtures.test.mjs
-        else
-          require_full_units "$path affects the examples catalog"
         fi
+        add_unit_test tests/example-compatibility.test.mjs
+        add_unit_test tests/example-fixture-quality.test.mjs
+        add_unit_test tests/rich-example-fixtures.test.mjs
         ;;
       tests/sokoban-levels.test.mjs)
         add_unit_note "skipping exhaustive Sokoban replay unit suite for $path"
@@ -557,8 +555,8 @@ run_fast_unit_tests() {
       package.json|package-lock.json|npm-shrinkwrap.json|pnpm-lock.yaml|yarn.lock|docs/vendor/*|vendor/*|tests/package.json|tests/package-lock.json)
         require_full_units "$path affects package/vendor/test runtime"
         ;;
-      scripts/*|docs/known/*|docs/examples/*|examples/index.json|docs/examples/index.json)
-        require_full_units "$path affects generators, known files, or examples"
+      scripts/*|docs/known/*|examples/index.json)
+        require_full_units "$path affects generators or known files"
         ;;
       *)
         require_full_units "$path has no unit-test owner"
@@ -678,11 +676,12 @@ run_smoke_core() {
       docs/examples/index.json)
         # Hand-maintained catalog source. When the accompanying fixture changes are metagame-only, the
         # index edit registered a metagame example (owned by the games area + catalog units); otherwise
-        # it is a genuine catalog change needing the full sweep. Must precede the generic examples case.
+        # it is a genuine catalog change owned by the examples-catalog area (which validates the index
+        # and opens samples — a deterministic per-type subset under --fast). Must precede the generic case.
         if examples_change_is_metagame_scoped "${changed_paths[@]}"; then
           add_smoke_area games
         else
-          require_full_smoke "$path affects the examples catalog"
+          add_smoke_area examples-catalog
         fi
         ;;
       tests/areas/*.mjs)
@@ -708,7 +707,9 @@ run_smoke_core() {
         add_smoke_area games
         ;;
       examples/index.json|docs/examples/index.json|docs/examples/*)
-        require_full_smoke "$path affects the examples catalog"
+        # A non-metagame example fixture change is owned by the examples-catalog area (validates the
+        # index + opens samples; --fast opens a deterministic per-type subset). NOT the full aggregate.
+        add_smoke_area examples-catalog
         ;;
       *)
         require_full_smoke "$path has no smoke-area owner"
@@ -723,27 +724,29 @@ run_smoke_core() {
   fi
 
   if [ "$DRY" = 1 ]; then
-    if [ -n "$full_reason" ]; then echo "  (dry-run) smoke: AGGREGATE tests/smoke.mjs ($full_reason)";
-    elif [ "${#smoke_areas[@]}" -eq 0 ]; then echo "  (dry-run) smoke: AGGREGATE (no smoke areas determined)";
+    if [ -n "$full_reason" ]; then echo "  (dry-run) smoke: CORE-TIER aggregate ($full_reason)";
+    elif [ "${#smoke_areas[@]}" -eq 0 ]; then echo "  (dry-run) smoke: CORE-TIER aggregate (no smoke areas determined)";
     else echo "  (dry-run) smoke areas: ${smoke_areas[*]}"; fi
     return 0
   fi
 
   if [ "${#changed_paths[@]}" -eq 0 ]; then
-    echo "  selected smoke: aggregate (no changed paths detected after generators)"
-    FV_SMOKE_TIMING=1 node tests/smoke.mjs
+    echo "  selected smoke: core-tier aggregate (no changed paths detected after generators)"
+    FV_SMOKE_TIER=core FV_SMOKE_TIMING=1 node tests/smoke.mjs
   elif [ -n "$full_reason" ]; then
-    echo "  selected smoke: aggregate ($full_reason)"
-    FV_SMOKE_TIMING=1 node tests/smoke.mjs
+    echo "  selected smoke: core-tier aggregate ($full_reason)"
+    FV_SMOKE_TIER=core FV_SMOKE_TIMING=1 node tests/smoke.mjs
   elif [ "$non_neutral_path_count" -eq 0 ]; then
-    echo "  selected smoke: aggregate (only generated cache artifacts changed)"
-    FV_SMOKE_TIMING=1 node tests/smoke.mjs
+    echo "  selected smoke: core-tier aggregate (only generated cache artifacts changed)"
+    FV_SMOKE_TIER=core FV_SMOKE_TIMING=1 node tests/smoke.mjs
   elif [ "${#smoke_areas[@]}" -eq 0 ]; then
-    echo "  selected smoke: aggregate (no smoke areas determined)"
-    FV_SMOKE_TIMING=1 node tests/smoke.mjs
+    echo "  selected smoke: core-tier aggregate (no smoke areas determined)"
+    FV_SMOKE_TIER=core FV_SMOKE_TIMING=1 node tests/smoke.mjs
   else
     echo "  selected smoke areas: ${smoke_areas[*]}"
-    node tests/smoke-area.mjs "${smoke_areas[@]}"
+    # FV_SMOKE_SUBSET=1: the examples-catalog area opens a per-type subset instead of all ~1,100 samples
+    # (fast path-owned run); every other area ignores it. Full sweep still runs in the full gate.
+    FV_SMOKE_SUBSET=1 node tests/smoke-area.mjs "${smoke_areas[@]}"
   fi
 }
 

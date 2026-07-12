@@ -27,6 +27,36 @@ import * as partialSupportFidelity from './areas/partial-support-fidelity.mjs';
 // those heavy renderers don't accumulate in the shared browser after 15 prior areas.
 
 const shouldTimeAreas = process.env.FV_SMOKE_TIMING === '1';
+// Tiering: FV_SMOKE_TIER=core runs only the light "core" areas (shell + detection + representative
+// viewers), kept under ~3-4 min so it can back the check.sh --fast aggregate fallback without paying
+// the full 15-20 min sweep. Default ('full') runs every area. The HEAVY areas — WebGL/wasm (media-3d,
+// media-studio), the ~1,100-file catalog sweep (examples-catalog), and the fidelity suites — only run
+// in the full gate (or as path-owned standalone areas via smoke-area.mjs). Order is preserved from the
+// historical sequence; every area self-bootstraps (its run() navigates / opens its own file first), so
+// skipping heavy areas mid-sequence never shifts another area's baseline.
+const TIER = process.env.FV_SMOKE_TIER || 'full';
+
+const AREAS = [
+  ['core-ui', coreUi, 'core'],
+  ['diff', diff, 'core'],
+  ['kv-merge', kvMerge, 'core'],
+  ['tabular-office', tabularOffice, 'core'],
+  ['structured-types', structuredTypes, 'core'],
+  ['simple-types', simpleTypes, 'core'],
+  ['exports', exports, 'core'],
+  ['email-archives', emailArchives, 'core'],
+  ['media-3d', media3d, 'heavy'],
+  ['media-studio', mediaStudio, 'heavy'],
+  ['ebook-git', ebookGit, 'core'],
+  ['git', git, 'core'],
+  ['interactions', interactions, 'core'],
+  ['games', games, 'core'],
+  ['tree-drag', treeDrag, 'core'],
+  ['examples-catalog', examplesCatalog, 'heavy'],
+  ['cap-fidelity', capFidelity, 'heavy'],
+  ['enhanced-security-fidelity', enhancedSecurityFidelity, 'heavy'],
+  ['partial-support-fidelity', partialSupportFidelity, 'heavy'],
+];
 
 const areaStamp = () => {
   const now = new Date();
@@ -45,46 +75,11 @@ const runArea = async (name, fn) => {
 
 const ctx = await createHarness();
 try {
-  if (shouldTimeAreas) {
-    await runArea('core-ui', () => coreUi.run(ctx));
-    await runArea('diff', () => diff.run(ctx));
-    await runArea('kv-merge', () => kvMerge.run(ctx));
-    await runArea('tabular-office', () => tabularOffice.run(ctx));
-    await runArea('structured-types', () => structuredTypes.run(ctx));
-    await runArea('simple-types', () => simpleTypes.run(ctx));
-    await runArea('exports', () => exports.run(ctx));
-    await runArea('email-archives', () => emailArchives.run(ctx));
-    await runArea('media-3d', () => media3d.run(ctx));
-    await runArea('media-studio', () => mediaStudio.run(ctx));
-    await runArea('ebook-git', () => ebookGit.run(ctx));
-    await runArea('git', () => git.run(ctx));
-    await runArea('interactions', () => interactions.run(ctx));
-    await runArea('games', () => games.run(ctx));
-    await runArea('tree-drag', () => treeDrag.run(ctx));
-    await runArea('examples-catalog', () => examplesCatalog.run(ctx));
-    await runArea('cap-fidelity', () => capFidelity.run(ctx));
-    await runArea('enhanced-security-fidelity', () => enhancedSecurityFidelity.run(ctx));
-    await runArea('partial-support-fidelity', () => partialSupportFidelity.run(ctx));
-  } else {
-    await coreUi.run(ctx);
-    await diff.run(ctx);
-    await kvMerge.run(ctx);
-    await tabularOffice.run(ctx);
-    await structuredTypes.run(ctx);
-    await simpleTypes.run(ctx);
-    await exports.run(ctx);
-    await emailArchives.run(ctx);
-    await media3d.run(ctx);
-    await mediaStudio.run(ctx);
-    await ebookGit.run(ctx);
-    await git.run(ctx);
-    await interactions.run(ctx);
-    await games.run(ctx);
-    await treeDrag.run(ctx);
-    await examplesCatalog.run(ctx);
-    await capFidelity.run(ctx);
-    await enhancedSecurityFidelity.run(ctx);
-    await partialSupportFidelity.run(ctx);
+  const selected = AREAS.filter(([, , tier]) => TIER !== 'core' || tier === 'core');
+  console.log(`smoke tier=${TIER}: running ${selected.length}/${AREAS.length} areas`);
+  for (const [name, mod] of selected) {
+    if (shouldTimeAreas) await runArea(name, () => mod.run(ctx));
+    else await mod.run(ctx);
   }
 } catch (e) {
   ctx.fail('exception: ' + e.message);
