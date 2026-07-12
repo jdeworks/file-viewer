@@ -14,6 +14,10 @@
 //   count (int32)
 //   body (size bytes)
 
+import { partialSupportHtml } from '../../../core/partial-support.js';
+
+const CAPABILITY = 'Partial preview: the Blender header and a bounded summary of parsed block types are shown. Scene geometry, materials, textures, animation, cameras, compositing, and render output are not decoded or rendered.';
+
 function esc(s) {
   return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
@@ -56,28 +60,30 @@ function parseBlocks(b, ptrSize, isLE) {
   const blockHeaderSize = 4 + 4 + ptrSize + 4 + 4; // code + size + ptr + sdnaIdx + count
   const blocks = {};
   let off = 12; // skip file header
+  let complete = false;
+  let limited = false;
 
   while (off + blockHeaderSize <= b.length) {
     const code = new TextDecoder('ascii', { fatal: false }).decode(b.slice(off, off + 4)).replace(/\x00/g, '');
     const bodySize = r32(b, off + 4);
-    if (code === 'ENDB') { blocks['ENDB'] = (blocks['ENDB'] || 0) + 1; break; }
+    if (code === 'ENDB') { blocks.ENDB = (blocks.ENDB || 0) + 1; complete = true; break; }
     if (off + blockHeaderSize + bodySize > b.length) break;
+    if (!(code in blocks) && Object.keys(blocks).length >= 200) { limited = true; break; }
     blocks[code] = (blocks[code] || 0) + 1;
     off += blockHeaderSize + bodySize;
-    if (Object.keys(blocks).length > 200) break;
   }
-  return blocks;
+  return { blocks, complete, limited };
 }
 
 export function render(intake) {
   const b = intake.bytes;
   if (!b || b.length < 12) {
-    return { bodyHtml: '<p class="viewer-message">Not a valid Blender file.</p>', hadUnsafe: false };
+    return { bodyHtml: partialSupportHtml(CAPABILITY) + '<p class="viewer-message">Not a valid Blender file.</p>', hadUnsafe: false };
   }
 
   const magic = new TextDecoder('ascii', { fatal: false }).decode(b.slice(0, 7));
   if (magic !== 'BLENDER') {
-    return { bodyHtml: '<p class="viewer-message">Missing BLENDER magic.</p>', hadUnsafe: false };
+    return { bodyHtml: partialSupportHtml(CAPABILITY) + '<p class="viewer-message">Missing BLENDER magic.</p>', hadUnsafe: false };
   }
 
   const ptrChar = String.fromCharCode(b[7]);
@@ -96,7 +102,11 @@ export function render(intake) {
   }
 
   let blocks = {};
-  try { blocks = parseBlocks(b, ptrSize, isLE); } catch (_) {}
+  let blockScanComplete = false;
+  let blockScanLimited = false;
+  try {
+    ({ blocks, complete: blockScanComplete, limited: blockScanLimited } = parseBlocks(b, ptrSize, isLE));
+  } catch (_) {}
 
   const totalBlocks = Object.values(blocks).reduce((s, n) => s + n, 0);
 
@@ -106,19 +116,23 @@ export function render(intake) {
     ['Pointer size', `${ptrSize} bytes (${ptrChar === '-' ? '64-bit' : '32-bit'})`],
     ['Endianness', isLE ? 'Little-endian' : 'Big-endian'],
     ['File size', `${b.length.toLocaleString()} bytes`],
-    totalBlocks > 0 ? ['File blocks', `${totalBlocks.toLocaleString()}`] : null,
+    totalBlocks > 0 ? ['Parsed file blocks', `${totalBlocks.toLocaleString()}${blockScanComplete ? '' : '+'}`] : null,
   ].filter(Boolean).map(([k, v]) =>
     `<div class="meta-row"><span class="meta-key">${esc(k)}</span><span class="meta-val">${esc(v)}</span></div>`
   ).join('');
 
-  const blockEntries = Object.entries(blocks)
+  const allBlockEntries = Object.entries(blocks)
     .filter(([c]) => c !== 'ENDB')
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 24);
+    .sort((a, b) => b[1] - a[1]);
+  const blockEntries = allBlockEntries.slice(0, 24);
+  const blockLimit = allBlockEntries.length > blockEntries.length
+    ? `<p class="viewer-message">Showing ${blockEntries.length} of ${allBlockEntries.length} parsed block types.${blockScanLimited ? ' The block scan stopped at its 200-type safety bound.' : ''}</p>`
+    : (!blockScanComplete ? '<p class="viewer-message">The block scan ended before the file end marker; counts are parsed lower bounds.</p>' : '');
 
   const blockTableHtml = blockEntries.length ? `
     <div class="meta-section">
       <h4 class="meta-section-title">Block Summary</h4>
+      ${blockLimit}
       <table class="blend-table">
         <thead><tr><th>Code</th><th>Description</th><th>Count</th></tr></thead>
         <tbody>${blockEntries.map(([code, count]) =>
@@ -138,6 +152,7 @@ export function render(intake) {
         .blend-desc { color: #555; font-size: 0.82rem; }
       </style>
       <div class="badge-row"><span class="badge badge-blend">Blender</span></div>
+      ${partialSupportHtml(CAPABILITY)}
       <div class="meta-section">
         <h4 class="meta-section-title">File Info</h4>
         ${metaRows}

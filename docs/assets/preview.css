@@ -366,6 +366,10 @@
 .pdb-id{font:700 14px ui-monospace,SFMono-Regular,Menlo,monospace;color:#5b21b6}.pdb-title{flex:1 1 220px}.pdb-meta{margin-bottom:16px}.pdb-val{min-width:0}.pdb-chain,.pdb-lig-name{font-weight:700;color:#5b21b6}
 body.fv-dark .geo-stat,body.fv-dark .kml-stat,body.fv-dark .fits-stat,body.fv-dark .pdb-stat,body.fv-dark .geo-chip{background:#252526;border-color:#45464a}
 body.fv-dark .fits-capability-note{background:#252526}
+
+.partial-support-notice{margin:0 0 16px;padding:10px 12px;border:1px solid #f0c36d;border-left:4px solid #d97706;border-radius:6px;background:#fff8e1;color:#5d4037;font-size:12px;line-height:1.5;overflow-wrap:anywhere}
+body.fv-dark .partial-support-notice{background:#352b17;color:#f7d794;border-color:#7a5a20;border-left-color:#f0a32f}
+.ps-preview{min-width:0;max-width:100%}.ps-table{width:100%;max-width:100%;table-layout:fixed;border-collapse:collapse;font-size:13px}.ps-key{width:min(9rem,36%);padding:3px 14px 3px 0;white-space:normal;vertical-align:top}.ps-table td{min-width:0;padding:3px 0;vertical-align:top;white-space:normal;overflow-wrap:anywhere;word-break:break-word}
 body.fv-dark .geo-stat-value,body.fv-dark .kml-stat-value,body.fv-dark .fits-stat-value,body.fv-dark .pdb-stat-value,body.fv-dark .fits-key,body.fv-dark .exe-key{color:#79c0ff}
 body.fv-dark .geo-stat-label,body.fv-dark .kml-stat-label,body.fv-dark .fits-stat-label,body.fv-dark .pdb-stat-label,body.fv-dark .geo-label,body.fv-dark .pdb-section,body.fv-dark .geo-geom,body.fv-dark .geo-note,body.fv-dark .kml-desc-text,body.fv-dark .kml-desc,body.fv-dark .kml-note,body.fv-dark .fits-comment,body.fv-dark .fits-all summary,body.fv-dark .fits-note,body.fv-dark .exe-note,body.fv-dark .exe-harden-label{color:#aeb7c2}
 body.fv-dark .geo-table th,body.fv-dark .kml-table th,body.fv-dark .pdb-chains th,body.fv-dark .pdb-ligands th{background:#2d2d30;color:#c7ccd4}

@@ -203,6 +203,7 @@ FULL_UNIT_TESTS=(
   tests/pptx-notes-fidelity.test.mjs
   tests/json-duplicate-keys.test.mjs
   tests/source-fidelity.test.mjs
+  tests/partial-support-notices.test.mjs
   tests/archivelib-paths.test.mjs
   tests/archive-entry-bounds.test.mjs
   tests/archive-metadata.test.mjs

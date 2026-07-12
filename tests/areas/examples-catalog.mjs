@@ -154,6 +154,16 @@ export async function run(ctx) {
   } else {
     pass('container-dependent media samples document partial playback support');
   }
+  const fidelityPartialSamples = [
+    'sample.blend', 'sample.dcm', 'sample.dwg', 'sample.exr', 'sample.fbx', 'sample.fits',
+    'sample.nc', 'sample.nii', 'sample.pages', 'sample.rtf', 'sample.sketch', 'sample.eps',
+  ];
+  const missingFidelityPartial = fidelityPartialSamples.filter((file) => !byFile.get(file)?.partial);
+  if (missingFidelityPartial.length) {
+    fail('fidelity-limited samples should be marked partial: ' + missingFidelityPartial.join(', '));
+  } else {
+    pass('all twelve fidelity-limited samples carry partial catalog claims');
+  }
   const fontFormatSamples = ['sample.ttf', 'sample.otf', 'sample.woff', 'sample.woff2'];
   const missingFontFormats = fontFormatSamples.filter((file) => byFile.get(file)?.type !== 'font');
   if (missingFontFormats.length) {

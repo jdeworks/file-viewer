@@ -1,4 +1,7 @@
 import { loadGlobal, vendor } from '../../../core/script-loader.js';
+import { createPartialSupportNotice } from '../../../core/partial-support.js';
+
+const CAPABILITY = 'Partial preview: the embedded Sketch preview, page/artboard names, file metadata, and declared fonts are shown. Vector layers, symbols/components, styles, prototypes, assets, constraints, and editable design geometry are not decoded or rendered.';
 
 export async function render(intake) {
   const JSZip = await loadGlobal(vendor('jszip/jszip.min.js'), 'JSZip');
@@ -6,10 +9,8 @@ export async function render(intake) {
   const wrap = document.createElement('div');
   wrap.style.cssText = 'display:flex;flex-direction:column;align-items:center;padding:24px;gap:16px;font-family:system-ui,sans-serif;color:var(--fg);';
 
-  // Partial-support banner
-  const banner = document.createElement('div');
-  banner.style.cssText = 'max-width:560px;width:100%;padding:10px 14px;background:var(--bg-2,#fef3c7);color:var(--fg-2,#92400e);border-radius:6px;font-size:13px;text-align:center;border:1px solid var(--border);';
-  banner.textContent = '⚠ Sketch design file — showing embedded preview and structure only. Full vector content requires Sketch for Mac.';
+  const banner = createPartialSupportNotice(CAPABILITY);
+  banner.style.cssText += 'max-width:560px;width:100%;';
   wrap.appendChild(banner);
 
   const blobUrls = [];

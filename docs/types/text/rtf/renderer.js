@@ -3,6 +3,10 @@
 // Images, tables, and complex layouts are not supported — a partial-support note says so.
 // No off-origin requests. All user text goes through esc() before being placed in the DOM.
 
+import { createPartialSupportNotice } from '../../../core/partial-support.js';
+
+const CAPABILITY = 'Partial preview: extracted text and basic bold, italic, underline, strike, color, and font-size formatting are shown and editable. Embedded images/objects, tables, fields, footnotes/endnotes, headers/footers, tracked changes, lists, and page layout are not faithfully rendered.';
+
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 // Windows-1252 code page 0x80–0x9F (diverges from ISO-8859-1)
@@ -295,7 +299,10 @@ export async function render(intake, _ctx) {
   if (!src || !src.trimStart().startsWith('{\\rtf')) {
     const el = document.createElement('div');
     el.style.cssText = 'font-family:system-ui,sans-serif;padding:3rem;color:#888;text-align:center;font-size:14px';
-    el.textContent = 'Not a valid RTF file.';
+    el.appendChild(createPartialSupportNotice(CAPABILITY));
+    const error = document.createElement('p');
+    error.textContent = 'Not a valid RTF file.';
+    el.appendChild(error);
     return { parentNode: el };
   }
 
@@ -457,11 +464,9 @@ export async function render(intake, _ctx) {
     }
   });
 
-  const note = document.createElement('p');
-  note.className = 'rtf-partial-note';
-  note.textContent = '⚠ RTF partially supported — text and basic formatting shown; images and tables are not rendered.';
+  const note = createPartialSupportNotice(CAPABILITY);
 
-  paperWrap.append(paper, note);
+  paperWrap.append(note, paper);
   host.append(toolbar, paperWrap);
   return { parentNode: host };
 }

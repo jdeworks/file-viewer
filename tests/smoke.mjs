@@ -20,6 +20,7 @@ import * as games from './areas/games.mjs';
 import * as treeDrag from './areas/tree-drag.mjs';
 import * as examplesCatalog from './areas/examples-catalog.mjs';
 import * as capFidelity from './areas/cap-fidelity.mjs';
+import * as partialSupportFidelity from './areas/partial-support-fidelity.mjs';
 // binary-types is NOT run here — it's the heavy WebGL/wasm area (45 per-test page.goto opens) and
 // runs in its own fresh process via smoke-binary.mjs (like known-files via smoke-known.mjs) so
 // those heavy renderers don't accumulate in the shared browser after 15 prior areas.
@@ -61,6 +62,7 @@ try {
     await runArea('tree-drag', () => treeDrag.run(ctx));
     await runArea('examples-catalog', () => examplesCatalog.run(ctx));
     await runArea('cap-fidelity', () => capFidelity.run(ctx));
+    await runArea('partial-support-fidelity', () => partialSupportFidelity.run(ctx));
   } else {
     await coreUi.run(ctx);
     await diff.run(ctx);
@@ -79,6 +81,7 @@ try {
     await treeDrag.run(ctx);
     await examplesCatalog.run(ctx);
     await capFidelity.run(ctx);
+    await partialSupportFidelity.run(ctx);
   }
 } catch (e) {
   ctx.fail('exception: ' + e.message);

@@ -1,3 +1,7 @@
+import { partialSupportHtml } from '../../../core/partial-support.js';
+
+const CAPABILITY = 'Partial preview: DSC metadata from the first 8 KiB is shown. PostScript/EPS program execution, page artwork, fonts, embedded resources, and raster/vector output are not rendered; the exact program remains available in Raw.';
+
 const DSC = [
   ['Title',         /^%%Title:\s*(.+)/],
   ['Creator',       /^%%Creator:\s*(.+)/],
@@ -74,15 +78,13 @@ export function render(intake) {
     row('Bounding Box', bbox(fields.BoundingBox || fields.HiResBoundingBox)),
     row('Fonts', fields.DocumentFonts),
     row('Data', fields.DocumentData),
-    row('Code lines', codeLines > 0 ? String(codeLines) : null),
+    row('Code lines in first 8 KiB', codeLines > 0 ? String(codeLines) : null),
   ].filter(Boolean).join('');
-
-  const note = `<p class="ps-note">PostScript is a Turing-complete programming language — file execution is not supported. Showing DSC metadata only.</p>`;
 
   const bodyHtml = `<div class="ps-preview">
   <div class="ps-header">${versionBadge}${kindLabel}</div>
+  ${partialSupportHtml(CAPABILITY)}
   ${rows ? `<table class="ps-table">${rows}</table>` : '<p class="ps-note">No DSC comments found.</p>'}
-  ${note}
 </div>`;
 
   return { bodyHtml };
