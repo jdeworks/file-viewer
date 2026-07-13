@@ -142,7 +142,13 @@ export async function createRawView(host, {
       std.setSelection(new monaco.Range(startLine, startColumn, endLine, endColumn));
       std.focus();
     },
-    isDirty: () => exactModelValue(originalModel) !== exactModelValue(modifiedModel),
+    // A disposed editor has nothing unsaved to flush. Guard against a disposed model so a late
+    // isDirty() (e.g. flushSessionEdit racing a rapid open→open teardown) returns false instead of
+    // throwing Monaco's "Model is disposed!" — surfaced by the exhaustive examples-catalog sweep
+    // opening ~1,100 files back-to-back.
+    isDirty: () => (originalModel.isDisposed() || modifiedModel.isDisposed())
+      ? false
+      : exactModelValue(originalModel) !== exactModelValue(modifiedModel),
     // Adopt the current working copy as the new baseline (so isDirty() → false). Used after a
     // successful save-back to disk: the on-disk content now IS the original, nothing is unsaved.
     markClean: () => {

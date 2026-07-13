@@ -243,21 +243,21 @@ export async function run(ctx) {
     // names when they stand on their own (not glued to a preceding identifier char).
     const crashed = /Preview failed|Failed to execute|DjVu missing after load|Failed to load DjVu library|(?<![a-z0-9_])(?:TypeError|ReferenceError)\b/i.test(previewText);
     if (crashed && !ex.partial) fail('sample preview crashed: ' + ex.file + ' :: ' + previewText.replace(/\s+/g, ' ').slice(0, 160));
-    // Bound renderer memory over a long sweep. This raw open loop (unlike the harness openExample)
-    // has no periodic reload, so the exhaustive 1,129-open run accumulates disposed-but-retained
-    // Monaco models / blob URLs until the renderer OOM-crashes — which then took down the heavy
-    // ASCII-Studio conversions that follow ("died at two different points across runs"). Dispose +
-    // GC every 40 opens, and hard-reload every 250 to flush anything GC can't reach.
-    if (++sweptCount % 40 === 0) {
-      await page.evaluate(() => {
-        try { window.monaco?.editor?.getModels?.().forEach((m) => m.dispose()); } catch { /* no monaco */ }
-        try { (window.__fvBlobUrls || []).forEach((u) => URL.revokeObjectURL(u)); } catch { /* none */ }
-        try { window.gc?.(); } catch { /* gc not exposed */ }
-      }).catch(() => {});
-    }
-    if (sweptCount % 250 === 0) {
+    // Bound renderer memory over the exhaustive 1,129-open sweep (this raw open loop, unlike the
+    // harness openExample, has no periodic reload of its own — so without help it accumulates until
+    // the renderer OOM-crashes, which then took down the ASCII-Studio conversions that follow). A
+    // bare GC every 40 opens trims transient allocations; a full RELOAD every 200 resets the renderer
+    // heap before the ~380-open degradation point (navigation disposes everything safely).
+    // IMPORTANT: do NOT dispose Monaco models here. The harness does that only IMMEDIATELY before a
+    // reload; mid-sweep the app still references the active model, so disposing it throws "Model is
+    // disposed!" on the next open's isDirty/flushSessionEdit check (a race that crashed the exhaustive
+    // sweep ~open 328). The reload handles model cleanup wholesale instead.
+    sweptCount++;
+    if (sweptCount % 200 === 0) {
       await page.goto(origin, { waitUntil: 'load' });
       await page.waitForFunction(() => typeof window.__fv !== 'undefined', { timeout: 10000 }).catch(() => {});
+    } else if (sweptCount % 40 === 0) {
+      await page.evaluate(() => { try { window.gc?.(); } catch { /* gc not exposed */ } }).catch(() => {});
     }
     await page.waitForTimeout(10);
   }
