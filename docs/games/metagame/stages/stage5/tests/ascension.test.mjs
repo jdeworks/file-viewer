@@ -1,52 +1,115 @@
-// ascension.test.mjs — Stage 5: the opt-in difficulty ladder (cumulative rungs) folds into the run.
-import assert from 'node:assert/strict';
-import { createAscension } from '../../../shared/ascension.js';
-import { ASCENSION_MODS, BASE_ASCENSION_CONFIG } from '../ascension-mods.js';
-import { createGameLoop } from '../game-loop.js';
-import { defaultState } from '../state.js';
+import assert from "node:assert/strict";
+import {
+  ASCENSION_MODS, MAX_ASCENSION, baseRunConfig, foldAscension, activeAscensionMods
+} from "../ascension-mods.js";
+import { createRun, effectiveAscension, removalCost, takeReward } from "../run.js";
+import { createAscension } from "../../../shared/ascension.js";
 
-const save = { stageState: { 5: {} }, global: {} };
-const asc = createAscension({ save, stageId: 5, modifiers: ASCENSION_MODS });
-
-// ── ladder shape ────────────────────────────────────────────────────────────────────────────────
-assert.equal(asc.maxLevel, 4, '4 ascension rungs');
-
-// ── level 0 = base; rungs are cumulative; base config never mutated ─────────────────────────────────
+// ── ladder content: ordered, cumulative, deterministic ────────────────────────────────────────────
 {
-  assert.deepEqual(asc.applyModifiers(BASE_ASCENSION_CONFIG, 0), BASE_ASCENSION_CONFIG, 'A0 = base');
-  const c2 = asc.applyModifiers(BASE_ASCENSION_CONFIG, 2);
-  assert.ok(c2.rivalSpeedMult > 1, 'A2 still includes A1 faster field');
-  assert.ok(c2.integrityMult < 1, 'A2 adds the hairline hull');
-  const c4 = asc.applyModifiers(BASE_ASCENSION_CONFIG, 4);
-  assert.ok(c4.densityBonus > 0 && c4.noiseDamageBonus === 1, 'A4 includes denser noise + sharp static');
-  assert.equal(BASE_ASCENSION_CONFIG.rivalSpeedMult, 1, 'base config untouched (pure fold)');
+  assert.equal(MAX_ASCENSION, 15, "the ladder offers 15 rungs");
+  ASCENSION_MODS.forEach((m, i) => {
+    assert.equal(m.level, i + 1, `rung ${i + 1} is in order`);
+    assert.equal(typeof m.apply, "function", `${m.id} has an apply`);
+    assert.ok(m.label && m.desc, `${m.id} has label + desc`);
+  });
+  assert.equal(activeAscensionMods(0).length, 0, "level 0 = base rules");
+  assert.equal(activeAscensionMods(7).length, 7, "level 7 = first 7 rules");
+  assert.equal(activeAscensionMods(99).length, MAX_ASCENSION, "clamps to ladder length");
 }
 
-// ── unlock gate: base must be cleared before A1 selectable ──────────────────────────────────────────
+// ── foldAscension: rules fold into config without mutating the base ────────────────────────────────
 {
-  const s2 = { stageState: { 5: {} }, global: {} };
-  const a2 = createAscension({ save: s2, stageId: 5, modifiers: ASCENSION_MODS });
-  a2.recordClear(0);                 // clear the base stage
-  assert.ok(a2.maxUnlocked() >= 1, 'clearing base unlocks A1');
+  const base = baseRunConfig();
+  const snapshot = JSON.stringify(base);
+  const c5 = foldAscension(base, 5);
+  assert.equal(JSON.stringify(base), snapshot, "baseRunConfig is not mutated by the fold");
+  assert.ok(Math.abs(c5.handshakeMult - 0.75) < 1e-9, "lean-rewards folds at level 5");
+  assert.ok(Math.abs(c5.restHealMod + 0.10) < 1e-9, "stingy-rest folds");
+  assert.equal(c5.windowCapMod, -1, "tight-window folds");
+  assert.equal(c5.eliteHpBonus, 24, "meaner-elites folds");
+  assert.ok(Math.abs(c5.bossHpMult - 1.3) < 1e-9, "tougher-boss folds");
+  assert.equal(c5.bossExtraPhase, false, "no extra phase below level 15");
+
+  const c15 = foldAscension(base, 15);
+  assert.ok(Math.abs(c15.handshakeMult - 0.75 * 0.8) < 1e-9, "austere stacks the economy cut (×0.75×0.8)");
+  assert.equal(c15.eliteHpBonus, 24 + 30, "brutal-elites stacks elite HP");
+  assert.ok(Math.abs(c15.bossHpMult - 1.3 * 1.25) < 1e-9, "boss-overclock stacks boss HP");
+  assert.equal(c15.startHpMod, -8, "attrition lowers starting HP");
+  assert.equal(c15.skipRewardMod, -5, "thankless zeroes the skip payout");
+  assert.equal(c15.removalCostMod, 20, "costly-removal raises removal price");
+  assert.equal(c15.rewardChoicesMod, -1, "fewer-options trims the draft");
+  assert.equal(c15.enemyArmorBonus, 3, "armored-foes folds");
+  assert.equal(c15.bossExtraPhase, true, "endurance adds the 4th phase at level 15");
 }
 
-// ── the mods harden a real run: faster field finishes sooner; hull cap drops ─────────────────────────
+// ── composition with prestige: effective level is the MAX (never the sum) ──────────────────────────
 {
-  const mods = asc.applyModifiers(BASE_ASCENSION_CONFIG, 4);
-  const base = defaultState();
-  const hard = defaultState();
-  const baseLoop = createGameLoop({ state: base, seed: 'asc', roundIdx: 2, calibrated: false });
-  const hardLoop = createGameLoop({ state: hard, seed: 'asc', roundIdx: 2, calibrated: false, mods });
-  // faster field: at least one rival crosses the line earlier under ascension
-  const baseFirst = Math.min(...baseLoop.rivals.map((r) => r.finishTick));
-  const hardFirst = Math.min(...hardLoop.rivals.map((r) => r.finishTick));
-  assert.ok(hardFirst < baseFirst, 'ascension field is faster (lower finish tick)');
-  // tighter hull: the ascension run starts with a lower integrity cap
-  hardLoop.autoSolve();
-  baseLoop.autoSolve();
-  assert.ok(hard.run.maxIntegrity < base.run.maxIntegrity, 'ascension lowers the hull cap');
-  // …yet an optimal run still clears (escape invariant holds at any density)
-  assert.equal(hardLoop.outcome, 'clear', 'a hardened round is still solvable with optimal play');
+  assert.equal(effectiveAscension(0, 0), 0, "base");
+  assert.equal(effectiveAscension(3, 0), 3, "prestige acts as a floor");
+  assert.equal(effectiveAscension(0, 7), 7, "ascension picker raises the level");
+  assert.equal(effectiveAscension(3, 7), 7, "max, not sum — no double-apply");
+  assert.equal(effectiveAscension(9, 2), 9, "the higher of the two wins");
+  assert.equal(effectiveAscension(99, 99), MAX_ASCENSION, "clamped to the ladder");
 }
 
-console.log('stage5 ascension tests passed');
+// ── createRun applies the effective rules onto the run ─────────────────────────────────────────────
+{
+  const base = createRun({ seed: 7, version: 0, ascension: 0 });
+  assert.equal(base.ascension, 0, "base run has ascension 0");
+  assert.equal(base.hp, base.maxHp, "base run starts at full HP");
+  assert.equal(base.handshakeMult, 1, "no economy penalty at base");
+
+  const a7 = createRun({ seed: 7, version: 0, ascension: 7 });
+  assert.equal(a7.ascension, 7, "ascension level recorded on the run");
+  assert.ok(Math.abs(a7.handshakeMult - 0.75) < 1e-9, "lean economy applied");
+  assert.equal(a7.hp, a7.maxHp - 8, "attrition: starts 8 below max");
+  assert.deepEqual(a7.modifiers, ASCENSION_MODS.slice(0, 7).map((m) => m.id), "modifier id list");
+
+  // Prestige floor: version 5 with ascension 0 still plays under rungs 1–5.
+  const v5 = createRun({ seed: 7, version: 5, ascension: 0 });
+  assert.equal(v5.ascension, 5, "prestige floor lifts the effective level");
+  assert.ok(Math.abs(v5.bossHpMult - 1.3) < 1e-9, "tougher-boss in force via prestige floor");
+  assert.ok(v5.relics.length >= 1, "prestige still grants starting relics (power, separate from rules)");
+
+  // No double-apply: version 5 + ascension 5 == version 5 alone for the shared levers.
+  const both = createRun({ seed: 7, version: 5, ascension: 5 });
+  assert.ok(Math.abs(both.handshakeMult - v5.handshakeMult) < 1e-9, "handshakeMult not double-applied");
+  assert.ok(Math.abs(both.bossHpMult - v5.bossHpMult) < 1e-9, "bossHpMult not double-applied");
+}
+
+// ── new levers are read by run.js ─────────────────────────────────────────────────────────────────
+{
+  const a0 = createRun({ seed: 1, ascension: 0 });
+  const a9 = createRun({ seed: 1, ascension: 9 });
+  assert.equal(removalCost(a9) - removalCost(a0), 20, "costly-removal raises the removal price by 20");
+
+  // Thankless thinning (rung 8): skipping a reward pays nothing.
+  const a8 = createRun({ seed: 1, ascension: 8 });
+  a8.status = "reward"; a8.pendingReward = { cards: ["SYN"] };
+  const before = a8.handshakes;
+  takeReward(a8, null);
+  assert.equal(a8.handshakes, before, "skip pays 0 at rung 8");
+
+  a0.status = "reward"; a0.pendingReward = { cards: ["SYN"] };
+  const before0 = a0.handshakes;
+  takeReward(a0, null);
+  assert.ok(a0.handshakes > before0, "skip still pays at base");
+}
+
+// ── shared ascension module owns the ladder STATE (unlock/clear, persisted in a save) ─────────────
+{
+  const save = { stageState: { 5: {} }, global: {} };
+  const asc = createAscension({ save, stageId: 5, modifiers: ASCENSION_MODS });
+  assert.equal(asc.maxLevel, 15, "ladder length surfaced");
+  assert.equal(asc.maxUnlocked(), 1, "a fresh stage unlocks rung 1 (after base clear)");
+  assert.equal(asc.setLevel(5), 1, "cannot select beyond what's unlocked");
+
+  asc.recordClear(1);
+  assert.equal(asc.maxCleared(), 1, "clear at rung 1 recorded");
+  assert.equal(asc.maxUnlocked(), 2, "rung 2 now unlocked");
+  assert.equal(save.global.maxAscension, 1, "global summary updated");
+  assert.equal(save.global.ascensionCleared[5], 1, "per-stage global summary updated");
+}
+
+console.log("stage5 ascension ladder tests passed");

@@ -4,7 +4,7 @@
 //   node build/metagame/build.mjs        (re-run after editing any stage's source modules)
 //
 // WHY: the hub lazy-loads ONE stage's module graph at a time (stage-manifest.js → loadStage),
-// but a single stage is itself split into 6–16 small modules (stage6 = 16). Loaded directly that
+// but a single stage is itself split into many small modules (Protocol Codex is the largest). Loaded directly that
 // means 6–16 first-open requests *per stage*. esbuild collapses each stage's OWN module graph
 // (index.js + its local ./*.js) into ONE same-origin ESM exporting stageMeta/defaultState/
 // mountStage (+ the re-exports each index.js declares). The hub's LOADERS point at this bundle.
@@ -44,7 +44,7 @@ const ALLOWED_SHARED = new Set([
   '../../achievements1.js',
   // Phase-0 shared run/economy foundations (docs/games/metagame/shared/*). Kept external (one
   // vendored same-origin instance fetched once + SW-cached) rather than inlined per stage: they are
-  // stateless factories shared across stages (run-state retrofit started with S6; S4/S8 follow).
+  // stateless factories shared across stages (run-state is used by Protocol Codex and Fractal Bastion).
   '../../shared/run-state.js',
   '../../shared/economy.js',
   '../../shared/shop.js',
@@ -54,13 +54,13 @@ const ALLOWED_SHARED = new Set([
   // other shared singletons above.
   '../../shared/modal.js',
   // Shared micro-feedback kit (UX audit F5): flash/shake/floatNum/banner. Stateless helpers every
-  // stage attaches (S6 combat play-feedback today); kept external like the other shared singletons.
+  // stage attaches (Protocol Codex combat uses it today); kept external like the other shared singletons.
   '../../shared/feedback.js',
-  // Shared on-screen touch-control component (d-pad / verb toggle). Stateless factory reused across
-  // stages (S5 steering, S3 verb toggle); kept external like the other shared singletons.
+  // Shared on-screen touch-control component (d-pad / verb toggle). Stateless factory used by S3;
+  // kept external like the other shared singletons.
   '../../touch-controls.js',
   // Shared capped-30fps rAF driver + hidden-tab guard (CPU budget fix 2026-07-12). Stateless
-  // factory used by every stage with a continuous loop (S4/S5/S8 rAF, S1/S2 interval guards);
+  // factory used by retained stages with continuous work (S4 rAF, S1/S2 interval guards);
   // kept external like the other shared singletons.
   '../../shared/frame-loop.js',
 ]);

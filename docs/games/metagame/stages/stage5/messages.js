@@ -1,23 +1,30 @@
-export const ACTION_NAME = 'counter_wave_calibrated';
-// Cosmetic-only live progress signal (transient channel — never persisted, never satisfies the boss
-// gate). Carries the accumulating continuousMs so the calibration HUD can animate toward the loop.
-export const PROGRESS_ACTION = 'calibration_progress';
-export const REQUIRED_ACTION = '5.counter_wave_calibrated';
-export const ACHIEVEMENT_ID = 'stage5.counter_wave_calibrated';
-export const ACHIEVEMENT_TEXT = 'I listened before I drove.';
-export const BTS_PATH = '/docs/bts/signal_racer.bts';
-export const TRANSMISSION_HUM_PATH = '/docs/examples/metagame/stage5/transmission_hum.mp3';
-export const LOOP_DURATION_MS = 14000;
+export const ACTION_NAME = "protocol_ch9_read";
+export const REQUIRED_ACTION = "5.protocol_ch9_read";
+export const ACHIEVEMENT_ID = "stage5.protocol_ch9_read";
+export const ACHIEVEMENT_TEXT = "I read the fine print.";
+export const BTS_PATH = "/docs/bts/protocol_codex.bts";
+export const EPUB_PATH = "/docs/examples/metagame/stage5/protocols_of_the_entity.epub";
 
 export const bellMessages = {
-  start: 'the road is only a waveform drawn flat.',
-  unlock: 'the counter-wave holds for one full loop.',
-  defeated: 'the jammer signal collapses into silence.',
+  start: "something answered. not clearly. but something.",
+  unlock: "Chapter 9 made the refusal legible.",
+  phase2: "ACK before signal. the rule holds.",
+  phase3: "the unknown protocol still needs acknowledgement.",
+  defeated: "the connection accepted a shared rule."
 };
 
 export const lockedHintLadder = [
-  'the jammer bleeds your integrity the whole race. a maxed rig can outrun it — barely.',
-  'its suppression wave has a rhythm. the rhythm can be answered.',
-  'transmission_hum.mp3 carries the counter-signal.',
-  'play transmission_hum.mp3 continuously for one full 14-second loop to cancel the suppression entirely.',
+  "the protocol goes unrecognized — the handshake still works, but it's a longer fight this way.",
+  "you are sending data I cannot parse cleanly. the protocol should be established first.",
+  "Chapter 9 describes what The Refused Connection accepts.",
+  "open protocols_of_the_entity.epub and read Chapter 9 to shorten the fight."
 ];
+
+export const combatLines = {
+  lockedDeath: "PROTOCOL MISMATCH costs HP, not the fight — Chapter 9 would make this shorter.",
+  mismatch: "protocol mismatch. no damage accepted.",
+  synFirst: "SYN opened the turn. the first phase accepts damage.",
+  ackSignal: "ACK acknowledged. Signal damage accepted.",
+  ackOngoing: "ACK keeps the unknown protocol from bleeding through.",
+  defeated: "The Refused Connection closes without refusal."
+};

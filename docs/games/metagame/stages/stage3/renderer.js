@@ -448,9 +448,19 @@ export function renderStage3(ctx) {
     if (id === "clear-pressure") { devClearPressure(state); save?.(); paintHud(); return; }
   }
 
+  function jumpToBoss() {
+    devSkipToBody(state);
+    state.boss.reached = true;
+    save?.();
+    loadBoard();
+    paintHud();
+    return !fields.bossGate.hidden;
+  }
+
   return {
     repaint: paintHud,
     dev,
+    jumpToBoss,
     destroy() { overlay?.close?.(); boardFit?.destroy(); window.removeEventListener("keydown", onKey); uninstallHook(); verbBar.destroy(); root.remove(); }
   };
 }

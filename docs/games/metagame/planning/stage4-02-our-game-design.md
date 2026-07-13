@@ -478,23 +478,6 @@ Different path grammars create meaningfully different strategic challenges.
 
 ---
 
-## K. Implementation checklist (for the developer)
+## Implementation status
 
-- [ ] 40×40 grid renderer with path / background / occupied tile states
-- [ ] L-system path generator: rules, depth, turtle interpretation, grid clamping
-- [ ] Path per wave: generate at wave start, cache for tower coverage calculation
-- [ ] Branch points: detect path splits; route enemies probabilistically (60/40)
-- [ ] Recurve detection: mark tiles visited more than once; apply double-shoot to towers there
-- [ ] 6 tower types with 3 upgrade levels each; active ability system (level-3 only)
-- [ ] Blueprint system: file sidebar opens JSON; unlocks in-game upgrade; persistent per run
-- [ ] Recursion Points map: JSON defines coordinates; displayed if blueprint found
-- [ ] Enemy types (6) with stat scaling per wave number
-- [ ] Wave budget system: `waveBudget(n)` → enemy selection → spawn sequencer
-- [ ] Integrity meter: tracks escapes, scales damage by enemy HP, regens between waves
-- [ ] Cycles economy: earn on kill + wave bonus + extractor; spend on towers/upgrades/sell
-- [ ] Wave failure: Integrity hits 0 → replay option; 3 failures → difficulty assist offer
-- [ ] Boss: Infinite Loop — 3 lap traversal, HP regen per lap, recursion point bonus
-- [ ] Prestige: Recursion Depth — bonus stack, path variant unlock, state reset
-- [ ] Bell messages (`messages4.js`)
-- [ ] Speed controls: ×1/×2/×3/pause; wave preview panel (enemy types for next wave)
-- [ ] Stage 4 completion → Stage 5 unlock
+The core game described here is implemented. Unfinished expansion, balance, and polish work is tracked only in [TASKS.md](../../../../TASKS.md).

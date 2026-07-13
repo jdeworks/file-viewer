@@ -147,12 +147,9 @@ Primary local paths:
 - `docs/types/media/renderer.js`
 - `docs/types/media/renderer-mode-panels.js`
 - `docs/types/media/workspace-modes.js`
-- `docs/types/media/mixer-engine.js` (retired/deleted in Stage 8 prototype
-  retirement — see `STUDIO_TRACKER.md`)
-- `docs/types/media/timeline.js` (retired/deleted in Stage 8 prototype
-  retirement — see `STUDIO_TRACKER.md`)
-- `docs/types/media/compare-ui.js` (retired/deleted in Stage 8 prototype
-  retirement — see `STUDIO_TRACKER.md`)
+- `docs/types/media/mixer-engine.js` (retired/deleted in Stage 8)
+- `docs/types/media/timeline.js` (retired/deleted in Stage 8)
+- `docs/types/media/compare-ui.js` (retired/deleted in Stage 8)
 - `docs/types/media/studio-export.js`
 - `docs/types/media/transcoder.js`
 - `docs/types/media/transcoder-ops.js`

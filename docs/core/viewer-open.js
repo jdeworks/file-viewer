@@ -72,10 +72,8 @@ export async function searchViewerFile(path, query, opts = {}) {
   const sourceText = text == null ? await fetch('examples/' + clean).then((r) => r.ok ? r.text() : '').catch(() => '') : text;
   const line = sourceText.split(/\r?\n/).find((entry) => entry.includes(query));
   const result = line && line.trim();
-  viewerActions().then(({ recordStage2SearchResult, recordStage7Search, recordStage10EchoSearch }) => {
+  viewerActions().then(({ recordStage2SearchResult }) => {
     recordStage2SearchResult({ file: target || clean, query, result });
-    recordStage7Search({ file: target || clean, query, result });
-    recordStage10EchoSearch({ file: target || clean, query, result });
   });
   return { found: Boolean(result), result };
 }

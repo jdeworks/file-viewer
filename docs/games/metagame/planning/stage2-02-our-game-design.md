@@ -557,33 +557,6 @@ Bell messages use the same bell system as Stage 1 (`messages2.js`, same pattern 
 
 ---
 
-## N. Implementation checklist (for the developer)
+## Implementation status
 
-- [ ] Character grid renderer (monospaced, 60×30, CSS custom property color system)
-- [ ] BSP dungeon generator with guaranteed shop/chest/secret/glyph placement
-- [ ] Three-state fog-of-war (unseen / remembered / visible) with raycast
-- [ ] Entity stats object + level-up curve
-- [ ] Auto-combat loop (`setInterval` at `1000 / spd` ms)
-- [ ] Enemy types: § ¶ » Ω ‽ with distinct AI behaviors
-- [ ] Equipment slot system (weapon/armor/ring/amulet)
-- [ ] Item generation with tier scaling per floor depth
-- [ ] Item identification system (per-run randomized appearances)
-- [ ] Consumable hotbar [1]–[4] with pause-for-equip behavior
-- [ ] Glyph economy: earn on kill/clear, carry-out on death (50%) or clear (100%)
-- [ ] Glyph Shop (persistent upgrade screen, loads between runs)
-- [ ] Parse Depth prestige: cost curve, ATK speed bonus application
-- [ ] Floor theme palette shifts (CSS variable overrides per floor)
-- [ ] Boss arena (hand-designed room, 3-phase AI state machine)
-- [ ] **Boss LOCKED state**: Phase 2 fires 16-way spread every 0.5s; no gap; entity cannot reach boss
-- [ ] Boss LOCKED taunt messages in ASCII arena (floating text, 3 variants)
-- [ ] `cipher.txt` in boss arena directory; searchable with file viewer Ctrl+F
-- [ ] `appState.fileViewerActions.stage2_search_passage` flag; game polls every 2s during Phase 2
-- [ ] North pillar activation: flag triggers → pillar glows amber → gap opens in spread
-- [ ] LOCKED → UNLOCKED transition: pillar pulse animation + bell message
-- [ ] Achievement system: *"the passage was marked."* fires on flag set (not boss defeat)
-- [ ] Bell messages (`messages2.js` — same structure as `messages1.js`)
-- [ ] Minimap widget (optional, unlocked via Glyph Shop "Dead Zone Map")
-- [ ] Combat log (last 4 lines, color-coded by event type)
-- [ ] Stage completion → Stage 3 unlock + bell sequence
-- [ ] **"Behind the Scenes" button**: appears after boss defeat; loads `/docs/bts/glyph_dungeon.bts`
-- [ ] `.bts` file rendered as markdown in file viewer panel (inline, no navigation away)
+The core game described here is implemented. Unfinished expansion, balance, and polish work is tracked only in [TASKS.md](../../../../TASKS.md).

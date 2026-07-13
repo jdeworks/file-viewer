@@ -30,6 +30,7 @@ export function mountStage(ctx) {
   return {
     devControls: stageMeta.devControls,
     dev(id) { if (view && typeof view.dev === 'function') view.dev(id); },
+    jumpToBoss() { return view?.jumpToBoss?.() || false; },
     repaint() { if (view && typeof view.repaint === 'function') view.repaint(); },
     destroy() { if (view && typeof view.destroy === 'function') view.destroy(); },
   };

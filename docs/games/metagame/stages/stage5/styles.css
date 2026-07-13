@@ -1,103 +1,186 @@
-.stage5-signal-racer {
-  --s5-bg: #0d0815;
-  --s5-fg: #ffffff;
-  --s5-track: #1a1030;
-  --s5-line: #2a2050;
-  --s5-wall: #7a2090;
-  --s5-boost: #d4537e;
-  --s5-jammer: #ef9f27;
-  --s5-counter: #5dcaa5;
-  background: var(--s5-bg);
-  border: 1px solid var(--s5-line);
-  color: var(--s5-fg);
+/* Stage 5 — Protocol Codex (deck-builder). Parchment + navy archive aesthetic.
+   Combat-screen layout lives in styles-combat.css (split for the 500-LOC cap). This sheet owns the
+   shell, hub, map, reward/shop/rest, card BASE face, and end screens. */
+.stage5-protocol-codex {
+  height: 100%;
   box-sizing: border-box;
+  padding: 16px;
+  color: #241913;
+  background: #e8dcc8;
+  font-family: Georgia, "Times New Roman", serif;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 14px;
-  width: 100%;
-  height: 100%;
-  min-height: 0;
-  position: relative;      /* result overlay is absolutely positioned within the stage */
+}
+.stage5-protocol-codex *, .stage5-protocol-codex *::before, .stage5-protocol-codex *::after { box-sizing: border-box; }
+
+.s5db-top {
+  padding: 6px 0 12px;
+  letter-spacing: 0.18em;
+  border-bottom: 2px solid #b8962e;
+  flex: 0 0 auto;
 }
 
-.stage5-signal-racer *,
-.stage5-signal-racer *::before,
-.stage5-signal-racer *::after { box-sizing: border-box; }
+/* The screen area fills the bounded host (00-F1) and is the ONLY scroller: combat fills it exactly
+   (no scroll); the taller flow screens (hub/map/shop) scroll INSIDE it, never the panel. */
+.s5db-screen { flex: 1; min-height: 0; margin-top: 14px; overflow: auto; }
 
-.s5-hud,
-.s5-controls {
-  align-items: center;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 14px;
+/* ── shared chrome ─────────────────────────────────────────────────────────── */
+.s5db-hub-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0; }
+
+.stage5-protocol-codex button {
+  font-family: inherit;
+  border: 1px solid #1e2840;
+  border-radius: 6px;
+  background: #1e2840;
+  color: #f6efdf;
+  padding: 8px 12px;
+  cursor: pointer;
 }
-.s5-hud b { font-variant-numeric: tabular-nums; }
+.stage5-protocol-codex button:disabled { opacity: 0.45; cursor: not-allowed; }
+.stage5-protocol-codex .s5db-ghost { background: transparent; color: #1e2840; }
 
-.s5-layout {
+.s5db-meta-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; margin: 12px 0; }
+.s5db-meta-grid div { border: 1px solid #b8962e; border-radius: 6px; background: #f6efdf; padding: 8px 10px; }
+.s5db-meta-grid dt { font-size: 0.78rem; color: #6b513a; }
+.s5db-meta-grid dd { margin: 2px 0 0; font-size: 1.3rem; font-weight: 700; }
+
+.s5db-prestige { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 4px 0 12px; }
+.s5db-prestige span { font-size: 0.82rem; color: #6b513a; }
+.s5db-prestige button { background: #4a2f6b; border-color: #4a2f6b; }
+.s5db-hint { color: #6b513a; font-style: italic; }
+
+/* Ascension difficulty picker (hub) */
+.s5db-ascension { margin: 4px 0 12px; padding: 10px 12px; border: 1px solid #c9b48f; border-radius: 8px; background: #efe5d2; }
+.s5db-asc-head { display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; justify-content: space-between; }
+.s5db-asc-head span { font-size: 0.8rem; color: #6b513a; }
+.s5db-asc-track { display: flex; flex-wrap: wrap; gap: 4px; margin: 8px 0; }
+.s5db-asc-cell { min-width: 26px; padding: 3px 6px; font-size: 0.82rem; border: 1px solid #c9b48f; border-radius: 5px; background: #fbf6ec; color: #3b2a1c; cursor: pointer; }
+.s5db-asc-cell.is-selected { background: #8b2020; border-color: #8b2020; color: #fbf6ec; font-weight: 700; }
+.s5db-asc-cell.is-floor:not(.is-selected) { background: #d8c7a3; }
+.s5db-asc-cell.is-locked { opacity: 0.4; cursor: default; }
+
+/* Seeded run modes (daily / custom) + run-end score line */
+.s5db-seed-modes { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 4px 0 10px; }
+.s5db-seed-entry { display: inline-flex; gap: 6px; align-items: center; }
+.s5db-seed-input { padding: 4px 8px; font: inherit; font-size: 0.85rem; border: 1px solid #c9b48f; border-radius: 5px; background: #fbf6ec; color: #3b2a1c; }
+.s5db-score-line { margin: 8px 0; color: #6b513a; font-size: 0.86rem; }
+.s5db-score-line code { background: #efe5d2; padding: 1px 5px; border-radius: 4px; }
+.s5db-hub-title { margin: 0 0 4px; }
+.s5db-hub-sub { max-width: 60ch; color: #3b2a1c; }
+
+/* ── cards (BASE face — shared by combat hand, inspect, reward/shop) ──────────── */
+.s5db-card-row { display: flex; flex-wrap: wrap; gap: 10px; margin: 10px 0; }
+.s5db-card {
+  position: relative;
+  width: 150px;
+  min-height: 122px;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(220px, 300px);
-  gap: 14px;
-  flex: 1;
-  min-height: 0;
-}
-
-.s5-side {
-  display: grid;
-  gap: 10px;
+  gap: 4px;
   align-content: start;
-  min-height: 0;
-  overflow: auto;          /* the side column scrolls internally, never the panel */
-}
-
-.s5-rounds { display: grid; gap: 5px; }
-
-.s5-primary-btn {
-  background: var(--s5-boost);
-  border: 1px solid var(--s5-boost);
-  color: #1a0810;
-  cursor: pointer;
-  font-weight: 700;
-  font-size: 15px;
-  letter-spacing: 0.5px;
-  padding: 12px 14px;
-  text-align: center;
-  width: 100%;
-}
-.s5-primary-btn:hover:not(:disabled) { filter: brightness(1.1); }
-
-.s5-rounds button,
-.s5-controls button {
-  background: #1a1030;
-  border: 1px solid var(--s5-line);
-  color: var(--s5-fg);
-  cursor: pointer;
-  padding: 6px 9px;
   text-align: left;
+  color: #241913 !important;
+  background: #fff8e9 !important;
+  border: 2px solid #1e2840 !important;
+  border-radius: 8px;
+  padding: 14px 10px 22px;
+}
+.s5db-card--protocol { border-color: #2f6f6a !important; }
+.s5db-card--layer { border-color: #7a4ea3 !important; }
+.s5db-card--daemon { border-color: #3a7a2f !important; }
+.s5db-card--recursion { border-color: #b8962e !important; }
+.s5db-card-cost {
+  position: absolute; top: -10px; left: -10px;
+  width: 24px; height: 24px; line-height: 24px; text-align: center;
+  border-radius: 50%; background: #1e2840; color: #f6efdf; font-weight: 700;
+}
+.s5db-card-name { font-size: 0.98rem; font-weight: 700; line-height: 1.1; }
+.s5db-card-type { font-size: 0.72rem; color: #6b513a; text-transform: uppercase; letter-spacing: 0.08em; }
+.s5db-card-text { line-height: 1.3; font-size: 0.82rem; }
+.s5db-price { position: absolute; bottom: 4px; right: 8px; font-weight: 700; color: #8b2020; }
+
+/* Coloured type strip across the top of every card face + the upgrade "+" badge. */
+.s5db-card-strip { position: absolute; top: 0; left: 0; right: 0; height: 6px; border-radius: 6px 6px 0 0; background: #1e2840; }
+.s5db-card--protocol .s5db-card-strip { background: #2f6f6a; }
+.s5db-card--layer .s5db-card-strip { background: #7a4ea3; }
+.s5db-card--signal .s5db-card-strip { background: #8b2020; }
+.s5db-card--daemon .s5db-card-strip { background: #3a7a2f; }
+.s5db-card--recursion .s5db-card-strip { background: #b8962e; }
+.s5db-card-badge {
+  position: absolute; top: -10px; right: -10px;
+  width: 22px; height: 22px; line-height: 18px; text-align: center;
+  border-radius: 50%; background: #b8962e; color: #241913; font-weight: 700; border: 2px solid #fff8e9;
 }
 
-.s5-rounds button:disabled { color: #6a6390; cursor: not-allowed; opacity: 0.7; }
-.s5-round-est { opacity: 0.6; font-size: 0.85em; }
-.s5-rounds .s5-boss-btn:not(:disabled) { border-color: var(--s5-jammer); color: var(--s5-jammer); }
+/* Reward/shop card lift (the fan lift lives in styles-combat.css and is more specific). */
+.s5db-card { transition: transform 0.12s ease, box-shadow 0.12s ease; }
+.s5db-card-row .s5db-card:not(:disabled):hover { transform: translateY(-6px); box-shadow: 0 8px 18px rgba(30, 40, 64, 0.3); }
+.s5db-card:disabled { opacity: 0.5; }
 
-.s5-ascension { display: flex; flex-wrap: wrap; gap: 5px; }
-.s5-asc-head { color: var(--s5-jammer); flex-basis: 100%; font-size: 11px; letter-spacing: 1px; }
-.s5-ascension button {
-  background: #1a1030; border: 1px solid var(--s5-line); color: var(--s5-fg);
-  cursor: pointer; padding: 4px 8px;
+/* ── map ───────────────────────────────────────────────────────────────────── */
+.s5db-map-head { font-weight: 700; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.s5db-map-grid { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 6px; position: relative; }
+.s5db-map-col { display: flex; flex-direction: column; gap: 10px; min-width: 78px; position: relative; z-index: 1; }
+/* #5 — map edges: the adjacency SVG scrolls with the grid content, never intercepts a node click,
+   and sits UNDER the chips. Edges default dim; the current node's out-edges glow; cleared out-edges traced. */
+.s5db-edges { position: absolute; top: 0; left: 0; pointer-events: none; z-index: 0; overflow: visible; }
+.s5db-edge { stroke: #b8962e; stroke-width: 2; stroke-opacity: 0.4; fill: none; }
+.s5db-edge.is-cleared { stroke: #2f6f6a; stroke-opacity: 0.7; }
+.s5db-edge.is-current { stroke: #1e2840; stroke-width: 3; stroke-opacity: 0.9; }
+.s5db-node {
+  display: grid; gap: 2px; place-items: center;
+  padding: 8px 6px; border-radius: 8px;
+  border: 1px solid #b8962e; background: #f6efdf; color: #241913;
 }
-.s5-ascension button.s5-asc-active { border-color: var(--s5-jammer); color: var(--s5-jammer); }
-.s5-ascension button:disabled { cursor: not-allowed; opacity: 0.7; }
+.s5db-node-icon { font-size: 1.3rem; }
+.s5db-node-type { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; }
+.s5db-node.is-locked { opacity: 0.4; }
+.s5db-node.is-cleared { opacity: 0.55; background: #ded0b6; }
+.s5db-node.is-current { outline: 2px solid #8b2020; }
+button.s5db-node.is-available { background: #fff8e9 !important; color: #241913 !important; border: 2px solid #1e2840 !important; cursor: pointer; }
+.s5db-map-foot { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; margin-top: 12px; font-weight: 700; color: #3b2a1c; }
+/* M2 — in-run info strip: relics + keys as a tap/hover expandable, not permanent chrome. */
+.s5db-inv { margin-top: 12px; border: 1px solid #b8962e; border-radius: 8px; background: #f6efdf; }
+.s5db-inv > summary { cursor: pointer; padding: 6px 10px; font-weight: 700; color: #3b2a1c; }
+.s5db-inv-body { display: flex; flex-wrap: wrap; gap: 18px; padding: 4px 12px 10px; }
+.s5db-inv-body h4 { margin: 4px 0; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; color: #6a4fb0; }
+.s5db-inv-body ul { margin: 0; padding-left: 18px; font-size: 0.84rem; line-height: 1.5; color: #3b2a1c; }
+.s5db-inv-keys li.is-earned { color: #2f6f6a; }
+.s5db-inv-none { list-style: none; margin-left: -18px; opacity: 0.7; }
+/* M3 — key telegraph: one quiet line at a true-ending challenge's decision point. */
+.s5db-telegraph { margin: 8px 0 0; font-size: 0.85rem; font-weight: 700; color: #6a4fb0; }
+.s5db-notice { margin: 6px 0 10px; padding: 6px 10px; border-left: 3px solid #7a4ea3; background: #f1e7d2; color: #4a2f6b; font-weight: 700; }
+.s5db-relic-won { padding: 6px 10px; border-left: 3px solid #7a4ea3; background: #f1e7d2; color: #4a2f6b; }
+.s5db-act-track { display: inline-flex; gap: 6px; }
+.s5db-act-dot { width: 11px; height: 11px; border-radius: 50%; border: 2px solid #b8962e; background: transparent; }
+.s5db-act-dot.is-done { background: #b8962e; }
+.s5db-act-dot.is-here { border-color: #8b2020; background: #8b2020; box-shadow: 0 0 0 3px rgba(139, 32, 32, 0.2); }
+.s5db-node--elite { border-color: #7a4ea3; }
+.s5db-node--boss { border-color: #8b2020; border-width: 2px; }
+.s5db-node--rest { border-color: #2f6f6a; }
+.s5db-node--shop { border-color: #b8962e; }
+.s5db-node--event { border-color: #4a2f6b; }
+button.s5db-node.is-available:hover { transform: translateY(-3px); transition: transform 0.12s ease; }
 
-.s5-boss-panel {
-  background: #120a20; border: 1px solid var(--s5-line);
-  display: grid; gap: 6px; padding: 10px;
+/* The potion belt (shared) + drop/shop offers. */
+.s5db-potions { margin: 6px 0; font-size: 0.82rem; }
+.s5db-potions-label { font-weight: 700; color: #6a4fb0; margin-right: 4px; }
+.s5db-potion { padding: 3px 8px; margin: 0 4px 4px 0; border: 1px solid #6a4fb0; border-radius: 6px; background: #f3effb; color: #3a2a66; cursor: pointer; font: inherit; }
+.s5db-potion:hover:not(:disabled) { background: #e7ddf7; }
+.s5db-potion:disabled { opacity: 0.5; cursor: default; }
+.s5db-potion--shop { display: inline-flex; flex-direction: column; align-items: flex-start; gap: 2px; max-width: 180px; }
+.s5db-potion-offer { margin: 10px 0; padding: 8px 10px; border: 1px dashed #6a4fb0; border-radius: 8px; background: #f7f4fd; }
+.s5db-shop-potions { margin-top: 10px; }
+
+/* Boss 1-of-3 relic choice. */
+.s5db-relic-choice { display: inline-flex; flex-direction: column; align-items: flex-start; gap: 3px; max-width: 200px; padding: 8px 10px; margin: 0 6px 6px 0; border: 1px solid #2f6f6a; border-radius: 8px; background: #eef7f6; color: #1f3f3c; cursor: pointer; font: inherit; }
+.s5db-relic-choice:hover { background: #ddeeec; }
+.s5db-relic-choice.is-cursed { border-color: #8b2020; background: #fbeeee; color: #5a1414; }
+
+/* ── end screens ───────────────────────────────────────────────────────────── */
+.s5db-end h2 { margin-top: 0; }
+.s5db-end--dead h2 { color: #8b2020; }
+.s5db-end--won h2 { color: #2f6f6a; }
+
+@media (max-width: 720px) {
+  .s5db-card-row .s5db-card { width: 100%; }
 }
-.s5-hint { color: #afa9ec; font-size: 13px; }
-
-.s5-boss-chip {
-  background: #120a20; border: 1px dashed var(--s5-line); border-radius: 6px;
-  color: #8a83b8; font-size: 12px; letter-spacing: 0.5px; padding: 7px 10px;
-}
-
-.s5-log { margin: 0 0 0 18px; max-height: 96px; overflow: auto; }

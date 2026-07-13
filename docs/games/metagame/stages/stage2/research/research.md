@@ -1,7 +1,8 @@
 # Stage 2 "Glyph Dungeon" — Expansion Research
 
-_Prepared 2026-06-26. Covers: the ASCII roguelite genre, the existing core loop, and the ordered
-expansion arc (sub-stage D → E → F) for the next build layer beyond the shipped A/B/C expansion._
+_Prepared 2026-06-26. Historical design reference, not an active backlog. The
+current implementation is authoritative; unfinished work is tracked only in
+[`TASKS.md`](../../../../../../TASKS.md)._
 
 ---
 

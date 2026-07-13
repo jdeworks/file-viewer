@@ -8,7 +8,7 @@ import { createViewerBridge } from './viewer-bridge.js';
 import { MANIFEST_FIELDS, listStageMetas, stageMetaFor, loadStage } from './stage-manifest.js';
 
 // Stages are loaded lazily (one stage's module graph at a time) rather than eagerly importing all
-// ten up front. The registry starts empty and each stage module is registered the first time it's
+// five up front. The registry starts empty and each stage module is registered the first time it's
 // loaded; the hub's all-stages views (nav, title, dev menu, bts) read the lightweight manifest.
 const registry = createStageRegistry([]);
 const loadedStages = new Map();
@@ -40,17 +40,6 @@ function prefetchStages(ids) {
 
 function esc(s) {
   return String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-}
-
-// Dev-menu unlock is a *machine-local* setting (a debug affordance), kept in its own
-// localStorage key so it survives "Reset save" — resetting the game should not re-lock
-// the dev tools on a machine where they were already unlocked.
-const DEV_KEY = 'fv:games:mg:dev';
-function devUnlockedPersisted() {
-  try { return localStorage.getItem(DEV_KEY) === '1'; } catch { return false; }
-}
-function persistDevUnlock() {
-  try { localStorage.setItem(DEV_KEY, '1'); } catch { /* storage may be blocked */ }
 }
 
 // Seed a single stage's state from its defaultState if it's still an empty placeholder. Seeding is
@@ -97,8 +86,10 @@ export function mount(host, { onExit } = {}) {
   const services = createServices(() => saveData, persist, viewer);
 
   let mounted = null;
+  let bossJumpSeq = 0;
 
   function selectStage(stage) {
+    bossJumpSeq += 1;
     saveData.currentStage = Number(stage);
     persist();
     render();
@@ -126,7 +117,7 @@ export function mount(host, { onExit } = {}) {
             <strong>${esc(stageMetaFor(saveData.currentStage)?.name || 'Stage')}</strong>
           </div>
           <div class="mg-v3-head-actions">
-            <button class="mg-dev-btn" type="button" data-action="dev" aria-label="Dev menu" title="Dev menu" hidden>🛠</button>
+            <button class="mg-dev-btn" type="button" data-action="dev" aria-label="Dev menu" title="Dev menu">🛠</button>
             <button class="mg-help-btn" type="button" data-action="help" aria-label="Help" title="Help" hidden>❓</button>
             <button class="mg-sfx-btn" type="button" data-action="sfx" aria-label="Toggle sound effects"></button>
             <button class="mg-readme-btn" type="button" data-action="readme" aria-label="Stage rules" title="Stage rules">📖</button>
@@ -163,24 +154,20 @@ export function mount(host, { onExit } = {}) {
       openReadmeModal({ stageId: id, stageName });
     });
     const devBtn = host.querySelector('[data-action="dev"]');
-    if (saveData.global.devUnlocked || devUnlockedPersisted()) devBtn.hidden = false;
     devBtn.addEventListener('click', () => toggleDevMenu());
     const nav = host.querySelector('.mg-v3-stages');
     const currentStage = Number(saveData.currentStage);
     const allStageMetas = listStageMetas();
-    const finalStageId = allStageMetas.length;
     nav.replaceChildren(...allStageMetas.filter((meta) => saveData.unlockedStages.includes(meta.id)).map((meta) => {
       const defeated = saveData.defeated.includes(meta.id);
-      // The finale's "rest" final route leaves the entity dormant — surface a "(resting)" hub state.
-      const resting = meta.id === finalStageId && defeated && saveData.stageState?.[meta.id]?.final?.route === 'rest';
       const button = document.createElement('button');
       button.type = 'button';
       // F4 (phone chrome diet): the button carries a number chip + the full name in separate spans.
       // Desktop shows both inline (unchanged "1. Name *"); on phone CSS hides the name so the nav
       // collapses to one scroll-snap row of numbered chips. is-current / is-defeated drive the chip.
-      button.className = `mg-v3-stage${resting ? ' is-resting' : ''}${defeated ? ' is-defeated' : ''}${meta.id === currentStage ? ' is-current' : ''}`;
+      button.className = `mg-v3-stage${defeated ? ' is-defeated' : ''}${meta.id === currentStage ? ' is-current' : ''}`;
       button.dataset.stage = String(meta.id);
-      button.innerHTML = `<span class="mg-v3-stage-num">${meta.id}</span><span class="mg-v3-stage-name">. ${esc(meta.name)}${defeated ? ' *' : ''}${resting ? ' (resting)' : ''}</span>`;
+      button.innerHTML = `<span class="mg-v3-stage-num">${meta.id}</span><span class="mg-v3-stage-name">. ${esc(meta.name)}${defeated ? ' *' : ''}</span>`;
       button.addEventListener('click', () => selectStage(meta.id));
       nav.appendChild(button);
       return button;
@@ -221,10 +208,10 @@ export function mount(host, { onExit } = {}) {
       helpBtn.addEventListener('click', () => mounted.help());
     }
     prefetchStages(saveData.unlockedStages.filter((s) => Number(s) !== id));
+    return mounted;
   }
 
   let bellDotUnsub = null;
-  let bellClicks = [];
   function mountBell(target) {
     if (bellDotUnsub) { bellDotUnsub(); bellDotUnsub = null; }
     const button = document.createElement('button');
@@ -245,38 +232,47 @@ export function mount(host, { onExit } = {}) {
         for (const rec of services.bell.listBellLog({ unseenOnly: true })) services.bell.markBellSeen(rec.id);
         refreshDot();
       }
-      // Easter egg: 5 rapid bell clicks UNLOCK the dev menu — reveal its header button (🛠, next to
-      // SFX) and open it. Once unlocked the button persists (devUnlocked flag).
-      const t = Date.now();
-      bellClicks = bellClicks.filter((x) => t - x < 1500);
-      bellClicks.push(t);
-      if (bellClicks.length >= 5) {
-        bellClicks = [];
-        panel.hidden = true;
-        saveData.global.devUnlocked = true;
-        persistDevUnlock();
-        persist();
-        const devBtn = host.querySelector('[data-action="dev"]');
-        if (devBtn) devBtn.hidden = false;
-        toggleDevMenu();
-      }
     });
     bellDotUnsub = services.bell.subscribeToBell(refreshDot);
     refreshDot();
   }
 
-  // ── Dev/testing menu (unlocked by 5 rapid bell clicks) ──────────────────────────────────────
+  // ── Always-available dev/testing menu ───────────────────────────────────────────────────────
+  async function jumpToBoss(stage) {
+    const n = Number(stage);
+    if (!stageMetaFor(n)) return false;
+    const request = ++bossJumpSeq;
+    const mod = await ensureStageModule(n);
+    if (request !== bossJumpSeq) return false;
+
+    // Boss navigation is a deterministic test start, not a resume: discard this stage's runtime,
+    // checkpoints, run counter, and completion marker while preserving unrelated achievements.
+    saveData.stageState[n] = mod.defaultState({ save: saveData, now: Date.now() });
+    delete saveData.runs[n];
+    saveData.defeated = saveData.defeated.filter((id) => Number(id) !== n);
+    saveData.currentStage = n;
+
+    const req = stageMetaFor(n)?.requiredAction;
+    if (req) {
+      const dot = req.indexOf('.');
+      actions.setAction(Number(req.slice(0, dot)), req.slice(dot + 1), { source: 'dev-boss-jump' });
+    }
+    persist();
+
+    const expectedRender = renderSeq + 1;
+    await render();
+    if (request !== bossJumpSeq || renderSeq !== expectedRender || Number(saveData.currentStage) !== n) return false;
+    if (!mounted || typeof mounted.jumpToBoss !== 'function') throw new Error(`stage ${n} does not implement jumpToBoss()`);
+    const entered = await mounted.jumpToBoss();
+    persist();
+    return entered !== false;
+  }
+
   function toggleDevMenu() {
     const box = host.querySelector('.mg-v3-debug');
     if (!box) return;
     if (!box.hidden) { box.hidden = true; box.innerHTML = ''; return; }
-    const stageBtns = listStageMetas().map((meta) => {
-      const id = meta.id;
-      return `<button type="button" data-dev="stage" data-n="${id}">${id}</button>`;
-    }).join('');
-    // Boss-jump buttons: "1b", "2b" … land you on the stage with its boss already
-    // reachable (stage 1: max bits + every tier owned so Confront opens; every other stage:
-    // the stage's requiredAction pre-fired so the boss lock is lifted).
+    // Boss-jump buttons: "1b" … "5b" reset the target stage and enter its actual boss encounter.
     const bossBtns = listStageMetas().map((meta) => {
       const id = meta.id;
       return `<button type="button" data-dev="boss" data-n="${id}">${id}b</button>`;
@@ -299,11 +295,7 @@ export function mount(host, { onExit } = {}) {
         <div class="mg-dev-title">🛠 Dev menu <button type="button" data-dev="close" class="mg-dev-x">✕</button></div>
         ${bitsRow}
         ${activeDevRow}
-        <div class="mg-dev-row"><span>Jump to stage:</span>${stageBtns}</div>
         <div class="mg-dev-row"><span>Jump to boss:</span>${bossBtns}</div>
-        <div class="mg-dev-row">
-          <button type="button" data-dev="unlock-all">Unlock all stages</button>
-          <button type="button" data-dev="reset">Reset save</button></div>
       </div>`;
     box.hidden = false;
     const seedStage1Bits = (e) => {
@@ -314,39 +306,15 @@ export function mount(host, { onExit } = {}) {
       // Own ≥1 of every Stage-1 tier so the boss "Confront" gate (allSubStagesOwned) is met.
       s.owned = { 's1-mult': 5, 's1-box': 5, 's1-boost': 5, 's1-cluster': 5, 's1-array': 5, 's1-neural': 5, 's1-quantum': 5 };
     };
-    box.querySelectorAll('[data-dev]').forEach((b) => b.addEventListener('click', () => {
+    box.querySelectorAll('[data-dev]').forEach((b) => b.addEventListener('click', async () => {
       const kind = b.dataset.dev;
       if (kind === 'close') { box.hidden = true; box.innerHTML = ''; return; }
       if (kind === 'stagedev') { mounted?.dev?.(b.dataset.id); return; } // live cheat; keep menu open
       if (kind === 'bits') {
         seedStage1Bits(Number(b.dataset.e));
-        if (saveData.currentStage !== 1) saveData.currentStage = 1;
         persist(); render();
-      } else if (kind === 'stage') {
-        const n = Number(b.dataset.n);
-        for (let i = 1; i <= n; i++) if (!saveData.unlockedStages.includes(i)) saveData.unlockedStages.push(i);
-        selectStage(n);
       } else if (kind === 'boss') {
-        const n = Number(b.dataset.n);
-        for (let i = 1; i <= n; i++) if (!saveData.unlockedStages.includes(i)) saveData.unlockedStages.push(i);
-        if (n === 1) {
-          seedStage1Bits(93); // 1ba — enough to afford the boss ticket
-        } else {
-          // Pre-fire the stage's required action so its boss lock lifts on mount.
-          const req = stageMetaFor(n)?.requiredAction;
-          if (req) {
-            const dot = req.indexOf('.');
-            const stage = Number(req.slice(0, dot));
-            const action = req.slice(dot + 1);
-            actions.setAction(stage, action, { source: 'dev' });
-          }
-        }
-        selectStage(n);
-      } else if (kind === 'unlock-all') {
-        for (const meta of listStageMetas()) if (!saveData.unlockedStages.includes(meta.id)) saveData.unlockedStages.push(meta.id);
-        persist(); render();
-      } else if (kind === 'reset') {
-        saveData = resetSave(); render();
+        await jumpToBoss(Number(b.dataset.n));
       }
     }));
   }
@@ -355,6 +323,7 @@ export function mount(host, { onExit } = {}) {
 
   return {
     destroy() {
+      bossJumpSeq += 1;
       // Close any open stage-rules modal (it lives on document.body, outside `host`). Its own close
       // handler tears down the document-level keydown listener.
       document.querySelector('.mg-readme-overlay [data-readme="close"]')?.click();
@@ -366,7 +335,7 @@ export function mount(host, { onExit } = {}) {
     },
     _debug: {
       getSave: () => saveData,
-      reset: () => { saveData = resetSave(); render(); },
+      reset: () => { bossJumpSeq += 1; saveData = resetSave(); render(); },
       selectStage,
     },
   };

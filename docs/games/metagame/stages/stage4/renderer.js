@@ -119,6 +119,14 @@ export function renderStage4(ctx) {
     if (id === 'god-core')     { devGodCore(state);    persistNow(); active?.repaint?.(); return; }
   }
 
+  function jumpToBoss() {
+    devSkipToBoss(state);
+    run?.reset?.();
+    persistNow();
+    render();
+    return state.campaign.status === 'boss';
+  }
+
   const onHide = () => { if (typeof document === 'undefined' || document.visibilityState === 'hidden') persistNow(); };
   if (typeof document !== 'undefined') document.addEventListener('visibilitychange', onHide);
   if (typeof window !== 'undefined') window.addEventListener('pagehide', persistNow);
@@ -126,6 +134,7 @@ export function renderStage4(ctx) {
   render();
   return {
     dev,
+    jumpToBoss,
     repaint: () => active?.repaint?.(),
     destroy() {
       destroyActive();

@@ -46,6 +46,19 @@ export function mountStage(ctx = {}) {
     if (typeof ctx.save === 'function') ctx.save();
   };
 
+  const openBoss = () => {
+    s1ctl = null;   // help has no panel during the boss fight
+    host.innerHTML = '<div class="mg-wrap mg-stage1-boss-host"></div>';
+    const arena = host.querySelector('.mg-stage1-boss-host');
+    bossCtl = mountStage1Boss(arena, {
+      ...ctx,
+      state,
+      save,
+      stageConfig,
+      onRetreat: render,
+    });
+  };
+
   const render = () => {
     if (destroyed) return;
     if (bossCtl && typeof bossCtl.destroy === 'function') bossCtl.destroy();
@@ -60,18 +73,7 @@ export function mountStage(ctx = {}) {
       onExit: ctx.onExit,
       actions: ctx.actions,
       onStageComplete: ctx.onStageComplete,
-      onBoss: () => {
-        s1ctl = null;   // help has no panel during the boss fight
-        host.innerHTML = '<div class="mg-wrap mg-stage1-boss-host"></div>';
-        const arena = host.querySelector('.mg-stage1-boss-host');
-        bossCtl = mountStage1Boss(arena, {
-          ...ctx,
-          state,
-          save,
-          stageConfig,
-          onRetreat: render,
-        });
-      },
+      onBoss: openBoss,
       attachChrome: () => {},
     });
   };
@@ -92,6 +94,12 @@ export function mountStage(ctx = {}) {
       else return;
       save();
       if (repaint) repaint();
+    },
+    jumpToBoss() {
+      cheatBossReady(state, stageConfig);
+      save();
+      openBoss();
+      return Boolean(host.querySelector('.mg-defrag-arena'));
     },
     destroy() {
       destroyed = true;

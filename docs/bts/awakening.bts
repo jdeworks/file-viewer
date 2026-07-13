@@ -1,7 +1,0 @@
-# Awakening BTS
-
-Stage 10 is the capstone memory assembly.
-
-Each memory can be read, resolved, and integrated. The first resolved memory records `10.memory_resolved`; resolving five unlocks the final question; resolving more enriches the Defragmenter's response. Integrating all nine memories unlocks the full capstone achievement.
-
-The final choice is intentionally not a failure state. The architecture tracks how much history the player carried into the decision, then lets the decision complete the metagame.

@@ -1,8 +1,8 @@
-# 04 — Bit Foundry Stage 1: Implementation Plan (authoritative, agent-ready)
+# 04 — Bit Foundry Stage 1: Historical Implementation Plan
 
-This is the **single source of truth** for building Stage 1 of the Bit Foundry metagame. An agent
-reading only this file plus the engine source (`metagame.js`, `stages.js`, `stage1.js`,
-`messages1.js`) should be able to build the full idle clicker without further design decisions.
+This records the design used to build Stage 1. It is not an active work queue;
+all unfinished Bit Foundry work is tracked only in
+[`TASKS.md`](../../../../TASKS.md).
 
 It supersedes `01`/`02`/`03` wherever they conflict. The user decisions baked in here
 (base64 saves, prestige-on-boss-availability, free stage switching, multiplicative achievement
@@ -1198,9 +1198,9 @@ follow.
   winnable → win → `ach-boss-victory`, Stage 2 unlocks; prestige reachable at the
   ticket gate and correctly preserves `totalBits`/achievements/pull/`bossSeen`/`bossLossCount`.
 
-### 11.3 Out of scope for Stage 1 (deferred, do not build now)
+### 11.3 Historical Stage 1 exclusions
 
-Research tab (exponent nodes) is **deferred** to the backlog — `02 §E` listed it but no user
-decision locked its numbers; ship Stage 1 without it. Offline/catch-up progress, golden-cookie
-events, and 3-letter suffixes (>`zz`) are all deferred. The achievement set and sub-stage numbers
-are `TBD (playtest)`-adjustable but locked as the starting values above.
+The shipped scope excluded the Research tab (exponent nodes), offline/catch-up
+progress, timed bonus events, and three-letter suffixes beyond `zz`. Any decision
+to revisit those ideas belongs in [`TASKS.md`](../../../../TASKS.md). The
+achievement set and sub-stage numbers above record the initial tuning baseline.

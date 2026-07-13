@@ -1,0 +1,285 @@
+// ui-rewards.js — Stage 5 node-interaction screens: reward, rest, shop, event.
+// Pure views; renderer delegates clicks:
+//   [data-take="<cardId>"|"skip"]      pick a reward card / skip
+//   [data-rest="heal"]                 rest: restore HP
+//   [data-upgrade="<deckIndex>"]       rest: upgrade a card in place
+//   [data-remove="<deckIndex>"]        rest: thin a card from the deck
+//   [data-buy="<cardId>"]              shop: buy a card (price in data-price)
+//   [data-buy-remove="<deckIndex>"]    shop: buy a deck removal (escalating price)
+//   [data-buy-upgrade="<deckIndex>"]   shop: buy an in-place card upgrade (price in data-price)
+//   [data-buy-relic="1"]               shop: buy a relic (price in data-price)
+//   [data-action="to-map"]             leave shop/event back to the map
+//   [data-event="<key>"]               resolve an event choice
+
+import { cardById } from "./cards.js";
+import { REWARD_POOL } from "./cards.js";
+import { cardFaceInner, cardTypeClass } from "./card-face.js";
+import { canUpgrade, upgradeIdFor } from "./card-upgrades.js";
+import { removalCost, UPGRADE_COST, RELIC_COST, POTION_COST, POTION_SLOTS, isVeteranRun } from "./run.js";
+import { makeRng, strHash } from "./combat.js";
+import { relicById } from "./relics.js";
+import { potionById, rollPotion } from "./potions.js";
+
+const PRICE = { common: 25, uncommon: 40, rare: 60, starter: 20 };
+
+export function rewardView(run) {
+  const el = document.createElement("div");
+  el.className = "s5db-reward";
+  const cards = run.pendingReward?.cards || [];
+  const relic = run.pendingReward?.relic ? relicById(run.pendingReward.relic) : null;
+  el.innerHTML = `<h2>Signal recovered</h2>
+    ${relic ? `<p class="s5db-relic-won">⬢ Relic acquired — <strong>${esc(relic.name)}</strong>: ${esc(relic.text)}</p>` : ""}
+    <p>Add one card to your deck.</p>
+    ${keyTelegraph(run, "ascetic", "skip everything to stay ascetic ⚷")}`;
+  const row = document.createElement("div");
+  row.className = "s5db-card-row";
+  row.replaceChildren(...cards.map((id) => cardOption(id, "take", id)));
+  el.appendChild(row);
+  const potionId = run.pendingReward?.potion;
+  if (potionId) el.appendChild(potionOffer(run, potionId));
+  el.insertAdjacentHTML("beforeend",
+    `<div class="s5db-hub-actions"><button type="button" data-take="skip" class="s5db-ghost">skip</button></div>`);
+  return el;
+}
+
+// Offer the dropped potion: grab it if the belt (POTION_SLOTS) has room, else replace a slot.
+function potionOffer(run, potionId) {
+  const p = potionById(potionId);
+  const wrap = document.createElement("div");
+  wrap.className = "s5db-potion-offer";
+  const belt = run.potions || [];
+  if (belt.length < POTION_SLOTS) {
+    wrap.innerHTML = `<p>Potion found — <strong>${esc(p?.name || potionId)}</strong>: ${esc(p?.text || "")}</p>
+      <button type="button" data-take-potion="">grab potion ⚗</button>`;
+  } else {
+    wrap.innerHTML = `<p>Potion found — <strong>${esc(p?.name || potionId)}</strong>: ${esc(p?.text || "")}. Belt full — replace one:</p>`;
+    const actions = document.createElement("div");
+    actions.className = "s5db-hub-actions";
+    actions.replaceChildren(...belt.map((id, i) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.dataset.takePotion = String(i);
+      b.textContent = `replace ${potionById(id)?.name || id}`;
+      return b;
+    }));
+    wrap.appendChild(actions);
+  }
+  return wrap;
+}
+
+// After a mini-boss falls, choose ONE of three offered relics ([data-boss-relic="<id>"|"skip"]).
+// Picking advances to the next act. Big replay variance vs. the old forced grant.
+export function bossRewardView(run) {
+  const el = document.createElement("div");
+  el.className = "s5db-reward s5db-boss-reward";
+  const offered = (run.pendingReward?.relics || []).map(relicById).filter(Boolean);
+  el.innerHTML = `<h2>Protocol negotiated</h2>
+    <p>${offered.length ? "Claim one relic to carry into the next act." : "No new relics remain."}</p>`;
+  const row = document.createElement("div");
+  row.className = "s5db-card-row";
+  row.replaceChildren(...offered.map((relic) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = `s5db-relic-choice${relic.cursed ? " is-cursed" : ""}`;
+    b.dataset.bossRelic = relic.id;
+    b.innerHTML = `<strong>⬢ ${esc(relic.name)}</strong><small class="s5db-card-text">${esc(relic.text)}</small>`;
+    return b;
+  }));
+  el.appendChild(row);
+  el.insertAdjacentHTML("beforeend",
+    `<div class="s5db-hub-actions"><button type="button" data-boss-relic="skip" class="s5db-ghost">${offered.length ? "skip relic ▸" : "continue ▸"}</button></div>`);
+  return el;
+}
+
+export function restView(run) {
+  const el = document.createElement("div");
+  el.className = "s5db-rest";
+  const heal = Math.round(run.maxHp * 0.30);
+  el.innerHTML = `
+    <h2>Keepalive</h2>
+    <p>A quiet socket. Choose ONE: recover ${heal} HP, upgrade a card, or thin your deck.</p>
+    ${keyTelegraph(run, "sacrifice", "spend this rest thinning a card to earn the sacrifice key ⚷")}
+    <div class="s5db-hub-actions">
+      <button type="button" data-rest="heal">rest — heal ${heal} HP ▸</button>
+    </div>
+    <div class="s5db-rest-upgrade"><h3>…or upgrade a card</h3></div>
+    <div class="s5db-rest-thin"><h3>…or remove a card</h3></div>`;
+
+  const upgradeable = run.deck.map((id, i) => ({ id, i })).filter(({ id }) => canUpgrade(id));
+  const up = el.querySelector(".s5db-rest-upgrade");
+  if (upgradeable.length) {
+    const upList = document.createElement("div");
+    upList.className = "s5db-card-row";
+    // Show the UPGRADED face so the player sees what they get; data-upgrade carries the deck index.
+    upList.replaceChildren(...upgradeable.map(({ id, i }) => cardOption(upgradeIdFor(id), "upgrade", String(i))));
+    up.appendChild(upList);
+  } else {
+    up.insertAdjacentHTML("beforeend", `<p class="s5db-hint">Every card is already upgraded.</p>`);
+  }
+
+  const thin = el.querySelector(".s5db-rest-thin");
+  const list = document.createElement("div");
+  list.className = "s5db-card-row";
+  list.replaceChildren(...run.deck.map((id, i) => cardOption(id, "remove", String(i))));
+  thin.appendChild(list);
+  return el;
+}
+
+export function shopView(run) {
+  const el = document.createElement("div");
+  el.className = "s5db-shop";
+  const offers = shopOffers(run);
+  el.innerHTML = `<h2>Open port</h2><p>Handshakes: <strong>${run.handshakes}</strong>. Buy what you can afford.</p>`;
+  const row = document.createElement("div");
+  row.className = "s5db-card-row";
+  row.replaceChildren(...offers.map(({ id, price }) => {
+    const chip = cardOption(id, "buy", id);
+    chip.dataset.price = String(price);
+    chip.disabled = run.handshakes < price;
+    chip.insertAdjacentHTML("beforeend", `<span class="s5db-price">${price} ✋</span>`);
+    return chip;
+  }));
+  el.appendChild(row);
+
+  // Removal sink: deck-thinning is the strongest action, so it costs more each time you buy it.
+  const cost = removalCost(run);
+  const affordable = run.handshakes >= cost && run.deck.length > 1;
+  el.insertAdjacentHTML("beforeend",
+    `<div class="s5db-shop-remove"><h3>Purge a card — ${cost} ✋ <small>(price rises each purchase)</small></h3></div>`);
+  const purge = el.querySelector(".s5db-shop-remove");
+  const purgeRow = document.createElement("div");
+  purgeRow.className = "s5db-card-row";
+  purgeRow.replaceChildren(...run.deck.map((id, i) => {
+    // "buyRemove" (camelCase, not "buy-remove") — cardOption does dataset[attr] = value, and
+    // DOMStringMap THROWS on a literal hyphen-then-lowercase-letter property name (it can't be
+    // unambiguously reverse-mapped from the camelCase form the browser expects). This was live-
+    // broken: shopView() threw here for any non-empty deck (i.e. always), so the shop screen never
+    // rendered. The HTML attribute produced is unaffected — still `data-buy-remove` either way.
+    const chip = cardOption(id, "buyRemove", String(i));
+    chip.disabled = !affordable;
+    return chip;
+  }));
+  purge.appendChild(purgeRow);
+
+  // Upgrade sink: pay handshakes to sharpen a card (flat price; shows the upgraded face).
+  const upgradeable = run.deck.map((id, i) => ({ id, i })).filter(({ id }) => canUpgrade(id));
+  if (upgradeable.length) {
+    el.insertAdjacentHTML("beforeend",
+      `<div class="s5db-shop-upgrade"><h3>Sharpen a card — ${UPGRADE_COST} ✋ each</h3></div>`);
+    const upRow = document.createElement("div");
+    upRow.className = "s5db-card-row";
+    upRow.replaceChildren(...upgradeable.map(({ id, i }) => {
+      const chip = cardOption(upgradeIdFor(id), "buyUpgrade", String(i)); // see buyRemove note above
+      chip.dataset.price = String(UPGRADE_COST);
+      chip.disabled = run.handshakes < UPGRADE_COST;
+      return chip;
+    }));
+    el.querySelector(".s5db-shop-upgrade").appendChild(upRow);
+  }
+
+  // Potion sink: deterministic potion wares; buying needs a free belt slot.
+  const potionOffers = shopPotionOffers(run);
+  const beltFull = (run.potions || []).length >= POTION_SLOTS;
+  el.insertAdjacentHTML("beforeend",
+    `<div class="s5db-shop-potions"><h3>Consumables — ${POTION_COST} ✋ each${beltFull ? " <small>(belt full)</small>" : ""}</h3></div>`);
+  const potRow = document.createElement("div");
+  potRow.className = "s5db-card-row";
+  potRow.replaceChildren(...potionOffers.map((id) => {
+    const p = potionById(id);
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "s5db-potion s5db-potion--shop";
+    b.dataset.buyPotion = id;
+    b.dataset.price = String(POTION_COST);
+    b.disabled = beltFull || run.handshakes < POTION_COST;
+    b.innerHTML = `<strong>⚗ ${esc(p?.name || id)}</strong><small class="s5db-card-text">${esc(p?.text || "")}</small><span class="s5db-price">${POTION_COST} ✋</span>`;
+    return b;
+  }));
+  el.querySelector(".s5db-shop-potions").appendChild(potRow);
+
+  // Relic sink: buy a relic if any remain in the pool.
+  const relicAffordable = run.handshakes >= RELIC_COST;
+  el.insertAdjacentHTML("beforeend",
+    `<div class="s5db-shop-relic"><h3>Acquire a relic — ${RELIC_COST} ✋</h3>
+       <button type="button" data-buy-relic="1" data-price="${RELIC_COST}"${relicAffordable ? "" : " disabled"}>buy a relic ⬢</button></div>`);
+
+  el.insertAdjacentHTML("beforeend",
+    `<div class="s5db-hub-actions"><button type="button" data-action="to-map">leave ▸</button></div>`);
+  return el;
+}
+
+// Render the (deterministically selected) event for this node. `event` comes from events.eventForNode;
+// each meaningful choice is a [data-event="<choiceId>"] button, plus a ghost "walk past" (to-map).
+export function eventView(run, event) {
+  const el = document.createElement("div");
+  el.className = "s5db-event";
+  el.innerHTML = `
+    <h2>${esc(event?.title || "An anomaly idles in the corridor")}</h2>
+    <p>${esc(event?.text || "")}</p>
+    ${run.notice ? `<p class="s5db-hint">${esc(run.notice)}</p>` : ""}`;
+  const actions = document.createElement("div");
+  actions.className = "s5db-hub-actions";
+  const buttons = (event?.choices || []).map((c) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.dataset.event = c.id;
+    b.textContent = `${c.label} ▸`;
+    return b;
+  });
+  const leave = document.createElement("button");
+  leave.type = "button";
+  leave.className = "s5db-ghost";
+  leave.dataset.action = "to-map";
+  leave.textContent = "walk past";
+  actions.replaceChildren(...buttons, leave);
+  el.appendChild(actions);
+  return el;
+}
+
+// Deterministic per-node shop stock so a reload shows the same wares.
+export function shopOffers(run) {
+  const rng = makeRng(strHash(`${run.seed}:${run.currentNodeId}:shop`));
+  const pool = [...REWARD_POOL];
+  const out = [];
+  while (out.length < 4 && pool.length) {
+    const id = pool.splice(Math.floor(rng() * pool.length), 1)[0];
+    const card = cardById(id);
+    out.push({ id, price: PRICE[card?.rarity] || 30 });
+  }
+  return out;
+}
+
+// Deterministic shop potion stock (2 distinct potions per shop node).
+export function shopPotionOffers(run) {
+  const out = [];
+  let salt = 0;
+  while (out.length < 2 && salt < 24) {
+    const id = rollPotion(strHash(`${run.seed}:${run.currentNodeId}:potion:${salt++}`));
+    if (!out.includes(id)) out.push(id);
+  }
+  return out;
+}
+
+// M3 — key telegraph: one quiet line at a true-ending challenge's decision point. Only on a veteran
+// run (acts 5-6/superboss reachable) and only while that key is still unearned this run.
+function keyTelegraph(run, keyId, text) {
+  if (!isVeteranRun(run) || (run?.keys || []).includes(keyId)) return "";
+  return `<p class="s5db-telegraph">${esc(text)}</p>`;
+}
+
+// Exported for reuse by combat-modals.js's prestige upgrade picker (a hub-only modal, not an
+// in-run reward/rest/shop screen, so it can't reuse the delegated data-attr click wiring those use
+// — the caller attaches its own listener directly to the returned button).
+export function cardOption(id, attr, value) {
+  const card = cardById(id);
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = `s5db-card ${cardTypeClass(card)}`;
+  button.dataset[attr] = value;
+  button.innerHTML = cardFaceInner(id);
+  return button;
+}
+
+function esc(value) {
+  return String(value).replace(/[&<>"]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]));
+}

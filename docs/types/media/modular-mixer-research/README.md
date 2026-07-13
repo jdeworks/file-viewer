@@ -1,9 +1,9 @@
 # Modular Media Mixer Research Package
 
-Status: approved as the implementation source of truth (see the `10-review-checklist.md`
-sign-off, 2026-06-26); Stage 1-8 implementation is complete per `STUDIO_TRACKER.md`. Use
-`14-review-summary.md` for the short read and `10-review-checklist.md` for the approval
-record.
+Status: approved on 2026-06-26; Stage 1-8 implementation is complete. Use
+`14-review-summary.md` for the short read, `10-review-checklist.md` for the
+historical approval record, and the repository [`TASKS.md`](../../../../TASKS.md)
+for all unfinished work.
 
 This folder defines the research baseline for a new modular media mixer/editor
 inside the file-viewer media studio.
@@ -34,14 +34,12 @@ export, and importable project edits.
   stage gates, sample coverage, and suggested test files.
 - `09-build-runbook.md`: concise implementation handoff for a long-running
   coding task after the research package is approved.
-- `10-review-checklist.md`: approval checklist, recommended defaults for open
-  decisions, and sign-off template.
+- `10-review-checklist.md`: compact historical approval record.
 - `11-source-traceability.md`: requirement-to-source matrix tying the package
   back to OpenShot, auto-audiobook, Narratu, and current file-viewer evidence.
 - `12-user-workflows.md`: concrete user flows for one-lane audio, mix, video,
   image, compare, project import/relink, reduced capability mode, export, and
   large-file guardrails.
-- `13-package-audit.md`: active-goal coverage audit and remaining approval item.
 - `14-review-summary.md`: compact reviewer summary for approval or amendment.
 
 ## Core Thesis
@@ -92,8 +90,9 @@ Build a general, capability-aware timeline/mixer module:
   - `/home/jens/repos/narratu/apps/web/src/components/workspace/EqPanel.tsx`
   - `/home/jens/repos/narratu/apps/web/src/utils/eq-engine.ts`
   - `/home/jens/repos/narratu/apps/web/src/utils/eq-presets.ts`
-- File-viewer prototype at research time (mixer-engine.js, timeline.js, and
-  compare-ui.js were later retired/deleted in Stage 8 — see `STUDIO_TRACKER.md`):
+- File-viewer prototype at research time (`mixer-engine.js`, `timeline.js`, and
+  `compare-ui.js` were later retired in Stage 8; implementation history is in
+  Git):
   - `docs/types/media/renderer.js`
   - `docs/types/media/mixer-engine.js` (retired/deleted)
   - `docs/types/media/timeline.js` (retired/deleted)

@@ -1,7 +1,0 @@
-# Entropy Field BTS
-
-Stage 8 turns resource survival into a file movement action.
-
-The browser cannot reliably accept operating system drag-and-drop in every environment, so the stage includes an internal debris list, a drop target, and an Archive fallback button. All paths feed the same canonical action: `8.salvage_archived`.
-
-Heat Death unlocks only when enough `.sav` debris has moved from `/entropy/debris/` into `/entropy/active_archive/`. The external import option is a bonus signal, not a required path.

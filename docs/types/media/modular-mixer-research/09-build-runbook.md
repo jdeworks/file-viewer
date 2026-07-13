@@ -1,7 +1,8 @@
 # Build Runbook For Long-Running Implementation
 
-Use this document to start the implementation goal after the research package is
-approved. It is a concise operational prompt for the coding phase.
+This is the historical runbook used for the completed implementation. It is not
+an active work queue; unfinished media work is tracked only in
+[`TASKS.md`](../../../../TASKS.md).
 
 ## Objective
 
@@ -28,8 +29,9 @@ Use the remaining research files for feature details:
 - `04-rendering-interaction.md`
 - `07-risks.md`
 
-The old `docs/types/media/AUDIO_LANE_REQUIREMENTS.md` is audio-specific
-supporting detail only. It is not the primary implementation direction.
+The former audio-only requirements document was retired after the modular mixer
+superseded it. Any unfinished follow-up belongs in
+[`TASKS.md`](../../../../TASKS.md).
 
 ## Do Not Do
 

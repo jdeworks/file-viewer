@@ -2,8 +2,8 @@
 //
 // Every stage with permanent upgrades has hand-rolled the same shop: a list of items with an
 // escalating price, a per-item level, an affordability gate against the stage currency, and an
-// "apply my upgrades to the run" fold (Stage 2's Glyph Shop, Stage 5's packet upgrades, Stage 6's
-// deck-removal all do this). This generalizes it: a stage supplies DATA (item defs), not DOM, and
+// "apply my upgrades to the run" fold (Stage 2's Glyph Shop and Stage 5's deck-removal both do
+// this). This generalizes it: a stage supplies DATA (item defs), not DOM, and
 // gets a pure core that owns levels, escalating costs, buy/affordability, and an effect fold. It
 // pairs with shared/economy.js for the currency side.
 //

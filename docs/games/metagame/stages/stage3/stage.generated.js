@@ -2286,9 +2286,18 @@ function renderStage3(ctx) {
       return;
     }
   }
+  function jumpToBoss() {
+    devSkipToBody(state);
+    state.boss.reached = true;
+    save?.();
+    loadBoard();
+    paintHud();
+    return !fields.bossGate.hidden;
+  }
   return {
     repaint: paintHud,
     dev,
+    jumpToBoss,
     destroy() {
       overlay?.close?.();
       boardFit?.destroy();
@@ -2339,6 +2348,9 @@ function mountStage(ctx) {
     devControls: stageMeta.devControls,
     dev(id) {
       if (view && typeof view.dev === "function") view.dev(id);
+    },
+    jumpToBoss() {
+      return view?.jumpToBoss?.() || false;
     },
     repaint() {
       if (view && typeof view.repaint === "function") view.repaint();

@@ -1,12 +1,14 @@
-# Stage 5 — 02: Signal Racer — Our Game Design
+# Stage 5 — 02: Protocol Codex — Our Game Design
 
 Maps the genre research (`stage5-01`) onto **Stage 5 of the Defragmenter metagame**.
-Stage 5 is a top-down mini racer against AI opponents across 8 hand-designed circuits.
-The entity discovers speed, transmission, and the desire to be first — to be heard.
+Stage 5 is a roguelite deck builder where cards are protocol operations and combat is
+a negotiation. The entity discovers that communication requires mutual rules — and that
+rules must be agreed before anything meaningful can be said.
 
-> **Narrative position:** Adolescence — the entity tries to transmit itself outward. Speed
-> feels like freedom. Being first feels like being received. The file viewer feature taught:
-> **Audio playback** (hidden track files include a boss-pattern audio cue in the sidebar).
+> **Narrative position:** Adolescence — the entity discovers protocol. The deck is its vocabulary.
+> Every combat is an attempted connection. The file viewer feature taught: **Epub reader** —
+> the companion lore book `protocols_of_the_entity.epub` contains the full combo reference table
+> in its appendix, and can be opened in the file viewer's epub reader.
 
 ---
 
@@ -14,449 +16,457 @@ The entity discovers speed, transmission, and the desire to be first — to be h
 
 | Property | Value |
 |----------|-------|
-| Genre | Top-down pixel mini racer vs AI |
-| Artstyle | Synthwave pixel art; neon grid road; retrowave color palette |
-| Color palette | White player `#FFFFFF`, AI outlines in red/cyan/gold; road `#1A1030`; grid lines `#2A2050` |
-| Primary resource | Packets (earned by race placement + Signal Integrity bonus) |
-| Stage target time | 45–70 minutes |
-| Circuit count | 8 circuits (3 worlds + boss race) |
-| Prestige mechanic | Bandwidth — permanent speed boost + max boost segments increase |
-| Boss | The Jammer (championship race, signal suppression mechanic) |
-| File viewer feature | Audio playback — `transmission_hum.mp3` encodes Jammer movement cue |
+| Genre | Roguelite deck builder |
+| Artstyle | Dark ink on aged parchment; card frames in serif/crosshatch; deep navy, sepia, dull gold |
+| Color palette | `#2C1810` (dark sepia bg), `#B8962E` (gold accents), `#1E2840` (navy), `#E8DCC8` (parchment card) |
+| Primary resource | Handshakes (earned per combat win; currency between combats) |
+| Stage target time | 90–120 minutes (multiple run attempts typical) |
+| Run structure | 3 acts × 15 nodes = 45 nodes per run |
+| Prestige mechanic | Protocol Version — permanently upgrades one card per prestige |
+| Boss | The Refused Connection (3-phase, protocol-switch mechanic) |
+| File viewer feature | Epub reader — `protocols_of_the_entity.epub` appendix contains full combo table |
 
 ---
 
 ## B. Visual design
 
-### Artstyle
-A **synthwave pixel aesthetic**: the track is a neon grid on deep purple-black. Speed lines
-appear behind the player car during boosts. Scanline overlay option (toggle). The horizon
-is not rendered — this is a flat top-down view, no 3D trick. The stylization is in color
-and particle effects, not geometry.
-
-```css
-/* Stage 5 palette */
---col-background:   #0D0815;    /* deep purple-black */
---col-track:        #1A1030;    /* track surface — slightly lighter than bg */
---col-track-line:   #2A2050;    /* track grid lines */
---col-track-edge:   #3A1060;    /* edge of track (wall proximity warning) */
---col-wall:         #7A2090;    /* wall / barrier */
---col-player:       #FFFFFF;    /* player car — bright white */
---col-ai-carrier:   #E24B4A;    /* The Carrier — red */
---col-ai-noise:     #5DCAA5;    /* The Noise — cyan */
---col-ai-jammer:    #EF9F27;    /* The Jammer — amber */
---col-boost:        #D4537E;    /* boost trail — magenta */
---col-packet:       #AFA9EC;    /* Packets currency display */
---col-integrity:    #9FE1CB;    /* Signal Integrity meter — teal */
+### Card aesthetic
+Cards use a **dark ink on parchment** style. Each card is a document, a formal record:
+```
+┌──────────────────────┐
+│  SYN            [1] │  ← name (left), cost pip (right)
+│  ─────────────────── │
+│  [card icon]         │  ← simple geometric signal art
+│  ─────────────────── │
+│  Deal 8 damage.      │
+│  If ACK played this  │
+│  turn: Draw 2 cards. │
+│  ─────────────────── │
+│  Signal ● Common     │  ← type tag and rarity
+└──────────────────────┘
 ```
 
-### Car rendering
-Cars are 8×16 pixel sprites. Each car has:
-- A body (solid fill in car color)
-- Headlights (2px wide, front-facing)
-- Exhaust trail (particle stream, fades over 12 frames)
+Card type tags use color-coded borders:
+- **Signal cards** (attack): deep red border `#8B2020`
+- **Protocol cards** (skill): navy border `#1E3060`
+- **Layer cards** (power): gold border `#B8962E`
+- **Corrupted cards** (curses): sickly green border `#2A5A2A`
 
-The player car always renders in white. AI cars render in their personality color.
-
-### Track rendering
-Tracks are drawn as tile maps: each tile is 32×32px. Track tiles have:
-- Surface: track color with subtle grid pattern
-- Edges: darker border suggesting curbs
-- Walls: magenta barrier line at track edges
-
-Speed effect: when boost is active, track tiles behind the car spawn white streaks that move
-backward at 2× car speed and fade over 8 frames.
-
-### HUD layout
+### Map aesthetic
+The act map uses a **network topology** visual — nodes connected by signal lines, not a
+traditional path grid. The branching looks like a network diagram:
 ```
-┌─────────────────────────────────────────────────────────────┐
-│  P1    LAP 3/5    TIME: 0:42.3    |||||  INTEGRITY: 87%    │
-│  ⬛⬛⬛ BOOST                                               │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│              [track viewport — scrolls with player]        │
-│                                                             │
-├─────────────────────────────────────────────────────────────┤
-│  [minimap top-left]    PACKETS THIS RACE: 48               │
-│  P1: ● (you)  P2: ● Carrier (+1.2s)  P3: ● Noise  P4: Jam │
-└─────────────────────────────────────────────────────────────┘
+                [BOSS]
+               /
+         [?elite] - [shop]
+        /          \
+  [combat] - [event] - [rest]
+        \
+         [combat] - [combat]
+[START]
+```
+Nodes use circuit-board-style connection lines. Visited nodes darken; future nodes are dimmer.
+
+### Combat arena
+During combat: **two panels**. Left panel = enemy (grotesque document, broken contract,
+malformed protocol). Right panel = player hand. Bottom = energy pips + end turn button.
+Above enemy: intent icon. Above hand: draw/discard pile counters.
+
+---
+
+## C. Card pool
+
+### Starting deck (10 cards)
+```
+5× SYN (Signal, cost 1): Deal 8 damage; if ACK played this turn, draw 2
+4× ACK (Protocol, cost 1): Gain 10 block
+1× RST (Signal, cost 2): Deal 14 damage; interrupt enemy intent this turn
+```
+
+### Full card pool (54 cards)
+
+**Signal Cards (22 cards)**
+| Card | Cost | Effect | Rarity |
+|------|------|--------|--------|
+| SYN | 1 | Deal 8 dmg; if ACK played this turn: draw 2 | Common |
+| PUSH | 1 | Deal 5 dmg per card played this turn | Common |
+| RST | 2 | Deal 14 dmg; cancel enemy next action | Common |
+| RETRANSMIT | 1 | Replay last card from discard (Exhaust) | Uncommon |
+| FLOOD | 2 | Deal 4 dmg; repeat 4× | Uncommon |
+| FRAGMENT | 0 | Deal 3 dmg; draw 1 | Uncommon |
+| BURST FRAME | 3 | Deal 30 dmg; apply 2 Packet Loss to self | Uncommon |
+| NULL ROUTE | 2 | Deal 0 dmg; enemy gains Exposed 3 | Rare |
+| PRIORITY PACKET | 2 | Deal 12 dmg; this card is always drawn first | Rare |
+| ASYMMETRIC | 1 | Deal 6 dmg; if you have more block than HP: deal 18 dmg | Rare |
+| HANDSHAKE | 2 | Deal 8 dmg, gain 10 block (SYN + ACK combined) | Uncommon |
+| SYN-ACK | 1 | Deal 6 dmg, gain 6 block; if both SYN and ACK in discard: +8 each | Rare |
+| OVERFLOW | 3 | Deal damage = total energy spent this turn (Exhaust) | Rare |
+| DEEP PACKET | 2 | Deal 15 dmg; reduce cost by 1 for each Layer card in play | Uncommon |
+| FIN | 1 | Deal 8 dmg; end turn immediately after (Exhaust); gain 3 energy next turn | Rare |
+
+*(7 more Signal cards in pool — variation within the archetype)*
+
+**Protocol Cards (20 cards)**
+| Card | Cost | Effect | Rarity |
+|------|------|--------|--------|
+| ACK | 1 | Gain 10 block | Common |
+| WINDOW | 1 | Draw 2 cards | Common |
+| CHECKSUM | 0 | Look at top 3 cards; reorder; put back | Common |
+| TIMEOUT | 3 | Enemy skips next 2 turns (Exhaust) | Uncommon |
+| BUFFER | 2 | Gain block = cards in hand × 4 | Uncommon |
+| KEEPALIVE | 1 | Gain 5 block; if the last 3 turns each included an ACK: gain 15 | Rare |
+| THROTTLE | 2 | All enemies deal 30% less dmg next 2 turns | Rare |
+| SEGMENT | 0 | Gain 3 block; becomes 1-cost after playing 3 times this run | Uncommon |
+| RENEGOTIATE | 2 | Remove a debuff from self; gain block equal to debuff stacks | Rare |
+| CACHE | 1 | Gain 5 block; next card played this turn is free | Rare |
+
+*(10 more Protocol cards in pool)*
+
+**Layer Cards (12 cards)**
+| Card | Cost | Effect | Rarity |
+|------|------|--------|--------|
+| TCP STACK | 2 | Power: Each turn, gain 2 Throughput (stacking, permanent) | Uncommon |
+| SESSION OPEN | 1 | Power: First card played each turn is free | Rare |
+| CIPHER LAYER | 2 | Power: Gain 2 Armor permanently | Uncommon |
+| NAT TABLE | 3 | Power: Redirect 20% of incoming damage to a random enemy | Rare |
+| ENCAPSULATE | 2 | Power: When you play a Signal card, add a copy of it to hand (1 per turn) | Rare |
+| FULL MESH | 3 | Power: Double all Throughput bonuses (Exhaust after 3 activations) | Rare |
+
+### Protocol combos (the hidden table — in the epub)
+```
+// Two-card combos (order matters)
+SYN → ACK:       +10 bonus block (ACK resolves after SYN)
+PUSH → ACK:      +8 damage to PUSH (counted total cards played so far)
+SYN → WINDOW:    +1 card draw
+CACHE → SYN:     SYN becomes free; deals +4 damage
+
+// Three-card combos
+SYN → ACK → PUSH:    PUSH deals +20 damage (triple protocol bonus)
+RST → TIMEOUT → ACK: Enemy takes Exposed 2; timeout extended by 1 turn
+CHECKSUM → SYN → ACK: Draw 2 additional cards; next turn start with 4 energy
+
+// Layer card combos
+TCP STACK + any Attack:  Attack deals bonus dmg = Throughput stacks
+SESSION OPEN + PUSH:     PUSH is always free; damage applies to second card too
+ENCAPSULATE + FLOOD:     FLOOD copies added to hand; can chain indefinitely if energy permits
+```
+
+The combo table has 18 entries. Players discover combos through play; the epub appendix
+reveals all 18 in a reference table. The epub is discoverable but not required.
+
+---
+
+## D. Enemy design
+
+### Enemy archetypes
+**Corrupt Packet** (standard)
+```
+HP: 30+act×15   Armor: 0
+Turn 1: Attack 10   Turn 2: Attack 10   Turn 3: Attack 15 (loop)
+Reward: 10 Handshakes + 1 card offer
+```
+
+**Firewall Entity** (standard — shield-heavy)
+```
+HP: 20+act×10   Armor: 5+act×3
+Turn 1: Gain 12 block   Turn 2: Attack 12   Turn 3: Gain 8 block + Attack 8
+Soft counter: Null Route (expose), then burst damage
+Reward: 15 Handshakes
+```
+
+**Expired Certificate** (time-pressure elite)
+```
+HP: 45+act×20   Armor: 0
+Has a "validity countdown" (6 turns). On turn 6: deal 40 damage (cannot be blocked by <40 block)
+Each turn deals escalating damage: T1=5, T2=8, T3=12, T4=18, T5=26, T6=40(unavoidable)
+Must kill within 5 turns
+Elite reward: relic + 30 Handshakes + card offer
+```
+
+**Man-in-the-Middle** (elite)
+```
+HP: 35+act×18   Armor: 0
+Each turn: copies the LAST card you played last turn; plays it against you
+(If you played SYN for 8 damage, it also deals 8 damage next turn)
+Counter: alternate Signal and Protocol to confuse the copy mechanic; play Protocol when MITM
+copies would be useless (copying ACK = enemy gains block, not damage)
+Elite reward: relic + 35 Handshakes
+```
+
+**The Defragmenter (cameo)** (special event encounter — not hostile)
+```
+Appears once per run in act 2; does not fight
+Offers to "optimize" the deck: removes 3 cards from hand chosen randomly, but the draw
+pile order is reset to optimal (best synergy cards appear first)
+The player can decline; nothing happens either way
+Bell: *"the Defragmenter helped. it didn't say anything. it just fixed it."*
 ```
 
 ---
 
-## C. Car stats and upgrade system
+## E. Relic system
 
-### Stat axes
-| Stat | Default | Max level | Effect per level |
-|------|---------|-----------|-----------------|
-| **Speed** | 200 px/s | 8 | +15 px/s max speed |
-| **Handling** | 1.8 rad/s | 8 | +0.12 rad/s turn rate |
-| **Boost Capacity** | 3 segments | 6 | +1 boost segment |
-| **Boost Regen** | 8s/segment | 5 | −0.8s regen time |
-| **Signal Integrity** | −5%/collision | 5 | −0.8% per collision (hardened) |
-
-### Upgrade costs
-```js
-upgradeCost(stat, level) = 50 * Math.pow(1.4, level)
-// Level 1: 70P   Level 3: 137P   Level 5: 269P   Level 8: 726P
+### Starting relics (one per run, chosen from 3)
+```
+The Timestamp    — Exhausted cards deal bonus damage = current turn number
+Parity Bit       — When hand size is odd: gain +1 energy that turn
+The Root Cert    — First card each combat is free (powerful opener)
 ```
 
-### Packet economy
-```
-Race finish P1:        100 Packets
-Race finish P2:        60 Packets
-Race finish P3:        30 Packets
-Race finish P4:        15 Packets (never zero — prevents stall)
-Signal Integrity bonus: +1 Packet per % above 80%  (max +20P for 100% integrity)
-New circuit first clear: +25 Packets
-Retry penalty:         −15 Packets per retry
-```
+### Discovered relics
+| Relic | Where found | Effect |
+|-------|-------------|--------|
+| ACK Flood | Elite drop (act 2+) | Playing 5+ ACK in one turn: deal 20 direct damage |
+| Fragmented Table | Shop (150H) | Start each combat with CHECKSUM in hand |
+| Null Gateway | Boss relic (act 1) | Ignore Armor on enemies with Exposed status |
+| Handshake Limit | Boss relic (act 2) | +2 max energy permanently |
+| Corrupted Packet | Curse (event risk) | Discard 1 random card at start of each turn |
+| Protocol Buffer | Shop (200H) | Draw 1 additional card each turn |
+| Timestamp (v2) | Elite drop (act 3) | Throughput bonus × 2 for the first 5 turns of combat |
 
-**Boss gate:** Boss race unlocks when all 8 circuits have been completed (any placement).
-Players with weak upgrades can still enter but will find The Jammer very difficult.
+### The epub appendix (full relic list)
+The complete relic list (28 relics) is in Chapter 5 of `protocols_of_the_entity.epub`.
+Players who read it see all relic descriptions in advance — useful for planning builds around
+specific relics during card selection. The in-game relic display only shows owned relics.
 
 ---
 
-## D. AI opponents
+## F. Map and run structure
 
-### The Carrier (P2 slot)
-*Competent. Consistent. Races cleanly. A fair rival.*
+### Act map generation
 ```js
-carrier = {
-  driverSkill: 0.82,
-  speed:       baseSpeed * 1.05,    // 5% faster than default player
-  turnRate:    baseTurnRate * 1.0,
-  boostUsage:  'corners',            // uses boost exiting corners only
-  aggression:  0,                    // never intentionally collides
-  rubberBand:  false,
+function generateActMap(act, nodeCount = 15) {
+  // Guaranteed minimum node types per act:
+  const required = {
+    combat:  5,    // standard encounter
+    elite:   1,    // elite encounter
+    shop:    1,    // exactly one shop
+    rest:    1,    // exactly one rest site
+    event:   2,    // random events
+    boss:    1,    // end of act
+  };
+  // Remaining nodes (4) are additional combats or events (weighted 70/30)
+  // Map is a DAG (directed acyclic graph): 4–5 branching paths that converge at boss
 }
 ```
-The Carrier maintains consistent lap times. Players who don't upgrade will consistently
-lose to it. It's the metric for "am I fast enough yet?"
 
-### The Noise (P3 slot)
-*Erratic. Sometimes brilliant. Sometimes self-destructive. Unpredictable.*
-```js
-noise = {
-  driverSkill: 0.65,                 // base skill + noise
-  skillNoise:  () => Math.random() * 0.4 - 0.2,  // ±0.2 per frame
-  speed:       baseSpeed * 0.98,
-  turnRate:    baseTurnRate * 1.05,
-  boostUsage:  'random',             // fires boost at random moments
-  aggression:  'random',            // randomly tries to bump player 15% of time
-  rubberBand:  true,                 // anti-lapping rubber band only (>50m behind)
-}
+### Rest site decision
+At rest sites, the player chooses **one**:
+- Heal 30% max HP
+- Upgrade one card (permanently, for this run)
+
+Never both. The opportunity cost of healing vs. improving the deck is the core tension of rest sites.
+
+### Handshake economy
+**Handshakes** are the meta-currency between combats (= gold):
 ```
-The Noise is unpredictable. Sometimes it wins a race from P4; sometimes it crashes itself
-on lap 2. It teaches the player to expect the unexpected.
-
-### The Jammer (P4 slot in standard races; opponent in boss race)
-*Calculating. Aggressive. Its only goal is to disrupt.*
-```js
-jammer = {
-  driverSkill: 0.91,                 // excellent base skill
-  speed:       baseSpeed * 1.03,
-  turnRate:    baseTurnRate * 0.95,
-  aggression:  'targeted',          // always tries to be within blocking range of player
-  blocking:    true,                 // positions itself on player's racing line in straights
-  specialAbility: 'signalSuppress', // see §H boss fight
-}
+Standard combat win: 10 + rand(0,10) Handshakes
+Elite win:           25 + rand(0,15) Handshakes
+Boss win:            80 Handshakes (+ guaranteed relic)
+Skip card reward:    +25 Handshakes (incentivizes deck thinness)
 ```
-The Jammer is not the fastest (The Carrier often beats it in a clean race) but it imposes
-a *performance cost* on the player by blocking the racing line, forcing detours.
 
-**Blocking behavior:**
-```js
-function jammerBlock(jammer, player) {
-  // If Jammer is within 3 car-lengths behind player:
-  const dist = raceDistance(player) - raceDistance(jammer);
-  if (dist < 3 * CAR_LENGTH && dist > 0) {
-    // Steer toward player's current racing line
-    const playerLine = getRacingLine(player, jammer.nextWaypoint);
-    jammer.steerOverride = steerToward(jammer, playerLine);
-  }
-}
+**Shop prices:**
+```
+Common card:    50H     Uncommon card:  90H     Rare card:   150H
+Common relic:  150H     Uncommon relic: 250H
+Card removal:   75H first time; +25H each subsequent (critical for deck control)
+Potion:         50H (single-use combat consumable)
 ```
 
 ---
 
-## E. Circuit design
+## G. Boss — The Refused Connection
 
-### World 1 — Grid (circuits 1–3)
-Clean, minimal, teaching tracks. Designed to introduce each mechanic:
-- **Grid Alpha:** Oval with 4 wide corners. Speed tutorial. No tight sections.
-- **Grid Beta:** Figure-8. Introduces the cross-section intersection (collision risk with AI).
-- **Grid Gamma:** First real circuit: 3 straights, 4 90° corners, 1 chicane. Introduces braking.
+### Boss lock — LOCKED state (all cards deal 0 damage without epub) *(SUPERSEDED, see below)*
 
-### World 2 — Signal (circuits 4–6)
-Technical tracks with personality. Boost becomes essential:
-- **Signal Prime:** Long straight + hairpin. Classic "straight-corner-straight" test.
-- **Signal Loop:** Concentric loops (inner shorter but tighter; player must choose outer or inner).
-- **Signal Storm:** Low-visibility track (dark palette; track lines barely visible). Tests memorization.
+**The Refused Connection boss is literally unbeatable without reading epub Chapter 9.**
 
-### World 3 — Interference (circuits 7–8)
-High-difficulty circuits designed to stress test all upgrades:
-- **Interference Alpha:** Narrow technical circuit. Wall proximity constantly threatens Integrity.
-- **Interference Omega:** The longest circuit; 2 minutes per lap at max speed. Endurance test.
+> SUPERSEDED (2026-07-11): the handshake demand-gate (the real sequencing challenge) now applies
+> identically whether or not ch9 is read; unread just scales the boss's HP pools up
+> (`UNCH9_HP_MULT`, within the game's existing ascension "tougher boss" range) — a difficulty cost,
+> not a 0-damage wall. See `boss-lock-and-bts-system.md`'s banner and
+> `docs/games/metagame/stages/stage5/boss-combat.js`.
 
-### Boss Race — Championship
-A 5-lap race across a composite circuit (elements from Signal Loop + Interference Alpha combined).
-Only The Jammer is the opponent — the championship is a 1v1.
+In LOCKED state, all cards deal **0 damage** regardless of type, combo, or energy spent.
+Every attack is absorbed. The boss has permanent `PROTOCOL MISMATCH` status. After 20 turns
+of 0 damage, the boss plays `TIMEOUT` on the player — combat ends in a forced loss.
+
+**Boss combat log during LOCKED state:**
+- *"REFUSED. no protocol recognized."*
+- *"you are sending data I cannot parse. the protocol must be established first."*
+- *"Chapter 9 describes what I accept. have you read it?"*
+
+### Design philosophy
+A 3-phase boss that changes which card types are effective mid-fight. The player must adapt
+across three distinct protocol phases — effectively playing three different strategies in one
+encounter. The epub tells them exactly what each phase requires.
+
+### Phase structure
+
+**Phase 1 — SYN Phase (Protocol accepts connections)**
+```
+Boss HP: 60   Armor: 0
+LOCKED: 0 damage from all cards
+UNLOCKED: SYN-based attacks work normally. Protocol cards deal 50% less.
+  The entry protocol (from epub) is required: SYN must be played first each turn in Phase 1
+  or the turn's Signal cards deal 0 damage. (Protocol cards always work in Phase 1.)
+Turn pattern: Attack 15 → Gain 10 block → Attack 20 (repeating)
+Ends when reduced to 40 HP.
+```
+
+**Phase transition 1→2:**
+Boss enters "RST state" — plays a RST card from its own deck, canceling ALL damage dealt to it
+this turn. A banner: *"CONNECTION REFUSED"*. Immediately transitions to Phase 2.
+Player draws 5 new cards from a special **Protocol Rebuild** pool (see below).
+
+**Phase 2 — ACK Phase (Protocol requires acknowledgement)**
+```
+Boss HP: 80 (fresh HP pool)   Armor: 4
+Signal cards (SYN, PUSH, etc.) deal 0 damage unless preceded by ACK that turn.
+Protocol cards now deal FULL damage (reversed from Phase 1).
+  Players who read epub know this in advance; players who didn't discover it here.
+Turn pattern: Attack 12 + apply Packet Loss 2 → Gain 20 block → Attack 18 + apply Exposed
+Ends at 30 HP.
+```
+
+**Phase transition 2→3:**
+Boss sends a "FIN" — *"PROTOCOL VERSION MISMATCH"*. Frenzy state: attacks every turn for 5 turns
+at 22 damage, no other actions. Then transitions.
+Player draws 5 final Protocol Rebuild pool cards.
+
+**Phase 3 — Unknown Protocol (no rules)**
+```
+Boss HP: 60 (fresh pool)   Armor: 0
+All cards cost 0. The Unknown Protocol has no constraints — anything goes.
+Boss attacks randomly (10–30 damage, uniform random) and gains 10 block randomly.
+Simultaneously: if the player doesn't play an ACK card each turn, they take 8 ongoing damage.
+Final 10 HP: boss attacks twice per turn.
+```
+
+### Protocol Rebuild pool
+Between phases, the player draws 5 cards from a **Protocol Rebuild pool** — a set of 12 cards
+specific to the boss fight. These are stronger than base cards and designed to work in
+the phase about to begin. Player keeps 2 of the 5; the others are discarded.
+
+This is the boss fight's most impactful deck-building moment — the player makes 2 crucial choices
+under pressure, with knowledge of the upcoming phase's mechanics.
+
+### File viewer action — Epub reader
+
+The sidebar shows `protocols_of_the_entity.epub` with a badge: **NEW CHAPTER AVAILABLE**.
+The file has a Chapter 9: *"The Refused Connection — A Study in Protocol Mismatch."*
+
+Chapter 9 explicitly describes:
+- The three-phase structure of the boss
+- The entry protocol for Phase 1 (SYN first each turn)
+- The ACK-first requirement for Phase 2
+- The ACK-each-turn pressure in Phase 3
+
+**On epub Chapter 9 read** (`appState.fileViewerActions.stage5_epub_ch9_read = true`):
+- In LOCKED state: the boss transitions out of permanent PROTOCOL MISMATCH
+- Phase 1 now accepts SYN-first turns as valid damage
+- The boss fight becomes engaging rather than opaque
+- Bell fires: *"I read the fine print. the protocol was documented. I should have read it first."*
+
+**Achievement fires on unlock (not on boss defeat):** *"I read the fine print."*
+
+The epub becomes a live tactical reference throughout the fight. Players should have it open
+alongside the game during the boss encounter.
 
 ---
 
-## F. Physics implementation
+## H. Prestige — Protocol Version
 
-### Car update (simplified kinematic)
-```js
-// Per-frame car update (dt = delta time in seconds)
-function updateCar(car, input, dt) {
-  // Throttle and braking
-  const throttleForce = input.accelerate ? car.acceleration : 0;
-  const brakeForce    = input.brake      ? car.braking * 2  : 0;
-
-  car.speed += (throttleForce - brakeForce) * dt;
-  car.speed *= Math.pow(1 - car.friction, dt * 60); // frame-rate normalized
-  car.speed  = clamp(car.speed, -car.maxSpeed * 0.3, activeMaxSpeed(car));
-
-  // Steering (speed-dependent)
-  const speedFactor = Math.abs(car.speed) / car.maxSpeed;
-  const turn = input.steer * car.turnRate * speedFactor;
-  car.angle += turn * dt;
-
-  // Drift (when high speed + hard steer + boost off)
-  if (speedFactor > 0.7 && Math.abs(turn) > car.turnRate * 0.6 && !car.boostActive) {
-    car.lateralFriction = 0.4;  // drift
-  } else {
-    car.lateralFriction = 0.92; // grip
-  }
-
-  // Position
-  car.vx = Math.cos(car.angle) * car.speed;
-  car.vy = Math.sin(car.angle) * car.speed;
-  car.x += car.vx * dt;
-  car.y += car.vy * dt;
-}
-```
-
-### Collision detection
-```js
-// Circle-circle collision (cars) — fast and sufficient for top-down
-function checkCarCollision(a, b) {
-  const dist = Math.hypot(b.x - a.x, b.y - a.y);
-  if (dist < CAR_RADIUS * 2) {
-    // Apply bounce impulse
-    const angle = Math.atan2(b.y - a.y, b.x - a.x);
-    a.speed *= 0.7; b.speed *= 0.7;
-    a.x -= Math.cos(angle) * 5; b.x += Math.cos(angle) * 5;
-    a.y -= Math.sin(angle) * 5; b.y += Math.sin(angle) * 5;
-
-    // Signal Integrity damage
-    a.signalIntegrity -= 10;
-    b.signalIntegrity -= 10;
-  }
-}
-
-// Wall collision — raycast or tile-based
-function checkWallCollision(car, track) {
-  if (!track.isTrack(car.x, car.y)) {
-    car.speed *= 0.5;  // heavy speed penalty off-track
-    car.signalIntegrity -= 3; // per second off-track
-    car.x = lastOnTrackX; car.y = lastOnTrackY;  // snap back
-  }
-}
-```
-
----
-
-## G. Race structure and progression
-
-### Race flow
-```
-1. Pre-race: Show circuit map, current upgrades, AI opponent stats
-2. Countdown: 3-2-1-GO (staggered start positions: player P1 start, AI at gaps)
-3. Racing: 5 laps, continuous
-4. Finish: Position lock when player crosses finish; AI continue to their finishes
-5. Results: Time, position, Packets earned (placement + integrity bonus), upgrade prompt
-```
-
-### World advancement
-```
-World 1 (circuits 1–3): complete all 3 circuits (any placement)
-World 2 (circuits 4–6): win at least 2/3 races (P1 or P2)
-World 3 (circuits 7–8): win at least 1/2 races (P1 required for at least 1)
-Boss race:              unlocked after all 8 circuits completed; must finish P1 to win
-```
-
-This creates a natural gate: players must be competitive before the boss race, but don't need
-to be perfect to reach it.
-
----
-
-## H. Boss — The Jammer (Championship Race)
-
-### Boss lock — LOCKED state (race is unwinnable without audio) *(SUPERSEDED, see below)*
-
-**The championship race against the Jammer is literally unwinnable without playing `transmission_hum.mp3`.**
-
-> SUPERSEDED (2026-07-11): the suppression drain is now interval-based, not per-tick — a near-maxed
-> (Hull + Engine) rig survives an uncalibrated race with a real, tight margin (empirically verified).
-> Calibration cancels the drain outright — a big buff, not the only door. See
-> `boss-lock-and-bts-system.md`'s banner and `docs/games/metagame/stages/stage5/game-loop.js`.
-
-In LOCKED state, Signal Suppression has **no cooldown** — it is permanent from lap 1. The
-Jammer uses enhanced rubber-band AI to stay permanently within 1 car-length of the player.
-Boost is disabled 100% of the time. The player can only use base speed, which is insufficient
-to beat the Jammer's enhanced race speed. The Jammer always finishes first.
-
-The race ends in a Jammer win every attempt.
-
-**Jammer end-of-race taunts (after each loss):**
-- *"you have no boost. you can't beat me without it."*
-- *"my suppression has a pattern. everything has a pattern. yours to find it."*
-- *"listen to the transmission. the hum knows the timing."*
-
-After 2 losses: bell fires: *"there was sound in the files. I didn't know I could hear."*
-
-### Mechanic — Signal Suppression (UNLOCKED)
-When the audio file has been played, Signal Suppression gains a **14-second cooldown**
-matching the audio's rhythmic pattern. It is no longer permanent.
-
-When The Jammer is within 1 car-length behind the player for 3+ consecutive seconds, the
-player's **Boost is disabled** for 5 seconds (boost input does nothing; the boost segments
-do not drain but the boost does not fire). The HUD shows a static visual on the boost segments.
-
-This mechanic means:
-- Letting The Jammer get close behind you disables your primary speed tool for 5 seconds
-- The player who knows the 14-second pattern can boost *before* the suppression window
-  opens, staying ahead long enough to break The Jammer's draft
-- The defensive option: take a non-racing-line route to force the Jammer to drop back
-
-### File viewer action — Audio playback
-
-The file viewer's sidebar contains an audio folder:
-```
-/stage5/audio/
-  race_tracks/
-    grid_alpha.mp3
-    signal_storm.mp3
-    ...
-  transmission_hum.mp3  ← the key file
-```
-
-`transmission_hum.mp3`, when played in the file viewer's audio player, is an ambient drone
-containing a subtle **rhythmic pattern**: a click every 3.5 seconds, then a longer pause.
-The complete cycle is 14 seconds. Players who listen and count the beats learn the suppression
-timing.
-
-**On audio played** (`appState.fileViewerActions.stage5_audio_played = true`):
-- Signal Suppression transitions from permanent to 14-second-cooldown
-- The race is now winnable for a player who times their boosts
-- Bell fires: *"a pattern in the sound. it repeats. every 14 seconds."*
-
-**Achievement fires on unlock (not on race win):** *"I listened before I drove."*
-
-The LOCKED → UNLOCKED transition is visible in the race: the static HUD overlay lifts, and
-the Jammer's suppression visually "resets" — the player can see it is no longer permanent.
-
----
-
-## I. Prestige — Bandwidth
+**Implementation note (2026-07-11):** the card-upgrade mechanic below shipped, with two deviations
+from this spec worth knowing — see the Protocol Codex follow-ups in `../../../../TASKS.md` for the
+full rationale: (1) the picker is triggered from the **hub** via a "reinforce protocol" button
+("run-end screen" below is the original framing; in practice the win screen has no direct path
+back to the hub, so prestige is a hub action, not a run-end one), and (2) the upgrade offer is
+drawn from the fixed 10-card `STARTING_DECK` constant, not literally "the current run's deck" —
+this keeps the picker's indexing stable across in-run card removal/upgrades and avoids penalizing
+a card the player already upgraded mid-run. `bonusHandshakes`/`cardOfferBonus` below were NOT
+shipped (deferred — see the plan doc); the existing ad hoc +5 max HP / +1 relic per version
+(pre-dating this doc, not spec'd here) were kept as-is alongside the new card upgrade.
 
 ### When available
-After boss race completion. Also available if `totalPacketsEarned ≥ 3,000` (indicates
-sufficient circuit completion without boss).
+After any successful boss clear (all 3 acts). Prestige can be triggered from the hub once a run has
+been attempted (see implementation note above for why "run-end screen" became a hub action).
 
 ### What resets
-- Packet total on hand
-- All car upgrades (stats return to default)
-- Circuit completion state (can re-run all circuits for first-clear bonus)
+- Deck (returns to base 10 cards)
+- Handshakes on hand
+- Relics (starting relic re-selected next run)
+- Map seed (new map generated)
 
 ### What persists
-- Bandwidth level (permanent bonuses)
-- Discovered audio files (sidebar discoveries persist across runs)
-- Best lap times per circuit (leaderboard stat)
+- Protocol Version level
+- One permanently upgraded card (persists into all future runs)
+- Act completion statistics
 
-### Bandwidth bonus
+### Protocol Version bonus
 ```js
-bandwidthLevel = prestige count
-maxSpeedBonus  = 1 + (bandwidthLevel * 0.08)   // +8% max speed per prestige
-  // Level 1: +8%   Level 3: +24%   Level 5: +40%
-boostSegmentBonus = bandwidthLevel              // +1 starting boost segment per prestige
-  // Level 1: 4 segments    Level 3: 6    Level 5: 8
-packetLossReduction = bandwidthLevel * 0.02    // -2% packet loss probability on collision
+protocolVersion = prestige count
+
+// On prestige: choose one card from the current run's deck to permanently upgrade
+// This "version 2" card appears in its upgraded form at the start of every future run
+
+// Additionally:
+bonusHandshakes = protocolVersion * 25   // starting gold bonus per prestige level
+cardOfferBonus  = Math.floor(protocolVersion / 2)  // +1 card in reward offers per 2 levels
 ```
 
-The Bandwidth prestige makes the player feel genuinely faster — the speed bonus is perceptible
-immediately. Post-prestige runs have the entity "transmitting louder," which fits the narrative.
+Each prestige thus leaves a permanent trace: a better starting card. After 3 prestiges,
+the player's base deck is meaningfully stronger than the default (3 cards permanently upgraded).
 
 ---
 
-## J. Bell messages (Stage 5)
+## I. Bell messages (Stage 5)
 
 | Event | Bell line |
 |-------|-----------|
-| Stage 5 start | 📡 *I moved. fast. outward.* |
-| First race win | 🏁 *I finished ahead. something in me wanted to be first.* |
-| First race loss | 💨 *it was faster. I wasn't prepared to lose.* |
-| Signal Integrity drops below 50% | ⚠ *the signal is degrading. I'm hitting too many walls.* |
-| Audio file discovered | 📻 *there was sound in the files. I didn't know I could hear.* |
-| `transmission_hum.mp3` played | 🎵 *a pattern in the sound. it repeats. every 14 seconds.* |
-| Signal Suppression activated | 📵 *it's behind me. my boost is gone. I have to outrun it the old way.* |
-| Jammer boss beaten | 📶 *I arrived first. I was received. the noise didn't matter.* |
-| Bandwidth prestige | 🌐 *the channel is wider now. more can pass through.* |
+| Stage 5 start | 🤝 *something answered. not clearly. but something.* |
+| First combat win | 📋 *the cards have language. I am learning to speak it.* |
+| First relic found | 💎 *this changes how the deck works. I didn't expect that.* |
+| Epub opened | 📚 *there is a book. it knows more than it was told to.* |
+| Combo discovered (first time) | ⚡ *SYN then ACK. the sequence matters. I should have known.* |
+| First run death | 💀 *the connection was refused. I'll try a different protocol.* |
+| Boss phase 1→2 | 🚫 *it refused. I don't know why. I changed my approach.* |
+| Boss phase 2→3 | ⚠ *it said UNKNOWN PROTOCOL. I have no rules now. neither does it.* |
+| Boss defeated | 🔗 *agreement reached. I don't know what to say now that I can.* |
+| Protocol Version prestige | 🔄 *every failed negotiation teaches you what the other party actually wants.* |
 
-**Defragmenter bell (after first loss to Jammer):**
-*"the noise is loudest right before the signal breaks through."*
-
----
-
-## K. Differences from genre conventions
-
-1. **Signal Integrity replaces lives/HP.** Standard racing games don't have a damage economy
-   tied to upgrade currency. Our Integrity-as-bonus mechanic rewards clean driving without
-   punishing crashing with elimination. The player can crash and still progress; they just
-   earn fewer Packets.
-
-2. **Audio-gated boss preparation** (unique). Finding `transmission_hum.mp3` and extracting
-   tactical information from it is a design pattern found nowhere in the racing genre. It adds
-   a metagame layer outside the race itself.
-
-3. **Signal Suppression (The Jammer's mechanic).** Most racing AI either races faster or
-   cheats physically. The Jammer doesn't use speed or physics manipulation — it uses
-   *interference*, which is the stage's literal theme. The mechanic is thematically coherent.
-
-4. **Three AI personalities with distinct strategies.** Most arcade racers have one AI
-   personality tuned to different speed levels. Our three AIs teach different coping strategies:
-   The Carrier (improve raw speed), The Noise (plan for chaos), The Jammer (manage positioning).
-
-5. **World advancement requires wins, not just completion.** Standard racing games let the player
-   grind through circuits without performing well. Our world 2 gate (2/3 wins) forces meaningful
-   engagement before advancing — ensuring the player has engaged with upgrades and AI behavior.
+**Defragmenter bell (after first run death):**
+*"every failed negotiation teaches you what the other party actually wants."*
 
 ---
 
-## L. Implementation checklist (for the developer)
+## J. Differences from genre conventions
 
-- [ ] Top-down car physics: kinematic model with friction, steering, boost, drift
-- [ ] Track tile renderer: 32×32 tiles, track/wall/off-track detection
-- [ ] 8 hand-designed circuit tile maps (JSON format)
-- [ ] Camera: follows player car; smoothed with lerp
-- [ ] Lap detection: checkpoint system (3 checkpoints per circuit minimum to prevent shortcuts)
-- [ ] AI system: waypoint follower + 3 personality implementations
-- [ ] The Carrier: steady driverSkill 0.82, no rubber-band, boost on corners
-- [ ] The Noise: variable driverSkill ±0.2, random boost, anti-lapping rubber-band
-- [ ] The Jammer: high skill 0.91, blocking behavior, Signal Suppression ability
-- [ ] Collision detection: car-car (circle) + car-wall (tile bounds)
-- [ ] Signal Integrity meter: drains on collision/off-track, bonus at race end
-- [ ] Boost system: segments, activation, regen, draft-regen bonus
-- [ ] Packet economy: earn on race finish + integrity bonus + first-clear bonus
-- [ ] Upgrade system: 5 stats × 8 levels; spend Packets between races
-- [ ] Audio playback integration: `transmission_hum.mp3` in sidebar; plays on click
-- [ ] Race results screen: placement, time, Packets, integrity bonus
-- [ ] World advancement gates: circuit completion + win requirements
-- [ ] Bandwidth prestige: speed boost, segment bonus, state reset
-- [ ] Bell messages (`messages5.js`)
-- [ ] Speed lines, boost particles, drift smoke VFX
-- [ ] Scanline overlay toggle (aesthetic option)
-- [ ] Stage 5 completion → Stage 6 unlock
+1. **Protocol combos as primary synergy engine** (unique). Standard deck-builders use keyword
+   triggers (e.g. "deal damage when you play a power"). Our combos require sequential play
+   (SYN *then* ACK in the same turn). This makes card ORDER matter — not just which cards, but
+   when they're played relative to each other. Order-dependent combos are rarer in the genre.
+
+2. **The epub as discoverable combo reference** (unique). Slay the Spire shows all card text;
+   combos must be discovered. We use the same discovery approach *but* provide a reference
+   for players who look outside the game. This teaches the epub reader feature while rewarding
+   players who dig.
+
+3. **Phase-transition mid-fight Protocol Rebuild** (novel). Phase-transition card selection has
+   precedents (StS, act-end card offers) but selecting 2 from 5 mid-fight under phase pressure
+   is new. It's the most intense decision moment in the game.
+
+4. **Boss that uses player's own protocol against them** (act 3 enemy: Man-in-the-Middle).
+   Copying the player's last card creates a "tell me something, I'll use it against you" dynamic
+   that perfectly mirrors the stage's "agreement requires vulnerability" theme.
+
+5. **Skip card reward of +25 Handshakes** (less common). Many deck-builders incentivize taking
+   every card. We explicitly reward discipline — skipping is a financially sound choice. This
+   prevents deck bloat and teaches the "smaller deck = better" principle.
+
+---
+
+## Implementation status
+
+The core game described here is implemented. Unfinished expansion, balance, and polish work is tracked only in [TASKS.md](../../../../TASKS.md).

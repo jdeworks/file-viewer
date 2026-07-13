@@ -19,7 +19,6 @@ import {
   parseChapterSidecar,
 } from './chapters.js';
 import { likelyNeedsTranscode } from './transcoder.js';
-import { recordStage5MediaPlayback } from '../../games/metagame/viewer-actions.js';
 import { attachShortcuts, buildChapterList, buildCoverArt } from './playback-extras.js';
 import { buildMediaWorkspace } from './renderer-workspace.js';
 import { buildMediaTools, buildPlaybackExtras } from './renderer-tools.js';
@@ -341,33 +340,12 @@ export async function render(intake, ctx = {}) {
   }
 
   let lastSave = 0;
-  let lastPlaybackTime = null;
-  let continuousPlaybackMs = 0;
   el.addEventListener('timeupdate', () => {
     setWorkspaceTime();
     const now = el.currentTime;
-    if (lastPlaybackTime !== null && !el.paused && !el.seeking) {
-      const delta = Math.max(0, Math.min(1.5, now - lastPlaybackTime));
-      continuousPlaybackMs += delta * 1000;
-      recordStage5MediaPlayback({
-        file: intake.filename,
-        continuousMs: continuousPlaybackMs,
-        active: true,
-        seeking: false,
-      });
-    }
-    lastPlaybackTime = now;
     if (Math.abs(now - lastSave) < 5) return;      // throttle writes
     lastSave = now;
     saveState(intake, { kind: 'media', time: now, duration: el.duration || 0 });
-  });
-  el.addEventListener('pause', () => {
-    lastPlaybackTime = null;
-    continuousPlaybackMs = 0;
-  });
-  el.addEventListener('seeking', () => {
-    lastPlaybackTime = null;
-    continuousPlaybackMs = 0;
   });
   el.addEventListener('ended', () => {
     clearState(intake);                  // this track finished — forget its position

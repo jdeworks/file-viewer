@@ -630,7 +630,7 @@ function renderTree(host, root, {
       row.addEventListener("dragstart", (e) => {
         _dragNode = item.node.sidebarInnerPath ? { ...item.node, path: item.node.sidebarInnerPath } : item.node;
         e.dataTransfer.setData(TREE_DRAG_TYPE, item.node.path);
-        e.dataTransfer.effectAllowed = "move";
+        e.dataTransfer.effectAllowed = "copyMove";
       });
       row.addEventListener("dragend", () => {
         _dragNode = null;
@@ -2569,6 +2569,7 @@ function initCompareDropTarget() {
   bar.addEventListener("dragover", (e) => {
     if (![...e.dataTransfer.types].includes(TREE_DRAG_TYPE)) return;
     e.preventDefault();
+    e.stopPropagation();
     e.dataTransfer.dropEffect = "copy";
     bar.classList.add("drag-over");
   });
@@ -2578,6 +2579,7 @@ function initCompareDropTarget() {
   bar.addEventListener("drop", async (e) => {
     if (![...e.dataTransfer.types].includes(TREE_DRAG_TYPE)) return;
     e.preventDefault();
+    e.stopPropagation();
     bar.classList.remove("drag-over");
     const path = e.dataTransfer.getData(TREE_DRAG_TYPE);
     const node = getDraggedTreeNode();
@@ -6248,7 +6250,6 @@ function setRawMode(mode) {
   if (!state11.rawview) return;
   state11.rawMode = mode;
   state11.rawview.setMode(mode);
-  viewerActions().then(({ recordStage10EchoRawMode }) => recordStage10EchoRawMode({ file: state11.intake?.filename || "", mode }));
   syncRawModeButtons2();
   applyLayout();
 }
@@ -6287,7 +6288,6 @@ function currentEditableSource() {
   return state11.rawview ? state11.rawview.getValue() : sourceTextOf(state11.intake);
 }
 async function downloadCurrent() {
-  viewerActions().then(({ recordStage10EchoDownload }) => recordStage10EchoDownload({ file: state11.intake?.filename || "" }));
   let blob;
   if (state11.binaryEdit?.dirty && typeof state11.binaryEdit.getBytes === "function") {
     const bytes = await state11.binaryEdit.getBytes();
@@ -9653,10 +9653,8 @@ async function searchViewerFile(path, query, opts = {}) {
   const sourceText = text == null ? await fetch("examples/" + clean).then((r) => r.ok ? r.text() : "").catch(() => "") : text;
   const line = sourceText.split(/\r?\n/).find((entry) => entry.includes(query));
   const result = line && line.trim();
-  viewerActions3().then(({ recordStage2SearchResult, recordStage7Search, recordStage10EchoSearch }) => {
+  viewerActions3().then(({ recordStage2SearchResult }) => {
     recordStage2SearchResult({ file: target || clean, query, result });
-    recordStage7Search({ file: target || clean, query, result });
-    recordStage10EchoSearch({ file: target || clean, query, result });
   });
   return { found: Boolean(result), result };
 }
@@ -10443,7 +10441,9 @@ function init() {
     }
   });
   $12("workspace").addEventListener("dragover", (e) => {
-    if (e.dataTransfer?.types?.includes(TREE_DRAG_TYPE)) e.preventDefault();
+    if (!e.dataTransfer?.types?.includes(TREE_DRAG_TYPE)) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "copy";
   });
   $12("workspace").addEventListener("drop", async (e) => {
     if (!e.dataTransfer?.types?.includes(TREE_DRAG_TYPE)) return;

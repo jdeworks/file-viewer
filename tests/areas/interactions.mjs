@@ -568,25 +568,18 @@ export async function run(ctx) {
   const targetLabel = await page.$eval('#compareBar .compare-label', (e) => e.textContent);
   if (/Drop a sidebar file/.test(targetLabel) && /choose a file/i.test(targetLabel)) pass('two-file compare: opens in-app drop target before picker');
   else fail('compare target label: ' + targetLabel);
-  // Drop a sidebar file on the target → opens the side-by-side overlay (file 2 = welcome.md).
-  await page.evaluate(async () => {
-    const bar = document.getElementById('compareBar');
-    const data = new DataTransfer();
-    const existing = window.__fv.state.treeEntries?.find((entry) => /welcome\.md/i.test(entry.path));
-    const welcomePath = existing?.path || 'Welcome.md';
-    if (!existing) {
-      const bytes = new Uint8Array(await (await fetch('examples/welcome.md')).arrayBuffer());
-      window.__fv.state.treeEntries = [
-        ...(window.__fv.state.treeEntries || []),
-        { path: welcomePath, file: new File([bytes], 'Welcome.md', { type: 'text/markdown' }) },
-      ];
-    }
-    data.setData('text/x-fv-tree-path', welcomePath);
-    bar.dispatchEvent(new DragEvent('dragover', { dataTransfer: data, bubbles: true, cancelable: true }));
-    bar.dispatchEvent(new DragEvent('drop', { dataTransfer: data, bubbles: true, cancelable: true }));
-  });
+  // Use a real browser drag so effectAllowed/dropEffect negotiation is exercised. The previous
+  // synthetic DragEvent dispatched `drop` unconditionally and missed a move-vs-copy mismatch.
+  const welcomeRow = page.locator('#fileTree .ft-file[data-path="welcome.md"]');
+  await welcomeRow.dragTo(page.locator('#compareBar'));
   await page.waitForSelector('.sbs-overlay', { timeout: 10000 });
-  pass('two-file compare: sidebar drop opens the side-by-side overlay (picker hands off)');
+  const compareOverlayCount = await page.$$eval('.sbs-overlay', (els) => els.length);
+  const compareTreeVisible = await page.$eval('#fileTree', (el) => !el.hidden);
+  const compareActiveName = await page.evaluate(() => window.__fv.state.intake?.filename);
+  const compareToastHidden = await page.$eval('#toast', (el) => el.hidden);
+  if (compareOverlayCount === 1 && compareTreeVisible && compareActiveName === 'sample.csv' && compareToastHidden)
+    pass('two-file compare: real sidebar drag opens one overlay and preserves current file/sidebar');
+  else fail('real compare drag state: overlays=' + compareOverlayCount + ' tree=' + compareTreeVisible + ' active=' + compareActiveName + ' toastHidden=' + compareToastHidden);
   // The picker chrome hides once a file is chosen; the overlay opens at Current (NOT diff).
   await page.waitForFunction(() => document.getElementById('compareBar').hidden, null, { timeout: 4000 });
   const droppedNames = await page.$$eval('.sbs-overlay .sbs-fname', (els) => els.map((e) => e.textContent));
@@ -607,14 +600,29 @@ export async function run(ctx) {
   await page.click('.sbs-overlay .sbs-close');
   await page.waitForFunction(() => !document.querySelector('.sbs-overlay'), null, { timeout: 4000 });
   pass('two-file compare: closing the overlay exits the comparison');
-  // The fallback file input also hands off to the overlay (no in-place diff anymore).
+  // The visible picker button must open the native chooser and hand off to the overlay. Calling
+  // setInputFiles on the hidden input directly would bypass the user-facing control.
   await page.evaluate(() => { try { localStorage.removeItem('fv:sbs:mode'); } catch {} });
   await page.click('#compareBtn');
   await page.waitForFunction(() => !document.getElementById('compareBar').hidden, null, { timeout: 8000 });
-  await page.setInputFiles('#compareInput', new URL('../../docs/examples/welcome.md', import.meta.url).pathname);
+  const [compareChooser] = await Promise.all([
+    page.waitForEvent('filechooser'),
+    page.click('#compareBar .compare-pick'),
+  ]);
+  await compareChooser.setFiles(new URL('../../docs/examples/welcome.md', import.meta.url).pathname);
   await page.waitForSelector('.sbs-overlay', { timeout: 10000 });
   const pickNames = await page.$$eval('.sbs-overlay .sbs-fname', (els) => els.map((e) => e.textContent));
-  if (pickNames.some((n) => /welcome\.md/i.test(n))) pass('two-file compare: file-input pick also opens the overlay'); else fail('compare pick names: ' + pickNames.join(','));
+  const pickState = await page.evaluate(() => ({
+    overlays: document.querySelectorAll('.sbs-overlay').length,
+    active: window.__fv.state.intake?.filename,
+    treeVisible: !document.getElementById('fileTree').hidden,
+    barHidden: document.getElementById('compareBar').hidden,
+    toastHidden: document.getElementById('toast').hidden,
+  }));
+  if (pickNames.some((n) => /welcome\.md/i.test(n)) && pickState.overlays === 1
+      && pickState.active === 'sample.csv' && pickState.treeVisible && pickState.barHidden && pickState.toastHidden)
+    pass('two-file compare: visible Choose file button opens one overlay and preserves current file/sidebar');
+  else fail('compare pick state: names=' + pickNames.join(',') + ' state=' + JSON.stringify(pickState));
   await page.click('.sbs-overlay .sbs-close');
   await page.waitForFunction(() => !document.querySelector('.sbs-overlay'), null, { timeout: 4000 });
 

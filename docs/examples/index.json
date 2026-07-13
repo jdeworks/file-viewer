@@ -1151,72 +1151,9 @@
     ]
   },
   {
-    "label": "Signal Racer transmission_hum.mp3",
-    "file": "metagame/stage5/transmission_hum.mp3",
-    "mime": "audio/mpeg",
-    "category": "Metagame",
-    "categories": [
-      "Metagame"
-    ]
-  },
-  {
     "label": "Protocol Codex protocols_of_the_entity.epub",
-    "file": "metagame/stage6/protocols_of_the_entity.epub",
+    "file": "metagame/stage5/protocols_of_the_entity.epub",
     "mime": "application/epub+zip",
-    "category": "Metagame",
-    "categories": [
-      "Metagame"
-    ]
-  },
-  {
-    "label": "Identity Arbiter Entity A image",
-    "file": "metagame/stage7/entity_a_verification.png",
-    "mime": "image/png",
-    "category": "Metagame",
-    "categories": [
-      "Metagame"
-    ]
-  },
-  {
-    "label": "Identity Arbiter Entity F image",
-    "file": "metagame/stage7/entity_f_verification.png",
-    "mime": "image/png",
-    "category": "Metagame",
-    "categories": [
-      "Metagame"
-    ]
-  },
-  {
-    "label": "Identity Arbiter estate ledger",
-    "file": "metagame/stage7/estate_ledger.csv",
-    "mime": "text/csv",
-    "category": "Metagame",
-    "categories": [
-      "Metagame"
-    ]
-  },
-  {
-    "label": "Awakening syntax_echo.txt",
-    "file": "metagame/stage9/syntax_echo.txt",
-    "mime": "text/plain",
-    "category": "Metagame",
-    "categories": [
-      "Metagame"
-    ]
-  },
-  {
-    "label": "Awakening pattern_echo.json",
-    "file": "metagame/stage9/nested/echoes/pattern_echo.json",
-    "mime": "application/json",
-    "category": "Metagame",
-    "categories": [
-      "Metagame"
-    ]
-  },
-  {
-    "label": "Awakening identity_echo.jpg",
-    "file": "metagame/stage9/identity_echo.jpg",
-    "mime": "image/jpeg",
     "category": "Metagame",
     "categories": [
       "Metagame"

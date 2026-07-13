@@ -564,8 +564,8 @@ export async function run(ctx) {
     text: button.textContent,
   })));
   const freshStages = freshStageButtons.map((b) => b.stage).join(',');
-  if (freshStages === '1,2,3,4,5,6,7,8' && freshStageButtons.every((b) => !b.disabled)) {
-    pass('Defragmenter fresh start shows stages 1–8 unlocked (stage 9 gated)');
+  if (freshStages === '1,2,3,4,5' && freshStageButtons.every((b) => !b.disabled)) {
+    pass('Defragmenter fresh start shows exactly five unlocked games');
   } else {
     fail('Defragmenter fresh stage buttons unexpected: ' + JSON.stringify(freshStageButtons));
   }
@@ -576,11 +576,33 @@ export async function run(ctx) {
   });
   if (bellInHeader) pass('Defragmenter bell control sits in header before Back to arcade'); else fail('Defragmenter bell control is not in header next to Back to arcade');
   const freshSave = await page.evaluate(() => JSON.parse(localStorage.getItem('fv:games:metagame:v3')));
-  if (freshSave?.version === 7 && freshSave.unlockedStages?.includes(1) && freshSave.stageState?.[1]) {
-    pass('Defragmenter initializes fresh v7 save with Stage 1');
+  if (freshSave?.version === 8
+      && freshSave.unlockedStages?.join(',') === '1,2,3,4,5'
+      && Object.keys(freshSave.stageState || {}).join(',') === '1,2,3,4,5') {
+    pass('Defragmenter initializes the fresh five-game v8 save');
   } else {
-    fail('Defragmenter v7 save invalid: ' + JSON.stringify(freshSave));
+    fail('Defragmenter v8 save invalid: ' + JSON.stringify(freshSave));
   }
+  const devButtonAlwaysVisible = await page.$eval('.mg-dev-btn', (button) => !button.hidden && getComputedStyle(button).display !== 'none');
+  if (devButtonAlwaysVisible) pass('Dev menu is available immediately without an unlock gesture'); else fail('Dev menu button is not always available');
+  await page.click('.mg-dev-btn');
+  const freshDevMenu = await page.evaluate(() => ({
+    bosses: [...document.querySelectorAll('[data-dev="boss"]')].map((b) => b.textContent.trim()),
+    cheats: [...document.querySelectorAll('[data-dev="stagedev"]')].map((b) => b.textContent.trim()),
+    bits: [...document.querySelectorAll('[data-dev="bits"]')].map((b) => b.textContent.trim()),
+    kinds: [...new Set([...document.querySelectorAll('.mg-v3-debug [data-dev]')].map((b) => b.dataset.dev))].sort(),
+    text: document.querySelector('.mg-v3-debug')?.textContent || '',
+  }));
+  if (freshDevMenu.bosses.join(',') === '1b,2b,3b,4b,5b'
+      && freshDevMenu.cheats.join(',') === 'Unlock tabs,Boss ready,+10 cores,Hire managers'
+      && freshDevMenu.bits.join(',') === '1M,1B,1T,1ba'
+      && freshDevMenu.kinds.join(',') === 'bits,boss,close,stagedev'
+      && !/unlock all|reset save/i.test(freshDevMenu.text)) {
+    pass('Dev menu has five boss jumps plus every active Stage 1 cheat, with old navigation/reset tools removed');
+  } else {
+    fail('Defragmenter fresh dev menu unexpected: ' + JSON.stringify(freshDevMenu));
+  }
+  await page.click('[data-dev="close"]');
   await page.click('.games-back');
   await page.waitForSelector('.games-grid:not([hidden])', { timeout: 4000 });
   await page.evaluate(() => {
@@ -605,7 +627,7 @@ export async function run(ctx) {
     const save = JSON.parse(localStorage.getItem('fv:games:metagame:v3'));
     return (save.bell?.log || []).some((entry) => entry.stage === 1 && /^stage1\./.test(entry.id));
   });
-  if (bellLogHasStage1Message) pass('Stage 1 economy messages feed the v3 header bell log'); else fail('Stage 1 messages missing from v3 bell log');
+  if (bellLogHasStage1Message) pass('Stage 1 economy messages feed the shared header bell log'); else fail('Stage 1 messages missing from the shared bell log');
   await page.waitForSelector('.mg-s1-earn', { timeout: 4000 });
   const beforeEarnBits = await page.evaluate(() => JSON.parse(localStorage.getItem('fv:games:metagame:v3')).stageState[1].bits.m);
   await page.click('.mg-s1-earn');
@@ -873,7 +895,7 @@ export async function run(ctx) {
       return save.defeated?.includes(2) && save.unlockedStages?.includes(3);
     } catch { return false; }
   }, null, { timeout: 5000 });
-  pass('Stage 2 defeat unlocks Stage 3 through v3 orchestrator');
+  pass('Stage 2 completion is recorded and advances to Stage 3 through the orchestrator');
 
   await page.click('.mg-v3-stage[data-stage="3"]');
   await page.waitForSelector('.stage3-memory-grid', { timeout: 8000 });
@@ -971,7 +993,7 @@ export async function run(ctx) {
       return save.defeated?.includes(3) && save.unlockedStages?.includes(4);
     } catch { return false; }
   }, null, { timeout: 5000 });
-  pass('Stage 3 defeat unlocks Stage 4 through v3 orchestrator');
+  pass('Stage 3 completion is recorded and advances to Stage 4 through the orchestrator');
 
   await page.waitForSelector('.stage4-fractal-bastion', { timeout: 8000 });
   // Stage 4 is a 5-map campaign. It opens on map-select; the boss is NOT start-reachable — the
@@ -1050,80 +1072,23 @@ export async function run(ctx) {
   }, null, { timeout: 5000 });
   pass('Stage 4 clears via the blueprint buff finishing off the damage started blind, after all maps cleared');
 
-  await page.waitForSelector('.stage5-signal-racer', { timeout: 8000 });
-  // UX-audit M3: the select screen now OPENS ON PLAY — a fresh save shows one primed START (round 1),
-  // not a 9-button wall (the full list is disclosed after the first clear). The thin-gate bypass is
-  // still gone (no "simulate full loop" calibrate button); the engine hook is still wired.
-  const s5NoBypass = await page.evaluate(() => !document.querySelector('[data-action="calibrate"]') && Boolean(window.__fvStage5) && document.querySelectorAll('[data-start-round]').length === 1);
-  if (s5NoBypass) pass('Stage 5 opens on play: one primed START (round 1), no simulate-loop bypass'); else fail('Stage 5 bypass present, list not diet-gated, or game not wired');
-  // 2026-07-12 canvas rebuild: the race renders on a 2.5D <canvas> (the ASCII <pre> grid is gone).
-  // Assert the canvas is live (real backing store) and a frame was actually drawn (non-blank attract
-  // road) — everything deeper stays testhook-driven below, same as before the rebuild.
-  const s5Canvas = await page.evaluate(() => {
-    const c = document.querySelector('.stage5-signal-racer canvas.s5-track-canvas');
-    if (!c || !c.width || !c.height) return false;
-    const px = c.getContext('2d').getImageData(0, 0, c.width, Math.min(c.height, 200)).data;
-    for (let i = 3; i < px.length; i += 4) if (px[i] !== 0) return true;
-    return false;
-  });
-  if (s5Canvas) pass('Stage 5 canvas road drawn (2.5D rebuild: live backing store + non-blank frame)'); else fail('Stage 5 canvas missing or blank');
-  // Ascension ladder is wired (shared/ascension.js): 4 cumulative difficulty rungs available for replay.
-  const s5Asc = await page.evaluate(() => window.__fvStage5.ascension());
-  if (s5Asc.maxLevel === 4) pass('Stage 5 ascension ladder wired: 4 rungs (opt-in replay depth)'); else fail(`Stage 5 ascension maxLevel ${s5Asc.maxLevel}`);
-  // The Jammer is gated behind the full run: from a fresh start, invoking the boss round (index 8) is
-  // refused (clearedRounds < 8), so the race never enters play mode.
-  const s5Gate = await page.evaluate(() => {
-    window.__fvStage5.startRound(8);
-    return { cleared: window.__fvStage5.state().run.clearedRounds, playing: Boolean(document.querySelector('.stage5-signal-racer.s5-mode-playing')) };
-  });
-  if (s5Gate.cleared === 0 && !s5Gate.playing) pass('Stage 5 boss is locked until the run is cleared (boss round refuses to start from fresh)'); else fail('Stage 5 boss reachable from start');
-  // Play the eight real body rounds (incl. the time-trial + fork relay) to reach the jammer.
-  const s5Cleared = await page.evaluate(() => window.__fvStage5.solveRun());
-  if (s5Cleared === 8) pass('Stage 5 run cleared: rounds 1–8 (incl. time-trial + fork relay) played to reach The Jammer'); else fail(`Stage 5 only cleared ${s5Cleared}/8 rounds`);
-  // 2026-07-11 playtest fix: calibration is a buff, not a gate — the jammer's suppression drain is
-  // survivable uncalibrated only by a near-maxed (Hull+Engine) rig (see game-loop.js /
-  // stage5/tests/boss.test.mjs), so a completely fresh, un-upgraded run (this smoke's state) still
-  // loses uncalibrated, same observable outcome as before, for a different (no-longer-absolute) reason.
-  const s5Uncal = await page.evaluate(() => ({ outcome: window.__fvStage5.solveBoss(), defeated: window.__fvStage5.state().boss.defeated }));
-  if (s5Uncal.outcome === 'fail' && !s5Uncal.defeated) pass('Stage 5 jammer: a fresh, un-upgraded run still loses uncalibrated (calibration is a big buff)'); else fail('Stage 5 boss beatable without calibration');
-  // Open transmission_hum.mp3 (the real un-cheat is 14s of continuous playback in the media viewer).
-  await page.click('[data-action="audio"]');
-  await page.waitForFunction(() => window.__fv.state.intake?.filename === 'transmission_hum.mp3' && window.__fv.state.type.id === 'media', null, { timeout: 5000 });
-  // Calibrate via the genuine counter-wave timeline (sets the same action the media-playback un-cheat does).
-  await page.evaluate(() => window.__fvStage5.calibrate());
-  await page.waitForFunction(() => {
-    try {
-      const save = JSON.parse(localStorage.getItem('fv:games:metagame:v3'));
-      return Boolean(save.actions?.['5.counter_wave_calibrated'] && save.achievements?.['stage5.counter_wave_calibrated']);
-    } catch { return false; }
-  }, null, { timeout: 5000 });
-  // Now the cleared run + calibrated counter-wave defeats The Jammer.
-  await page.evaluate(() => window.__fvStage5.solveBoss());
-  await page.waitForFunction(() => {
-    try {
-      const save = JSON.parse(localStorage.getItem('fv:games:metagame:v3'));
-      return save.defeated?.includes(5) && save.unlockedStages?.includes(6);
-    } catch { return false; }
-  }, null, { timeout: 5000 });
-  pass('Stage 5: full run + calibrated counter-wave defeats Signal Racer');
-
-  await page.waitForSelector('.stage6-protocol-codex', { timeout: 8000 });
+  await page.waitForSelector('.stage5-protocol-codex', { timeout: 8000 });
   // The deck-builder hub is the entry point: the ONLY way to the boss is a full run (no bypass).
-  await page.waitForSelector('.s6db-hub [data-action="begin-run"]', { timeout: 4000 });
+  await page.waitForSelector('.s5db-hub [data-action="begin-run"]', { timeout: 4000 });
   // Uniqueness guard: there is no "confront The Refused Connection" hub bypass anymore.
-  const hubHasConfront = await page.$('.s6db-hub [data-action="confront"]');
-  if (hubHasConfront) throw new Error('Stage 6 hub still exposes the confront bypass');
-  pass('Stage 6 Protocol Codex opens on the deck-builder hub (no boss bypass)');
+  const hubHasConfront = await page.$('.s5db-hub [data-action="confront"]');
+  if (hubHasConfront) throw new Error('Stage 5 hub still exposes the confront bypass');
+  pass('Stage 5 Protocol Codex opens on the deck-builder hub (no boss bypass)');
   // Phase I — daily/custom seed determinism (the seed is hashed ONCE at run creation, never live
   // entropy) + the self-competition score. The same date/custom key reproduces the same run seed.
-  const s6seed = await page.evaluate(() => {
-    window.__fvStage6.setDailyKey('2026-01-15');
-    const d1 = window.__fvStage6.beginRun({ mode: 'daily' });
-    const d2 = window.__fvStage6.beginRun({ mode: 'daily' });
-    const c1 = window.__fvStage6.beginRun({ mode: 'custom', seedText: 'codex' });
-    const c2 = window.__fvStage6.beginRun({ mode: 'custom', seedText: 'codex' });
-    const c3 = window.__fvStage6.beginRun({ mode: 'custom', seedText: 'other' });
-    const score = window.__fvStage6.score().run;
+  const s5seed = await page.evaluate(() => {
+    window.__fvStage5.setDailyKey('2026-01-15');
+    const d1 = window.__fvStage5.beginRun({ mode: 'daily' });
+    const d2 = window.__fvStage5.beginRun({ mode: 'daily' });
+    const c1 = window.__fvStage5.beginRun({ mode: 'custom', seedText: 'codex' });
+    const c2 = window.__fvStage5.beginRun({ mode: 'custom', seedText: 'codex' });
+    const c3 = window.__fvStage5.beginRun({ mode: 'custom', seedText: 'other' });
+    const score = window.__fvStage5.score().run;
     return {
       dailyStable: d1.seed === d2.seed && d1.mode === 'daily' && d1.dailyKey === '2026-01-15',
       customStable: c1.seed === c2.seed && c1.mode === 'custom' && c1.dailyKey === 'codex',
@@ -1131,174 +1096,168 @@ export async function run(ctx) {
       scorePositive: score > 0,
     };
   });
-  if (s6seed.dailyStable && s6seed.customStable && s6seed.customDistinct && s6seed.scorePositive) {
-    pass('Stage 6 daily/custom seed is deterministic (same key ⇒ same run) and run score is scored');
+  if (s5seed.dailyStable && s5seed.customStable && s5seed.customDistinct && s5seed.scorePositive) {
+    pass('Stage 5 daily/custom seed is deterministic (same key ⇒ same run) and run score is scored');
   } else {
-    fail(`Stage 6 seed/score wrong: ${JSON.stringify(s6seed)}`);
+    fail(`Stage 5 seed/score wrong: ${JSON.stringify(s5seed)}`);
   }
   // Return to the hub for the rest of the flow (the seed checks left a run active).
-  await page.click('.s6db-map [data-action="abandon"]');
-  await page.waitForSelector('.s6db-hub [data-action="begin-run"]', { timeout: 4000 });
+  await page.click('.s5db-map [data-action="abandon"]');
+  await page.waitForSelector('.s5db-hub [data-action="begin-run"]', { timeout: 4000 });
   // Prestige hub-visibility gating fix: banked total / Protocol Version / the "reinforce protocol"
   // button are visible from a player's very first run attempt — BEFORE any run has finished (no
   // death or win has happened yet at this point in the test). Previously this cluster was gated
   // behind BOTH state.meta.disclosed.stats (first finish) AND a separate 75%-of-cost banked
   // threshold, so a new player had no way to discover the prestige system existed.
-  const s6PrestigeVisible = await page.$('.s6db-hub .s6db-prestige');
-  if (s6PrestigeVisible) pass('Stage 6 prestige cluster visible on hub before any run has finished'); else fail('Stage 6 prestige cluster still hidden pre-finish');
+  const s5PrestigeVisible = await page.$('.s5db-hub .s5db-prestige');
+  if (s5PrestigeVisible) pass('Stage 5 prestige cluster visible on hub before any run has finished'); else fail('Stage 5 prestige cluster still hidden pre-finish');
   // A run is the game body; verify the act-map loop is live.
-  await page.click('.s6db-hub [data-action="begin-run"]');
-  await page.waitForSelector('.s6db-map .s6db-node.is-available[data-node]', { timeout: 4000 });
-  pass('Stage 6 run begins: act map offers routable nodes');
+  await page.click('.s5db-hub [data-action="begin-run"]');
+  await page.waitForSelector('.s5db-map .s5db-node.is-available[data-node]', { timeout: 4000 });
+  pass('Stage 5 run begins: act map offers routable nodes');
   // Reload-retry exploit closed: a real combat is CHECKPOINTED into the save mid-fight (run-state
   // 'combat' slot), so a reload resumes the same in-progress fight rather than re-rolling a fresh
   // one. Enter a combat, play one card, and confirm the persisted snapshot is a resumable partial
   // turn (not over, tagged with the run seed, with a card already played).
-  await page.click('.s6db-map .s6db-node.is-available[data-node]');
+  await page.click('.s5db-map .s5db-node.is-available[data-node]');
   // Designed flow (2026-07-09): click a hand card to SELECT (raises the close-up), click it AGAIN to
   // PLAY. There is no separate play button — the raised close-up carries data-inspect, so a second
   // click routes back through handleClick (pending===i → doPlay). Click-outside deselects.
-  await page.waitForSelector('.s6db-combat .s6db-hand .s6db-card[data-inspect]:not(.is-unaffordable)', { timeout: 4000 });
-  await page.click('.s6db-combat .s6db-hand .s6db-card[data-inspect]:not(.is-unaffordable)');
-  await page.waitForSelector('.s6db-inspect .s6db-inspect-card[data-inspect]', { timeout: 4000 });
-  await page.click('.s6db-inspect .s6db-inspect-card[data-inspect]');
+  await page.waitForSelector('.s5db-combat .s5db-hand .s5db-card[data-inspect]:not(.is-unaffordable)', { timeout: 4000 });
+  await page.click('.s5db-combat .s5db-hand .s5db-card[data-inspect]:not(.is-unaffordable)');
+  await page.waitForSelector('.s5db-inspect .s5db-inspect-card[data-inspect]', { timeout: 4000 });
+  await page.click('.s5db-inspect .s5db-inspect-card[data-inspect]');
   await page.waitForFunction(() => {
     try {
       const save = JSON.parse(localStorage.getItem('fv:games:metagame:v3'));
-      const snap = save.stageState?.[6]?.combat;
+      const snap = save.stageState?.[5]?.combat;
       return Boolean(snap && snap.over === false && (snap.cardsPlayedThisTurn || 0) >= 1);
     } catch { return false; }
   }, null, { timeout: 4000 });
-  const s6resume = await page.evaluate(() => {
+  const s5resume = await page.evaluate(() => {
     const save = JSON.parse(localStorage.getItem('fv:games:metagame:v3'));
-    const snap = save.stageState[6].combat;
+    const snap = save.stageState[5].combat;
     return {
       resumable: snap.over === false,
-      seedTagged: snap.runSeed === save.stageState[6].run?.seed,
-      atNode: snap.nodeId === save.stageState[6].run?.currentNodeId,
+      seedTagged: snap.runSeed === save.stageState[5].run?.seed,
+      atNode: snap.nodeId === save.stageState[5].run?.currentNodeId,
       played: (snap.cardsPlayedThisTurn || 0) >= 1,
       hasRng: typeof snap.rngSeed === 'number' && (snap.rngSteps || 0) > 0,
     };
   });
-  if (s6resume.resumable && s6resume.seedTagged && s6resume.atNode && s6resume.played && s6resume.hasRng) {
-    pass('Stage 6 mid-combat is checkpointed to the save (reload resumes the same fight — exploit closed)');
+  if (s5resume.resumable && s5resume.seedTagged && s5resume.atNode && s5resume.played && s5resume.hasRng) {
+    pass('Stage 5 mid-combat is checkpointed to the save (reload resumes the same fight — exploit closed)');
   } else {
-    fail(`Stage 6 combat not resumably checkpointed: ${JSON.stringify(s6resume)}`);
+    fail(`Stage 5 combat not resumably checkpointed: ${JSON.stringify(s5resume)}`);
   }
   // First-run pacing (UX audit approved option): a fresh save's very first run terminates at the
   // act-4 story boss (The Refused Connection); acts 5-6 unlock on the first win. Assert that, then
   // mark this save a VETERAN so the run below restores the full six acts — the superboss fixture
   // (equipEndgameLoadout pins the act-6 boss node a6-l6-n0) is veteran content and can't be reached
   // on a 4-act first run. markVeteran sets only the win counter through the existing test seam.
-  const s6fresh = await page.evaluate(() => window.__fvStage6.beginRun());
-  if (s6fresh.finalAct === 4) pass('Stage 6 first run ends at act 4 (The Refused Connection); acts 5-6 unlock on first win'); else fail(`Stage 6 fresh finalAct wrong: ${JSON.stringify(s6fresh)}`);
-  await page.evaluate(() => window.__fvStage6.markVeteran());
-  const s6vet = await page.evaluate(() => window.__fvStage6.beginRun());
-  if (s6vet.finalAct === 6) pass('Stage 6 veteran run restores the full six acts (5-6 unlocked)'); else fail(`Stage 6 veteran finalAct wrong: ${JSON.stringify(s6vet)}`);
+  const s5fresh = await page.evaluate(() => window.__fvStage5.beginRun());
+  if (s5fresh.finalAct === 4) pass('Stage 5 first run ends at act 4 (The Refused Connection); acts 5-6 unlock on first win'); else fail(`Stage 5 fresh finalAct wrong: ${JSON.stringify(s5fresh)}`);
+  await page.evaluate(() => window.__fvStage5.markVeteran());
+  const s5vet = await page.evaluate(() => window.__fvStage5.beginRun());
+  if (s5vet.finalAct === 6) pass('Stage 5 veteran run restores the full six acts (5-6 unlocked)'); else fail(`Stage 5 veteran finalAct wrong: ${JSON.stringify(s5vet)}`);
   // Reach the final boss via the deterministic test hook with a winnable deck (a real veteran run
   // would clear acts 1–5 and build this deck itself). The boss is fought with this REAL deck.
-  await page.evaluate(() => window.__fvStage6.jumpToBoss(
+  await page.evaluate(() => window.__fvStage5.jumpToBoss(
     ['SYN', 'SYN', 'SYN', 'SYN', 'SYN', 'ACK', 'ACK', 'ACK', 'ACK', 'SEGMENT']
   ));
   // Phase I — grant the 3 true-ending keys on this run so the negotiation opens the hidden superboss
   // (a real run earns them by playing the untouchable/ascetic/sacrifice challenges; this is the
   // deterministic test path). The superboss is PURE bonus combat — it adds no second un-cheat.
-  const s6keys = await page.evaluate(() => window.__fvStage6.grantKeys(3));
-  if (s6keys === 3) pass('Stage 6 true-ending keys granted (untouchable / ascetic / sacrifice)'); else fail(`Stage 6 keys not granted: ${s6keys}`);
+  const s5keys = await page.evaluate(() => window.__fvStage5.grantKeys(3));
+  if (s5keys === 3) pass('Stage 5 true-ending keys granted (untouchable / ascetic / sacrifice)'); else fail(`Stage 5 keys not granted: ${s5keys}`);
   // It is a real combat (data-play hand), not the retired 3-button puzzle.
-  await page.waitForSelector('.s6db-combat .s6db-boss-banner.is-locked', { timeout: 4000 });
-  pass('Stage 6 boss is a real-deck fight reached only through a run');
+  await page.waitForSelector('.s5db-combat .s5db-boss-banner.is-locked', { timeout: 4000 });
+  pass('Stage 5 boss is a real-deck fight reached only through a run');
   // 2026-07-11 playtest fix: ch9 unread is a difficulty cost now (boss starts at 84 HP = 60 ×
   // UNCH9_HP_MULT 1.4, instead of 60), not a win/loss gate — a correct handshake still lands real
   // damage, it just has more HP to clear.
-  const lockedAttack = await page.evaluate(() => window.__fvStage6.autoNegotiate(3));
+  const lockedAttack = await page.evaluate(() => window.__fvStage5.autoNegotiate(3));
   if (lockedAttack.enemyHp >= 84 || lockedAttack.bossDefeated) {
-    throw new Error(`Stage 6 boss should take real damage while ch9 unread: ${JSON.stringify(lockedAttack)}`);
+    throw new Error(`Stage 5 boss should take real damage while ch9 unread: ${JSON.stringify(lockedAttack)}`);
   }
-  pass('Stage 6 boss takes real damage before Chapter 9 is read (tougher HP pool, not a 0-damage wall)');
+  pass('Stage 5 boss takes real damage before Chapter 9 is read (tougher HP pool, not a 0-damage wall)');
   // Stage-clear gate (un-cheat): read the codex from the boss banner to unlock the negotiation.
-  await page.click('.s6db-combat .s6db-boss-banner [data-action="epub"]');
+  await page.click('.s5db-combat .s5db-boss-banner [data-action="epub"]');
   await page.waitForFunction(() => window.__fv.state.intake?.filename === 'protocols_of_the_entity.epub' && window.__fv.state.type.id === 'epub', null, { timeout: 5000 });
   await page.waitForFunction(() => {
     try {
       const save = JSON.parse(localStorage.getItem('fv:games:metagame:v3'));
-      return Boolean(save.actions?.['6.protocol_ch9_read'] && save.achievements?.['stage6.protocol_ch9_read']);
+      return Boolean(save.actions?.['5.protocol_ch9_read'] && save.achievements?.['stage5.protocol_ch9_read']);
     } catch { return false; }
   }, null, { timeout: 5000 });
   // With ch9 read the negotiation is unlocked: win it with the real deck. With 3 keys, this does NOT
   // immediately clear the stage — it diverts to the hidden superboss (stage completion is deferred).
-  const s6neg = await page.evaluate(() => window.__fvStage6.autoNegotiate());
-  if (s6neg.bossDefeated && !s6neg.won) pass('Stage 6 negotiation won; the 3 keys divert to the hidden superboss (not yet cleared)'); else fail(`Stage 6 negotiation/diversion wrong: ${JSON.stringify(s6neg)}`);
+  const s5neg = await page.evaluate(() => window.__fvStage5.autoNegotiate());
+  if (s5neg.bossDefeated && !s5neg.won) pass('Stage 5 negotiation won; the 3 keys divert to the hidden superboss (not yet cleared)'); else fail(`Stage 5 negotiation/diversion wrong: ${JSON.stringify(s5neg)}`);
   // The superboss is a real-deck multi-phase fight (The Kernel of Refusal), no lock / no un-cheat.
-  await page.waitForSelector('.s6db-combat', { timeout: 4000 });
+  await page.waitForSelector('.s5db-combat', { timeout: 4000 });
   // Equip a REPRESENTATIVE end-game loadout (developed 16-card deck at 50 HP, pinned seed) — standing
   // in for the acts 1–5 deck-building the test path skips, NOT a bypass — so the climactic bonus pool
   // (264 HP across 3 escalating phases) is fought against real power, not the bare 10-card starter.
-  const s6load = await page.evaluate(() => window.__fvStage6.equipEndgameLoadout());
-  if (s6load.ok && s6load.deckSize >= 14 && s6load.hp === 50) pass('Stage 6 superboss fought with a representative end-game loadout (not the starter deck)'); else fail(`Stage 6 endgame loadout wrong: ${JSON.stringify(s6load)}`);
+  const s5load = await page.evaluate(() => window.__fvStage5.equipEndgameLoadout());
+  if (s5load.ok && s5load.deckSize >= 14 && s5load.hp === 50) pass('Stage 5 superboss fought with a representative end-game loadout (not the starter deck)'); else fail(`Stage 5 endgame loadout wrong: ${JSON.stringify(s5load)}`);
   // Drive the superboss to its end with the real deck → the TRUE ending, which now clears the stage.
-  const s6super = await page.evaluate(() => window.__fvStage6.autoSuperboss());
-  if (s6super.ok && s6super.status === 'won' && s6super.trueEnding) pass('Stage 6 key-gated superboss defeated → true ending'); else fail(`Stage 6 superboss not won: ${JSON.stringify(s6super)}`);
+  const s5super = await page.evaluate(() => window.__fvStage5.autoSuperboss());
+  if (s5super.ok && s5super.status === 'won' && s5super.trueEnding) pass('Stage 5 key-gated superboss defeated → true ending'); else fail(`Stage 5 superboss not won: ${JSON.stringify(s5super)}`);
   // It is a CLIMACTIC fight, not a pushover: the auto-player wins down to the wire (real HP spent),
   // confirming the 264-HP tuning is winnable-but-hard with the representative loadout.
-  if (s6super.startHp === 50 && s6super.endHp > 0 && (s6super.startHp - s6super.endHp) >= 25) pass(`Stage 6 superboss is a real climax (won at ${s6super.endHp}/${s6super.startHp} HP in ${s6super.turns} turns)`); else fail(`Stage 6 superboss margin wrong (too trivial or a loss): ${JSON.stringify(s6super)}`);
+  if (s5super.startHp === 50 && s5super.endHp > 0 && (s5super.startHp - s5super.endHp) >= 25) pass(`Stage 5 superboss is a real climax (won at ${s5super.endHp}/${s5super.startHp} HP in ${s5super.turns} turns)`); else fail(`Stage 5 superboss margin wrong (too trivial or a loss): ${JSON.stringify(s5super)}`);
   await page.waitForFunction(() => {
     try {
       const save = JSON.parse(localStorage.getItem('fv:games:metagame:v3'));
-      return save.defeated?.includes(6) && save.unlockedStages?.includes(7);
+      return save.defeated?.includes(5) && save.currentStage === 5;
     } catch { return false; }
   }, null, { timeout: 5000 });
-  pass('Stage 6 cleared via real-deck negotiation + key-gated true-ending superboss');
+  pass('Stage 5 cleared via real-deck negotiation + key-gated true-ending superboss');
 
-  await page.waitForSelector('.stage7-identity-arbiter', { timeout: 8000 });
-  // A stage clear auto-advances currentStage (metagame.js completeStage), so wonView was never
-  // observable in the flow above — the win auto-navigated straight to Stage 7. Navigate BACK into
-  // the now-defeated Stage 6 via the nav bar (defeated stages stay clickable) to observe it: the
-  // persisted run is still status "won", so route() renders wonView fresh, unrelated to any
-  // finishCombat/completeOnce timing.
-  await page.click('.mg-v3-stage[data-stage="6"]');
-  await page.waitForSelector('.s6db-end--won', { timeout: 4000 });
-  const s6won = await page.evaluate(() => {
-    const dt = [...document.querySelectorAll('.s6db-end--won .s6db-meta-grid dt')]
+  // Protocol Codex is now the fifth and final game, so completion stays on its persisted win view.
+  await page.waitForSelector('.s5db-end--won', { timeout: 4000 });
+  const s5won = await page.evaluate(() => {
+    const dt = [...document.querySelectorAll('.s5db-end--won .s5db-meta-grid dt')]
       .find((el) => el.textContent === 'Banked total');
-    return { hasBankedLine: Boolean(dt), bankedShown: dt ? Number(dt.nextElementSibling?.textContent) : null, meta: window.__fvStage6.meta() };
+    return { hasBankedLine: Boolean(dt), bankedShown: dt ? Number(dt.nextElementSibling?.textContent) : null, meta: window.__fvStage5.meta() };
   });
-  if (s6won.hasBankedLine && s6won.bankedShown === s6won.meta.banked) {
-    pass('Stage 6 win screen shows the banked total (previously only the death screen did)');
+  if (s5won.hasBankedLine && s5won.bankedShown === s5won.meta.banked) {
+    pass('Stage 5 win screen shows the banked total (previously only the death screen did)');
   } else {
-    fail(`Stage 6 win screen missing/mismatched banked total: ${JSON.stringify(s6won)}`);
+    fail(`Stage 5 win screen missing/mismatched banked total: ${JSON.stringify(s5won)}`);
   }
   // Prestige upgrade flow: bank enough for the cost (test seam — bypasses playing out the run
   // economy), open the "reinforce protocol" picker from the hub, choose a starting-deck slot, and
   // confirm the NEXT run's starting deck carries that permanent upgrade. wonView has no direct
   // "back to hub" button (unlike deathView) — reach the hub via "run again" → "abandon", both
   // already-verified UI actions.
-  await page.click('.s6db-end--won [data-action="new-run"]');
-  await page.waitForSelector('.s6db-map [data-action="abandon"]', { timeout: 4000 });
-  await page.click('.s6db-map [data-action="abandon"]');
-  await page.waitForSelector('.s6db-hub [data-action="prestige"]', { timeout: 4000 });
-  await page.evaluate(() => window.__fvStage6.grantBanked(9999));
-  await page.click('.s6db-hub [data-action="prestige"]');
-  await page.waitForSelector('.mg-modal .s6db-card[data-prestige-upgrade]', { timeout: 4000 });
+  await page.click('.s5db-end--won [data-action="new-run"]');
+  await page.waitForSelector('.s5db-map [data-action="abandon"]', { timeout: 4000 });
+  await page.click('.s5db-map [data-action="abandon"]');
+  await page.waitForSelector('.s5db-hub [data-action="prestige"]', { timeout: 4000 });
+  await page.evaluate(() => window.__fvStage5.grantBanked(9999));
+  await page.click('.s5db-hub [data-action="prestige"]');
+  await page.waitForSelector('.mg-modal .s5db-card[data-prestige-upgrade]', { timeout: 4000 });
   const chosenIndex = await page.evaluate(() => {
-    const el = document.querySelector('.mg-modal .s6db-card[data-prestige-upgrade]');
+    const el = document.querySelector('.mg-modal .s5db-card[data-prestige-upgrade]');
     return Number(el.dataset.prestigeUpgrade);
   });
-  await page.click('.mg-modal .s6db-card[data-prestige-upgrade]');
-  await page.waitForSelector('.s6db-hub [data-action="begin-run"]', { timeout: 4000 }); // modal closed, back on hub
-  const s6prestiged = await page.evaluate(() => window.__fvStage6.meta());
-  if ((s6prestiged.permanentUpgrades || []).includes(chosenIndex) && s6prestiged.protocolVersion >= 1) {
-    pass('Stage 6 prestige upgrade picker spends the cost and records the chosen starting-card slot');
+  await page.click('.mg-modal .s5db-card[data-prestige-upgrade]');
+  await page.waitForSelector('.s5db-hub [data-action="begin-run"]', { timeout: 4000 }); // modal closed, back on hub
+  const s5prestiged = await page.evaluate(() => window.__fvStage5.meta());
+  if ((s5prestiged.permanentUpgrades || []).includes(chosenIndex) && s5prestiged.protocolVersion >= 1) {
+    pass('Stage 5 prestige upgrade picker spends the cost and records the chosen starting-card slot');
   } else {
-    fail(`Stage 6 prestige upgrade not recorded: chosenIndex=${chosenIndex} meta=${JSON.stringify(s6prestiged)}`);
+    fail(`Stage 5 prestige upgrade not recorded: chosenIndex=${chosenIndex} meta=${JSON.stringify(s5prestiged)}`);
   }
-  await page.click('.s6db-hub [data-action="begin-run"]');
-  await page.waitForSelector('.s6db-map [data-node]', { timeout: 4000 });
-  const s6nextDeck = await page.evaluate(() => window.__fvStage6.run().deck);
-  if (s6nextDeck[chosenIndex]?.endsWith('+')) {
-    pass('Stage 6 permanent prestige upgrade carries into the next run\'s starting deck');
+  await page.click('.s5db-hub [data-action="begin-run"]');
+  await page.waitForSelector('.s5db-map [data-node]', { timeout: 4000 });
+  const s5nextDeck = await page.evaluate(() => window.__fvStage5.run().deck);
+  if (s5nextDeck[chosenIndex]?.endsWith('+')) {
+    pass('Stage 5 permanent prestige upgrade carries into the next run\'s starting deck');
   } else {
-    fail(`Stage 6 next run's starting deck missing the permanent upgrade at slot ${chosenIndex}: ${JSON.stringify(s6nextDeck)}`);
+    fail(`Stage 5 next run's starting deck missing the permanent upgrade at slot ${chosenIndex}: ${JSON.stringify(s5nextDeck)}`);
   }
   // Regression guard for a real bug this prestige work surfaced: ui-rewards.js's shopView() used
   // to throw building EVERY non-empty deck's "Purge a card" row (cardOption's dataset[attr] = value
@@ -1308,8 +1267,8 @@ export async function run(ctx) {
   // with cards in their deck (always). A real run's shop layer/position is seed-random, so drive the
   // pure view function directly (dynamic-imported from its raw module) rather than hunting a shop
   // node through map RNG — deterministic, and exercises the exact code path that was broken.
-  const s6shop = await page.evaluate(async (o) => {
-    const mod = await import(o + '/games/metagame/stages/stage6/ui-rewards.js');
+  const s5shop = await page.evaluate(async (o) => {
+    const mod = await import(o + '/games/metagame/stages/stage5/ui-rewards.js');
     const fakeRun = { handshakes: 500, deck: ['SYN', 'SYN', 'ACK', 'RST'], potions: [], removalsPurchased: 0, skipRewardMod: 0, removalCostMod: 0 };
     try {
       const el = mod.shopView(fakeRun);
@@ -1322,314 +1281,84 @@ export async function run(ctx) {
       return { threw: true, message: e.message };
     }
   }, origin);
-  if (!s6shop.threw && s6shop.removeBtns === 4 && s6shop.upgradeBtns === 4) {
-    pass('Stage 6 shop screen renders (purge/upgrade rows no longer throw on a non-empty deck)');
+  if (!s5shop.threw && s5shop.removeBtns === 4 && s5shop.upgradeBtns === 4) {
+    pass('Stage 5 shop screen renders (purge/upgrade rows no longer throw on a non-empty deck)');
   } else {
-    fail(`Stage 6 shop screen broken: ${JSON.stringify(s6shop)}`);
+    fail(`Stage 5 shop screen broken: ${JSON.stringify(s5shop)}`);
   }
-  await page.click('.s6db-map [data-action="abandon"]');
-  await page.waitForSelector('.s6db-hub [data-action="begin-run"]', { timeout: 4000 });
-  // Navigate back to Stage 7 so the flow below continues where it left off.
-  await page.click('.mg-v3-stage[data-stage="7"]');
-  await page.waitForSelector('.stage7-identity-arbiter', { timeout: 8000 });
-  // The thin-gate bypass is gone: no in-game "inspect GPSInfo" button, and the investigation hook exists.
-  const s7Start = await page.evaluate(() => ({
-    noBypass: !document.querySelector('[data-action="gps"]'),
-    wired: Boolean(window.__fvStage7),
-    substage: window.__fvStage7.state().substage,
-    noCommit: !document.querySelector('[data-commit]'),
-    noAccuse: !document.querySelector('[data-accuse]'),
-  }));
-  if (s7Start.noBypass && s7Start.wired && s7Start.substage === 1 && s7Start.noCommit && s7Start.noAccuse) pass('Stage 7 is a real 6-stage investigation: no GPS bypass, accusation+boss gated from start'); else fail('Stage 7 bypass present or boss/accusation reachable from start');
-  // Work Case 1 (SS1 scan → SS2 dup → SS3 timeline) up to the reference chase.
-  const s7AfterDeduction = await page.evaluate(() => window.__fvStage7.solveInvestigation());
-  if (s7AfterDeduction === 4) pass('Stage 7 SS1–SS3 deductions advance to the reference chase'); else fail(`Stage 7 stalled at substage ${s7AfterDeduction}`);
-  // SS4 Reference Chase: opening the real decommissioned-anchor exhibit breaks the chain → Case 2.
-  await page.click('[data-action="open-anchor"]');
-  await page.waitForFunction(() => window.__fvStage7?.state().substage === 5, null, { timeout: 5000 });
-  pass('Stage 7 SS4: opening the rescinded appointment breaks the paper trail and opens Case 2 (The Second Claim)');
-  // Continuity: closing Case 1 carries its four deductions onto the board as established facts.
-  const s7Carried = await page.evaluate(() => window.__fvStage7.state().board.established.filter((f) => f.id.startsWith('case1:')).length);
-  if (s7Carried === 4) pass('Stage 7 continuity: Case-1 deductions carried onto the board as established facts'); else fail(`Stage 7 Case-1 continuity missing (${s7Carried}/4)`);
-  // Case 2 is load-bearing: the rule-of-three triad cannot be completed until the route table is
-  // actually opened in the viewer (the decisive fact card only exists after a real file-open).
-  const s7Premature = await page.evaluate(() => window.__fvStage7.solveCase2());
-  if (s7Premature.ok === false && s7Premature.substage === 5) pass('Stage 7 Case 2: accusation impossible before opening the household register (load-bearing)'); else fail('Stage 7 Case 2 solvable without the real file-open');
-  // Open the real household register → mints the fact:route evidence card.
-  await page.click('[data-action="open-source"][data-source="route_table_examined"]');
-  await page.waitForFunction(() => Boolean(window.__fvStage7?.state().board.cards.some((c) => c.id === 'fact:route')), null, { timeout: 5000 });
-  pass('Stage 7 Case 2: opening household_register.csv mints the decisive fact card on the evidence board');
-  // Now the rule-of-three triad (entity K + route claim + route-table fact) confirms and opens Case 3.
-  const s7Case2 = await page.evaluate(() => window.__fvStage7.solveCase2());
-  if (s7Case2.solved && s7Case2.substage === 6) pass('Stage 7 Case 2: correct triad names the second claimant and opens Case 3 (The Distant Relations)'); else fail(`Stage 7 Case 2 accusation failed (${JSON.stringify(s7Case2)})`);
+  await page.click('.s5db-map [data-action="abandon"]');
+  await page.waitForSelector('.s5db-hub [data-action="begin-run"]', { timeout: 4000 });
 
-  // Case 3 (The Distant Relations): a larger roster with a SEARCH-gated decisive fact. The triad
-  // cannot complete by merely OPENING the ledger — it must be SEARCHED for the claimed voucher.
-  await page.waitForSelector('[data-accuse="3"]', { timeout: 5000 });
-  await page.click('[data-action="open-source"][data-source="ledger_examined"]');
-  await page.waitForFunction(() => Boolean(window.__fvStage7?.state().board.cards.some((c) => c.id === 'fact:ledgerhint')), null, { timeout: 5000 });
-  const s7Case3Pre = await page.evaluate(() => window.__fvStage7.solveCase3());
-  if (s7Case3Pre.ok === false && s7Case3Pre.substage === 6) pass('Stage 7 Case 3: accusation impossible after only OPENING the ledger (search is load-bearing)'); else fail('Stage 7 Case 3 solvable without a real search');
-  // Run the REAL viewer search of the estate ledger → mints the decisive fact:session card.
-  await page.evaluate(async () => { await window.__fv.searchViewerFile('/docs/examples/metagame/stage7/estate_ledger.csv', 'Voucher 214'); });
-  await page.waitForFunction(() => Boolean(window.__fvStage7?.state().board.cards.some((c) => c.id === 'fact:session')), null, { timeout: 5000 });
-  pass('Stage 7 Case 3: SEARCHING estate_ledger.csv for the voucher mints the decisive fact card');
-  const s7Case3 = await page.evaluate(() => window.__fvStage7.solveCase3());
-  if (s7Case3.solved && s7Case3.substage === 7) pass('Stage 7 Case 3: correct triad names the false annuitant and reaches the verdict board'); else fail(`Stage 7 Case 3 accusation failed (${JSON.stringify(s7Case3)})`);
-
-  // Boss un-cheat (Meridian rework 2026-07-12, load-bearing + NOT bypassable): the contradiction
-  // lives INSIDE the case documents. Pinning the alibi statement and the postmarked torn letter is
-  // necessary but NOT sufficient — only CONNECTING them fires the action.
-  await page.waitForSelector('[data-pin="boss:alibi"]', { timeout: 5000 });
-  await page.click('[data-pin="boss:alibi"]');
-  await page.click('[data-pin="boss:letter"]');
-  const s7PinnedOnly = await page.evaluate(() => {
-    try {
+  // The global dev menu is a boss navigator, not a stage navigator. Every button resets stale or
+  // completed state, pre-fires that boss's real-file action, and lands on the actual encounter.
+  const bossJumpCases = [
+    { stage: 1, selector: '.mg-defrag-arena', cheats: ['Unlock tabs', 'Boss ready', '+10 cores', 'Hire managers'] },
+    { stage: 2, selector: '.stage2-glyph-dungeon [data-action="boss"]:not([hidden])', cheats: ['Full HP', '+5 ATK', '+1 LVL', '+1k glyphs', '+3 of each rune', 'Zoom out (full map)'] },
+    { stage: 3, selector: '.s3-boss-gate:not([hidden])', cheats: ['Show Solution', '+500 reg / +3 frag', 'Skip to Boss Gate', 'Clear Run Pressure'] },
+    { stage: 4, selector: '.stage4-combat [data-action="confront"]', cheats: ['+500 Glory', 'Skip Wave', 'Skip to Boss', 'God Core (∞ integrity)'] },
+    { stage: 5, selector: '.s5db-combat .s5db-boss-banner', cheats: ['Full HP', 'Grant 3 Keys', '+3 Cards', 'Skip to Boss', '+3 Energy'] },
+  ];
+  const requiredActions = {
+    1: '1.cheat_disabled',
+    2: '2.search_passage',
+    3: '3.diff_key_restored',
+    4: '4.recursion_blueprint_read',
+    5: '5.protocol_ch9_read',
+  };
+  for (const probe of bossJumpCases) {
+    await page.click('.mg-dev-btn');
+    await page.click(`[data-dev="boss"][data-n="${probe.stage}"]`);
+    await page.waitForSelector(probe.selector, { timeout: 8000 });
+    const landed = await page.evaluate(({ stage, required }) => {
       const save = JSON.parse(localStorage.getItem('fv:games:metagame:v3'));
-      return Boolean(save.actions?.['7.alibi_contradiction_pinned']);
-    } catch { return false; }
-  });
-  if (s7PinnedOnly === false) pass('Stage 7 boss: pinning both documents does NOT unlock (pin is not enough)'); else fail('Stage 7 boss unlocked on pin — connect gate is bypassable');
-  await page.click('[data-action="connect-alibi"]');
-  await page.waitForFunction(() => {
-    try {
-      const save = JSON.parse(localStorage.getItem('fv:games:metagame:v3'));
-      return Boolean(save.actions?.['7.alibi_contradiction_pinned'] && save.achievements?.['stage7.alibi_contradiction_pinned']);
-    } catch { return false; }
-  }, null, { timeout: 5000 });
-  pass('Stage 7 boss: CONNECTING the alibi against the postmark unlocks the verdict');
-  await page.click('button[data-commit="A"]');
-  await page.waitForFunction(() => {
-    try {
-      const save = JSON.parse(localStorage.getItem('fv:games:metagame:v3'));
-      return save.defeated?.includes(7) && save.unlockedStages?.includes(8);
-    } catch { return false; }
-  }, null, { timeout: 5000 });
-  pass('Stage 7: full investigation + the postmark contradiction clears Identity Arbiter');
-
-  // NOTE (2026-07-11): Entropy Field (the old stage 8, "survival sim") was removed from the game
-  // entirely — playtesters found it too hard to understand/use. Observer State moved 9→8 (below);
-  // Awakening (the finale) moved 10→9. See docs/games/metagame/stage-manifest.js.
-
-  await page.waitForSelector('.stage8-observer-state', { timeout: 8000 });
-  // 2026-07-11 canvas rewrite: the ring is now a <canvas> (the old ASCII glyph-scrape no longer
-  // applies — see docs/games/metagame/stages/stage8/canvas-ring.js). Confirm it actually has a
-  // real, non-zero backing size (a real draw happened) + OBSERVE/CROSS controls exist.
-  await page.waitForSelector('.stage8-observer-state [data-action="observe"]', { timeout: 4000 });
-  await page.waitForSelector('.stage8-observer-state [data-action="cross"]', { timeout: 4000 });
-  const s8Wired = await page.evaluate(() => {
-    const c = document.querySelector('.s8-canvas');
-    return Boolean(window.__fvStage8) && Boolean(c) && c.width > 0 && c.height > 0;
-  });
-  if (s8Wired) pass('Stage 8 timing game wired: canvas ring drawn + OBSERVE/CROSS + engine hook'); else fail('Stage 8 ring not wired');
-  // The boss is gated behind the run: the player starts on movement 1, not at the Observer.
-  const s8StartLevel = await page.evaluate(() => window.__fvStage8.state().currentLevel);
-  if (s8StartLevel === 1) pass('Stage 8 starts on movement 1 (boss gated behind the full run)'); else fail(`Stage 8 started at level ${s8StartLevel}`);
-  // Ship steering (2026-07-11): steerTo() sets shipAngle deterministically (never a wall-clock
-  // key-hold simulation — see testhook.js) and it's genuinely read back through geometry().
-  const s8Steer = await page.evaluate(() => {
-    window.__fvStage8.steerTo(123);
-    return window.__fvStage8.geometry().shipAngle;
-  });
-  if (Math.abs(s8Steer - 123) < 1e-6) pass('Stage 8 ship steering: steerTo() sets a deterministic shipAngle'); else fail(`Stage 8 steerTo() wrong: ${s8Steer}`);
-  await page.evaluate(() => window.__fvStage8.steerTo(0)); // reset to the default (top) position before the run below
-  // The learnable front movements clear ONLINE, but the run stalls at the onlineUnstable back third:
-  // those gaps reseed on every commit while live, so the offline un-cheat is required to continue.
-  const s8Stall = await page.evaluate(() => {
-    const reached = window.__fvStage8.solveStableBody();
-    return { reached, unstable: !!window.__fvStage8.config(reached).onlineUnstable, boss: window.__fvStage8.config(reached).isBoss };
-  });
-  if (s8Stall.reached > 1 && s8Stall.unstable && !s8Stall.boss)
-    pass('Stage 8 online run clears the learnable front, then stalls at the onlineUnstable back third');
-  else fail(`Stage 8 online run did not stall at the back third: ${JSON.stringify(s8Stall)}`);
-  // Clarity SPEND: clearing the front banked clarity; a Tachometer is buyable online, but the
-  // Single-Frame peek is OFFLINE-ONLY so it can never bypass the un-cheat (still online here ⇒ rejected).
-  const s8Spend = await page.evaluate(() => {
-    const before = window.__fvStage8.aids().clarity;
-    const tach = window.__fvStage8.buyAid('tachometer');
-    const after = window.__fvStage8.aids();
-    const peekOnline = window.__fvStage8.buyAid('peek');
-    return { before, tachOk: tach.ok, owned: after.tachometer, spent: before - after.clarity, peekReason: peekOnline.reason };
-  });
-  if (s8Spend.tachOk && s8Spend.owned && s8Spend.spent > 0 && s8Spend.peekReason === 'offline-only')
-    pass('Stage 8 clarity spend: Tachometer bought online; Single-Frame peek refused while live (offline-only)');
-  else fail(`Stage 8 clarity spend wrong: ${JSON.stringify(s8Spend)}`);
-  // The onlineUnstable back-third sublevels genuinely require offline mode (their gap reseeds every
-  // OBSERVE, unchanged). 2026-07-11 playtest fix: the BOSS itself is different now — it's reachable
-  // and winnable online via a live read of the current seed (see stage8/tests/boss.test.mjs); offline
-  // mode is a buff (a fixed, memorizable seed) rather than the only door. Read service-worker-notes.txt
-  // and activate offline mode here anyway, to also clear the (still-gated) back-third sublevels.
-  await page.click('[data-action="notes"]');
-  await page.waitForFunction(() => window.__fv.state.intake?.filename === 'service-worker-notes.txt', null, { timeout: 5000 });
-  await page.click('[data-action="offline"]');
-  await page.waitForFunction(() => {
-    try {
-      const save = JSON.parse(localStorage.getItem('fv:games:metagame:v3'));
-      return Boolean(save.actions?.['8.offline_mode_activated'] && save.achievements?.['stage8.offline_mode_activated']);
-    } catch { return false; }
-  }, null, { timeout: 5000 });
-  // Now offline, the Single-Frame peek becomes buyable (there's a fixed seed to reveal) — the aid only
-  // ever exists once the un-cheat is active, so it deepens play without weakening the gate.
-  const s8Peek = await page.evaluate(() => window.__fvStage8.buyAid('peek').ok);
-  if (s8Peek) pass('Stage 8 Single-Frame peek buyable once offline (aid gated by the un-cheat, not a bypass)');
-  else fail('Stage 8 peek not buyable offline');
-  // Drive the real run: clear every sublevel by CROSSing on its solve timing, then cross the boss
-  // on the learned offline timing. (Not a bypass — each level is a genuine timed CROSS.)
-  await page.evaluate(() => window.__fvStage8.solveOffline());
-  await page.waitForFunction(() => {
-    try {
-      const save = JSON.parse(localStorage.getItem('fv:games:metagame:v3'));
-      return save.defeated?.includes(8) && save.unlockedStages?.includes(9);
-    } catch { return false; }
-  }, null, { timeout: 5000 });
-  pass('Stage 8: full run cleared + offline-timed CROSS defeats Observer State');
-
-  await page.waitForSelector('.mg-stage9', { timeout: 8000 });
-  // Anti-spoof: the echo witness is token-gated. A forged action with no/wrong token must witness
-  // nothing; only a genuine viewer-open (which carries the per-memory token) does. Prove the negative
-  // here (the positive is proven by the real opens below clearing the stage).
-  const spoofWitnessed = await page.evaluate(() => {
-    const bad = window.__fvStage9.spoofEcho('genesis', 'bogus-token');
-    const none = window.__fvStage9.spoofEcho('genesis');
-    return bad || none || window.__fvStage9.state().memories.genesis.echoWitnessed === true;
-  });
-  if (!spoofWitnessed) pass('Stage 9 echo witness is token-gated (a spoofed action without the real token is rejected)');
-  else fail('Stage 9 echo witnessed from a spoofed action without the real token');
-  // Stage 9: read -> pick a stance -> WITNESS the echo -> integrate -> Next. The echo is the
-  // load-bearing gate: a resolved memory cannot be integrated until its echo is witnessed. Some
-  // echoes witness on a plain viewer-open, but FIVE pay off a DISTINCT real viewer feature the player
-  // learned earlier — genesis = raw Original view, syntax = in-file SEARCH, memory = Diff view,
-  // pattern = NESTED-path navigation, identity = METADATA inspection. (A sixth, "download", existed
-  // for the Entropy Field memory before the 2026-07-11 stage removal — no memory uses it now.) Each
-  // is driven through the genuine feature (never a forged action) and — except the nested-path one,
-  // whose verb IS the navigated open — does NOT witness on a bare open: the player must do the verb.
-  // (The games overlay covers the app toolbar, so feature verbs are driven via window.__fv / the
-  // real renderer functions, exactly as a player would via the toolbar after closing the overlay.)
-  // Open the first memory's detail from the grid home view. Opening a memory auto-marks it read (M2),
-  // so there is no separate READ verb; the deliberate beats (stance / echo / integrate) stay. Prev/next
-  // lives inside the detail; the 3×3 grid is the board.
-  await page.waitForSelector('[data-memory-card]', { timeout: 5000 });
-  await page.click('[data-memory-card]');
-  let realVerbGates = 0;
-  for (let i = 0; i < 8; i++) {
-    await page.waitForSelector('[data-resolve-memory]', { timeout: 5000 });
-    await page.click('[data-resolve-memory]');
-    if (i === 0) {
-      // Prove the gate: before witnessing the echo, the integrate button is disabled.
-      const gated = await page.$eval('[data-integrate-memory]', (el) => el.disabled);
-      if (gated) pass('Stage 9 integration is echo-gated (boss not reachable without witnessing echoes)'); else fail('Stage 9 integrate not gated by echo');
-    }
-    await page.waitForSelector('[data-open-echo]', { timeout: 5000 });
-    const { memoryId, verb, mode } = await page.$eval('[data-open-echo]', (el) => ({
-      memoryId: el.dataset.openEcho, verb: el.dataset.echoVerb || 'open', mode: el.dataset.echoMode || '',
+      const stageChecks = {
+        1: Boolean(document.querySelector('.mg-defrag-arena')),
+        2: Boolean(window.__fvStage2?.state?.().run.boss.reached && document.querySelector('.stage2-glyph-dungeon [data-action="boss"]:not([hidden])')),
+        3: Boolean(document.querySelector('.s3-boss-gate:not([hidden])')),
+        4: window.__fvStage4?.status?.() === 'boss' && Boolean(document.querySelector('.stage4-combat [data-action="confront"]')),
+        5: window.__fvStage5?.run?.()?.act === 6 && Boolean(document.querySelector('.s5db-combat .s5db-boss-banner')),
+      };
+      return {
+        actualBoss: stageChecks[stage],
+        currentStage: save.currentStage,
+        defeated: save.defeated.includes(stage),
+        actionSource: save.actions?.[required]?.source,
+        stageSlots: Object.keys(save.stageState || {}).join(','),
+      };
+    }, { stage: probe.stage, required: requiredActions[probe.stage] });
+    await page.click('.mg-dev-btn');
+    const menu = await page.evaluate(() => ({
+      bosses: [...document.querySelectorAll('[data-dev="boss"]')].map((b) => b.textContent.trim()),
+      cheats: [...document.querySelectorAll('[data-dev="stagedev"]')].map((b) => b.textContent.trim()),
+      kinds: [...new Set([...document.querySelectorAll('.mg-v3-debug [data-dev]')].map((b) => b.dataset.dev))].sort(),
+      bits: document.querySelectorAll('[data-dev="bits"]').length,
     }));
-    await page.click('[data-open-echo]');
-    if (verb !== 'open') {
-      realVerbGates += 1;
-      // Verbs whose witness comes AFTER a second action must NOT witness on the bare open (the gate).
-      // The nested-path verb is the exception: its real verb IS navigating to the deeply-nested
-      // artifact, so opening it through that path is the witness.
-      if (verb !== 'nested') {
-        const stillGated = await page.$eval('[data-integrate-memory]', (el) => el.disabled);
-        if (!stillGated) fail(`Stage 9 ${memoryId} echo witnessed on a bare open (real-feature gate bypassed)`);
-      }
-      if (verb === 'search') {
-        // Wait for the text artifact to load, then ask the precise question via the real search.
-        await page.waitForFunction((mid) => {
-          const fn = window.__fv && window.__fv.state;
-          return Boolean(fn && fn.intake && String(fn.intake.filename || '').includes(`${mid}_echo`) && fn.rawview);
-        }, memoryId, { timeout: 8000 });
-        await page.click('[data-search-echo]');
-      } else if (verb === 'metadata') {
-        // Wait for the real image to load, then run the actual metadata extractor (the same code the
-        // metadata drawer runs) — the GPS row rendering is what fires the witness. The toolbar metaBtn
-        // is behind the games overlay, so drive the renderer directly (a player closes the overlay).
-        await page.waitForFunction((mid) => {
-          const fn = window.__fv && window.__fv.state;
-          return Boolean(fn && fn.intake && String(fn.intake.filename || '').includes(`${mid}_echo`) && fn.intake.bytes);
-        }, memoryId, { timeout: 8000 });
-        await page.evaluate(async () => {
-          const m = await import('/types/image/metadata.js');
-          await m.extract(window.__fv.state.intake);
-        });
-      } else if (verb === 'rawmode' || verb === 'diff' || verb === 'download') {
-        await page.waitForFunction((mid) => {
-          const fn = window.__fv && window.__fv.state;
-          return Boolean(fn && fn.intake && String(fn.intake.filename || '').includes(`${mid}_echo`) && fn.rawview);
-        }, memoryId, { timeout: 8000 });
-        if (verb === 'rawmode' || verb === 'diff') await page.evaluate((m) => window.__fv.setRawMode(m), mode || 'diff');
-        else await page.evaluate(() => window.__fv.downloadCurrent());
-      }
-      // verb === 'nested' needs no extra step — the navigated open is the witness.
+    const expectedKinds = probe.stage === 1 ? 'bits,boss,close,stagedev' : 'boss,close,stagedev';
+    if (landed.actualBoss
+        && landed.currentStage === probe.stage
+        && !landed.defeated
+        && landed.actionSource === 'dev-boss-jump'
+        && landed.stageSlots === '1,2,3,4,5'
+        && menu.bosses.join(',') === '1b,2b,3b,4b,5b'
+        && menu.cheats.join(',') === probe.cheats.join(',')
+        && menu.kinds.join(',') === expectedKinds
+        && menu.bits === (probe.stage === 1 ? 4 : 0)) {
+      pass(`Dev ${probe.stage}b lands on the real Stage ${probe.stage} boss and exposes exactly its active cheats`);
+    } else {
+      fail(`Dev ${probe.stage}b contract failed: ${JSON.stringify({ landed, menu, expected: probe.cheats })}`);
     }
-    await page.waitForSelector('[data-integrate-memory]:not([disabled])', { timeout: 5000 });
-    await page.click('[data-integrate-memory]');
-    if (i < 7) await page.click('[data-step="1"]');
+    await page.click('[data-dev="close"]');
   }
-  if (realVerbGates >= 5) pass(`Stage 9 echoes include ${realVerbGates} DISTINCT real-feature gates (raw Original, search, Diff, nested-path, metadata)`);
-  else fail(`Stage 9 expected >=5 real-feature echo gates, drove ${realVerbGates}`);
-  // Back to the board — the assembly gate + Defragmenter status live under the grid now.
-  await page.waitForSelector('[data-back-grid]', { timeout: 5000 });
-  await page.click('[data-back-grid]');
-  await page.waitForFunction(() => {
-    try {
-      const save = JSON.parse(localStorage.getItem('fv:games:metagame:v3'));
-      return Boolean(save.actions?.['9.memory_resolved'] && save.achievements?.['stage9.memory_resolved'] && save.achievements?.['stage9.full_capstone']);
-    } catch { return false; }
-  }, null, { timeout: 5000 });
-  await page.waitForSelector('[data-goto-final]', { timeout: 5000 });
-  await page.click('[data-goto-final]');
-  // The boss is now a REAL three-phase confrontation. The final choice is NOT exposed until the
-  // confrontation is won (boss never self-unlocks).
-  await page.waitForSelector('[data-field="confront"]', { timeout: 5000 });
-  const choiceLeaked = await page.$('[data-final-choice]');
-  if (!choiceLeaked) pass('Stage 9 final choice is gated behind the confrontation'); else fail('Stage 9 final choice exposed before the confrontation was won');
-  // Drive it deterministically through the same engine functions a player's clicks call: affirm each
-  // compaction with the recorded stance (Phase A), anchor each fragmentation trace — prior un-cheats
-  // concede instantly, the rest re-witness (Phase B), answer the core question (Phase C).
-  const confrontDone = await page.evaluate(() => window.__fvStage9.confront.run('seeker').completed);
-  if (confrontDone) pass('Stage 9 three-phase confrontation completed (compaction + fragmentation + core)'); else fail('Stage 9 confrontation did not complete');
-  // Conduct badges: run() affirms each compaction first-try (flawless) and — since the smoke did every
-  // prior un-cheat honestly — Phase B conceded every trace with no re-opens (all-traces-conceded).
-  const confrontBadges = await page.waitForFunction(() => {
-    try {
-      const a = JSON.parse(localStorage.getItem('fv:games:metagame:v3')).achievements || {};
-      return Boolean(a['stage9.flawless_compaction'] && a['stage9.all_traces_conceded']);
-    } catch { return false; }
-  }, null, { timeout: 5000 }).then(() => true).catch(() => false);
-  if (confrontBadges) pass('Stage 9 confront achievements unlocked (flawless compaction + all traces conceded)'); else fail('Stage 9 confront achievements not unlocked');
-  await page.waitForFunction(() => {
-    try { return Boolean(JSON.parse(localStorage.getItem('fv:games:metagame:v3')).stageState?.[9]?.confront?.completed); } catch { return false; }
-  }, null, { timeout: 5000 });
-  // Now the final question is reachable. Choose "understand" → the woven Synthesis epilogue.
-  await page.waitForSelector('[data-final-choice="understand"]:not([disabled])', { timeout: 5000 });
-  await page.click('[data-final-choice="understand"]');
-  await page.waitForFunction(() => {
-    try {
-      const save = JSON.parse(localStorage.getItem('fv:games:metagame:v3'));
-      return save.defeated?.includes(9) && save.stageState?.[9]?.final?.completed && save.stageState?.[9]?.final?.route === 'understand'
-        && Boolean(save.achievements?.['stage9.route_understand']);
-    } catch { return false; }
-  }, null, { timeout: 5000 });
-  pass('Stage 9 route achievement unlocked for the chosen final route (understand)');
-  const finalOutcome = await page.$eval('[data-field="finalOutcome"]', (el) => el.textContent);
-  if (/full capstone/i.test(finalOutcome) && /8 memories resolved, 8 integrated/.test(finalOutcome)) pass('Stage 9 final outcome summarizes the completed route'); else fail('Stage 9 final outcome summary unexpected: ' + finalOutcome);
-  // Post-confront rebuttal depth: the Defragmenter's completion voice reflects HOW the fight went.
-  // The smoke did every prior un-cheat honestly and affirmed each compaction first-try → the "clean"
-  // conduct line; it answered the core questions as 'seeker' → the seeker stance line.
-  const finalVoice = await page.$eval('.mg-stage9__final .mg-stage9__voice', (el) => el.textContent);
-  if (/nothing left for me to compact/i.test(finalVoice) && /still becoming/i.test(finalVoice)) pass('Stage 9 Defragmenter rebuttal reflects confront conduct + Phase-C stance'); else fail('Stage 9 conduct/stance rebuttal lines missing: ' + finalVoice);
-  // The "understand" route weaves the Synthesis epilogue from the eight chosen reflections + closer.
-  const synthesis = await page.$eval('[data-field="synthesis"]', (el) => el.textContent);
-  if (/Synthesis/.test(synthesis) && synthesis.length > 80) pass('Stage 9 understand route renders the woven Synthesis epilogue'); else fail('Stage 9 synthesis epilogue unexpected: ' + synthesis);
-  // The ending narration (awakeningText) now renders on completion; capstone gets the extra line.
-  const awakening = await page.$eval('[data-field="awakening"]', (el) => el.textContent);
-  if (/They were the awakening/i.test(awakening) && /Every memory answered back/i.test(awakening)) pass('Stage 9 renders the awakening ending (capstone)'); else fail('Stage 9 awakening ending unexpected: ' + awakening);
-  pass('Stage 9 resolves, integrates all memories, wins the confrontation, and completes Awakening');
+
+  const allFiveBundled = ['stage1', 'stage2', 'stage3', 'stage4', 'stage5']
+    .every((stage) => stageBundleReqs.has(stage) && !stageIndexReqs.has(stage));
+  if (allFiveBundled) pass('All five retained games load from generated bundles with current numbering');
+  else fail(`Retained bundle paths wrong: bundle=${[...stageBundleReqs]} index=${[...stageIndexReqs]}`);
+
   await page.click('.games-close');
 
   const btsOk = await page.evaluate(async () => {
-    for (const name of ['glyph_dungeon.bts', 'awakening.bts']) {
+    for (const name of ['glyph_dungeon.bts', 'protocol_codex.bts']) {
       await window.__fv.openViewerFile(`/docs/bts/${name}`);
       if (window.__fv.state.intake.filename !== name || window.__fv.state.type.id !== 'markdown') return false;
     }

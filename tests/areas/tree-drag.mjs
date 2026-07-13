@@ -17,23 +17,12 @@ export async function run(ctx) {
   if (!treeHiddenBefore) pass('tree-drag: single file opens a sidebar root before drag');
   else fail('tree-drag: sidebar hidden before drag');
 
-  // Simulate a drag from a tree file item to the workspace. The first pass builds a real
-  // two-file tree; the second pass below dispatches dragstart/drop on the actual row.
+  // Build a real two-file tree; the browser drag below exercises the actual DataTransfer
+  // effect negotiation between a sidebar row and the workspace copy target.
   await page.evaluate(async () => {
-    const { TREE_DRAG_TYPE } = await import('./core/filetree.js');
     // Build a synthetic File node representing sample.csv.
     const csvContent = 'a,b\n1,2\n';
     const file = new File([csvContent], 'sample.csv', { type: 'text/csv' });
-    const node = { name: 'sample.csv', path: 'sample.csv', file, dir: false };
-
-    const ws = document.getElementById('workspace');
-
-    // Simulate dragover with the tree drag type (so the handler calls preventDefault).
-    const overEvt = new DragEvent('dragover', { bubbles: true, cancelable: true });
-    Object.defineProperty(overEvt, 'dataTransfer', { value: { types: [TREE_DRAG_TYPE] } });
-    ws.dispatchEvent(overEvt);
-
-    // Build a minimal folder entry set to produce real rows, then drag a row programmatically.
     const entries = [
       { file: new File([window.__fv.state.rawview?.getValue() || '# hi'], 'welcome.md', { type: 'text/plain' }), path: 'welcome.md' },
       { file, path: 'sample.csv' },
@@ -70,27 +59,9 @@ export async function run(ctx) {
   });
   await page.waitForSelector('#editor .monaco-editor', { timeout: 10000 });
 
-  // Now simulate a real dragstart on the sample.csv row followed by a drop on the workspace.
-  await page.evaluate(async () => {
-    const { TREE_DRAG_TYPE } = await import('./core/filetree.js');
-    const csvRow = document.querySelector('.ft-row.ft-file[data-path="sample.csv"]');
-    if (!csvRow) return;
-    // Dispatch dragstart on the row to set _dragNode.
-    const dt = new DataTransfer();
-    dt.setData(TREE_DRAG_TYPE, 'sample.csv');
-    const startEvt = new DragEvent('dragstart', { bubbles: true, cancelable: true, dataTransfer: dt });
-    csvRow.dispatchEvent(startEvt);
-  });
-
-  // Drop onto the workspace.
-  await page.evaluate(async () => {
-    const { TREE_DRAG_TYPE } = await import('./core/filetree.js');
-    const ws = document.getElementById('workspace');
-    const dt = new DataTransfer();
-    dt.setData(TREE_DRAG_TYPE, 'sample.csv');
-    const dropEvt = new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer: dt });
-    ws.dispatchEvent(dropEvt);
-  });
+  // Aim at a visible workspace surface. The #workspace box spans the preview iframe too, whose
+  // centre is not a valid top-document drag target; the event bubbles from #rawPane to workspace.
+  await page.locator('.ft-row.ft-file[data-path="sample.csv"]').dragTo(page.locator('#rawPane'));
 
   await page.waitForSelector('.sbs-overlay', { timeout: 10000 });
   const sbsNames = await page.$$eval('.sbs-overlay .sbs-fname', (els) => els.map((e) => e.textContent));
@@ -118,23 +89,18 @@ export async function run(ctx) {
   });
   await page.click('#ftExpandBtn');
   await page.waitForSelector('#fileTree .ft-file[data-path="src/a.txt"]', { timeout: 8000 });
-  await page.evaluate(() => {
-    const src = document.querySelector('#fileTree .ft-file[data-path="src/a.txt"]');
-    const folders = [...document.querySelectorAll('#fileTree .ft-folder')];
-    const dest = folders.find((row) => row.textContent.includes('dest'));
-    const dt = new DataTransfer();
-    src.dispatchEvent(new DragEvent('dragstart', { bubbles: true, cancelable: true, dataTransfer: dt }));
-    dest.dispatchEvent(new DragEvent('dragover', { bubbles: true, cancelable: true, dataTransfer: dt }));
-    dest.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer: dt }));
-  });
+  const sourceRow = page.locator('#fileTree .ft-file[data-path="src/a.txt"]');
+  const destinationFolder = page.locator('#fileTree .ft-folder').filter({ hasText: 'dest' });
+  await sourceRow.dragTo(destinationFolder);
   await page.waitForSelector('#fileTree .ft-file[data-path="dest/a.txt"].ft-moved', { timeout: 8000 });
   const movedState = await page.evaluate(() => ({
     move: window.__fv.state.folderMoves.get('src/a.txt'),
     indicator: document.querySelector('#fileTree .ft-file[data-path="dest/a.txt"] .ft-move-dest')?.textContent || '',
+    overlays: document.querySelectorAll('.sbs-overlay').length,
   }));
-  if (movedState.move === 'dest/a.txt' && /dest\/a\.txt/.test(movedState.indicator))
-    pass('tree-drag: folder drop records virtual move + destination indicator');
-  else fail('tree-drag: move=' + movedState.move + ' indicator=' + movedState.indicator);
+  if (movedState.move === 'dest/a.txt' && /dest\/a\.txt/.test(movedState.indicator) && movedState.overlays === 0)
+    pass('tree-drag: real folder drop records move without opening side-by-side');
+  else fail('tree-drag: move=' + movedState.move + ' indicator=' + movedState.indicator + ' overlays=' + movedState.overlays);
 
   const movedZip = await page.evaluate(async () => {
     const { exportFolderZip } = await import('./core/folder-export.js');

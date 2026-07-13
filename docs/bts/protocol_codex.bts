@@ -1,7 +1,7 @@
 # Protocol Codex BTS
 
-Stage 6 is a small deck-battle proof for file-gated combat rules.
+Stage 5 is a small deck-battle proof for file-gated combat rules.
 
-The Refused Connection starts in permanent `PROTOCOL MISMATCH`. Opening the codex chapter through the viewer records `6.protocol_ch9_read`, unlocks Chapter 9, and makes the SYN, ACK, and Signal sequence meaningful.
+The Refused Connection starts in permanent `PROTOCOL MISMATCH`. Opening the codex chapter through the viewer records `5.protocol_ch9_read`, unlocks Chapter 9, and makes the SYN, ACK, and Signal sequence meaningful.
 
 The fight is deliberately compact: three phases, one shared hand, and clear protocol rules. The important contract is that reading the external clue changes the boss from impossible to negotiable.

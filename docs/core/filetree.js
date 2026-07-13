@@ -265,7 +265,9 @@ export function renderTree(host, root, {
       row.addEventListener('dragstart', (e) => {
         _dragNode = item.node.sidebarInnerPath ? { ...item.node, path: item.node.sidebarInnerPath } : item.node;
         e.dataTransfer.setData(TREE_DRAG_TYPE, item.node.path);
-        e.dataTransfer.effectAllowed = 'move';
+        // The same row can be moved into a sidebar folder or copied into a side-by-side view.
+        // Advertise both so each destination can negotiate the operation it actually performs.
+        e.dataTransfer.effectAllowed = 'copyMove';
       });
       row.addEventListener('dragend', () => { _dragNode = null; });
     }
