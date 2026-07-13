@@ -7,7 +7,7 @@ import { wireIntake, intakeFromFile, withSourceText, LARGE_FILE_BYTES } from './
 import { getDraggedTreeNode, TREE_DRAG_TYPE } from './filetree.js';
 import { initOffline, offlineMissHtml, initOfflineBadge } from './offline.js';
 import * as persistence from './persistence.js';
-import { mountPreview, captureBodyHtml } from './iframe.js';
+import { mountPreview, captureBodyHtml, applyPreviewHostStyle } from './iframe.js';
 import { getModel, monacoOptions, renderSettings, persistGlobalKey, readGlobalKey, syncModelPreset } from './settings.js';
 import { previewStyle } from './settings-schema.js';
 import { initLayout, layoutTopbar, toggleMoreMenu, closeMoreMenu, updateExportButton, closeExportMenu, toggleExportMenu, applyLayout, applyPreviewPaneWidth, initSplitDivider } from './layout.js';
@@ -16,7 +16,7 @@ import { initCompare, startCompare, onComparePicked, stopCompare, resetCompare, 
 import { initRawPane, buildRawView, onRawEdited, hasUnsavedWork, confirmDiscard, setRawMode, syncRawModeButtons, takeScreenshot, downloadCurrent, exitWysiwygForFeature } from './rawpane.js';
 import { initFolder, loadFolder, openRepoView, onTreeSearchInput, searchTreeContents, exportFolder, folderContext, setTree, initTreeResize, onTreeKey, showFolderLoading, hideFolderLoading } from './folder.js';
 import { clearArchiveTree, mountArchiveTree } from './archive-tree.js';
-import { $, isMobile, state, toast, themeIsDark, escapeHtml, debounce } from './state.js';
+import { $, isMobile, state, toast, themeIsDark, escapeHtml, debounce, activeRawviews } from './state.js';
 import { initCompanionUi, isCompanionAvailable, hasCompanionFolderRoot, setCompanionLinked, resetCompanionFolderRoot, resolveDroppedFolderRoot, activateCompanionSidebarRoot, absolutePathForFile, startWatching, syncSaveBtn, onSaveClick, onDeleteClick, renderCompanionSettings, detectCompanionOnStartup, tryAutoLink, deleteTreePath, revealTreePath, onConnButtonClick } from './companion-ui.js';
 import { initSessionTree, updateSessionTree, createNewFile, flushSessionEdit } from './session-tree.js';
 import { initViewerOpen, openExampleFile, openViewerFile, openBlobFile, searchViewerFile } from './viewer-open.js';
@@ -412,6 +412,10 @@ async function renderPreview() {
   // sandboxed iframe, which can't reach blob: URLs. Safe: media bytes aren't markup.
   if (rendered.parentNode) {
     $('previewHost').appendChild(rendered.parentNode);
+    // parentNode renderers normally bypass previewStyle. A renderer can opt in (styledHost) to have
+    // the generic Preview settings (width/font/line-height) applied to its host — used by csv/json,
+    // whose viewers most plausibly want them. Re-applied on every render, so live changes stick.
+    if (rendered.styledHost) applyPreviewHostStyle(rendered.parentNode, previewStyle(snapshot.settings));
     if (rendered.archiveTree && request.isCurrent()) {
       // The mounted archive root deliberately outlives this preview: opening one entry replaces
       // the preview while the root remains available for sibling navigation. Transfer its
@@ -537,7 +541,10 @@ function openSettings() {
 // Re-apply settings after any change. Editor options apply live; the preview only
 // re-renders when a viewer setting that affects rendering changed (syncScroll reads live).
 async function onSettingsChange(model, changedKey) {
-  state.rawview?.updateOptions(monacoOptions(model));
+  const editorOpts = monacoOptions(model);
+  state.rawview?.updateOptions(editorOpts);
+  // Live-propagate editor settings to any open side-by-side / compare Monaco instances too.
+  for (const rv of activeRawviews) rv.updateOptions(editorOpts);
   // "Show all file types" is a global pref applied to the type dropdown immediately.
   if (changedKey === 'showAllTypes') {
     persistGlobalKey('showAllTypes', model.values.showAllTypes);

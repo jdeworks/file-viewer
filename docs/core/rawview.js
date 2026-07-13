@@ -39,10 +39,26 @@ export async function createRawView(host, {
   let compareModel = null;
   const diffOriginal = () => compareModel || originalModel;
 
+  // tabSize / insertSpaces are MODEL options (ITextModelUpdateOptions), NOT editor options — Monaco
+  // ignores them on editor construction/updateOptions, so the sidebar's "Tab size" / "Insert spaces
+  // (vs tabs)" controls did nothing. Apply them to every model here instead. (settings audit 2026-07-13)
+  let lastModelOpts = null;
+  const applyModelOptions = (opts) => {
+    const mo = {};
+    if (opts?.tabSize != null) mo.tabSize = opts.tabSize;
+    if (opts?.insertSpaces != null) mo.insertSpaces = opts.insertSpaces;
+    if (!Object.keys(mo).length) return;
+    lastModelOpts = mo;
+    originalModel.updateOptions(mo);
+    modifiedModel.updateOptions(mo);
+    compareModel?.updateOptions(mo);
+  };
+
   const std = monaco.editor.create(stdHost, {
     model: modifiedModel, automaticLayout: true,
     theme: theme === 'dark' ? 'vs-dark' : 'vs', ...options,
   });
+  applyModelOptions(options);
   let diff = null;
   let mode = 'current';
   let decorations = [];
@@ -158,7 +174,7 @@ export async function createRawView(host, {
     setLanguage(lang) { monaco.editor.setModelLanguage(originalModel, lang); monaco.editor.setModelLanguage(modifiedModel, lang); if (compareModel) monaco.editor.setModelLanguage(compareModel, lang); },
     // Compare the current file against another file's text (current ↔ other). Switches to diff.
     setCompare(text, lang) {
-      if (!compareModel) compareModel = monaco.editor.createModel(text, lang || language);
+      if (!compareModel) { compareModel = monaco.editor.createModel(text, lang || language); if (lastModelOpts) compareModel.updateOptions(lastModelOpts); }
       else compareModel.setValue(text);
       if (lang) monaco.editor.setModelLanguage(compareModel, lang);
       setMode('diff');
@@ -171,7 +187,7 @@ export async function createRawView(host, {
     },
     hasCompare: () => !!compareModel,
     setTheme(t) { monaco.editor.setTheme(t === 'dark' ? 'vs-dark' : 'vs'); },
-    updateOptions(opts) { std.updateOptions(opts); diff?.updateOptions(opts); },
+    updateOptions(opts) { std.updateOptions(opts); diff?.updateOptions(opts); applyModelOptions(opts); },
     layout() { std.layout(); diff?.layout(); if (mode === 'diff' || mode === 'movediff') diff?.updateOptions({ renderSideBySide: !isNarrow() }); },
     focus() { std.focus(); },
     // Magic selector: highlight + reveal a 1-based inclusive line range on the std editor.

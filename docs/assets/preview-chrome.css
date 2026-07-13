@@ -618,11 +618,17 @@
 .prproj-note { font-size: .8em; color: var(--fg-2); margin-top: 10px; font-style: italic; }
 /* ELF / PE / Mach-O executables */
 .exe-preview { padding: 12px; } .exe-header { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
-.exe-badge { background: #1a2e1a; color: #86efac; font: 700 11px ui-monospace,monospace; padding: 2px 8px; border-radius: 4px; } .exe-format { font-weight: 600; font-size: .95em; }
+.exe-badge { display: inline-flex; align-items: center; background: #1a2e1a; color: #86efac; font: 700 11px ui-monospace,monospace; padding: 2px 8px; border-radius: 4px; } .exe-format { font-weight: 600; font-size: .95em; }
 .exe-table { border-collapse: collapse; font-size: 13px; margin-bottom: 12px; width: 100%; } .exe-table td { padding: 3px 0; border-bottom: 1px solid var(--border); } .exe-key { padding: 3px 14px 3px 0; color: var(--fg-2); white-space: nowrap; }
 .exe-hardening { margin-top: 10px; } .exe-harden-label { font-size: .75em; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--fg-2); margin-bottom: 6px; }
 .exe-harden-chip { display: inline-block; background: #052e16; color: #86efac; border: 1px solid #166534; border-radius: 4px; padding: 1px 7px; font-size: .8em; margin: 2px; }
 .exe-note { font-size: .85em; color: var(--fg-2); margin-top: 8px; }
+.exe-sha256 { font: 12px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace; overflow-wrap: anywhere; word-break: break-all; }
+.exe-vt { margin-top: 14px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 7px; background: var(--bg-2); }
+.exe-vt-link { color: var(--accent); font-weight: 650; overflow-wrap: anywhere; }
+.exe-vt-note,.exe-vt-terms { margin: 5px 0 0; color: var(--fg-2); font-size: 12px; line-height: 1.45; }
+.exe-vt-terms { font-style: italic; }
+.exe-vt-unavailable { margin: 14px 0 0; padding: 9px 11px; border-left: 3px solid var(--border); border-radius: 4px; background: var(--bg-2); color: var(--fg-2); font-size: 12px; line-height: 1.45; overflow-wrap: anywhere; }
 /* GeoJSON / TopoJSON */
 .geo-preview { padding: 12px; } .geo-header { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
 .geo-badge { background: #14532d; color: #86efac; font: 700 11px ui-monospace,monospace; padding: 2px 8px; border-radius: 4px; } .geo-title { font-weight: 600; font-size: .95em; }
@@ -748,6 +754,15 @@
 /* Parent-rendered JSON/XML element tree (mirrors preview.css; parent theme vars). */
 .qp-preview .json-tree { font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; }
 .qp-preview .json-tree details { margin: 0; }
+
+/* Parent-mounted previews that opt into the generic Preview settings (csv/json, via styledHost).
+   Mirrors preview.css's iframe-body rules so the sidebar's width/font/line-height actually apply to
+   these table/tree views too — they mount in the parent doc, not the iframe. (settings audit 2026-07-13) */
+.fv-preview-host.fv-width-page,
+.fv-preview-host.fv-width-phone,
+.fv-preview-host.fv-width-custom { max-width: var(--fv-maxw, none); margin-inline: auto; }
+.csv-doc.fv-preview-host .te-table { font-size: var(--fv-fontsize, 13px); }
+.qp-preview.fv-preview-host .json-tree { font-size: var(--fv-fontsize, 13px); line-height: var(--fv-lh, 1.5); padding: var(--fv-pad, 14px); }
 .qp-preview .json-tree summary { cursor: pointer; list-style: none; }
 .qp-preview .json-tree summary::-webkit-details-marker { display: none; }
 .qp-preview .json-tree summary::before { content: "\25BE"; display: inline-block; width: 1em; color: var(--fg-2, #888); }

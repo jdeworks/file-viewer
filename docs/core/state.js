@@ -41,6 +41,11 @@ export function toast(msg, ms = 2600) {
   toast._t = setTimeout(() => (t.hidden = true), ms);
 }
 
+// Overlay-local Monaco rawviews (side-by-side panes + compare diff) register here so a live editor
+// settings change reaches them too — the primary editor is updated via state.rawview separately.
+// Controllers add themselves on create and remove themselves on dispose. (settings audit 2026-07-13)
+export const activeRawviews = new Set();
+
 // Shared pure helpers used across the shell + extracted modules. themeIsDark reads the current
 // theme off the root element (applyTheme, which stays in app.js, writes it).
 export const themeIsDark = () => document.documentElement.dataset.theme === 'dark';

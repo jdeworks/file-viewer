@@ -245,5 +245,6 @@ export async function render(intake, ctx) {
     wireSourceLinks(host, { idPrefix: 'json-line' });
   }
 
-  return { parentNode: host, bodyHtml, hadUnsafe: false };
+  // styledHost: let app.js apply the generic Preview settings (font-size/line-height) to the tree.
+  return { parentNode: host, bodyHtml, hadUnsafe: false, styledHost: true };
 }

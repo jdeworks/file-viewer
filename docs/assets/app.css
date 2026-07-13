@@ -775,7 +775,9 @@ body:has(.cache-modal-backdrop) .construction-badge { visibility: hidden; }
 .cm-size { font: 12px ui-monospace, monospace; color: var(--fg-2); min-width: 56px; text-align: right; }
 .cm-foot { display: flex; flex: 0 0 auto; align-items: center; gap: 10px; padding: 12px 16px;
   border-top: 1px solid var(--border); background: var(--bg); }
-.cm-total { flex: 1; font-size: 13px; font-weight: 600; }
+.cm-total { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; font-weight: 600; }
+.cm-clear { background: transparent; border: 1px solid var(--border); color: var(--fg-2); border-radius: 8px; padding: 8px 14px; cursor: pointer; font-size: 13px; }
+.cm-clear:hover { color: var(--danger, #d1242f); border-color: color-mix(in srgb, var(--danger, #d1242f) 45%, transparent); }
 .cm-save { background: var(--accent); color: var(--accent-fg); border: 0; border-radius: 8px; padding: 8px 16px; cursor: pointer; font-size: 13px; }
 .cache-modal button:focus-visible, .cache-modal input:focus-visible { outline: 3px solid color-mix(in srgb, var(--accent) 75%, white); outline-offset: 2px; }
 .offline-status.checking, .offline-status.preparing { color: var(--fg-2); }

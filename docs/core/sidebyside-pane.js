@@ -7,11 +7,11 @@
 // a dedicated createRawView() Monaco editor (lazy: created the first time Source is shown) plus a
 // Download of the editor's current text. Preview-only panes (images/PDF/binary/audio/video) get
 // just the rendered preview + a Download of the original bytes.
-import { themeIsDark, escapeHtml } from './state.js';
+import { themeIsDark, escapeHtml, state, activeRawviews } from './state.js';
 import { pickType } from './detect.js';
 import { matchKnown } from '../known/registry.generated.js';
 import { mountPreview } from './iframe.js';
-import { previewStyle } from './settings-schema.js';
+import { previewStyle, applyMonacoOptions } from './settings-schema.js';
 import { createRawView } from './rawview.js';
 import { buildPaneToolbar } from './sidebyside-toolbar.js';
 import { createLatestRequestController } from './request-lifecycle.js';
@@ -141,8 +141,10 @@ export function buildPane(paneEl, intake) {
       originalText: text, currentText: text,
       language: resolveLanguage(type, intake),
       theme: themeIsDark() ? 'dark' : 'light',
-      options: { readOnly: false },
+      // Honor the user's editor settings (font/wrap/tab size/…) here too, not just in the main pane.
+      options: { readOnly: false, ...applyMonacoOptions(state.settingsModel?.values || {}) },
     });
+    if (rawview) activeRawviews.add(rawview);
     return rawview;
   }
 
@@ -249,6 +251,7 @@ export function buildPane(paneEl, intake) {
     destroy() {
       destroyed = true;
       previewRequests.invalidate('side-by-side pane destroyed');
+      if (rawview) activeRawviews.delete(rawview);
       rawview?.dispose();
       rawview = null;
       previewCtrl?.destroy();

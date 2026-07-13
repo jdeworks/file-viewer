@@ -685,6 +685,40 @@ await scenario('v1 to v2 update prompts, cleans only stale app caches, and reeva
   } finally { await context.close(); }
 });
 
+await scenario('Clear offline data empties the cache, resets the pill, and is guarded by confirm', async () => {
+  const { context, page } = await fresh();
+  try {
+    await gotoHarness(page); await waitForController(page);
+    await page.evaluate(() => localStorage.setItem('fv:settings:global', JSON.stringify({
+      version: 1,
+      values: { enableEmulators: true },
+    })));
+    // Save everything, reach the green ready state.
+    await openModal(page); await page.click('.cm-all'); await page.click('.cm-save');
+    await page.waitForSelector('#offlineStatus.ready', { timeout: 20000 });
+    assert.ok((await cachePaths(page)).length > 0, 'precache must populate the cache first');
+    assert.equal(await page.evaluate(() => localStorage.getItem('fv:offline:savedVersion')), 'rr-v1');
+
+    // A cancelled confirm must leave the save fully intact.
+    page.once('dialog', (dialog) => dialog.dismiss());
+    await openModal(page); await page.click('.cm-clear');
+    assert.ok(await page.isVisible('.cache-modal'), 'cancelling keeps the modal open');
+    await page.keyboard.press('Escape'); await page.waitForSelector('.cache-modal', { state: 'detached' });
+    await page.waitForSelector('#offlineStatus.ready', { timeout: 5000 });
+    assert.ok((await cachePaths(page)).length > 0, 'a cancelled clear preserves the cache');
+
+    // An accepted confirm empties every owned cache and returns the pill to idle.
+    page.once('dialog', (dialog) => dialog.accept());
+    await openModal(page); await page.click('.cm-clear');
+    await page.waitForSelector('.cache-modal', { state: 'detached' });
+    await page.waitForSelector('#offlineStatus.idle', { timeout: 15000 });
+    assert.deepEqual(await cachePaths(page), [], 'clear removes every cached asset, including the status record');
+    assert.equal(await page.evaluate(() => localStorage.getItem('fv:offline:savedVersion')), null);
+    assert.equal(await page.evaluate(async () =>
+      (await caches.keys()).some((key) => key.startsWith('file-viewer-'))), false, 'no owned cache remains');
+  } finally { await context.close(); }
+});
+
 await browser.close();
 await new Promise((resolve) => server.close(resolve));
 

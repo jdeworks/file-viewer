@@ -133,5 +133,6 @@ export async function render(intake, ctx) {
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   });
 
-  return { parentNode: host };
+  // styledHost: let app.js apply the generic Preview settings (width/font-size) to this table view.
+  return { parentNode: host, styledHost: true };
 }

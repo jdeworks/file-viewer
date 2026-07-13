@@ -8,9 +8,10 @@
 //
 // This module owns only the mode-bar + diff orchestration; the panes themselves live in
 // sidebyside-pane.js. It is overlay-local: the diff rawview is NOT the global state.rawview.
-import { themeIsDark } from './state.js';
+import { themeIsDark, state, activeRawviews } from './state.js';
 import { pickType } from './detect.js';
 import { createRawView } from './rawview.js';
+import { applyMonacoOptions } from './settings-schema.js';
 import { sourceTextOf } from './intake.js';
 
 const MODES = ['current', 'raw', 'preview', 'diff', 'merge'];
@@ -92,13 +93,16 @@ export function initModeBar(headEl, body, panes, { initialMode } = {}) {
       currentText: sourceTextOf(panes[1].intake),
       language: resolveLanguage(type, intake1),
       theme: themeIsDark() ? 'dark' : 'light',
-      options: { readOnly: true, originalEditable: false },
+      // Honor the user's editor settings (font/wrap/tab size/…) in the compare diff too.
+      options: { readOnly: true, originalEditable: false, ...applyMonacoOptions(state.settingsModel?.values || {}) },
     });
+    if (diffRv) activeRawviews.add(diffRv);
     diffRv.setMode('diff');
     return diffRv;
   }
 
   function disposeDiff() {
+    if (diffRv) activeRawviews.delete(diffRv);
     diffRv?.dispose();
     diffRv = null;
     diffHost.innerHTML = '';

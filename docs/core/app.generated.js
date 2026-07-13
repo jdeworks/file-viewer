@@ -776,6 +776,7 @@ function initOffline(statusEl) {
   let totalAssets = 0;
   let pendingMessage = null;
   let activePrecacheRequest = null;
+  let activeClearRequest = null;
   let requestSequence = 0;
   const nextRequestId = () => {
     const random = new Uint32Array(1);
@@ -837,8 +838,34 @@ function initOffline(statusEl) {
       fullAvailable = false;
       localStorage.removeItem(VKEY);
       setState("error", '<span aria-hidden="true">!</span> Offline save incomplete — retry', d.error || "Some files could not be saved. Retry while online.");
+    } else if (d.type === "cache-cleared") {
+      if (activeClearRequest && d.requestId && d.requestId !== activeClearRequest) return;
+      markCleared();
     }
   });
+  const markCleared = () => {
+    activeClearRequest = null;
+    statusKnown = true;
+    fullAvailable = false;
+    cachedAssets = 0;
+    totalAssets = 0;
+    localStorage.removeItem(VKEY);
+    rest();
+  };
+  const clearOffline = async () => {
+    activeClearRequest = nextRequestId();
+    setState("caching", '<span class="off-spin"></span> Clearing offline data…');
+    if (send({ type: "clear-cache", requestId: activeClearRequest })) return;
+    try {
+      if (window.caches) {
+        for (const key2 of await caches.keys()) {
+          if (key2 === "file-viewer" || key2.startsWith("file-viewer-")) await caches.delete(key2);
+        }
+      }
+    } catch {
+    }
+    markCleared();
+  };
   statusEl.style.cursor = "pointer";
   statusEl.setAttribute("role", "button");
   statusEl.tabIndex = 0;
@@ -854,7 +881,7 @@ function initOffline(statusEl) {
       }
     }, (error) => {
       setState("error", '<span aria-hidden="true">!</span> Offline options unavailable — retry', error?.message || String(error));
-    });
+    }, clearOffline);
   };
   statusEl.addEventListener("click", onActivate);
   statusEl.addEventListener("keydown", (e) => {
@@ -1066,7 +1093,7 @@ var CACHE_PRESETS = [
 var DEFAULT_CACHE_BUNDLES = new Set(CACHE_PRESETS[0].bundles);
 var cacheModalOpening = false;
 async function openCacheModal(onConfirm, onError = () => {
-}) {
+}, onClear = null) {
   const existing = document.querySelector(".cache-modal");
   if (existing) {
     existing.querySelector(".cm-close")?.focus();
@@ -1099,7 +1126,7 @@ async function openCacheModal(onConfirm, onError = () => {
   });
   const root = document.createElement("div");
   root.className = "cache-modal-backdrop";
-  root.innerHTML = '<div class="cache-modal" role="dialog" aria-modal="true" aria-labelledby="cacheModalTitle"><header class="cm-head"><h2 id="cacheModalTitle">Save for offline</h2><button type="button" class="cm-close" aria-label="Close">✕</button></header><p class="cm-intro">Choose what to cache so it works without a connection. Sizes are downloads.</p><div class="cm-toolbar"><button type="button" class="cm-all">Select all</button><button type="button" class="cm-none">Deselect all</button>' + CACHE_PRESETS.map((p) => '<button type="button" class="cm-preset" data-preset="' + p.id + '" title="' + p.title + '" aria-pressed="' + (p.id === "common-v") + '">' + p.label + "</button>").join("") + '<span class="cm-grand-total"></span></div><div class="cm-groups"></div><footer class="cm-foot"><span class="cm-total"></span><button type="button" class="cm-save">Save selected</button></footer></div>';
+  root.innerHTML = '<div class="cache-modal" role="dialog" aria-modal="true" aria-labelledby="cacheModalTitle"><header class="cm-head"><h2 id="cacheModalTitle">Save for offline</h2><button type="button" class="cm-close" aria-label="Close">✕</button></header><p class="cm-intro">Choose what to cache so it works without a connection. Sizes are downloads.</p><div class="cm-toolbar"><button type="button" class="cm-all">Select all</button><button type="button" class="cm-none">Deselect all</button>' + CACHE_PRESETS.map((p) => '<button type="button" class="cm-preset" data-preset="' + p.id + '" title="' + p.title + '" aria-pressed="' + (p.id === "common-v") + '">' + p.label + "</button>").join("") + '<span class="cm-grand-total"></span></div><div class="cm-groups"></div><footer class="cm-foot">' + (onClear ? '<button type="button" class="cm-clear">Clear offline data</button>' : "") + '<span class="cm-total"></span><button type="button" class="cm-save">Save selected</button></footer></div>';
   const previousActive = document.activeElement instanceof HTMLElement ? document.activeElement : null;
   document.body.appendChild(root);
   document.body.classList.add("cache-modal-open");
@@ -1214,6 +1241,11 @@ async function openCacheModal(onConfirm, onError = () => {
     if (previousActive?.isConnected) previousActive.focus();
   };
   root.querySelector(".cm-close").addEventListener("click", close);
+  root.querySelector(".cm-clear")?.addEventListener("click", () => {
+    if (!confirm("Remove all files saved for offline use?\n\nThe viewer keeps working while you’re online, and your settings and edits are kept. You can save offline again anytime.")) return;
+    close();
+    onClear();
+  });
   root.addEventListener("click", (e) => {
     if (e.target === root) close();
   });
@@ -1784,6 +1816,20 @@ function buildSrcdoc({ bodyHtml, theme, extraHead = "", style = {} }) {
   const rootStyle = vars.length ? `<style>:root{${vars.join("")}}</style>` : "";
   const bodyClass = bodyClasses.length ? ' class="' + bodyClasses.join(" ") + '"' : "";
   return '<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1">\n' + earlyThemeStyle(theme) + "<style>" + BASE_CSS + "</style>\n" + rootStyle + extraHead + "\n</head>\n<body" + bodyClass + ">\n" + bodyHtml + "\n<script>" + BRIDGE + "<\/script>\n</body>\n</html>";
+}
+function applyPreviewHostStyle(el, style = {}) {
+  if (!el) return;
+  el.classList.add("fv-preview-host");
+  for (const mode of ["available", "unrestricted", "page", "phone", "custom"]) {
+    el.classList.toggle("fv-width-" + mode, style.sizingMode === mode);
+  }
+  el.classList.toggle("fv-reader-sepia", style.readerTheme === "sepia");
+  el.classList.toggle("fv-reader-dark", style.readerTheme === "dark");
+  el.style.setProperty("--fv-maxw", Number.isFinite(style.maxWidth) ? style.maxWidth + "px" : "none");
+  el.style.setProperty("--fv-overflow-x", style.overflowX === "auto" ? "auto" : "hidden");
+  if (Number.isFinite(style.fontSize)) el.style.setProperty("--fv-fontsize", style.fontSize + "px");
+  if (Number.isFinite(style.lineHeight)) el.style.setProperty("--fv-lh", String(style.lineHeight));
+  if (Number.isFinite(style.padding)) el.style.setProperty("--fv-pad", style.padding + "px");
 }
 function injectBridge(doc) {
   const tag = "<script>" + BRIDGE + "<\/script>";
@@ -2715,12 +2761,24 @@ async function createRawView(host, {
   const modifiedModel = monaco.editor.createModel(currentText, language);
   let compareModel = null;
   const diffOriginal = () => compareModel || originalModel;
+  let lastModelOpts = null;
+  const applyModelOptions = (opts) => {
+    const mo = {};
+    if (opts?.tabSize != null) mo.tabSize = opts.tabSize;
+    if (opts?.insertSpaces != null) mo.insertSpaces = opts.insertSpaces;
+    if (!Object.keys(mo).length) return;
+    lastModelOpts = mo;
+    originalModel.updateOptions(mo);
+    modifiedModel.updateOptions(mo);
+    compareModel?.updateOptions(mo);
+  };
   const std = monaco.editor.create(stdHost, {
     model: modifiedModel,
     automaticLayout: true,
     theme: theme === "dark" ? "vs-dark" : "vs",
     ...options
   });
+  applyModelOptions(options);
   let diff = null;
   let mode = "current";
   let decorations = [];
@@ -2844,8 +2902,10 @@ async function createRawView(host, {
     },
     // Compare the current file against another file's text (current ↔ other). Switches to diff.
     setCompare(text, lang) {
-      if (!compareModel) compareModel = monaco.editor.createModel(text, lang || language);
-      else compareModel.setValue(text);
+      if (!compareModel) {
+        compareModel = monaco.editor.createModel(text, lang || language);
+        if (lastModelOpts) compareModel.updateOptions(lastModelOpts);
+      } else compareModel.setValue(text);
       if (lang) monaco.editor.setModelLanguage(compareModel, lang);
       setMode("diff");
     },
@@ -2863,6 +2923,7 @@ async function createRawView(host, {
     updateOptions(opts) {
       std.updateOptions(opts);
       diff?.updateOptions(opts);
+      applyModelOptions(opts);
     },
     layout() {
       std.layout();
@@ -7738,7 +7799,7 @@ function clearArchiveTree({ keepRoot = false } = {}) {
 }
 
 // ../../docs/core/app.js
-import { $ as $12, isMobile as isMobile5, state as state19, toast as toast14, themeIsDark as themeIsDark2, escapeHtml as escapeHtml4, debounce as debounce2 } from "./state.js";
+import { $ as $12, isMobile as isMobile5, state as state19, toast as toast14, themeIsDark as themeIsDark2, escapeHtml as escapeHtml4, debounce as debounce2, activeRawviews } from "./state.js";
 
 // ../../docs/core/companion-ui.js
 import { $ as $10, state as state16, toast as toast13, escapeHtml as escapeHtml3 } from "./state.js";
@@ -10136,6 +10197,7 @@ async function renderPreview3() {
   clearMountedPreview();
   if (rendered.parentNode) {
     $12("previewHost").appendChild(rendered.parentNode);
+    if (rendered.styledHost) applyPreviewHostStyle(rendered.parentNode, previewStyle(snapshot.settings));
     if (rendered.archiveTree && request.isCurrent()) {
       mountArchiveTree(rendered.archiveTree, rendered.openEntry, loadIntake3, intake);
     }
@@ -10249,7 +10311,9 @@ function openSettings2() {
   renderCompanionSettings($12("settingsBody"));
 }
 async function onSettingsChange(model, changedKey) {
-  state19.rawview?.updateOptions(monacoOptions(model));
+  const editorOpts = monacoOptions(model);
+  state19.rawview?.updateOptions(editorOpts);
+  for (const rv of activeRawviews) rv.updateOptions(editorOpts);
   if (changedKey === "showAllTypes") {
     persistGlobalKey("showAllTypes", model.values.showAllTypes);
     if (state19.intake && state19.type) {

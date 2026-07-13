@@ -11,7 +11,7 @@
 // an update and installs a new SW; (2) the cache is NAMED per version, so a new SW serves a single
 // CONSISTENT asset set instead of a stale mix of old+new modules (the version-skew that looked like
 // a hang). Keep this line in the exact `const VERSION = '...';` shape — the generator rewrites it.
-const VERSION = 'c536caeeb7c3';   // stamped by scripts/gen-asset-manifest.mjs
+const VERSION = '0b0a6449ed21';   // stamped by scripts/gen-asset-manifest.mjs
 const CACHE_PREFIX = 'file-viewer-';
 const CACHE = 'file-viewer-' + VERSION;
 const SCOPE = self.registration.scope;
@@ -186,11 +186,29 @@ async function status(client) {
   }, client);
 }
 
+// Remove every cache this app owns — the current version plus any stragglers from older versions.
+// The saved-state record lives inside CACHE (STATUS_KEY), so deleting it also resets the offline
+// status back to idle with no separate bookkeeping. Cache-on-use naturally repopulates as files are
+// opened again; settings and edits live in localStorage and are untouched by this.
+async function clearCaches(client, requestId) {
+  let removed = 0;
+  for (const k of await caches.keys()) {
+    if (k === 'file-viewer' || k.startsWith(CACHE_PREFIX)) {
+      if (await caches.delete(k)) removed++;
+    }
+  }
+  await reply({ type: 'cache-cleared', removed }, client, requestId);
+}
+
 self.addEventListener('message', (e) => {
   if (!e.data) return;
   if (e.data.type === 'precache') {
     const requestId = typeof e.data.requestId === 'string' ? e.data.requestId : null;
     e.waitUntil(enqueuePrecache(e.data.files, e.source, requestId));
+  }
+  else if (e.data.type === 'clear-cache') {
+    const requestId = typeof e.data.requestId === 'string' ? e.data.requestId : null;
+    e.waitUntil(clearCaches(e.source, requestId));
   }
   else if (e.data.type === 'status') e.waitUntil(status(e.source));
   // The page's update banner asks us to take over once the user clicks Reload; activating now fires

@@ -22,6 +22,7 @@ export function initOffline(statusEl) {
   let totalAssets = 0;
   let pendingMessage = null;
   let activePrecacheRequest = null;
+  let activeClearRequest = null;
   let requestSequence = 0;
 
   const nextRequestId = () => {
@@ -92,8 +93,41 @@ export function initOffline(statusEl) {
       fullAvailable = false;
       localStorage.removeItem(VKEY);
       setState('error', '<span aria-hidden="true">!</span> Offline save incomplete — retry', d.error || 'Some files could not be saved. Retry while online.');
+    } else if (d.type === 'cache-cleared') {
+      // Only react to the clear this tab initiated (a broadcast from another tab's clear must not
+      // reset our in-flight state); requestId-less replies are treated as ours for resilience.
+      if (activeClearRequest && d.requestId && d.requestId !== activeClearRequest) return;
+      markCleared();
     }
   });
+
+  // Reset to a clean "nothing saved" state after the offline cache has been emptied.
+  const markCleared = () => {
+    activeClearRequest = null;
+    statusKnown = true;
+    fullAvailable = false;
+    cachedAssets = 0;
+    totalAssets = 0;
+    localStorage.removeItem(VKEY);
+    rest();
+  };
+
+  // Empty the offline cache. Preferred path is a message to the controlling worker (single cache
+  // authority, mirroring precache/status); if this tab has no controller yet we clear the caches we
+  // own directly from the page, since Cache Storage is reachable from both contexts.
+  const clearOffline = async () => {
+    activeClearRequest = nextRequestId();
+    setState('caching', '<span class="off-spin"></span> Clearing offline data…');
+    if (send({ type: 'clear-cache', requestId: activeClearRequest })) return;   // markCleared on reply
+    try {
+      if (window.caches) {
+        for (const key of await caches.keys()) {
+          if (key === 'file-viewer' || key.startsWith('file-viewer-')) await caches.delete(key);
+        }
+      }
+    } catch { /* private mode / storage disabled: nothing to clear */ }
+    markCleared();
+  };
 
   statusEl.style.cursor = 'pointer';
   statusEl.setAttribute('role', 'button');
@@ -110,7 +144,7 @@ export function initOffline(statusEl) {
       }
     }, (error) => {
       setState('error', '<span aria-hidden="true">!</span> Offline options unavailable — retry', error?.message || String(error));
-    });
+    }, clearOffline);
   };
   statusEl.addEventListener('click', onActivate);
   statusEl.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onActivate(); } });
@@ -249,7 +283,7 @@ const CACHE_PRESETS = [
 const DEFAULT_CACHE_BUNDLES = new Set(CACHE_PRESETS[0].bundles);
 
 let cacheModalOpening = false;
-async function openCacheModal(onConfirm, onError = () => {}) {
+async function openCacheModal(onConfirm, onError = () => {}, onClear = null) {
   const existing = document.querySelector('.cache-modal');
   if (existing) { existing.querySelector('.cm-close')?.focus(); return; }
   if (cacheModalOpening) return;
@@ -292,7 +326,9 @@ async function openCacheModal(onConfirm, onError = () => {}) {
     + CACHE_PRESETS.map((p) => '<button type="button" class="cm-preset" data-preset="' + p.id + '" title="' + p.title + '" aria-pressed="' + (p.id === 'common-v') + '">' + p.label + '</button>').join('')
     + '<span class="cm-grand-total"></span></div>'
     + '<div class="cm-groups"></div>'
-    + '<footer class="cm-foot"><span class="cm-total"></span><button type="button" class="cm-save">Save selected</button></footer>'
+    + '<footer class="cm-foot">'
+    + (onClear ? '<button type="button" class="cm-clear">Clear offline data</button>' : '')
+    + '<span class="cm-total"></span><button type="button" class="cm-save">Save selected</button></footer>'
     + '</div>';
   const previousActive = document.activeElement instanceof HTMLElement ? document.activeElement : null;
   document.body.appendChild(root);
@@ -408,6 +444,11 @@ async function openCacheModal(onConfirm, onError = () => {}) {
     if (previousActive?.isConnected) previousActive.focus();
   };
   root.querySelector('.cm-close').addEventListener('click', close);
+  root.querySelector('.cm-clear')?.addEventListener('click', () => {
+    if (!confirm('Remove all files saved for offline use?\n\nThe viewer keeps working while you’re online, and your settings and edits are kept. You can save offline again anytime.')) return;
+    close();
+    onClear();
+  });
   root.addEventListener('click', (e) => { if (e.target === root) close(); });
   document.addEventListener('keydown', onKeydown);
   root.querySelector('.cm-save').addEventListener('click', () => {

@@ -3,6 +3,7 @@
 // pay 40/100/300/1200 × (level+1), plus soft/hard-drop bonuses. Shows a next-piece preview and brief
 // flashes on hard drop and line clears. Contract: mount(host, { onScore, onExit }) => { destroy() }.
 import { swipe, dpad } from '../controls.js';
+import { prefersReducedMotion } from '../reduce-motion.js';
 
 const COLS = 10, ROWS = 20, CELL = 22, PCELL = 15;          // board + preview cell sizes
 const LINE_SCORES = [0, 40, 100, 300, 1200];               // by lines cleared at once
@@ -92,7 +93,7 @@ export function mount(host, { onScore, onExit } = {}) {
   }
 
   // ── flash effects (rAF fade; the game itself is interval-driven) ──
-  function addFx(cells, color) { fx.push({ cells, color, t: 1 }); if (fxRaf == null) fxRaf = requestAnimationFrame(fxStep); }
+  function addFx(cells, color) { if (prefersReducedMotion()) return; fx.push({ cells, color, t: 1 }); if (fxRaf == null) fxRaf = requestAnimationFrame(fxStep); }
   let fxLast = null;
   function fxStep(ts) {
     const dt = fxLast == null ? 0 : (ts - fxLast) / 1000; fxLast = ts;

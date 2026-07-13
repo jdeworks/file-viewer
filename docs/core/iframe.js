@@ -95,6 +95,25 @@ function buildSrcdoc({ bodyHtml, theme, extraHead = '', style = {} }) {
     + '<script>' + BRIDGE + '</scr' + 'ipt>\n</body>\n</html>';
 }
 
+// Apply the same preview CSS vars + width/reader classes buildSrcdoc injects into the iframe body,
+// but onto a PARENT-mounted host element — so parentNode renderers that opt in (csv/json tables)
+// honor the generic Preview settings too. The consuming rules live in assets/preview-chrome.css
+// under `.fv-preview-host`. (settings audit 2026-07-13)
+export function applyPreviewHostStyle(el, style = {}) {
+  if (!el) return;
+  el.classList.add('fv-preview-host');
+  for (const mode of ['available', 'unrestricted', 'page', 'phone', 'custom']) {
+    el.classList.toggle('fv-width-' + mode, style.sizingMode === mode);
+  }
+  el.classList.toggle('fv-reader-sepia', style.readerTheme === 'sepia');
+  el.classList.toggle('fv-reader-dark', style.readerTheme === 'dark');
+  el.style.setProperty('--fv-maxw', Number.isFinite(style.maxWidth) ? style.maxWidth + 'px' : 'none');
+  el.style.setProperty('--fv-overflow-x', style.overflowX === 'auto' ? 'auto' : 'hidden');
+  if (Number.isFinite(style.fontSize)) el.style.setProperty('--fv-fontsize', style.fontSize + 'px');
+  if (Number.isFinite(style.lineHeight)) el.style.setProperty('--fv-lh', String(style.lineHeight));
+  if (Number.isFinite(style.padding)) el.style.setProperty('--fv-pad', style.padding + 'px');
+}
+
 // container: element to host the iframe. Returns a controller for the parent side.
 // Inject our trusted bridge script into a full user document (HTML "run scripts" mode).
 function injectBridge(doc) {
