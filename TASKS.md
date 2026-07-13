@@ -5,7 +5,7 @@ All tasks are browser-only unless stated otherwise. The app lives in `docs/`, de
 ## Per-Increment Contract (MUST follow for every task)
 
 1. Implement the task
-2. Run `./scripts/check.sh` — must be GREEN (ZERO off-origin requests, movediff passes, smoke passes)
+2. Run `./scripts/check.sh --fast` — must be GREEN (ZERO off-origin requests, movediff passes, smoke passes). Before a release/tag run the bare `./scripts/check.sh` (release gate); `--exhaustive` is the full open-everything sweep.
 3. Run `node scripts/gen-asset-manifest.mjs` if any file under `docs/` was added or removed
 4. Commit and push to `dev` with trailer `Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>`
 

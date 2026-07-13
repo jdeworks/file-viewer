@@ -93,10 +93,12 @@ Core orchestration lives in `docs/core/`; file-type modules live in `docs/types/
 ```sh
 node tests/movediff.test.mjs
 node tests/smoke.mjs
-./scripts/check.sh
+./scripts/check.sh --fast     # routine pre-push gate (scoped, ~minutes)
+./scripts/check.sh            # RELEASE gate (~7 min): core smoke + representative samples
+./scripts/check.sh --exhaustive   # open-EVERYTHING sweep (on command, ≤30 min)
 ```
 
-The smoke test serves the app and drives Chromium while checking for unexpected off-origin requests in the default browser mode.
+The smoke test serves the app and drives Chromium while checking for unexpected off-origin requests in the default browser mode. The gate has three modes: `--fast` for every push, bare `./scripts/check.sh` as the release gate, and `--exhaustive` for the full open-everything sweep (add `--dry-run` to any mode to print its selection without launching a browser).
 
 ## License
 

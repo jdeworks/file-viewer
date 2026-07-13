@@ -3,7 +3,7 @@
 ## Operating Rules
 
 - Work in small, committed increments on `dev`.
-- After each increment, run `./scripts/check.sh`; it must pass before commit.
+- After each increment, run `./scripts/check.sh --fast`; it must pass before commit. Run the bare `./scripts/check.sh` (release gate, ~7 min) before a release/tag, and `--exhaustive` for the full open-everything sweep.
 - If files under `docs/` are added or removed, keep `docs/asset-manifest.json` current.
 - Push every completed increment.
 - Use subagents for research/audit work where useful.

@@ -7,7 +7,7 @@ This is a static, client-only file viewer served from `docs/`. The app shell liv
 ## Build, Test, and Development Commands
 
 - `cd docs && python3 -m http.server 8000`: serve the app locally at `http://localhost:8000`.
-- `./scripts/check.sh`: main pre-commit validation; regenerates `docs/asset-manifest.json`, runs LOC housekeeping, unit tests, and the smoke test.
+- `./scripts/check.sh --fast`: routine pre-push validation; regenerates `docs/asset-manifest.json`, runs LOC housekeeping, and scoped unit + core smoke. Three modes exist — `--fast` (per-push), bare `check.sh` (RELEASE gate, ~7 min: core smoke + representative samples of the heavy suites), `--exhaustive` (open-everything sweep, on command). Add `--dry-run` to print a mode's selection.
 - `node tests/movediff.test.mjs`: run move-aware diff and parser unit coverage.
 - `node tests/smoke.mjs`: serve `docs/`, drive headless Chromium, and assert zero off-origin requests.
 - `cd tests && npm test`: run the test package script after installing test dependencies.
@@ -19,7 +19,7 @@ Use modern ES modules and browser-native APIs. Keep modules focused and colocate
 
 ## Testing Guidelines
 
-Run `./scripts/check.sh` before commits that affect app behavior, assets, vendored files, or tests. The smoke test depends on Playwright; if it is unavailable, run `cd tests && npm install && npx playwright install chromium`. Preserve the trust guarantee: runtime code should not introduce CDN, analytics, telemetry, or other off-origin requests.
+Run `./scripts/check.sh --fast` before commits that affect app behavior, assets, vendored files, or tests; run the bare `./scripts/check.sh` (release gate) before a release/tag, and `--exhaustive` when you need the full open-everything sweep. The smoke test depends on Playwright; if it is unavailable, run `cd tests && npm install && npx playwright install chromium`. Preserve the trust guarantee: runtime code should not introduce CDN, analytics, telemetry, or other off-origin requests.
 
 ## Commit & Pull Request Guidelines
 

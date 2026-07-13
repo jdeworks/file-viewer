@@ -180,7 +180,9 @@ Focused parser tests:
 
 Browser and trust coverage:
 - `node tests/smoke.mjs`
-- `./scripts/check.sh`
+- `./scripts/check.sh --fast` (routine) · `./scripts/check.sh` (release gate) · `--exhaustive` (full sweep)
 
 `./scripts/check.sh` regenerates `docs/asset-manifest.json`, runs unit/parser coverage, and runs the
-full smoke suite, including the zero off-origin request guarantee.
+smoke suite (including the zero off-origin request guarantee). It has three modes: `--fast` for every
+push, bare `check.sh` as the ~7-min release gate (core smoke + representative samples), and
+`--exhaustive` for the open-everything sweep run on command.
