@@ -126,10 +126,12 @@ try {
   assert.equal(await frame.$eval('.kml-badge', (element) => getComputedStyle(element).display), 'flex');
 
   await openFixture('sample.elf', 'application/x-executable', 'exe');
-  frame = await previewFrame('.exe-preview');
-  assert.equal(await frame.$eval('.exe-badge', (element) => getComputedStyle(element).display), 'flex');
-  assert.equal(await frame.$eval('.exe-table', (element) => getComputedStyle(element).width !== 'auto'), true);
-  await capture('exe-light');
+  await page.waitForSelector('#previewHost .exe-preview', { timeout: 12000 });
+  assert.equal(await page.$eval('#previewHost .exe-badge', (element) => getComputedStyle(element).display), 'flex');
+  assert.equal(await page.$eval('#previewHost .exe-table', (element) => getComputedStyle(element).width !== 'auto'), true);
+  assert.equal(await page.$eval('#previewHost .exe-sha256', (element) => getComputedStyle(element).overflowWrap), 'anywhere');
+  assert.equal(await page.$('#previewHost iframe.fv-preview-frame'), null);
+  await capture('exe-light', '#previewHost .exe-preview');
 
   if (await page.evaluate(() => document.documentElement.dataset.theme !== 'dark')) await page.click('#themeBtn');
   assert.equal(await page.evaluate(() => document.documentElement.dataset.theme), 'dark');

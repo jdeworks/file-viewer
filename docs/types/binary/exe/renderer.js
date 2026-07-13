@@ -3,7 +3,25 @@ function u32le(b, o) { return (b[o] | (b[o+1]<<8) | (b[o+2]<<16) | (b[o+3]<<24))
 function u16be(b, o) { return (b[o] << 8) | b[o+1]; }
 function u32be(b, o) { return ((b[o]<<24)|(b[o+1]<<16)|(b[o+2]<<8)|b[o+3]) >>> 0; }
 function hex(n) { return '0x' + n.toString(16); }
-function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+function esc(s) {
+  return String(s).replace(/[&<>"]/g, (c) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;',
+  }[c]));
+}
+
+const VIRUSTOTAL_FILE_URL = 'https://www.virustotal.com/gui/file/';
+
+export async function computeSha256Hex(bytes, subtle = globalThis.crypto?.subtle) {
+  if (!bytes || typeof subtle?.digest !== 'function') return null;
+  try {
+    const digest = await subtle.digest('SHA-256', bytes);
+    const digestBytes = new Uint8Array(digest);
+    if (digestBytes.length !== 32) return null;
+    return Array.from(digestBytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
+  } catch {
+    return null;
+  }
+}
 
 // ── ELF ──────────────────────────────────────────────────────────────────────
 const ELF_CLASS = { 1: '32-bit', 2: '64-bit' };
@@ -137,9 +155,64 @@ function row(label, value) {
   return `<tr><td class="exe-key">${esc(label)}</td><td>${esc(value)}</td></tr>`;
 }
 
-export function render(intake) {
+function htmlRow(label, valueHtml) {
+  if (!valueHtml) return '';
+  return `<tr><td class="exe-key">${esc(label)}</td><td>${valueHtml}</td></tr>`;
+}
+
+function virusTotalUrl(sha256) {
+  return sha256 ? `${VIRUSTOTAL_FILE_URL}${sha256}/detection` : null;
+}
+
+function lookupHtml(sha256, truncated) {
+  if (sha256) {
+    const href = virusTotalUrl(sha256);
+    return `<div class="exe-vt">
+      <a class="exe-vt-link" href="${href}" target="_blank" rel="noopener noreferrer">Look up on VirusTotal ↗</a>
+      <p class="exe-vt-note">Opening VirusTotal sends the SHA-256 hash, not the file contents, to VirusTotal.</p>
+      <p class="exe-vt-terms">VirusTotal’s free search is for non-commercial use.</p>
+    </div>`;
+  }
+  const message = truncated
+    ? 'VirusTotal lookup unavailable: only part of this file was loaded, so a full-file SHA-256 cannot be calculated.'
+    : 'VirusTotal lookup unavailable: SHA-256 is unavailable in this browser.';
+  return `<p class="exe-vt-unavailable" role="note">${message}</p>`;
+}
+
+function result(bodyHtml, sha256) {
+  if (typeof document === 'undefined') return { bodyHtml };
+
+  const template = document.createElement('template');
+  template.innerHTML = bodyHtml.trim();
+  const parentNode = template.content.firstElementChild;
+  const staticLink = parentNode?.querySelector('.exe-vt-link');
+  const href = virusTotalUrl(sha256);
+  if (staticLink && href) {
+    const link = document.createElement('a');
+    link.className = 'exe-vt-link';
+    link.href = href;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    link.textContent = 'Look up on VirusTotal ↗';
+    staticLink.replaceWith(link);
+  }
+  return { parentNode, bodyHtml };
+}
+
+export async function render(intake, { cryptoSubtle = globalThis.crypto?.subtle } = {}) {
   const b = intake.bytes;
-  if (!b || b.length < 4) return { bodyHtml: '<div class="exe-preview"><p class="exe-note">Too small to parse.</p></div>' };
+  const incomplete = !!intake.truncated || !!intake.streamed
+    || (Number.isFinite(intake.size) && intake.size > (b?.byteLength || 0));
+  const sha256 = incomplete ? null : await computeSha256Hex(b, cryptoSubtle);
+  const shaRow = sha256
+    ? htmlRow('SHA-256', `<code class="exe-sha256">${sha256}</code>`)
+    : '';
+  const lookup = lookupHtml(sha256, incomplete);
+
+  if (!b || b.length < 4) {
+    const hashTable = shaRow ? `<table class="exe-table">${shaRow}</table>` : '';
+    return result(`<div class="exe-preview"><p class="exe-note">Too small to parse.</p>${hashTable}${lookup}</div>`, sha256);
+  }
 
   const info = parseExe(b);
   const { format, error, note } = info;
@@ -148,7 +221,8 @@ export function render(intake) {
   const subtitle = `<span class="exe-format">${esc(format)}</span>`;
 
   if (error) {
-    return { bodyHtml: `<div class="exe-preview"><div class="exe-header">${badge}${subtitle}</div><p class="exe-note">${esc(error)}</p></div>` };
+    const hashTable = shaRow ? `<table class="exe-table">${shaRow}</table>` : '';
+    return result(`<div class="exe-preview"><div class="exe-header">${badge}${subtitle}</div><p class="exe-note">${esc(error)}</p>${hashTable}${lookup}</div>`, sha256);
   }
 
   const rows = [
@@ -165,6 +239,7 @@ export function render(intake) {
     row('Entry Point', info.entry),
     row('Load Commands', info.loadCmds != null ? String(info.loadCmds) : null),
     row('Compiled', info.timestamp),
+    shaRow,
     note ? `<tr><td class="exe-key">Note</td><td>${esc(note)}</td></tr>` : '',
   ].filter(Boolean).join('');
 
@@ -180,7 +255,8 @@ export function render(intake) {
   <div class="exe-header">${badge}${subtitle}</div>
   <table class="exe-table">${rows}</table>
   ${hardeningHtml}
+  ${lookup}
 </div>`;
 
-  return { bodyHtml };
+  return result(bodyHtml, sha256);
 }

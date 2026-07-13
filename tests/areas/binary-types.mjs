@@ -4,7 +4,7 @@ const require = createRequire(import.meta.url);
 const JSZip = require('jszip');
 
 export async function run(ctx) {
-  const { page, origin, frameOf, pass, fail, openExample } = ctx;
+  const { page, origin, frameOf, pass, fail, offOrigin, openExample } = ctx;
 
   // Shared check for the opt-in 3D molecular viewer: the "Load 3D structure" button must appear,
   // and clicking it must lazily load 3Dmol.js + mount a WebGL <canvas>. Headless Chromium uses
@@ -30,18 +30,48 @@ export async function run(ctx) {
 
   // ── ELF executable ──────────────────────────────────────────────────────────
   await page.goto(origin, { waitUntil: 'load' });
+  const offOriginBeforeExe = offOrigin.length;
   await openExample('sample.elf');
-  const elfFrame = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
-  const elff = await frameOf('iframe.fv-preview-frame');
-  await elff.waitForSelector('.exe-preview', { timeout: 8000 });
+  await page.waitForSelector('#previewHost .exe-preview', { timeout: 30000 });
   const elfTypeId = await page.$eval('#typeSelect', (s) => s.value);
   if (elfTypeId === 'exe') pass('.elf detected as exe type'); else fail('elf typeId: ' + elfTypeId);
-  const elfBadge = await elff.$eval('.exe-badge', (el) => el.textContent);
+  const elfBadge = await page.$eval('#previewHost .exe-badge', (el) => el.textContent);
   if (/ELF/i.test(elfBadge)) pass('ELF badge shown'); else fail('elf badge: ' + elfBadge);
-  const elfRows = await elff.$$eval('.exe-table td', (tds) => tds.map((t) => t.textContent));
+  const elfRows = await page.$$eval('#previewHost .exe-table td', (tds) => tds.map((t) => t.textContent));
   const elfText = elfRows.join(' ');
   if (/x86-64/i.test(elfText)) pass('ELF architecture x86-64 shown'); else fail('elf rows: ' + elfText.slice(0, 200));
   if (/64-bit/i.test(elfText)) pass('ELF 64-bit width shown'); else fail('elf rows (bit): ' + elfText.slice(0, 200));
+  const expectedElfSha256 = '4753c347ae95b489bb189fa86a2ed4ebe8a3ff5ef498949c98ce595007d5be56';
+  const elfLookup = await page.$eval('#previewHost .exe-vt-link', (link) => ({
+    href: link.href, target: link.target, rel: link.rel,
+  }));
+  const elfSha256 = await page.$eval('#previewHost .exe-sha256', (el) => el.textContent);
+  if (elfSha256 === expectedElfSha256) pass('ELF full-file SHA-256 shown'); else fail('elf sha256: ' + elfSha256);
+  const expectedLookup = `https://www.virustotal.com/gui/file/${expectedElfSha256}/detection`;
+  if (elfLookup.href === expectedLookup && elfLookup.target === '_blank' && elfLookup.rel === 'noopener noreferrer') pass('ELF VirusTotal link is exact and isolated');
+  else fail('elf VirusTotal link: ' + JSON.stringify(elfLookup));
+  const elfDisclosure = await page.$eval('#previewHost .exe-vt', (el) => el.textContent.replace(/\s+/g, ' ').trim());
+  if (/sends the SHA-256 hash, not the file contents/.test(elfDisclosure) && /non-commercial use/.test(elfDisclosure)) pass('ELF VirusTotal disclosure shown');
+  else fail('elf VirusTotal disclosure: ' + elfDisclosure);
+  const elfStaticHtml = await page.evaluate(() => window.__fv.state.lastBodyHtml || '');
+  if (elfStaticHtml.includes(expectedElfSha256) && elfStaticHtml.includes(expectedLookup)) pass('ELF retains static hash/link HTML for print and screenshots');
+  else fail('ELF static print/screenshot HTML is missing the hash lookup');
+  if (!await page.$('#previewHost iframe.fv-preview-frame')) pass('ELF trusted summary mounts outside the sandboxed iframe');
+  else fail('ELF preview unexpectedly mounted in an iframe');
+  if (offOrigin.length === offOriginBeforeExe) pass('ELF hashing and link rendering make zero off-origin requests');
+  else fail('ELF render off-origin requests: ' + offOrigin.slice(offOriginBeforeExe).join(', '));
+
+  await page.evaluate(async () => {
+    window.__fv.state.intake.truncated = true;
+    window.__fv.state.intake.size = 70 * 1024 * 1024;
+    await window.__fv.rerenderPreview();
+  });
+  await page.waitForSelector('#previewHost .exe-vt-unavailable', { timeout: 8000 });
+  const truncatedText = await page.$eval('#previewHost .exe-vt-unavailable', (el) => el.textContent);
+  if (/only part of this file was loaded/.test(truncatedText)) pass('truncated ELF explains why full-file lookup is unavailable');
+  else fail('truncated ELF notice: ' + truncatedText);
+  if (!await page.$('#previewHost .exe-vt-link, #previewHost .exe-sha256')) pass('truncated ELF exposes no partial hash or VirusTotal link');
+  else fail('truncated ELF exposed a partial hash or lookup');
 
   // ── Telegram chat export ─────────────────────────────────────────────────────
   await page.goto(origin, { waitUntil: 'load' });

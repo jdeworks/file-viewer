@@ -37,7 +37,7 @@ import { extractMetadata as dwgMeta } from '../docs/types/binary/dwg/metadata.js
 import { render as renderDwg } from '../docs/types/binary/dwg/renderer.js';
 import { detect as detectExe } from '../docs/types/binary/exe/detect.js';
 import { extractMetadata as exeMeta } from '../docs/types/binary/exe/metadata.js';
-import { render as renderExe } from '../docs/types/binary/exe/renderer.js';
+import { computeSha256Hex as exeSha256, render as renderExe } from '../docs/types/binary/exe/renderer.js';
 import { detect as detectExr } from '../docs/types/binary/exr/detect.js';
 import { extractMetadata as exrMeta } from '../docs/types/binary/exr/metadata.js';
 import { render as renderExr } from '../docs/types/binary/exr/renderer.js';
@@ -596,10 +596,43 @@ function glbHeader({ version = 2, length = 20, chunkLength = 0, chunkType = 0x4e
   assert.equal(value(machoRows, 'Architecture'), 'x86-64');
   assert.equal(value(machoRows, 'Bit width'), '64-bit');
 
-  const rendered = renderExe({ filename: 'sample.elf', bytes: elf, isBinary: true, size: elf.length }).bodyHtml;
+  const rendered = (await renderExe({ filename: 'sample.elf', bytes: elf, isBinary: true, size: elf.length })).bodyHtml;
   assert.match(rendered, /ELF/);
   assert.match(rendered, /x86-64/);
   assert.match(rendered, /64-bit/);
+  const sha256 = '4753c347ae95b489bb189fa86a2ed4ebe8a3ff5ef498949c98ce595007d5be56';
+  assert.match(rendered, new RegExp(`<code class="exe-sha256">${sha256}</code>`));
+  assert.match(rendered, new RegExp(`href="https://www\\.virustotal\\.com/gui/file/${sha256}/detection"`));
+  assert.match(rendered, /target="_blank" rel="noopener noreferrer"/);
+  assert.match(rendered, /sends the SHA-256 hash, not the file contents/);
+  assert.match(rendered, /free search is for non-commercial use/);
+
+  const tooSmall = (await renderExe({ filename: 'empty.exe', bytes: new Uint8Array(0), isBinary: true, size: 0 })).bodyHtml;
+  const emptySha256 = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855';
+  assert.match(tooSmall, /Too small to parse/);
+  assert.match(tooSmall, new RegExp(emptySha256));
+  assert.match(tooSmall, new RegExp(`/gui/file/${emptySha256}/detection`));
+
+  const malformed = new Uint8Array([0x4d, 0x5a, 0, 0]);
+  const malformedRendered = (await renderExe({ filename: 'bad.exe', bytes: malformed, isBinary: true, size: malformed.length })).bodyHtml;
+  assert.match(malformedRendered, /Too small to parse/);
+  assert.match(malformedRendered, /class="exe-sha256">[0-9a-f]{64}<\/code>/);
+  assert.match(malformedRendered, /virustotal\.com\/gui\/file\/[0-9a-f]{64}\/detection/);
+
+  const truncated = (await renderExe({
+    filename: 'large.exe', bytes: elf, isBinary: true, size: 70 * 1024 * 1024, truncated: true,
+  })).bodyHtml;
+  assert.doesNotMatch(truncated, /exe-sha256|virustotal\.com\/gui\/file/);
+  assert.match(truncated, /only part of this file was loaded/);
+
+  assert.equal(await exeSha256(elf, null), null);
+  assert.equal(await exeSha256(elf, { digest: async () => new Uint8Array(31).buffer }), null);
+  const noCrypto = (await renderExe(
+    { filename: 'sample.elf', bytes: elf, isBinary: true, size: elf.length },
+    { cryptoSubtle: null },
+  )).bodyHtml;
+  assert.doesNotMatch(noCrypto, /exe-sha256|virustotal\.com\/gui\/file/);
+  assert.match(noCrypto, /SHA-256 is unavailable in this browser/);
 }
 
 {
