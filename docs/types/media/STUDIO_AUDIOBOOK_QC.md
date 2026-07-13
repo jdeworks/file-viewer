@@ -1,12 +1,7 @@
 # Audiobook QC & Mastering — narratu / auto-audiobook deep dive
 
-Companion to [STUDIO_ROADMAP.md](./STUDIO_ROADMAP.md). Detail for the audiobook-specific
-loudness/QC standards we benchmark against.
-
-Status note: the first ACX QC/export workflow has shipped in the media studio and is
-tracked in `STUDIO_TRACKER.md`. This file now describes the remaining mastering-grade
-depth: true-peak/oversampled peak, stronger denoise/de-hum/de-plosive tools, chapterized
-exports, and richer Narratu-style compare polish.
+Reference detail for the audiobook-specific loudness/QC standards used by the media studio.
+Implementation status and unfinished work are tracked only in [TASKS.md](../../../TASKS.md).
 
 ---
 
@@ -93,19 +88,10 @@ and most authors can't see it until ACX rejects them.
 
 ---
 
-## 6. Remaining Sub-Tasks
+## 6. Implementation Status
 
-All under `docs/types/media/`. New modules to respect the LOC cap:
-
-- **Q1 — true-peak / mastering-grade peak clarity.** Keep sample peak visible, but add an
-  oversampled or ffmpeg-backed true-peak path before claiming true peak.
-- **Q2 — denoise / de-hum / de-plosive presets.** Use ffmpeg filters and clear copy; keep
-  ML denoise out of scope.
-- **Q3 — chapterized export.** Split by chapter markers (ID3 CHAP / sidecar) into
-  per-chapter MP3s, ACX-formatted, zipped (fflate or hand-rolled). Lib: ffmpeg.wasm (+ zip).
-- **Q4 — staged compare.** Raw -> tuned -> dynamics -> master bus, once the chain is real.
-
-Order: Q1 -> Q2 -> Q3 -> Q4.
+The initial ACX QC/export workflow is implemented. Any remaining mastering, chapter-export, or
+comparison work belongs in [TASKS.md](../../../TASKS.md), not in this research reference.
 
 ---
 

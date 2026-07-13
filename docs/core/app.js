@@ -698,7 +698,9 @@ function init() {
   // Tree-to-workspace drag: dropping a sidebar file onto the workspace opens it beside the
   // current file. Plain sidebar clicks still navigate normally.
   $('workspace').addEventListener('dragover', (e) => {
-    if (e.dataTransfer?.types?.includes(TREE_DRAG_TYPE)) e.preventDefault();
+    if (!e.dataTransfer?.types?.includes(TREE_DRAG_TYPE)) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
   });
   $('workspace').addEventListener('drop', async (e) => {
     if (!e.dataTransfer?.types?.includes(TREE_DRAG_TYPE)) return;

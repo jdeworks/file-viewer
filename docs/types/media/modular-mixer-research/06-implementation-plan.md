@@ -1,7 +1,8 @@
 # Implementation Plan
 
-This is a staged plan for a long-running goal task. Each stage should be
-validated before moving to the next.
+This is the historical staged plan used for the completed mixer build. It is not
+an active work queue; unfinished media work is tracked only in
+[`TASKS.md`](../../../../TASKS.md).
 
 Use `08-acceptance-and-test-strategy.md` as the evidence checklist for each
 stage. The brief tests listed here are reminders, not the full completion
@@ -10,7 +11,7 @@ standard.
 ## Stage 0: Finalize Requirements
 
 - Review this research package.
-- Decide open questions in `07-risks.md`.
+- Record the accepted answers to the risks in `07-risks.md`.
 - Decide initial folder and naming.
 - Decide whether to replace or temporarily run beside current media surfaces.
 

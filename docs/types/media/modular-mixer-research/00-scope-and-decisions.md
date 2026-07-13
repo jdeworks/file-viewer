@@ -134,11 +134,8 @@ Before coding the new mixer, review and either accept or amend:
 - `10-review-checklist.md`
 - `11-source-traceability.md`
 - `12-user-workflows.md`
-- `13-package-audit.md`
 
-Open decisions in `07-risks.md` do not all need perfect answers before Stage 1,
-but the MVP boundary, capability policy, project import/relink behavior, and
-memory caps must be accepted before implementation.
-
-Use `10-review-checklist.md` to record approval, amendments, and selected
-defaults for the remaining open decisions.
+The MVP boundary, capability policy, project import/relink behavior, and memory
+caps were accepted before implementation. `10-review-checklist.md` preserves
+that approval record. All unfinished repository work now belongs in
+[`TASKS.md`](../../../../TASKS.md).

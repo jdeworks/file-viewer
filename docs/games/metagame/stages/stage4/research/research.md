@@ -4,10 +4,14 @@ Companion to `stage4-01-tower-defense-research.md` and `stage4-02-our-game-desig
 This document audits the current implementation, situates Stage 4 in the genre, and defines
 the expansion arc: an ordered progression of new verbs, one per wave group.
 
-> **Current status: THIN GATE.** The live code is a 3-button boss gate (open blueprint, place
+> **Status:** Historical design reference, not an active backlog. The current
+> implementation is authoritative; unfinished work is tracked only in
+> [`TASKS.md`](../../../../../../TASKS.md).
+>
+> **Research-time status: THIN GATE.** The live code was a 3-button boss gate (open blueprint, place
 > tower, fight boss) with no enemy waves, no real TD loop, and two determinism bugs
 > (Math.random for tower IDs, Date.now fallback in stageSeed). The full game described in the
-> planning docs does not yet exist.
+> planning docs did not yet exist.
 
 ---
 

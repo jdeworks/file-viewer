@@ -1,8 +1,0 @@
-voucher,payee,provision,amount,status
-Voucher 210,Mr. Ashworth,legacy,£200,PAID
-Voucher 211,Miss Calder,annuity,£40 a year,PAID
-Voucher 212,Miss Blakeney,legacy,£500,PAID
-Voucher 213,Mr. Iveson,residuary share,pending,HELD (pending probate)
-Voucher 214,Mr. Sennett,annuity,£60 a year,VOID (cancelled the 15th)
-Voucher 215,the housekeeper,gift,£25,PAID
-Voucher 216,Mr. Halloran,pension,£30 a year,PAID

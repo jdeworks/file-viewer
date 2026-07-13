@@ -625,7 +625,7 @@
       "label": "E-book",
       "support": "supported",
       "sampleFiles": [
-        "metagame/stage6/protocols_of_the_entity.epub",
+        "metagame/stage5/protocols_of_the_entity.epub",
         "sample.epub"
       ],
       "extensions": [
@@ -1158,8 +1158,6 @@
       "support": "supported",
       "sampleFiles": [
         "example.svg",
-        "metagame/stage7/entity_a_verification.png",
-        "metagame/stage7/entity_f_verification.png",
         "sample_old.png",
         "sample.bmp",
         "sample.gif",
@@ -1348,7 +1346,6 @@
       "support": "supported",
       "sampleFiles": [
         "composer.json",
-        "metagame/stage9/nested/echoes/pattern_echo.json",
         "Overwriter.frag",
         "package.json",
         "sample.json",
@@ -1675,7 +1672,6 @@
       "label": "Audio / Video",
       "support": "supported",
       "sampleFiles": [
-        "metagame/stage5/transmission_hum.mp3",
         "sample.aac",
         "Sample.avi",
         "sample.flac",

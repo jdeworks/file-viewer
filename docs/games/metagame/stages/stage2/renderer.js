@@ -408,6 +408,7 @@ export function renderStage2({
   return {
     repaint,
     dev,
+    jumpToBoss: bodySolver,
     destroy() {
       window.removeEventListener("keydown", onKey);
       if (flashTimer) clearTimeout(flashTimer);

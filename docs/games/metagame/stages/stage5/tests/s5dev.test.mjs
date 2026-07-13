@@ -1,153 +1,217 @@
-// s5dev.test.mjs — Stage 5: unit tests for dev-menu cheat mutations.
-// All cheats are pure (state in, mutate) so every assertion runs without a DOM.
-// The dev(id) → persistAndPaint() call-path in renderer.js is DOM-only and is not tested here.
-
-import assert from 'node:assert/strict';
+// s5dev.test.mjs — unit tests for Stage 5 dev-menu cheat mutators.
+//
+// Covers each pure function in s5dev.js: devHeal, devGrantKeys, devAddCards, devSkipToBoss,
+// devAddEnergy, and the applyDev dispatcher. skip-boss's combat-null / combatRun.reset side
+// effects live in renderer.js (they close over the live combat variable) and are not tested here;
+// the state-mutation half (act/status/nodeId) is fully covered by the devSkipToBoss tests below.
+import assert from "node:assert/strict";
 import {
-  applyDev,
-  BOSS_IDX,
-  devGivePackets,
-  devRepair,
-  devClearAllRounds,
-  devInstantCalibrate,
-} from '../s5dev.js';
-import { defaultState } from '../state.js';
-import { getBossLockState } from '../boss.js';
-import { ACTION_NAME } from '../messages.js';
+  devHeal, devGrantKeys, devAddCards, devSkipToBoss, devAddEnergy,
+  applyDev, DEV_CARDS
+} from "../s5dev.js";
+import { createRun, KEY_UNTOUCHABLE, KEY_ASCETIC, KEY_SACRIFICE, FINAL_BOSS_ACT } from "../run.js";
+import { nodeById } from "../mapgen.js";
 
-// ── devGivePackets ─────────────────────────────────────────────────────────────────────────────────
+function freshRun() { return createRun({ seed: 1 }); }
+
+// ── devHeal ──────────────────────────────────────────────────────────────────────────────────────
 
 {
-  const state = defaultState();
-  const before = state.packets;
-  devGivePackets(state, 200);
-  assert.equal(state.packets, before + 200, 'give 200 packets adds to existing total');
+  const run = freshRun();
+  run.hp = 10;
+  const r = devHeal(run, null);
+  assert.equal(r.ok, true, "heal ok");
+  assert.equal(run.hp, run.maxHp, "run hp restored to maxHp");
 }
 
 {
-  const state = defaultState();
-  const before = state.packets;
-  devGivePackets(state);              // default amount
-  assert.equal(state.packets, before + 200, 'default amount is 200');
-}
-
-// ── devRepair ──────────────────────────────────────────────────────────────────────────────────────
-
-{
-  const state = defaultState();
-  state.run.integrity = 23;
-  devRepair(state);
-  assert.equal(state.run.integrity, 100, 'repair restores integrity to 100');
+  // Also patches live combat.player.hp when supplied.
+  const run = freshRun();
+  run.hp = 5;
+  const cp = { hp: 3, maxHp: 40 };
+  devHeal(run, cp);
+  assert.equal(run.hp, run.maxHp, "run hp restored");
+  assert.equal(cp.hp, 40, "combat player hp patched to maxHp");
 }
 
 {
-  const state = defaultState();
-  state.run.integrity = 100;         // already full — must stay 100
-  devRepair(state);
-  assert.equal(state.run.integrity, 100, 'repair on full integrity is idempotent');
-}
-
-// ── devClearAllRounds ──────────────────────────────────────────────────────────────────────────────
-
-{
-  const state = defaultState();
-  assert.equal(Number(state.run.clearedRounds), 0, 'fresh state has 0 cleared rounds');
-  devClearAllRounds(state);
-  assert.equal(state.run.clearedRounds, BOSS_IDX, 'clear-runs sets clearedRounds to BOSS_IDX');
-  // Boss-round gating predicate in renderer.js: locked = cleared < BOSS_IDX.
-  // After the cheat, cleared === BOSS_IDX, so locked === false.
-  assert.ok(state.run.clearedRounds >= BOSS_IDX, 'boss-round gate is now open');
+  // combatPlayer without maxHp is ignored (no crash).
+  const run = freshRun();
+  run.hp = 1;
+  devHeal(run, { hp: 0 }); // maxHp missing → no patch
+  assert.equal(run.hp, run.maxHp);
 }
 
 {
-  // BOSS_IDX is one less than ROUND_COUNT — sanity check it is a valid round index.
-  assert.ok(BOSS_IDX >= 1, 'BOSS_IDX is at least 1');
+  const r = devHeal(null, null);
+  assert.equal(r.ok, false);
+  assert.equal(r.reason, "no-run");
 }
 
-// ── devInstantCalibrate — state mutation ───────────────────────────────────────────────────────────
+// ── devGrantKeys ─────────────────────────────────────────────────────────────────────────────────
 
 {
-  const state = defaultState();
-  assert.equal(state.calibration.calibrated, false, 'calibration starts false');
-  const calls = [];
-  const actions = { setAction: (...args) => calls.push(args) };
-  devInstantCalibrate(state, actions);
-  assert.equal(state.calibration.calibrated, true, 'calibrate sets calibrated=true');
-  assert.ok(
-    state.calibration.continuousMs >= (state.calibration.loopMs || 14000),
-    'continuousMs reaches the loop threshold',
-  );
-  assert.equal(calls.length, 1, 'setAction was called exactly once');
-  assert.equal(calls[0][0], 5, 'setAction stage is 5');
-  assert.equal(calls[0][1], ACTION_NAME, 'setAction action is ACTION_NAME');
-  assert.equal(calls[0][2].source, 'dev-cheat', 'setAction payload records dev-cheat source');
-}
-
-// ── devInstantCalibrate — boss now reachable per getBossLockState ──────────────────────────────────
-
-{
-  const state = defaultState();
-  // Simulate the real actions system: record setAction calls, then answer hasAction from them.
-  const registered = new Map();
-  const actions = {
-    setAction: (stage, action) => registered.set(`${stage}:${action}`, true),
-    hasAction: (stage, action) => Boolean(registered.get(`${stage}:${action}`)),
-  };
-  // Before calibration the boss is locked.
-  assert.equal(getBossLockState({ actions, state }).unlocked, false, 'boss locked before cheat');
-  devInstantCalibrate(state, actions);
-  // After calibration the same predicate that getBossLockState uses returns unlocked.
-  const lock = getBossLockState({ actions, state });
-  assert.equal(lock.unlocked, true, 'boss is unlocked after instant-calibrate');
-  assert.equal(lock.defeatPossible, true, 'defeatPossible matches unlocked');
-}
-
-// ── devInstantCalibrate — null/undefined actions is safe ──────────────────────────────────────────
-
-{
-  const state = defaultState();
-  assert.doesNotThrow(() => devInstantCalibrate(state, null), 'null actions does not throw');
-  assert.equal(state.calibration.calibrated, true, 'state still mutated even with null actions');
-}
-
-// ── applyDev dispatch ──────────────────────────────────────────────────────────────────────────────
-
-{
-  const state = defaultState();
-  state.packets = 0;
-  const handled = applyDev('packets', state, {});
-  assert.equal(handled, true, 'applyDev returns true for known id');
-  assert.equal(state.packets, 200, 'applyDev dispatches to devGivePackets');
+  const run = freshRun();
+  assert.equal(run.keys.length, 0, "fresh run has no keys");
+  const r = devGrantKeys(run);
+  assert.equal(r.ok, true);
+  assert.equal(run.keys.length, 3, "all 3 keys granted");
+  assert.ok(run.keys.includes(KEY_UNTOUCHABLE), "untouchable key present");
+  assert.ok(run.keys.includes(KEY_ASCETIC), "ascetic key present");
+  assert.ok(run.keys.includes(KEY_SACRIFICE), "sacrifice key present");
 }
 
 {
-  const state = defaultState();
-  state.run.integrity = 10;
-  assert.equal(applyDev('repair', state, {}), true);
-  assert.equal(state.run.integrity, 100, 'applyDev dispatches to devRepair');
+  // Idempotent: already-earned keys are not duplicated.
+  const run = freshRun();
+  run.keys = [KEY_UNTOUCHABLE];
+  devGrantKeys(run);
+  assert.equal(run.keys.length, 3, "3 keys total (not 4)");
+  assert.equal(run.keys.filter((k) => k === KEY_UNTOUCHABLE).length, 1, "no duplicate");
 }
 
 {
-  const state = defaultState();
-  assert.equal(applyDev('clear-runs', state, {}), true);
-  assert.equal(state.run.clearedRounds, BOSS_IDX, 'applyDev dispatches to devClearAllRounds');
+  // Handles missing keys array.
+  const run = freshRun();
+  delete run.keys;
+  devGrantKeys(run);
+  assert.equal(run.keys.length, 3);
 }
 
 {
-  const state = defaultState();
-  const calls = [];
-  const handled = applyDev('calibrate', state, { setAction: (...a) => calls.push(a) });
-  assert.equal(handled, true, 'applyDev returns true for calibrate');
-  assert.equal(state.calibration.calibrated, true, 'applyDev dispatches to devInstantCalibrate');
-  assert.equal(calls.length, 1, 'setAction was called via applyDev');
+  const r = devGrantKeys(null);
+  assert.equal(r.ok, false);
+  assert.equal(r.reason, "no-run");
+}
+
+// ── devAddCards ──────────────────────────────────────────────────────────────────────────────────
+
+{
+  const run = freshRun();
+  const before = run.deck.length;
+  const r = devAddCards(run);
+  assert.equal(r.ok, true);
+  assert.equal(r.added, DEV_CARDS.length, "reports correct added count");
+  assert.equal(run.deck.length, before + DEV_CARDS.length, "deck grew by DEV_CARDS count");
+  for (const id of DEV_CARDS) {
+    assert.ok(run.deck.includes(id), `deck contains ${id}`);
+  }
 }
 
 {
-  const state = defaultState();
-  const before = JSON.stringify(state);
-  const handled = applyDev('unknown-id', state, {});
-  assert.equal(handled, false, 'applyDev returns false for unknown id');
-  assert.equal(JSON.stringify(state), before, 'unknown id leaves state unchanged');
+  // Calling twice is allowed (dev testing — duplicates are fine).
+  const run = freshRun();
+  devAddCards(run);
+  devAddCards(run);
+  assert.equal(run.deck.filter((id) => id === DEV_CARDS[0]).length, 2, "duplicate allowed");
 }
 
-console.log('stage5 s5dev tests passed');
+{
+  const r = devAddCards(null);
+  assert.equal(r.ok, false);
+  assert.equal(r.reason, "no-run");
+}
+
+// ── devSkipToBoss ────────────────────────────────────────────────────────────────────────────────
+
+{
+  const run = freshRun();
+  const r = devSkipToBoss(run);
+  assert.equal(r.ok, true, "skip-boss ok");
+  assert.equal(run.act, FINAL_BOSS_ACT, `act advanced to ${FINAL_BOSS_ACT}`);
+  assert.equal(run.status, "boss", "run status is boss");
+  assert.ok(run.currentNodeId, "currentNodeId is set");
+  // The node itself must be the boss node in the generated map.
+  const node = nodeById(run.map, run.currentNodeId);
+  assert.equal(node?.type, "boss", "node type is boss");
+  assert.equal(r.nodeId, run.currentNodeId, "returned nodeId matches run");
+  assert.equal(r.act, FINAL_BOSS_ACT, "returned act matches FINAL_BOSS_ACT");
+}
+
+{
+  // Calling from act 1 correctly jumps to act 6 boss.
+  const run = freshRun();
+  assert.equal(run.act, 1, "starts at act 1");
+  devSkipToBoss(run);
+  assert.equal(run.act, 6);
+}
+
+{
+  const r = devSkipToBoss(null);
+  assert.equal(r.ok, false);
+  assert.equal(r.reason, "no-run");
+}
+
+// ── devAddEnergy ─────────────────────────────────────────────────────────────────────────────────
+
+{
+  const cp = { energy: 2, maxHp: 60, hp: 40 };
+  const r = devAddEnergy(cp, 3);
+  assert.equal(r.ok, true, "energy ok");
+  assert.equal(cp.energy, 5, "energy increased by 3");
+}
+
+{
+  // Caps at 9.
+  const cp = { energy: 8 };
+  devAddEnergy(cp, 5);
+  assert.equal(cp.energy, 9, "energy capped at 9");
+}
+
+{
+  // 0 starting energy.
+  const cp = { energy: 0 };
+  devAddEnergy(cp, 3);
+  assert.equal(cp.energy, 3);
+}
+
+{
+  // No combat player: returns { ok: false }.
+  const r = devAddEnergy(null, 3);
+  assert.equal(r.ok, false);
+  assert.equal(r.reason, "no-combat");
+}
+
+// ── applyDev dispatcher ──────────────────────────────────────────────────────────────────────────
+
+{
+  const run = freshRun();
+  run.hp = 1;
+  applyDev("heal", run, null);
+  assert.equal(run.hp, run.maxHp, "heal dispatched");
+}
+
+{
+  const run = freshRun();
+  applyDev("keys", run, null);
+  assert.equal(run.keys.length, 3, "keys dispatched");
+}
+
+{
+  const run = freshRun();
+  const before = run.deck.length;
+  applyDev("cards", run, null);
+  assert.equal(run.deck.length, before + DEV_CARDS.length, "cards dispatched");
+}
+
+{
+  // energy dispatched via combatPlayer (no run needed for energy).
+  const cp = { energy: 0 };
+  applyDev("energy", null, cp);
+  assert.equal(cp.energy, 3, "energy dispatched");
+}
+
+{
+  // skip-boss is NOT in applyDev (handled inline in renderer.js).
+  const r = applyDev("skip-boss", freshRun(), null);
+  assert.equal(r.ok, false, "skip-boss falls through to unknown-id in dispatcher");
+  assert.equal(r.reason, "unknown-id");
+}
+
+{
+  const r = applyDev("bogus", null, null);
+  assert.equal(r.ok, false);
+  assert.equal(r.reason, "unknown-id");
+}
+
+console.log("stage5 s5dev tests passed");

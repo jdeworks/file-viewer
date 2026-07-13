@@ -3307,6 +3307,7 @@ function renderStage2({
   return {
     repaint,
     dev,
+    jumpToBoss: bodySolver,
     destroy() {
       window.removeEventListener("keydown", onKey);
       if (flashTimer) clearTimeout(flashTimer);
@@ -3516,6 +3517,9 @@ function mountStage(ctx) {
     devControls: stageMeta.devControls,
     dev(id) {
       if (view && typeof view.dev === "function") view.dev(id);
+    },
+    jumpToBoss() {
+      return view?.jumpToBoss?.() || false;
     },
     destroy() {
       unsubscribe();

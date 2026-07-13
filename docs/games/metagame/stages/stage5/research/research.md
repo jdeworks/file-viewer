@@ -1,371 +1,270 @@
-# Stage 5 "Signal Racer" — Design Research
+# Stage 5 — Protocol Codex: expansion + design research
 
-**Date:** 2026-06-26
-**Scope:** Genre reference, core loop design, expansion arc, economy, caveats.
-**Verdict on existing code:** THIN GATE — a static fake HUD with a bypass button. No real game exists.
-The expansion arc and core loop below describe the game that must be BUILT, not extended.
+Historical design reference, not an active backlog. The current implementation
+is authoritative; unfinished work is tracked only in
+[`TASKS.md`](../../../../../../TASKS.md). The research-time engine audit verdict was **PARTIAL**:
+genuinely good deterministic combat engine + seeded branching map + 20 cards + 8 enemies +
+5 relics, but the run is skippable from the hub, the boss is a 3-button puzzle that ignores
+your deck, energy is frozen at 3, relics are vanilla, the economy is a stub, and map
+composition is random rather than authored. **KEEP THE ENGINE.** The document
+records the proposed additions and the **ordered per-act expansion arc** where
+"deeper" always means "a new thing to think about," never bigger numbers.
 
----
-
-## 1. GENRE — Rhythm / Audio-Reactive Racing
-
-### What defines the genre
-
-A rhythm-racing game synchronises the player's INPUT ACTIONS (lane switches, jumps, boosts,
-dodges) with a musical or signal beat grid. The defining quality is that timing your move
-ON-BEAT is rewarded more than simply making the correct move — correct + late is worse than
-correct + on time. This creates a dual-axis of spatial problem-solving (which lane? which
-move?) and temporal precision (when?). The genre clusters into two families:
-
-- **Track-rider:** the player moves along a fixed rail; the world scrolls; obstacles arrive
-  at the player in rhythm (Thumper, Bit.Trip Runner, Beat Racer).
-- **Procedural racer:** a track is generated from audio amplitude/frequency; the player
-  navigates while the track's topology echoes the song (AudioSurf, Riff Racer).
-
-Signal Racer fits the track-rider family: a fixed 3-lane corridor scrolls toward the player,
-obstacles placed at beat positions, with a signal / interference narrative framing.
-
-### The 5 best reference games — concrete mechanics and replayability drivers
-
-**1. Thumper (Drool, 2016) — "rhythm violence"**
-- Two inputs only: a button + a stick direction. The entire game is built on the combinations
-  and sequences those two inputs unlock as new mechanics are introduced per world.
-- Each of the 9 worlds introduces exactly ONE new mechanic (lane-change, wall-thump, boss
-  barriers, double-jump, punishing lasers). The player masters it through short tutorial
-  stages, then a sub-boss that demands near-perfect execution of that mechanic alone, then
-  the level boss combines it with everything prior.
-- Replayability: S-rank runs require near-perfect chains; the failure state (instant crash +
-  immediate re-entry) has almost zero downtime, so retry is frictionless.
-- Key lesson: two inputs + one-mechanic-per-world = deep escalation without complexity inflation.
-- Source: https://www.gamedeveloper.com/audio/q-a-the-rhythm-violence-of-i-thumper-i-
-- Source: https://www.electrondance.com/thumper-aint-no-flow-game/
-- Source: https://kotaku.com/thumper-is-the-best-kind-of-music-game-1787670750
-
-**2. AudioSurf (Dylan Fitterer, 2008) — procedural synesthesia**
-- Track shape, elevation, block colour, and block density are generated from the player's own
-  audio file in real time (the analysis emits a deterministic .ash cache file, so the same
-  song always produces the same track).
-- Gameplay merges racing navigation with match-3 puzzle: collect same-colour blocks to score,
-  avoid opposite-colour blocks (deduct score). Matching 3+ in a row = clear + multiplier.
-- Replayability: personal music library = infinite track variety; leaderboards per song/mode
-  create a persistent competitive layer; harder "Ninja" ship mode removes safe lanes.
-- Key lesson: making the game DATA driven from the player's own audio makes every session
-  personal — this is the model for how Signal Racer treats the transmission_hum.mp3 file
-  (the player actively participates in "loading" the level's counter-signal).
-- Source: https://en.wikipedia.org/wiki/Audiosurf
-- Source: https://grokipedia.com/page/Audiosurf
-
-**3. Bit.Trip Runner (Gaijin Games, 2010) — momentum + layered audio**
-- Auto-runner: Commander Video runs forward automatically; three timed inputs (jump, slide,
-  kick) must fire in response to on-screen obstacles placed precisely on musical beats.
-- The game introduces new obstacle types one at a time across 50+ levels. Each world (Impetus,
-  Tenacity, Triumph) adds one verb to the obstacle vocabulary while keeping prior ones active.
-- Layered audio reward: hitting every obstacle correctly builds new instrument layers into the
-  track. Missing one strips a layer. The audio IS the score counter — a rich sound = high run.
-- Replayability: "gold run" achievements, the audio-as-score framing, and the gradual tempo
-  escalation per level keep short sessions punchy enough to replay for mastery.
-- Source: https://en.wikipedia.org/wiki/Bit.Trip_Runner
-- Source: https://game-wisdom.com/analysis/bit-trip-runner2
-
-**4. Riff Racer / Drive Any Track (We R Games, 2016) — arcade racer + audio track gen**
-- Generates a full 3D race track geometry from the player's music file using "MEGA"
-  (Musical Environment Gaming Algorithm); loop-the-loops and boost pads align with song
-  structure transitions (verse-to-chorus, drops).
-- Focus is on racing feel (drift, boost, airtime) rather than pure note-hitting; audio is
-  the track SHAPE, not a note chart.
-- XP + vehicle unlock economy gives medium-term progression over many song runs.
-- Key lesson for us: "moments in a song" (drops, transitions) can map to gameplay EVENTS
-  (boost gates, interference bursts) without requiring actual audio analysis — they can be
-  pre-authored as beat-table entries.
-- Source: https://mcvuk.com/development-news/the-develop-post-mortem-riff-racer/
-- Source: https://goombastomp.com/riff-racer-fluent-rhythmical-delight/
-
-**5. Beat Racer (mobile, lane-collector variant)**
-- 3-lane or tube-around-you corridor; gems spawn to the rhythm; player slides to collect
-  them while obstacles spawn on alternate beat positions.
-- Simplest possible rhythm racing loop: collect beats on-lane, dodge obstacles off-lane.
-  Pure reflex test against a fixed beat grid.
-- Mobile constraints enforce a minimal input surface (one touch = lane switch); this makes
-  the escalation carry entirely through obstacle pattern complexity, not new controls.
-- Key lesson: a single input (lane switch) is sufficient for deep escalation if the OBSTACLE
-  PATTERN itself introduces new spatial logic per difficulty tier.
-- Source: https://skich.app/games/beat-racer
+Section 3 contains the research package's recommended expansion arc.
 
 ---
 
-## 2. OUR CORE LOOP
+## 1. GENRE — roguelite deck-builder: what it is, the best of it, and why it's replayable
 
-### Narrative frame
+**Definition.** A roguelite deck-builder fuses (a) the *deck-building* loop — you start with a
+weak fixed deck and accrete/prune cards mid-run to sculpt an engine — with (b) *roguelite* run
+structure — a seeded branching map of combat/elite/rest/shop/event nodes ending in act bosses,
+permadeath per run, and a meta-progression that persists across runs. Combat is turn-based:
+**energy** (resets each turn) is the core constraint, **block** soaks one turn of damage,
+enemies **telegraph intent** one step ahead so every turn is a solvable puzzle, and **status
+keywords** (Vulnerable, Weak, Strength, Poison…) compose. ([Wikipedia: Roguelike deck-building game](https://en.wikipedia.org/wiki/Roguelike_deck-building_game))
 
-You are a data packet racing through a 3-lane signal corridor. The Jammer — a hostile
-interference signal — occupies the same channel and is ahead of you in the race. Its
-suppression wave corrupts your telemetry, slowing you and degrading your signal integrity.
-You cannot win while the suppression wave is active. Winning requires calibrating a
-counter-wave — which requires listening to the full 14-second loop of `transmission_hum.mp3`
-in the real media player — then racing The Jammer with the counter-wave active.
+**The defining titles and the concrete thing each does that makes it fun/replayable:**
 
-### The moment-to-moment game
+- **Slay the Spire** (2017, MegaCrit) — the template. Replayability comes from the *interaction
+  of three independent random streams*: the procedural branch map, the 1-of-3 card reward draft
+  after each fight, and the relics you stumble into. The deepest lesson is **don't pre-pick a
+  deck — react to what you're offered**; small synergistic decks beat big piles because a thin
+  deck *cycles* to its combo pieces. Relics are synergy *enablers*, not stat sticks (e.g.
+  Shuriken/Kunai reward playing many attacks in one turn → they make a Shiv build explode).
+  ([Eneba: STS tips](https://www.eneba.com/hub/games/game-guides/slay-the-spire-tips/), [Eneba review](https://www.eneba.com/hub/games/slay-the-spire-review/), [twanvl/sts-synergy-relic](https://github.com/twanvl/sts-synergy-relic))
+- **Monster Train** (2020, Shiny Shoe) — adds a **second strategic axis**: a 3-floor vertical
+  tower-defense board, so card play also becomes *spatial placement*, and you always combine
+  **two clans**, so the combinatorial space of synergies is enormous and you "rarely chase the
+  exact same synergy twice, even setting out with the same clans." Lesson: a second axis layered
+  on card play multiplies viable strategies far more than more cards would.
+  ([GamesRadar MT2 review](https://www.gamesradar.com/games/roguelike/monster-train-2-review/), [Game Pass Pod: clan synergies](https://www.gamepasspod.com/blog/monster-train-2-a-deep-dive-into-new-clan-synergies/))
+- **Inscryption** (2021, Daniel Mullins) — the gold standard for **mechanics that constantly
+  reinvent themselves**: three acts each with a *different art style, different core resource,
+  and different rules* (Act I = blood-sacrifice roguelike; Act II = Mox/Energy TCG; Act III =
+  P03's strategy-focused campaign). The escalation works "through constant surprise and
+  reinvention rather than repetition," and the meta-fiction is load-bearing (losing physically
+  costs you in the story). This is the direct precedent for our per-act-new-verb arc.
+  ([ScreenRant: each act](https://screenrant.com/inscryption-whats-happening-in-each-act-full-story-explained/), [Inscryption Wiki: Act II](https://inscryption.fandom.com/wiki/Act_II))
+- **Balatro** (2024, LocalThunk) — **radical simplification + multiplier cascade**: a tiny rule
+  set (poker hands) plus Jokers that multiply *each other's* effects yields effectively infinite
+  variance from very few rules. Lesson: a small number of well-tuned, *interacting* modifiers
+  beats a large catalog of independent ones.
+- **Across the Obelisk** (2021) / **Roguebook** (2021) — **character-specific card pools** and the
+  design discipline of **introducing components step by step** to build long-term motivation and
+  lower the entry barrier; depth via **lenticular design** (cards that look simple but reveal
+  subtlety the more you play). ([Roguebook design](https://www.gamedeveloper.com/design/tackling-deckbuilding-design-in-abrakam-s-roguebook), [Rogueliker list](https://rogueliker.com/roguelike-deckbuilders/))
 
-The game is a top-down ASCII track-rider. The track scrolls upward (the car moves through
-the field); the player's car is a fixed character at the bottom of the visible corridor.
-The track has 3 columns (lanes). Characters in the lane grid encode obstacle types:
+**Two cross-cutting design lessons we will lean on:**
 
-```
-  LANE A  LANE B  LANE C
-  ------  ------  ------
-    .       ░       .      <- static noise block in lane B
-    .       .       .
-   [>]      .       .      <- player car in lane A
-```
-
-Controls: Left/Right to switch lane. One action per beat window (the beat is shown as a
-pulsing glyph in the HUD; actions between pulses incur an "off-beat" timing penalty).
-Every BEAT WINDOW = one tick. Obstacles scroll one row per tick.
-
-**State that matters (per tick):**
-- Current lane (A/B/C)
-- Beat window open/closed (derived from tick count and beat table — never from real audio)
-- Integrity (100 → 0; each collision costs integrity; zero = run failed)
-- On-beat count / total actions (the "accuracy" score, feeds packet reward)
-- Packets earned this round (accumulate toward metagame economy)
-
-**Why it is fun:**
-- The lane switch is one key press, but the beat window makes it a timing judgment.
-- Integrity as health means you can play aggressively (take some hits, go faster) or
-  conservatively (dodge everything, maybe slower packets-per-second).
-- The ASCII rendering means the obstacle field is always readable at a glance.
-- The fixed seed ensures the same run is reproducible — practice pays off.
-
-### The boss un-cheat (retained, strengthened)
-
-Before the boss race is reachable, the player must calibrate the counter-wave. This
-requires opening `transmission_hum.mp3` in the host app's real media player and playing it
-for 14 continuous seconds without seeking or pausing. The "simulate full loop" bypass button
-is REMOVED. The calibration.js hooks into the media player's playback tick events — it
-cannot be faked from inside the game. Once calibrated, the counter-wave overlay appears on
-the race corridor; the jammer's suppression glyphs transform into navigable signal gaps; the
-boss race becomes winnable (not auto-won — the player still runs the boss circuit).
-
----
-
-## 3. THE EXPANSION ARC — New Verb per Round
-
-### Model: Stage 2 "Glyph Dungeon"
-
-Stage 2 adds one new verb per biome band:
-- Warrens (floors 1-3): avoid terrain. Basic movement.
-- Cisterns (floors 4-6): break line-of-sight with walls to dodge ranged monsters.
-- Emberworks (floors 7-9): manage spreading fire — fire is not a monster, it is a state that
-  propagates and must be anticipated several moves ahead.
-- Overflow: manage darkness — light mechanic adds a new resource constraint.
-
-Each biome's verb is orthogonal to the previous. Going deeper always means a NEW thing to
-think about, never just more enemies or bigger numbers.
-
-### Signal Racer rounds (ordered; each round is one short circuit = one full run through a
-beat-pattern table, ~3-5 minutes first attempt, faster on retry)
-
-**Round 1 — AVOID (verb: lane switch)**
-- 3 lanes. Static obstacle blocks (░ noise glyph) placed in random lane positions drawn from
-  seed. Beat window is FORGIVING (wide window, long tick).
-- Player learns: switch lane to not die. That is all.
-- No timing pressure. No combo. No gates. Crash = integrity damage.
-- Completion: survive to the finish line with integrity > 0.
-- New glyph introduced: ░ (static block, always solid, always avoidable by moving away).
-
-**Round 2 — TIME IT (verb: on-beat action)**
-- Obstacles now come in BURSTS: 3-tick burst of noise, then 2-tick clear, then burst, etc.
-  The beat HUD glyph pulses with the burst rhythm.
-- A lane switch during a burst still works but costs 2 integrity (wrong-beat penalty).
-  A lane switch during the clear window costs 0.
-- Player learns: the beat is not decoration — WAIT for the gap, then move.
-- New glyph: ▒ (burst-sync block — same solid obstacle, but its arrival is periodic, so
-  the player can see the pattern and time around it).
-- On-beat accuracy now displayed as a percentage in the HUD; high % = bonus packets at end.
-
-**Round 3 — READ THE PATTERN (verb: anticipate, not just react)**
-- Obstacle sequences become 4-tick patterns: e.g. [░ in A, clear, ░ in A, ░ in B].
-  The same 4-tick pattern loops for the whole round, visible 3 rows ahead of the car.
-- The beat window tightens (narrower window = less time to act after seeing the obstacle).
-- New glyph: ▓ (dense interference block — costs 5 integrity if hit instead of 2). Player
-  must distinguish ░ (affordable hit) from ▓ (avoid at all costs) and plan ahead.
-- Player learns: read ahead, not just current row; prioritise dodging ▓ over ░ when the
-  beat window forces a choice.
-
-**Round 4 — COUNTER-PHASE LANE (verb: lane-as-state, not just position)**
-- One of the 3 lanes is now designated the COUNTER-PHASE lane (marked with ~ glyph in the
-  lane header). While in the counter-phase lane during a burst tick, the player is shielded
-  — the burst noise passes through without integrity damage.
-- But: the counter-phase lane SHIFTS every 8 ticks (A → B → C → A). The shift is telegraphed
-  2 ticks ahead by a flicker in the lane header.
-- Player learns: the correct lane is now a MOVING STATE to track, not just the obstacle-free
-  lane. Sometimes the right move is to take a small hit to stay in phase.
-- New concept: a lane can have a property (phase alignment) that makes it better even when
-  not empty. This is the seed of the counter-wave idea the boss fight will use.
-
-**Round 5 — BOOST GATES (verb: risk / reward decision)**
-- Boost gates appear (glyph: >>) in one lane per beat window. Hitting a boost gate ON-BEAT
-  while in that lane earns +5 packets and a 1-tick speed burst (obstacles shift faster for
-  1 tick, then return to base speed).
-- Missing a boost gate (wrong lane or off-beat) does nothing (no penalty — this is a reward-
-  only mechanic, not a punishing one; the cost is opportunity cost).
-- Player learns: the game is no longer purely defensive. Actively hunting gates is faster
-  economically but requires route planning that may conflict with obstacle avoidance.
-- This round deliberately creates tension between "safe dodge route" and "gate harvest route"
-  — the player must choose their play style.
-- New glyph: >> (boost gate).
-
-**Round 6 — SPLIT CHANNEL (verb: committed routing across a fork)**
-- The track splits into two sub-channels (HI and LO) for 8-tick segments, then merges.
-  HI: more boost gates and more ▓ blocks (high risk, high reward).
-  LO: fewer gates, only ░ blocks, but counter-phase lane shift is more predictable (safe).
-- The channel choice is made at the fork glyph (Y character in the track). Once chosen,
-  the player is locked into that channel until the merge.
-- Player learns: committing to a route is a new decision layer. Unlike previous rounds where
-  the player reacted tick-by-tick, the fork requires a 8-tick-ahead evaluation of which
-  channel suits their current integrity and packet score.
-- New glyph: Y (fork), ^ (merge). The channel is a 4-row sub-track beside the main track.
-
-**Round 7 — BOSS: COUNTER-WAVE RACE (verb: synthesis + un-cheat prerequisite)**
-- The Jammer occupies the track ahead of the player (shown as an X glyph two rows ahead).
-  All mechanics from rounds 1-6 are active simultaneously in a single combined circuit.
-- The jammer's suppression field (dominant jammer wave shown in wave panel) makes every ▓
-  block cost DOUBLE integrity, and counter-phase lane shifts TWICE as fast.
-- If the counter-wave is NOT calibrated: suppression field persists; the boss is not beatable
-  (player will run out of integrity before the finish line in any reasonable play).
-- If the counter-wave IS calibrated (transmission_hum.mp3 listened to for 14s): the counter-
-  wave overlay activates; ▓ blocks revert to ░ cost (double damage cancelled); counter-phase
-  shift returns to 8-tick rate. The race is NOW winnable — not auto-won. Player must
-  execute a clean combined circuit to cross the finish line before the jammer.
-- Victory: state.boss.defeated = true; packets += 100; BTS file revealed.
-
-### Summary table
-
-| Round | New Verb | New Glyph(s) | Core decision |
-|-------|----------|--------------|---------------|
-| 1 | Avoid obstacle | ░ noise block | Which lane |
-| 2 | Time your move on-beat | ▒ burst block | WHEN to move |
-| 3 | Read the pattern ahead | ▓ dense block | Prioritise which hit to take |
-| 4 | Track lane-as-state (counter-phase) | ~ lane marker | Move to shield, not just gap |
-| 5 | Chase boost gates (risk/reward) | >> gate | Offensive vs. defensive routing |
-| 6 | Commit to a channel at a fork | Y fork, ^ merge | 8-tick lookahead per segment |
-| 7 | Synthesise all + use counter-wave | X jammer | Beat the boss while managing everything |
+- **Lenticular design** (Mark Rosewater's term): a card "appears on its surface to be very
+  simple, but once you understand more about how to use it, it becomes more complex." Cap surface
+  complexity so beginners feel competent; hide depth in interactions. We give every card an
+  obvious surface use *and* a sequence/timing payoff. ([MTG: Lenticular Design](https://magic.wizards.com/en/news/making-magic/lenticular-design-2014-03-31), [First Person Scholar](https://www.firstpersonscholar.com/the-game-design-holy-grail/))
+- **Ascension-style escalation** sustains the long tail: 20 stacking modifiers, each adding a
+  *rule change* (not a number), each worth +5% score, "a grueling mathematical puzzle that
+  actively cheats to beat you" — and the satisfaction is in *adapting your strategy to each new
+  rule*. Our prestige "Protocol Version" is the same idea. ([STS Wiki: Ascension](https://slay-the-spire.fandom.com/wiki/Ascension), [Kwan's Qualms](https://www.kwansqualms.com/qualms/2025/2/19/sts))
 
 ---
 
-## 4. FUN & RETENTION
+## 2. OUR CORE LOOP — Protocol Codex, moment to moment
 
-### Economy and meta-loop
+The engine is built and good; this is the loop it already runs, with the gaps the build closes.
 
-The `packets` resource is the economy unit (existing). Packets are earned per round:
+**Moment-to-moment (one combat):** draw 5, you have energy (currently a flat 3), each enemy
+telegraphs its next intent. You spend energy playing **Signal** (attack), **Protocol** (skill/
+block), and **Layer** (power) cards from a deck themed as a network conversation. The signature
+hook is **sequence-sensitivity**: cards care about *what you already played this turn* — `SYN`
+draws 2 *if* `ACK` was played first; `KEEPALIVE` gains extra block *if* `ACK` preceded it;
+`PUSH` scales with cards played; `ASYMMETRIC` pays off if block > HP. Block resets each turn,
+Vulnerable/Weak tick down, Strength persists. Win → 1-of-3 card draft (+ handshakes currency,
++ relic at elites). ([engine: `combat.js`, `cards.js`])
 
-    packets = base_per_lap
-            + floor(on_beat_pct * accuracy_bonus_max)
-            + integrity_remaining_bonus
-            + boost_gates_collected * gate_value
+**The run:** a seeded **4-act branching map** (Slay-the-Spire DAG, ~15 nodes/act:
+combat/elite/rest/shop/event/boss). You navigate, draft, prune at rest sites, spend
+**handshakes** at shops, and fight an **act mini-boss** at the end of acts 1–3 (Kernel Panic /
+Buffer Overflow / Deadlock, fixed HP). Act 4 ends at **The Refused Connection** — the
+codex-gated finale.
 
-This means a perfect run earns significantly more than a survival run, creating a reason to
-replay earlier rounds even after progressing. The three upgrades to add to the shop
-(fed by packets from all stages):
+**Why it's fun (and what the build must protect):** deterministic-from-seed combat means the
+puzzle is *fair* (no Date.now/Math.random in the live path — this is a hard house rule and a
+genuine asset, see §5); ASCII/text + a little colour keeps it readable and on-house-style;
+elites are already genuinely lethal (Expired Certificate's unblockable expiry, Man-in-the-Middle's
+mirror) so risk-reward is real.
 
-- **Noise Filter** (reduces integrity damage per ░ hit from 2 to 1). Makes round 3 more
-  forgiving; lets the player take small hits while learning patterns.
-- **Spectrum Analyzer** (widens the beat window by 20%). Makes round 2 more accessible;
-  critical upgrade for players who struggle with rhythm timing.
-- **Signal Amplifier** (boosts gate value from 5 to 8 packets per gate). Makes the
-  risk-reward calculus of round 5 and 6 more profitable; reward for skilled play.
-
-These upgrades are STAGE-LOCAL (they apply only within stage 5's simulation context and are
-purchased with the global packet pool) — consistent with other stages' upgrade model.
-
-### Risk/reward decisions that sustain engagement
-
-- **In every round:** the option to take a ░ hit intentionally to gain positional advantage
-  (e.g. to stay in counter-phase lane while a burst fires) is a real trade-off. Integrity is
-  a finite resource per run; spending it for positioning is a skill expression.
-- **Rounds 5-6:** the boost gate hunting vs. obstacle dodging tension rewards high-accuracy
-  play with exponentially more packets, giving skilled players a faster path through the
-  metagame grind.
-- **Boss round:** the counter-wave calibration gate ensures that the player has INTERACTED
-  with the host app's media player before the boss is beatable — the unlock is real, not
-  symbolic. The boss itself still requires execution.
-
-### What sustains 40min to 2h
-
-- 7 rounds × ~4 min each first attempt = ~28 min to reach boss, ~35-40 min with retries.
-- Each round can be replayed for packet farming (improve on-beat % → more packets → buy
-  upgrades → easier later rounds → cleaner boss run). Loop is tight.
-- Replay incentive: the seed-deterministic patterns mean the SAME run can be practiced.
-  A player who retries round 3 will face the SAME pattern and can measurably improve.
-- Narrative hook: the log messages and wave panel tell a coherent signal-warfare story;
-  each round's completion pushes a new log line that the player reads before advancing.
+**The un-cheat boss — preserve exactly.** The Refused Connection is *not* a normal fight you can
+out-stat. The boss speaks a protocol you don't know until you **read chapter 9 of
+`protocols_of_the_entity.epub` in the real file-viewer epub reader** (host-app feature →
+`5.protocol_ch9_read` action + achievement). That read is **load-bearing and not bypassable**:
+without it the connection stays `PROTOCOL MISMATCH` and your signals deal 0. This is the
+metagame's signature — every stage is a self-contained game whose *boss alone* reaches into a
+real host-app feature. The build's job is to keep that gate **and** make the fight use your real
+deck (§3, Act 4), not 3 hard-coded buttons.
 
 ---
 
-## 5. CAVEATS — Determinism, Performance, Uniqueness
+## 3. THE EXPANSION ARC — one NEW verb per act (the most important deliverable)
 
-### Determinism — remove Date.now from the live path
+**The model (Stage 2 "Glyph Dungeon").** Each biome band added a *new verb* the player had to
+learn — avoid terrain → break line-of-sight → manage spreading fire → manage darkness — so
+descending always meant "a new thing to think about," never inflation. Stage 5 does the same,
+and the theme hands us a perfect ladder: **climb the network stack.** Each act is one layer of
+the protocol stack and adds one networking verb. Numbers grow a little; the *decision* changes
+every act. The four acts map cleanly to the existing `FINAL_BOSS_ACT = 4`.
 
-Current state.js line 4 uses `Date.now()` as a seed fallback:
+> Design rule for every act below: the new verb must be **expressible in the existing engine's
+> ctx/intent API** (or a *small* additive primitive), must show up in **cards, enemy intents, AND
+> a relic**, and must make at least one earlier-good card a *wrong* choice in the new context.
 
-    const seed = String(context.seed || context.now || Date.now()).replace(/\W/g, '').slice(-8) || 'stage5';
+### Act 1 — LINK LAYER · "Handshake" → VERB: **SEQUENCE** (order within a turn)
+The foundational verb, already half-present: cards resolve differently based on *what you played
+earlier this turn*. Teach it explicitly and build the act around it.
+- **New decisions:** play order is a puzzle. `SYN`-then-`ACK` vs `ACK`-then-`SYN` are different
+  turns. The "obvious" greedy order is often wrong (lenticular).
+- **Cards:** the SYN/ACK/KEEPALIVE/PUSH family (exists) + new "first-card / last-card" cards
+  (e.g. *Root Certificate*-style "the first card each turn costs 0", a closer that pays off if
+  it's the last card).
+- **Enemy:** Firewall Entity already alternates block/attack — telegraph it so the player learns
+  to sequence damage *into* the attack turn.
+- **Relic:** *Protocol Primer* (exists) — rewards playing Protocol cards; reframe as a sequence
+  enabler.
+- **Mini-boss:** Kernel Panic (exists).
 
-`Date.now` must NOT appear in the live path. Fix: require context.seed from the metagame
-engine (which already supplies it deterministically); remove the Date.now fallback; if seed
-is absent, use a hardcoded string literal ('stage5s5' or similar).
+### Act 2 — TRANSPORT LAYER · "Latency / Windows" → VERB: **DELAY** (deferred resolution)
+The genuinely new verb: cards can be **queued in-flight** and resolve on a *future* turn. You
+trade tempo now for a guaranteed payoff later, and you must plan two turns ahead.
+- **New primitive (small, additive):** a per-combat `pending` queue — `ctx.queue(turnsAhead, fn)`
+  resolved at player-turn-start. Deterministic; no RNG.
+- **New decisions:** set up a big delayed packet, then *protect the window* (block) until it
+  lands. Enemies now telegraph **2 turns ahead**, so you race their windups with yours.
+- **Cards:** *Windowed Send* ("deal 20 next turn"), *Retransmit* ("if a queued packet was lost to
+  your death-door, re-send"), *Nagle* ("hold: combine all delayed packets into one hit").
+- **Enemy:** a "round-trip-time" enemy whose big hit is queued 2 turns out and *grows* each turn
+  you don't interrupt it — the player learns to spend a card on interrupt vs. out-race it.
+- **Relic:** *Persistent Socket* (exists, +block each turn) becomes the "hold the window open"
+  relic; add one that makes the *first* delayed packet each combat resolve a turn sooner.
 
-The round-pattern beat tables are derived from the seed using a pure seedable PRNG
-(mulberry32 or a simple LCG). The PRNG is called once per round at mount time to generate
-the full pattern table for that round; it is never called again during play. All obstacle
-positions for all ticks are thus computed upfront, stored as an array, and indexed by tick
-count. No random calls during the render loop.
+### Act 3 — NETWORK LAYER · "Congestion" → VERB: **THROUGHPUT** (dynamic energy / pacing)
+This is where we **un-freeze energy** (the audit's explicit gap) and turn it into the verb.
+Energy becomes a **congestion window**: it is no longer a flat 3.
+- **New rule (TCP slow-start / congestion-collapse, deterministic):** play a *wide* turn (spend
+  all energy, dump many cards) and next turn's energy **drops** (congestion); play a restrained
+  turn and it **grows** back toward a cap (slow-start). Optionally, oversize turns inflict
+  **Packet Loss** — a card in hand is "jammed" (unplayable) next turn until cleared.
+- **New decisions:** the whole act re-teaches tempo — you can't just empty your hand every turn;
+  you pace throughput. Block-control decks love this; SYN-flood aggro must adapt.
+- **Cards:** *Bandwidth* ("raise your energy cap by 1 for the rest of combat"), *Backoff* ("skip
+  a play to refund 2 energy next turn"), *Defrag* ("clear all jammed cards, draw 1").
+- **Enemy:** Packet Storm (exists) + a congestion enemy that *punishes wide turns* (a Mirror
+  variant — Deadlock/Man-in-the-Middle already mirror cards-played; lean into it as the act's
+  signature threat).
+- **Relic:** an *Overclock Chip* successor that raises the energy cap but worsens congestion
+  decay — a real build-defining tradeoff (cursed-relic design from §1).
+- **Mini-boss:** Deadlock (exists, already a mirror boss — perfect fit).
 
-### Determinism — beat timing
+### Act 4 — SESSION LAYER · "The Refused Connection" → VERB: **NEGOTIATE** (mutating protocol, real deck)
+The finale and the un-cheat. The new verb is **satisfying a handshake constraint that mutates
+each phase** — and you fight it **with your real built deck** (closing the audit's biggest gap:
+the boss must stop ignoring your deck).
+- **How the real deck plugs in (un-cheat preserved, deepened):** you play your *actual* Signal/
+  Protocol/Layer cards, but the boss imposes a per-phase **protocol state** that decides which of
+  your signals are *accepted* (deal damage) vs *refused* (deal 0). Phase 1 demands `SYN` *first*;
+  Phase 2 demands an `ACK` *precede* any signal; Phase 3 demands an `ACK` *every* turn or you take
+  ongoing damage. This is exactly the existing `boss.js` handshake logic — but now driven by
+  whatever cards your deck actually contains, so deck-building *matters at the boss*: you need
+  Protocol cards in your deck to satisfy the handshake while your Signals carry the damage.
+- **Why chapter 9 stays load-bearing:** the epub chapter is the **decryption key** — it spells out
+  each phase's required sequence. Without the read, `PROTOCOL MISMATCH` is permanent and every
+  signal deals 0 (already enforced). Reading it in the real reader is the only way to know the
+  Phase 2/3 ordering. Not bypassable; uses a real host-app feature; the run is mandatory to reach
+  it (close the hub bypass — the boss is the act-4 node, not a hub button).
+- **New decisions:** mid-fight you must *re-sequence on the fly* as the demanded protocol changes,
+  using a deck you built across acts 1–3 — every prior verb (sequence, delay, throughput) pays
+  off here.
 
-Beat windows are NOT derived from real-time audio analysis (we have no Web Audio API
-access to the .mp3 playback). Beat timing is a DESIGNED table per round: e.g. round 2
-uses a 5-tick burst/2-tick gap pattern; this is a constant, not sampled from audio.
-The `transmission_hum.mp3` calibration is a UX GATE (did you listen?) not a signal
-processor (we do not read its waveform). This distinction must be clear in the code.
+**Summary of the ordered arc (each line is a NEW verb, not a bigger number):**
+1. **Sequence** — order of cards within a turn matters.
+2. **Delay** — queue cards to resolve on a future turn; protect the window.
+3. **Throughput** — energy becomes a dynamic congestion window; pace your turns.
+4. **Negotiate** — satisfy a mutating handshake with your real deck; the epub is the key.
 
-### Performance
+---
 
-- The game loop uses requestAnimationFrame but ALL game logic runs on tick increments
-  (tick = a fixed ms interval, e.g. 150ms per tick). rAF calls accumulate real delta time
-  and fire game logic only when accumulated time >= tick interval. This decouples rendering
-  from logic and ensures the game plays at the same speed regardless of frame rate.
-- ASCII render: each tick redraws a 3×8 character grid (24 characters). Zero canvas API.
-  DOM writes are batched (one innerHTML set per tick). Cost is negligible.
-- Obstacle pattern tables (7 rounds × ~100 ticks each = ~700 entries) are computed once
-  at mount and stored in state. No per-tick computation beyond a table lookup and
-  integrity delta.
+## 4. FUN & RETENTION — economy, meta-loop, risk-reward (40 min – 2 h)
 
-### Uniqueness
+- **Card upgrades (the missing StS staple).** Every card gets an upgraded form (Attack: +dmg;
+  Protocol: +block or −cost; Layer: −cost or a second effect). Upgrade at **rest sites — heal OR
+  upgrade, never both** (the core risk-reward sacrifice). Upgrades should sharpen the *verb* of
+  the act, not just add numbers (e.g. an upgraded delay card lands a turn sooner). ([STS tips: rest-site upgrade often beats healing](https://www.eneba.com/hub/games/game-guides/slay-the-spire-tips/))
+- **Three archetypes mapped to the three card types** (so drafts have identity from act 1, per
+  STS's "your run's identity is set in act 1"): **SYN-Flood (aggro/tempo)** = Signal-heavy,
+  cards-played scaling; **Stateful Stack (block-control)** = Protocol-heavy, block→damage payoffs
+  (`ASYMMETRIC`); **Layered Cipher (power-scaling)** = Layer-heavy, Strength/engine ramp. Target
+  deck size **12–18** for reliable combos; **reward skipping** with handshakes so decks stay thin.
+- **Economy with real sinks.** Handshakes (exists) become a genuine currency: shop buys cards,
+  buys **card removal** (the most powerful action — escalating price), buys relics/upgrades.
+  Elites are the risk-reward fulcrum: lethal, but the only reliable relic source. ([STS Ascension: elites justify the risk](https://slay-the-spire.fandom.com/wiki/Ascension))
+- **Real relics.** Replace stat-stick relics with **build-definers and one or two cursed relics**
+  (strong effect + a real downside), one per act tuned to that act's verb (§3). A relic must
+  *change how you build*, not just add a number (§1, STS principle).
+- **Authored map composition** (replace random node rolls): guarantee per act a shop, ≥1 elite, a
+  pre-boss rest, and an event; tune combat/elite density per act so the *verb* of the act gets
+  enough reps before its mini-boss. Still fully seeded/deterministic.
+- **Meta-loop = "Protocol Version" prestige (Ascension analogue, exists).** Banked handshakes buy
+  Protocol Versions; each adds a *rule change* + small power (the build should evolve these toward
+  Ascension-style stacking **modifiers** — e.g. "congestion decays faster", "boss adds a Phase 0"
+  — not just +5 HP), giving the long tail its replay reason. ([STS Ascension model](https://slay-the-spire.fandom.com/wiki/Ascension))
+- **Session shape:** first clear ~60–85 min across 1–3 runs (learn the four verbs); post-death
+  runs faster as you know the pool; prestige tail extends indefinitely. The four-verb arc means a
+  death in act 3 still *taught you something new*, which is the retention engine.
 
-The framing (interference signals, counter-phase mechanics, jammer suppression field) is
-native to this stage's signal-warfare narrative and does not collide with any other stage's
-theme. The counter-phase lane mechanic (lane-as-state rather than lane-as-position) is
-novel within the project's stage set. The un-cheat (listen to the audio file in the real
-media player) reuses the media player host app feature in a way that is already implemented
-and load-bearing — it cannot be cheated by a client-side simulation because
-`applyCalibrationTick` checks that the file path matches `TRANSMISSION_HUM_PATH` exactly
-and that the active flag (set by the real player) is true. Removing the bypass button
-(the "simulate full loop" button in renderer.js) makes this genuinely non-bypassable.
+---
+
+## 5. CAVEATS — determinism / perf / uniqueness specific to this stage
+
+- **Determinism is non-negotiable and currently has a leak.** `mapgen.enemyForNode(node, act,
+  rng = Math.random)` and `run.enemyForCurrentNode(run, rng = Math.random)` default to
+  `Math.random` — if any UI/runtime call omits a seeded rng, enemy selection becomes
+  non-deterministic, breaking replays and the house rule. **Fix: thread a seeded RNG
+  (`makeRng(hashSeed(seed, nodeId))`) into every enemy pick; ban the `Math.random` default in the
+  live path.** All new verbs (delay queue, congestion decay, packet-loss jamming) must resolve
+  from seeded state, never wall-clock. Tests must assert same-seed → same enemies/cards.
+- **Engine API budget.** The new verbs should ride the existing `ctx`/intent contract. Only two
+  *small* additive primitives are needed: a per-combat **delay/pending queue** (Act 2) and a
+  **dynamic energy cap + congestion decay** field (Act 3). Resist adding a bespoke system per
+  card — keep effects declarative `effect(ctx)` functions (the engine's strength).
+- **Perf / house style.** ASCII/text + a little colour only; no canvas/WebGL. Intent telegraphs,
+  energy pips, HP bars stay DOM/CSS. Files stay ≤300 LOC soft / 500 hard — split `cards.js` by
+  archetype and `enemies.js` by tier as the pool grows to ~36–40 cards. Regenerate the per-stage
+  lazy bundle with `node scripts/gen-metagame-bundles.mjs` after any source change (the build
+  ships bundled, authored modular).
+- **Uniqueness guards (do not regress):** (1) the run must be **mandatory** — close the hub bypass
+  so the boss is only reachable as the act-4 node after a full run; (2) the un-cheat (read ch. 9
+  in the real epub reader → `5.protocol_ch9_read`) stays **load-bearing and not bypassable**, and
+  the boss now fights your **real deck** through the handshake-acceptance rule (§3 Act 4); (3) keep
+  the `boss.js` handshake fns + their unit test green; (4) keep the deterministic, self-contained,
+  in-modal "a whole game in the game" feel — Stage 5 is the genre's flagship in the metagame.
+- **Balance caveat from prior playtests (carry forward):** standard trash trends easy while elites
+  carry difficulty; the new per-act verbs are the intended *difficulty texture* — tune so each
+  act's verb-enemy threatens *before* its mini-boss, and never blind-tune (read the rendered fight
+  + the assertion together, per the repo's test discipline).
 
 ---
 
 ## Sources
 
-- [Thumper Q&A — rhythm violence approach (Game Developer)](https://www.gamedeveloper.com/audio/q-a-the-rhythm-violence-of-i-thumper-i-)
-- [Thumper — level progression and tension design (Electron Dance)](https://www.electrondance.com/thumper-aint-no-flow-game/)
-- [Thumper — is the best kind of music game (Kotaku)](https://kotaku.com/thumper-is-the-best-kind-of-music-game-1787670750)
-- [Thumper Wikipedia](https://en.wikipedia.org/wiki/Thumper_(video_game))
-- [AudioSurf — Grokipedia (track gen, match-3 mechanics)](https://grokipedia.com/page/Audiosurf)
-- [AudioSurf — Wikipedia](https://en.wikipedia.org/wiki/Audiosurf)
-- [Riff Racer post-mortem — MEGA system, moments-in-song design (MCV/DEVELOP)](https://mcvuk.com/development-news/the-develop-post-mortem-riff-racer/)
-- [Riff Racer review — fluid rhythmical delight (Goomba Stomp)](https://goombastomp.com/riff-racer-fluent-rhythmical-delight/)
-- [Bit.Trip Runner — Wikipedia](https://en.wikipedia.org/wiki/Bit.Trip_Runner)
-- [Bit.Trip Runner 2 — speed running analysis (Game Wisdom)](https://game-wisdom.com/analysis/bit-trip-runner2)
-- [Beat Racer — Skich](https://skich.app/games/beat-racer)
-- [Rhythm game progression mechanics (Rhythm Quest devlog, Medium)](https://ddrkirbyisq.medium.com/rhythm-quest-devlog-13-music-and-level-design-682a92e57def)
-- [Gameplay design fundamentals — progression (Game Developer)](https://www.gamedeveloper.com/design/gameplay-design-fundamentals-gameplay-progression)
+- [Roguelike deck-building game — Wikipedia](https://en.wikipedia.org/wiki/Roguelike_deck-building_game)
+- [Slay the Spire tips — Eneba](https://www.eneba.com/hub/games/game-guides/slay-the-spire-tips/)
+- [Slay the Spire review — Eneba](https://www.eneba.com/hub/games/slay-the-spire-review/)
+- [sts-synergy-relic — GitHub (twanvl)](https://github.com/twanvl/sts-synergy-relic)
+- [Monster Train 2 review — GamesRadar+](https://www.gamesradar.com/games/roguelike/monster-train-2-review/)
+- [Monster Train 2 clan synergies — Game Pass Pod](https://www.gamepasspod.com/blog/monster-train-2-a-deep-dive-into-new-clan-synergies/)
+- [Inscryption — what's happening in each act — ScreenRant](https://screenrant.com/inscryption-whats-happening-in-each-act-full-story-explained/)
+- [Inscryption Wiki — Act II](https://inscryption.fandom.com/wiki/Act_II)
+- [Tackling deckbuilding design in Roguebook — Game Developer](https://www.gamedeveloper.com/design/tackling-deckbuilding-design-in-abrakam-s-roguebook)
+- [The Best Roguelike Deckbuilders — Rogueliker](https://rogueliker.com/roguelike-deckbuilders/)
+- [Lenticular Design — Magic: The Gathering (Rosewater)](https://magic.wizards.com/en/news/making-magic/lenticular-design-2014-03-31)
+- [The Game Design Holy Grail — First Person Scholar](https://www.firstpersonscholar.com/the-game-design-holy-grail/)
+- [Ascension — Slay the Spire Wiki](https://slay-the-spire.fandom.com/wiki/Ascension)
+- [Completing Ascension 20 on all characters — Kwan's Qualms](https://www.kwansqualms.com/qualms/2025/2/19/sts)

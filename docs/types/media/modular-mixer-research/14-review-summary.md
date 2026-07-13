@@ -88,16 +88,11 @@ The first implementation should not attempt the whole editor. It should prove:
 - Project archives containing source media.
 - Server-side processing.
 
-## Approval Decision
+## Approval Outcome
 
-Approve the package if the direction, MVP boundary, capability policy,
-project import/relink behavior, and memory posture are acceptable.
-
-Amend the package if any recommended default in `10-review-checklist.md` should
-change before implementation.
-
-Reject or redirect the package if the desired product is still primarily an
-audio-only lane redesign rather than a modular media mixer/editor.
+The package was approved on 2026-06-26 and its eight implementation stages are
+complete. `10-review-checklist.md` preserves the decision record; all unfinished
+repository work is tracked in [`TASKS.md`](../../../../TASKS.md).
 
 ## Files To Read For Final Review
 
@@ -105,7 +100,6 @@ Minimum:
 
 - `00-scope-and-decisions.md`
 - `10-review-checklist.md`
-- `13-package-audit.md`
 
 Recommended:
 

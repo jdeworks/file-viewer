@@ -1,7 +1,9 @@
 # Stage 3 "Memory Grid" — Research & Expansion Design
 
-Date: 2026-06-26  
-Status: SHIPPED core game. This document targets the stretch-backlog expansion.  
+Date: 2026-06-26
+Status: Historical design reference, not an active backlog. The current
+implementation is authoritative; unfinished work is tracked only in
+[`TASKS.md`](../../../../../../TASKS.md).
 Scope: Genre anchoring, existing-loop analysis, ordered new-mechanic-per-tier arc, retention model, caveats.
 
 ---
@@ -302,4 +304,4 @@ Only `colourMarks` needs to be persisted (marks are the player's work-in-progres
 - [So Many Games: CiniCross Review](https://somanygames.co.uk/review/cinicross/)
 - [Ctrlr.net: CiniCross deep dive](https://www.ctrlr.net/cinicross-has-done-the-unthinkable-made-nonograms-of-all-things-a-dementedly-addictive-roguelite-hook/)
 - [ComicBook.com: Best Picross Games](https://comicbook.com/gaming/list/6-best-picross-puzzle-games-that-you-have-to-play/)
-- [Stage 3 backlog memory](../../../../.claude/projects/-home-jens-repos-file-viewer/memory/stage3-memory-grid-backlog.md)
+- Repository open-work tracker: [`TASKS.md`](../../../../../../TASKS.md)

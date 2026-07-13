@@ -425,21 +425,6 @@ decayChance = max(0.05, 1.0 - (cacheHitLevel * 0.15))
 
 ---
 
-## K. Implementation checklist (for the developer)
+## Implementation status
 
-- [ ] Nonogram grid renderer (variable size, zoom/pan for large grids)
-- [ ] Cell state machine: UNKNOWN → FILLED → MARKED → UNKNOWN (left click); UNKNOWN ↔ MARKED (right click)
-- [ ] Clue rendering: row clues left of grid, col clues above; completed clues grey out
-- [ ] Constraint propagation solver (used for hint tokens and uniqueness verification)
-- [ ] Pre-generated puzzle pool: 50 unique puzzles per tier (generated offline, stored as JSON)
-- [ ] Puzzle difficulty rating system (tag each puzzle by technique required)
-- [ ] Fragment retention system: 8 slots (expandable), state machine per fragment
-- [ ] Decay timer: 45s base, fires `triggerDecay()`, selects random retained fragment
-- [ ] Passive Register income: ticks every second based on active fragment bonuses
-- [ ] Register spending panel: upgrades list, costs, effects
-- [ ] Memory Leak boss: 20×20 puzzle + corruption radius system + column clue hiding
-- [ ] Diff viewer integration: two log files, diff display restores up to 5 hidden clues
-- [ ] Bell messages (`messages3.js`)
-- [ ] Cache Hit Rate prestige system (decay chance reduction, retention cap increase)
-- [ ] Auto-save per-puzzle: mid-solve state preserved between sessions
-- [ ] Stage 3 completion → Stage 4 unlock
+The core game described here is implemented. Unfinished expansion, balance, and polish work is tracked only in [TASKS.md](../../../../TASKS.md).

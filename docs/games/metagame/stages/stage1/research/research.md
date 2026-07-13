@@ -1,8 +1,8 @@
 # Stage 1 — Bit Foundry: Research & Expansion Design
 
-> **Scope:** Genre grounding + expansion arc for the NEXT layer of Stage 1 (already built and
-> tuned as of 2026-06-26). This is not a rebuild spec. The existing idle-clicker loop is solid;
-> this document defines the ordered sequence of NEW mechanics that deepen it across prestige runs.
+> **Status:** Historical design reference, not an active backlog. The current
+> implementation is authoritative; unfinished work is tracked only in
+> [`TASKS.md`](../../../../../../TASKS.md).
 
 ---
 

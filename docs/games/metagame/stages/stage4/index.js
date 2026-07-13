@@ -39,6 +39,7 @@ export function mountStage(ctx) {
   return {
     devControls: stageMeta.devControls,
     dev(id) { if (view && typeof view.dev === 'function') view.dev(id); },
+    jumpToBoss() { return view?.jumpToBoss?.() || false; },
     repaint: view.repaint,
     destroy() {
       if (run && typeof run.destroy === 'function') run.destroy();

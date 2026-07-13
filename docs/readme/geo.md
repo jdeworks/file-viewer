@@ -18,7 +18,7 @@
 | Offline map preview | ✅ | GeoJSON renders as inline SVG; GPX renders track/waypoints on canvas (no tile server — zero off-origin) |
 | Track stats | ✅ | Distance, elevation gain/loss, duration, trackpoints, waypoints |
 | GPX metadata | ✅ | Track name, creator, bounds |
-| Waypoints | ⚠️ | Plotted as points and counted in the stats table; `<name>` is not parsed or labeled yet (see EDITOR.md "GPX waypoint labels") |
+| Waypoints | ⚠️ | Plotted as points and counted in the stats table; `<name>` is not parsed or labeled yet (tracked in the repository `TASKS.md`) |
 | GeoJSON features | ✅ | Points, LineStrings, Polygons, and Multi* geometries rendered without property labels |
 | KML rendering | ❌ | Handled by the dedicated KML viewer, not this map type |
 | KMZ (zipped KML) | ❌ | Handled by the dedicated KMZ viewer, not this map type |

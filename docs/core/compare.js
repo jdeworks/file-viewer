@@ -38,6 +38,7 @@ export function initCompareDropTarget() {
   bar.addEventListener('dragover', (e) => {
     if (![...e.dataTransfer.types].includes(TREE_DRAG_TYPE)) return;
     e.preventDefault();
+    e.stopPropagation();
     e.dataTransfer.dropEffect = 'copy';
     bar.classList.add('drag-over');
   });
@@ -47,6 +48,7 @@ export function initCompareDropTarget() {
   bar.addEventListener('drop', async (e) => {
     if (![...e.dataTransfer.types].includes(TREE_DRAG_TYPE)) return;
     e.preventDefault();
+    e.stopPropagation();
     bar.classList.remove('drag-over');
     const path = e.dataTransfer.getData(TREE_DRAG_TYPE);
     const node = getDraggedTreeNode();

@@ -406,9 +406,6 @@ export function setRawMode(mode) {
   if (!state.rawview) return;
   state.rawMode = mode;
   state.rawview.setMode(mode);
-  // Stage-10 finale echo: switching a memory's echo artifact into its gated raw mode (genesis →
-  // Original, memory → Diff) witnesses that echo via the real feature (self-gates on the fixture).
-  viewerActions().then(({ recordStage10EchoRawMode }) => recordStage10EchoRawMode({ file: state.intake?.filename || '', mode }));
   syncRawModeButtons();
   // Keep the chosen view layout (split + draggable divider) stable across raw modes so
   // nothing jumps when switching original/current/diff/move-diff. Use the view-mode
@@ -451,10 +448,6 @@ export function currentEditableSource() {
 }
 
 export async function downloadCurrent() {
-  // Stage-10 finale echo: downloading the entropy echo artifact witnesses its echo via the real
-  // download feature (self-gates on the fixture; fires before the download work, so it's recorded
-  // even if the browser handles the save oddly).
-  viewerActions().then(({ recordStage10EchoDownload }) => recordStage10EchoDownload({ file: state.intake?.filename || '' }));
   let blob;
   if (state.binaryEdit?.dirty && typeof state.binaryEdit.getBytes === 'function') {
     const bytes = await state.binaryEdit.getBytes();

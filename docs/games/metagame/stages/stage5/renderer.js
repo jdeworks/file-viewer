@@ -1,446 +1,539 @@
-import { getBossLockState, raceTheJammer } from './boss.js';
-import { createGameLoop } from './game-loop.js';
-import { createEngine } from './engine.js';
-import { createCanvasRace } from './canvas-race.js';
-import { ROUNDS, roundByIdx, isBossRound, FINAL_ROUND_ID } from './rounds.js';
-import { buyUpgrade, applyUpgrades } from './shop.js';
-import { estimateRoundPackets } from './economy.js';
-import { roundLogLine, roundIntro } from './content.js';
-import { calibrationProgressStr } from './calibration.js';
-import { BTS_PATH, TRANSMISSION_HUM_PATH } from './messages.js';
-import { createAscension } from '../../shared/ascension.js';
-import { createRun } from '../../shared/run-state.js';
-import { ASCENSION_MODS, BASE_ASCENSION_CONFIG } from './ascension-mods.js';
-import { ascensionPanelEls, roundEstEl } from './panels.js';
-import { installDebugHook } from './debug-hook.js';
-import { applyDev } from './s5dev.js';
-import { createSteer } from './steer.js';
-import { disclosure } from './disclosure.js';
-import { pitStopOffer } from './pitstop.js';
-import { buildResultOverlay } from './overlay.js';
-import { createRaceFx } from './race-fx.js';
+// renderer.js — Stage 5 Protocol Codex controller: routes between the hub and the act-map run
+// (combat / reward / rest / shop / event). Owns the transient combat instance (never persisted —
+// a reload re-instantiates from the run's node). The act-4 boss, The Refused Connection, is fought
+// with the player's REAL deck (boss-combat.js wires the negotiation as an acceptance hook); reading
+// the codex (epub) is an optional buff — unread, the boss just carries more HP (UNCH9_HP_MULT) — not
+// a requirement to defeat it with the deck built across acts 1–3.
 
-const BOSS_IDX = ROUNDS.length - 1;
-const CK_SCHEMA = 2; // resume-checkpoint schema tag: bumped for the 2.5D canvas rebuild so pre-rebuild
-                     // (ASCII-era) checkpoints are rejected cleanly instead of desyncing on resume.
+import { createCombat, playCard, endTurn, makeRng, applyPotionEffect, strHash, congestionForAct, currentIntent } from "./combat.js";
+import { cardById } from "./cards.js";
+import { instantiateEnemy } from "./enemies.js";
+import { relicsFor } from "./relics.js";
+import { potionById } from "./potions.js";
+import { eventForNode, applyEventChoice } from "./events.js";
+import { nodeById } from "./mapgen.js";
+import {
+  createRun, moveTo, enemyForCurrentNode, resolveCombat,
+  takeReward, takePotion, usePotion, buyPotion, takeBossRelic, rest, removeCard, closeNode,
+  buyCard, buyRemoval, buyUpgrade, buyRelic,
+  prestigeCost, canPrestige, eligiblePrestigeUpgrades, seatAtFinalBoss, runScore,
+  finalActForWins, finalActOf, isVeteranRun
+} from "./run.js";
+import { banner } from "../../shared/feedback.js";
+import { getBossLockState } from "./boss.js";
+import { BTS_PATH } from "./messages.js";
+import { wireBossCombat, autoNegotiate as runAutoNegotiate, BOSS_PHASE_HP, UNCH9_HP_MULT } from "./boss-combat.js";
+import { SUPERBOSS_ID, wireSuperboss } from "./superboss.js";
+import { installStage5TestHook, removeStage5TestHook } from "./testhook.js";
+import { snapshotCombat, restoreCombat } from "./combat-persist.js";
+import { createRun as createRunState } from "../../shared/run-state.js";
+import { createAscension } from "../../shared/ascension.js";
+import { ASCENSION_MODS } from "./ascension-mods.js";
+import { combatView } from "./ui-combat.js";
+import { applyCombatFx } from "./combat-fx.js";
+import { openPileModal, openLogModal, openDeckModal, openPrestigeModal } from "./combat-modals.js";
+import { installCombatHover } from "./combat-hover.js";
+import { hubView, mapView, paintMapEdges, deathView, wonView } from "./ui-map.js";
+import { rewardView, restView, shopView, eventView, bossRewardView } from "./ui-rewards.js";
+import { openEpub, openBts, once } from "./renderer-open.js";
+import { applyDev, devSkipToBoss } from "./s5dev.js";
 
-export function renderStage5(ctx) {
-  const { host, state, actions, achievements, bell, bts, viewer, save, onStageComplete, orchestrator } = ctx;
-  const ascension = createAscension({ save: orchestrator?.save || null, stageId: 5, modifiers: ASCENSION_MODS });
-  const ascensionMods = () => ascension.applyModifiers(BASE_ASCENSION_CONFIG, ascension.level());
-  const raceRun = createRun({ save: orchestrator?.save || null, stageId: 5, slot: 'race', debounceMs: 400 });
-  const root = document.createElement('section');
-  root.className = 'stage5-signal-racer';
-  root.tabIndex = 0;
+const REFUSED_CONNECTION = "the-refused-connection";
+
+export function renderStage5({ host, state, actions, achievements, bell, bts, viewer, save, orchestrator, onStageComplete }) {
+  const root = document.createElement("section");
+  root.className = "stage5-protocol-codex";
   root.innerHTML = `
-    <header class="s5-hud">
-      <strong>SIGNAL RACER</strong>
-      <span>ROUND <b data-field="round"></b></span>
-      <span data-field="raceBox">RACE <b data-field="race"></b></span>
-      <span data-field="posBox">POS <b data-field="position"></b></span>
-      <span data-field="integrityBox">INTEGRITY <b data-field="integrity"></b></span>
-      <span data-field="packetsBox">PACKETS <b data-field="packets"></b></span>
-      <span data-field="calibBox">CALIBRATION <b data-field="calib"></b></span>
-      <div class="s5-progress" data-field="progressBox"><i class="s5-progress-fill" data-field="progressFill"></i></div>
-    </header>
-    <div class="s5-layout">
-      <div class="s5-track-col" data-field="trackCol">
-        <div class="s5-jammer" data-field="jammer" hidden></div>
-        <div class="s5-track-stage" data-field="stage"></div>
-      </div>
-      <aside class="s5-side">
-        <div class="s5-primary" data-field="primary"></div>
-        <div class="s5-rounds" data-field="rounds"></div>
-        <div class="s5-ascension" data-field="ascension"></div>
-      </aside>
-    </div>
-    <section class="s5-boss-panel" data-field="bossPanel">
-      <strong>THE JAMMER</strong>
-      <div data-field="bossState"></div>
-      <div class="s5-hint" data-field="hint"></div>
-    </section>
-    <div class="s5-boss-chip" data-field="bossChip"></div>
-    <ol class="s5-log"></ol>
-    <div class="s5-controls">
-      <button type="button" data-action="resume" hidden>resume race</button>
-      <button type="button" data-action="audio" hidden>open transmission_hum.mp3</button>
-      <button type="button" data-action="bts" hidden>open signal_racer.bts</button>
-    </div>
-    <div class="s5-overlay" data-field="overlay"></div>
-  `;
+    <header class="s5db-top"><strong>PROTOCOL CODEX</strong></header>
+    <div class="s5db-screen" data-screen></div>`;
   host.replaceChildren(root);
+  const screen = root.querySelector("[data-screen]");
 
-  const fields = Object.fromEntries([...root.querySelectorAll('[data-field]')].map((el) => [el.dataset.field, el]));
-  const log = root.querySelector('.s5-log');
-  const completeOnce = once((result) => onStageComplete?.(result));
+  // Combat persistence (kills the reload-retry exploit): the active fight is checkpointed into the
+  // run-state 'combat' slot (stageState[5].combat — a distinct slot from stage5's own state.run) so a
+  // reload RESUMES the same mid-fight state instead of re-rolling a fresh encounter. debounceMs:0 so
+  // every checkpoint is flushed into the save object before commit()'s save() serializes it.
+  const combatRun = orchestrator?.save
+    ? createRunState({ save: orchestrator.save, stageId: 5, slot: "combat", debounceMs: 0 })
+    : null;
 
-  let loop = null;
-  let engine = null;
-  let mode = 'select'; // 'select' | 'playing' | 'result'
-  let resultCtx = null; // { roundIdx, summary, canRetry, resolved, note } while the result card is up
+  // Ascension ladder STATE (selected level + cleared high-water mark) owned by the shared module; its
+  // CONTENT (the 15 rules) lives in ascension-mods.js and is applied inside createRun. Persisted at
+  // save.stageState[5].ascension + the global summary (save.global.maxAscension / ascensionCleared).
+  const ascension = orchestrator?.save
+    ? createAscension({ save: orchestrator.save, stageId: 5, modifiers: ASCENSION_MODS })
+    : null;
+  const ascInfo = () => ascension
+    ? { level: ascension.level(), maxUnlocked: ascension.maxUnlocked(), maxCleared: ascension.maxCleared(), maxLevel: ascension.maxLevel, floor: state.meta.protocolVersion || 0 }
+    : null;
 
-  // The 2.5D canvas racer. renderPrev/renderCur are the two most recent per-tick paint snapshots; the
-  // engine's onRender interpolates between them each frame (see startRound). autoSolving suppresses the
-  // per-tick HUD churn + canvas draws while the debug hook fast-forwards a whole round synchronously.
-  const canvasRace = createCanvasRace(state.calibration.seed);
-  fields.stage.append(canvasRace.el);
-  let renderPrev = null;
-  let renderCur = null;
-  let autoSolving = false;
-
-  // Touch steering docked DIRECTLY under the road (#2): the pad lives inside the track column so the
-  // road and its controls always share the viewport. Same loop.handleKey() seam the arrow keys use.
-  const steer = createSteer({ getMode: () => mode, getLoop: () => loop });
-  fields.trackCol.append(steer.el);
-
-  const fx = createRaceFx({ trackCol: fields.trackCol });
-
-  function calibrated() { return getBossLockState({ actions, state }).unlocked; }
-  function unlockedRounds() { return Math.min(BOSS_IDX, Number(state.run.clearedRounds || 0)); }
-
-  function pendingResume() {
-    const ck = raceRun.restore();
-    if (!ck || typeof ck.lanes !== 'string' || !ck.lanes.length) return null;
-    if (ck.schema !== CK_SCHEMA) return null; // reject pre-rebuild (ASCII-era) checkpoints cleanly
-    if (ck.ascLevel !== ascension.level() || ck.seed !== state.calibration.seed) return null;
-    const idx = Number(ck.roundIdx);
-    if (!(idx >= 0) || idx > unlockedRounds() || isBossRound(idx)) return null;
-    return { ...ck, roundIdx: idx };
-  }
-
-  function startRound(idx, opts = {}) {
-    if (mode === 'playing') return;
-    const roundIdx = Math.max(0, Math.min(BOSS_IDX, Number(idx) || 0));
-    if (roundIdx > unlockedRounds()) return;                 // gated: clear the prior rounds first
-    if (isBossRound(roundIdx) && state.run.clearedRounds < BOSS_IDX) return; // boss only after the run
-    resultCtx = null; renderOverlay(); // starting a round clears any lingering result card (hook path too)
-    const round = roundByIdx(roundIdx);
-    const prevGhost = state.timeTrial?.[round.id] || null;
-    pushLog(roundIntro(roundIdx));
-    fx.reset();
-    renderPrev = null;
-    renderCur = null;
-    canvasRace.setSeed(`${state.calibration.seed}:${round.id}`); // a distinct road per round
-    loop = createGameLoop({
-      state, seed: state.calibration.seed, roundIdx, calibrated: calibrated(),
-      prevGhost, mods: ascensionMods(), resume: opts.resume || null,
-      onPaint: paintArena,
-      onEnd: handleEnd,
-    });
-    mode = 'playing';
-    // Two cadences: onTick advances the LOGIC and rolls the snapshot pair; onRender draws the canvas
-    // every capped frame, interpolating the sub-tick motion between the two snapshots (see engine.js).
-    engine = createEngine({
-      onTick: () => { renderPrev = renderCur; loop.step(); },
-      onRender: (alpha) => { if (!autoSolving && mode === 'playing') canvasRace.renderFrame(renderPrev, renderCur, alpha); },
-      getTickMs: () => loop.round.tickMs,
-    });
-    engine.start();
-    canvasRace.resize();
-    loop.paint();
-    repaint();
-  }
-
-  function checkpointRace(view) {
-    if (!loop || (view.tick % 24 !== 0)) return;
-    raceRun.checkpoint({ ...loop.path(), schema: CK_SCHEMA, ascLevel: ascension.level(), seed: state.calibration.seed });
-  }
-
-  function handleEnd({ result, round, roundIdx, packets, medal, finishTick, parTick, ghostRecording, position, fieldSize }) {
-    engine?.stop();
-    engine = null;
-    mode = 'result';
-    raceRun.reset();
-    const boss = isBossRound(roundIdx);
-    if (result === 'clear') {
-      const medalNote = medal ? ` [${medal} · ${finishTick} vs par ${parTick}]` : '';
-      pushLog(roundLogLine(roundIdx) + (packets ? ` (+${packets} packets)` : '') + medalNote);
-      if (ghostRecording) {
-        const prev = state.timeTrial?.[round.id] || null;
-        if (!prev || Number(ghostRecording.tick) < Number(prev.tick)) {
-          state.timeTrial = { ...(state.timeTrial || {}), [round.id]: ghostRecording };
-        }
-      }
-      if (!boss) {
-        state.run.clearedRounds = Math.max(Number(state.run.clearedRounds || 0), roundIdx + 1);
-      } else {
-        const r = raceTheJammer({ state, actions });
-        if (r.defeated) {
-          ascension.recordClear(ascension.level());
-          completeOnce({ stage: 5, defeated: true, btsPath: BTS_PATH });
-        }
-      }
-    } else if (round.id === FINAL_ROUND_ID) {
-      pushLog('the jammer held the throttle down. the counter-wave is not calibrated.');
-    } else if (round.archetype === 'time-trial') {
-      pushLog('the par ghost had the channel — run faster next time.');
-    } else {
-      pushLog('signal integrity collapsed. recalibrate and run it again.');
-    }
-    if (!boss) showResult({ result, round, roundIdx, packets, medal, finishTick, parTick, position, fieldSize });
-    persistAndPaint();
-  }
-
-  // Build the podium/result card context (a body round only — the boss ends the stage).
-  function showResult(info) {
-    const { result, round, roundIdx, packets, medal, finishTick, parTick, position, fieldSize } = info;
-    let title; let detail; const clear = result === 'clear';
-    if (clear) {
-      title = fieldSize > 1 ? `FINISH — P${position}/${fieldSize}` : 'ROUND CLEAR';
-      detail = `+${packets} packets` + (medal ? ` · ${medal} (${finishTick} vs par ${parTick})` : '');
-    } else if (round.archetype === 'time-trial') {
-      title = 'MISSED PAR'; detail = 'beat the clock next time — survival alone is not a clear.';
-    } else {
-      title = 'SIGNAL LOST'; detail = 'integrity collapsed — take the offer and run it again.';
-    }
-    resultCtx = { roundIdx, resolved: false, note: '',
-      summary: { title, detail, continueLabel: clear ? 'continue' : 'back to rounds' },
-      canRetry: true };
-    renderOverlay();
-  }
-
-  function renderOverlay() {
-    fields.overlay.replaceChildren();
-    root.classList.toggle('s5-has-overlay', Boolean(resultCtx));
-    if (!resultCtx) return;
-    const offers = resultCtx.resolved
-      ? []
-      : pitStopOffer({ seed: state.calibration.seed, roundIdx: resultCtx.roundIdx, shop: state.shop || {} });
-    fields.overlay.append(buildResultOverlay({
-      summary: resultCtx.summary, offers, shop: state.shop || {}, packets: state.packets,
-      canRetry: resultCtx.canRetry, resolvedNote: resultCtx.note,
-    }));
-  }
-
-  // Per-TICK paint: roll the snapshot pair the canvas interpolates between, then refresh the DOM HUD.
-  // The canvas itself is drawn per FRAME by the engine's onRender, not here. During a synchronous
-  // autoSolve burst (debug hook) we skip everything but the snapshot roll — no HUD/checkpoint churn.
-  function paintArena(view) {
-    renderCur = view;
-    if (renderPrev === null) renderPrev = view;
-    if (autoSolving) return;
-    checkpointRace(view);
-    paintJammer(view);
-    fx.onPaint(view);
-    updateHud(view);
-  }
-
-  function updateHud(view) {
-    fields.integrity.textContent = `${Math.round(view.integrity)}%`;
-    const pct = Math.round((view.progress || 0) * 100);
-    fields.progressFill.style.width = `${pct}%`;
-    const fork = view.hasFork ? ` · ${view.channel === 'hi' ? 'HI' : 'LO'}${view.inFork ? '◆' : ''}` : '';
-    fields.race.textContent = view.archetype === 'circuit'
-      ? `${view.archetype} · lap ${view.lap}/${view.laps}${fork}`
-      : `${view.archetype} · ${pct}%${fork}`;
-    fields.position.textContent = view.fieldSize > 1 ? `${view.position}/${view.fieldSize}` : '—';
-  }
-
-  // Boss pursuit (#4): a jammer chip rides above the road and closes as the race progresses; the boss
-  // edge-static itself is drawn on the canvas from view.suppressionActive. Presentation only.
-  function paintJammer(view) {
-    const boss = view.archetype === 'boss';
-    fields.jammer.hidden = !boss;
-    if (!boss) return;
-    const closing = Math.max(0, Math.min(1, view.progress || 0));
-    fields.jammer.style.setProperty('--s5-close', String(closing));
-    fields.jammer.textContent = `⟪ THE JAMMER ${'▓'.repeat(2 + Math.round(closing * 6))} ⟫`;
-  }
-
-  function repaint() {
-    const disc = disclosure(state);
-    const lock = getBossLockState({ actions, state });
-    const idx = Number(state.run.roundIdx || 0);
-    const r = roundByIdx(idx);
-    const playing = mode === 'playing';
-    root.classList.toggle('s5-mode-playing', playing);
-    root.classList.toggle('s5-mode-result', mode === 'result');
-    root.classList.toggle('s5-mode-select', mode === 'select');
-
-    fields.round.textContent = `${r.id}/${FINAL_ROUND_ID} ${r.label}`;
-    fields.raceBox.hidden = !playing;                 // HUD reduces to ROUND·POS·INTEGRITY·progress (#1)
-    fields.posBox.hidden = !playing;
-    fields.progressBox.hidden = !playing;
-    fields.packetsBox.hidden = playing;
-    fields.calibBox.hidden = playing || !disc.showCalibration;
-    steer.el.hidden = !playing;
-
-    if (!playing) {
-      // SELECT/RESULT: a single static attract frame of the empty road instead of an empty void (#6/M3).
-      canvasRace.setSeed(`${state.calibration.seed}:${r.id}`);
-      canvasRace.resize();
-      canvasRace.drawAttract(state.run.lane);
-      fields.jammer.hidden = true;
-      fields.integrity.textContent = `${Math.round(state.run.integrity)}%`;
-      fields.race.textContent = r.archetype || 'sprint';
-      fields.position.textContent = '—';
-    }
-    fields.packets.textContent = String(state.packets);
-    fields.calib.textContent = lock.unlocked ? 'LOCKED-IN' : calibrationProgressStr(state);
-
-    // Boss presence is earned (R6): a one-line locked chip until round 6 is cleared, full panel after.
-    fields.bossPanel.hidden = !disc.bossFull;
-    fields.bossChip.hidden = disc.bossFull || playing;
-    fields.bossChip.textContent = state.boss.defeated ? 'THE JAMMER — defeated' : 'THE JAMMER — locked (clear round 6 to reveal)';
-    fields.bossState.textContent = state.boss.defeated
-      ? 'defeated. BTS trace available.'
-      : `${lock.jammerSuppression} / ${lock.unlocked ? 'beatable' : 'suppression dominant'}`;
-    fields.hint.textContent = lock.hint;
-
-    renderPrimary(disc);
-    renderRoundButtons(disc);
-    renderAscension();
-
-    const controls = root.querySelector('.s5-controls');
-    controls.hidden = playing || disc.attract;
-    root.querySelector('[data-action="audio"]').hidden = !disc.showCalibration; // un-cheat surfaced with the boss
-    root.querySelector('[data-action="bts"]').hidden = !state.boss.defeated;
-    const resumeBtn = root.querySelector('[data-action="resume"]');
-    const ck = playing ? null : pendingResume();
-    resumeBtn.hidden = !ck;
-    if (ck) resumeBtn.textContent = `resume race (round ${roundByIdx(ck.roundIdx).id}, lap-saved)`;
-
-    log.replaceChildren(...state.log.slice(-6).map((line) => {
-      const li = document.createElement('li');
-      li.textContent = line;
-      return li;
-    }));
-  }
-
-  // The single primary START button on the fresh screen (M3): one obvious click into round 1.
-  function renderPrimary(disc) {
-    if (disc.showRoundList) { fields.primary.replaceChildren(); return; }
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.dataset.startRound = '0';
-    btn.className = 's5-primary-btn';
-    btn.disabled = mode === 'playing';
-    btn.textContent = `START ROUND 1 — ${roundByIdx(0).label}`;
-    fields.primary.replaceChildren(btn);
-  }
-
-  function renderRoundButtons(disc) {
-    if (!disc.showRoundList) { fields.rounds.replaceChildren(); return; }
-    const unlocked = unlockedRounds();
-    const cleared = Number(state.run.clearedRounds || 0);
-    const tuning = applyUpgrades(state.shop || {});
-    fields.rounds.replaceChildren(...ROUNDS.map((round, i) => {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.dataset.startRound = String(i);
-      const boss = isBossRound(i);
-      const locked = boss ? cleared < BOSS_IDX : i > unlocked;
-      btn.disabled = locked || mode === 'playing';
-      const label = `${round.id}. ${round.label}${i < cleared ? ' ✓' : ''}${locked ? ' 🔒' : ''}`;
-      if (disc.showEstimates && !locked) {
-        const { low, high } = estimateRoundPackets(round, tuning);
-        btn.append(label, roundEstEl(low, high));
-      } else {
-        btn.append(label);
-      }
-      if (boss) btn.classList.add('s5-boss-btn');
-      return btn;
-    }));
-  }
-
-  function renderAscension() {
-    fields.ascension.replaceChildren(...ascensionPanelEls({
-      ascension, defeated: state.boss.defeated, playing: mode === 'playing', mods: ASCENSION_MODS,
-    }));
-  }
-
-  root.addEventListener('click', (event) => {
-    const startBtn = event.target.closest('button[data-start-round]');
-    if (startBtn) { startRound(Number(startBtn.dataset.startRound)); return; }
-    const pitBtn = event.target.closest('button[data-pit]');
-    if (pitBtn && resultCtx) {
-      const res = buyUpgrade(state, pitBtn.dataset.pit);
-      resultCtx.resolved = true;
-      resultCtx.note = res.bought ? `upgraded ${pitBtn.dataset.pit.toUpperCase()} (−${res.cost}p)` : 'could not upgrade';
-      save?.(); renderOverlay(); repaint(); return;
-    }
-    if (event.target.closest('button[data-pit-skip]') && resultCtx) {
-      resultCtx.resolved = true; resultCtx.note = 'pit skipped'; renderOverlay(); return;
-    }
-    const overlayBtn = event.target.closest('button[data-overlay]');
-    if (overlayBtn && resultCtx) {
-      const idx = resultCtx.roundIdx;
-      if (overlayBtn.dataset.overlay === 'retry') { resultCtx = null; renderOverlay(); startRound(idx); return; }
-      resultCtx = null; mode = 'select'; renderOverlay(); persistAndPaint(); return;
-    }
-    const ascBtn = event.target.closest('button[data-ascend]');
-    if (ascBtn) { ascension.setLevel(Number(ascBtn.dataset.ascend)); persistAndPaint(); return; }
-    const action = event.target.closest('button[data-action]');
-    if (!action) return;
-    if (action.dataset.action === 'resume') {
-      const ck = pendingResume();
-      if (ck) { startRound(ck.roundIdx, { resume: ck }); return; }
-    }
-    if (action.dataset.action === 'audio') {
-      viewer?.openFile?.(TRANSMISSION_HUM_PATH, { mime: 'audio/mpeg', source: 'stage5' });
-    }
-    if (action.dataset.action === 'bts') bts?.open?.(5);
-    persistAndPaint();
-  });
-
-  // Tap the left/right half of the road itself = lane switch (#2) — a bigger target than the pad.
-  canvasRace.el.addEventListener('click', (event) => {
-    if (mode !== 'playing' || !loop) return;
-    const rect = canvasRace.el.getBoundingClientRect();
-    loop.handleKey((event.clientX - rect.left) < rect.width / 2 ? 'ArrowLeft' : 'ArrowRight');
-  });
-
-  const onKey = (event) => {
-    if (mode !== 'playing' || !loop) return;
-    if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) {
-      event.preventDefault();
-      loop.handleKey(event.key);
-    }
+  let combat = null; // live engine instance; its full state is checkpointed into combatRun
+  // Combat VIEW-state (never persisted, never engine state): the inspected hand card (stage5 #2) and
+  // the one-shot feedback descriptor applied after the next combat re-mount (stage5 #4, combat-fx.js).
+  let pendingCardIndex = null;
+  let pendingFx = null;
+  let pendingBanner = null; // one-shot arrival banner (M1 disclosure / acts-5-6 unlock); flushed in mount()
+  // Daily-seed clock: read ONCE per run at creation (a SEED, never consulted inside the combat loop,
+  // so it honors the no-live-entropy rule). Overridable for deterministic tests via the test hook.
+  let dailyKeyOverride = null;
+  const completeOnce = once((result) => { if (typeof onStageComplete === "function") onStageComplete(result); });
+  const lockState = () => getBossLockState({ actions, state });
+  const mount = (node) => {
+    screen.replaceChildren(node);
+    if (pendingBanner) { banner(screen, pendingBanner); pendingBanner = null; }
+    return node;
   };
-  root.addEventListener('keydown', onKey);
+  const commit = () => { if (typeof save === "function") save(); route(); };
 
-  repaint();
+  root.addEventListener("click", handleClick);
+  root.addEventListener("keydown", handleKey);
+  installCombatHover(root, () => combat); // card hover: tooltip + synergy highlight (view-only)
+  route();
 
-  installDebugHook({
-    state, startRound, getLoop: () => loop, getMode: () => mode, bossIdx: BOSS_IDX,
-    actions, achievements, bell, persistAndPaint, calibrated, ascension, ascensionMods, raceRun,
-    dismissResult: () => { resultCtx = null; renderOverlay(); repaint(); },
-    // Run a synchronous full-round solve with per-frame canvas draws + per-tick HUD churn suppressed
-    // (the round completes in one burst; drawing each intermediate frame would be pure waste).
-    solve: (fn) => { autoSolving = true; try { return fn(); } finally { autoSolving = false; } },
+  // TEST/DEBUG hook (not a player affordance, not a hub button). It only fast-forwards position +
+  // replays correct play through the REAL engine — it never bypasses the ch9 un-cheat. Extracted to
+  // testhook.js; it closes over the mutable `combat` via accessors.
+  installStage5TestHook({
+    state, combatRun, runScore, seatAtFinalBoss, runAutoNegotiate,
+    playCard, endTurn, cardById, beginRun, commit, makeCombat, finishCombat,
+    getCombat: () => combat, setCombat: (c) => { combat = c; },
+    setDailyKeyOverride: (v) => { dailyKeyOverride = v; }
   });
-
-  function dev(id) { if (applyDev(id, state, actions)) persistAndPaint(); }
 
   return {
-    repaint,
-    dev,
-    destroy() {
-      engine?.stop();
-      raceRun.destroy();
-      steer.destroy();
-      canvasRace.destroy();
-      if (window.__fvStage5) delete window.__fvStage5;
-      root.removeEventListener('keydown', onKey);
-      root.remove();
+    repaint: route,
+    // Dev-menu cheats (see index.js stageMeta.devControls; wired by metagame.js → mounted.dev(id)).
+    // skip-boss is dispatched inline here because it must null the live combat + reset combatRun.
+    // energy mutates the transient combat.player only and is NOT persisted.
+    dev(id) {
+      if (id === "skip-boss") {
+        if (!state.run) beginRun();
+        devSkipToBoss(state.run);
+        state.ui.screen = "run";
+        combat = null;
+        if (combatRun) combatRun.reset();
+      } else {
+        applyDev(id, state.run, combat?.player ?? null);
+      }
+      if (typeof save === "function") save();
+      route();
     },
+    jumpToBoss() {
+      // Cross-game boss navigation always targets the full six-act finale. Start from a fresh
+      // veteran run so a stale checkpoint, completed run, or first-run act-4 cap cannot intercept it.
+      state.meta.runsCleared = Math.max(1, Number(state.meta.runsCleared || 0));
+      state.run = null;
+      state.boss.reached = true;
+      state.boss.defeated = false;
+      state.boss.phase = 1;
+      beginRun();
+      devSkipToBoss(state.run);
+      state.ui.screen = "run";
+      combat = null;
+      if (combatRun) combatRun.reset();
+      if (typeof save === "function") save();
+      route();
+      return Boolean(root.querySelector(".s5db-combat"));
+    },
+    destroy() { if (combatRun) combatRun.destroy(); removeStage5TestHook(); root.remove(); }
   };
 
-  function pushLog(line) {
-    state.log = [...(state.log || []), line].slice(-8);
+  // ── routing ──────────────────────────────────────────────────────────────────────────────────
+  function route() {
+    const run = state.run;
+    // The Refused Connection is reachable ONLY as the act-4 boss node of a run (see the
+    // run.status === "boss" case below) — there is no standalone hub-reachable boss screen.
+    if (state.ui.screen !== "run" || !run) { combat = null; return mount(hubView(state, lockState(), ascInfo())); }
+    switch (run.status) {
+      // Every boss — including the act-6 finale and the key-gated superboss — is a real-deck fight.
+      case "combat": case "boss": case "superboss": return mountCombat(run);
+      case "reward": combat = null; return mount(rewardView(run));
+      case "boss-reward": combat = null; return mount(bossRewardView(run));
+      case "rest": combat = null; return mount(restView(run));
+      case "shop": combat = null; return mount(shopView(run));
+      case "event": combat = null; return mount(eventView(run, eventForNode(run)));
+      case "dead": combat = null; return mount(deathView(state, run));
+      case "won": combat = null; return mount(wonView(state, run));
+      case "map":
+      default: {
+        combat = null;
+        const node = mount(mapView(run));
+        paintMapEdges(node, run); // #5: draw the act DAG's adjacency under the node chips (post-mount)
+        return node;
+      }
+    }
   }
 
-  function persistAndPaint() {
-    save?.();
-    repaint();
+  function mountCombat(run) {
+    if (!combat || combat.nodeId !== run.currentNodeId) combat = loadOrMakeCombat(run);
+    if (combat.over) { finishCombat(run); return route(); }
+    const node = combatView(combat, run, { pendingCardIndex });
+    mount(node);
+    // Feedback (stage5 #4) is spawned AFTER mount so it attaches to the fresh DOM. One-shot.
+    if (pendingFx) { applyCombatFx(node, pendingFx); pendingFx = null; }
+  }
+
+  // Play the inspected/selected hand card through the engine, capturing feedback deltas + the played
+  // card's on-screen rect (for the fly animation) BEFORE the rebuild. `sourceEl` is the on-screen card
+  // node the play flew from. Returns false (no-op) if the card is unaffordable or combat is over.
+  function doPlay(idx, sourceEl) {
+    if (!combat || combat.over) return false;
+    const card = cardById(combat.hand[idx]);
+    if (!card || card.cost > combat.player.energy) return false;
+    const enemyBefore = combat.enemy.hp;
+    const blockBefore = combat.player.block;
+    const rect = sourceEl ? sourceEl.getBoundingClientRect() : null;
+    const faceHTML = sourceEl ? sourceEl.innerHTML : "";
+    playCard(combat, idx);
+    pendingCardIndex = null;
+    const enemyDamage = Math.max(0, enemyBefore - combat.enemy.hp);
+    pendingFx = {
+      enemyDamage,
+      blockGain: Math.max(0, combat.player.block - blockBefore),
+      playerAttack: enemyDamage > 0, // lunge the player avatar when the card actually hit
+      fly: rect ? { rect, faceHTML } : null
+    };
+    if (combat.over) finishCombat(state.run); else checkpointCombat(combat, state.run);
+    return true;
+  }
+
+  // Keyboard: 1–9 selects/inspects a hand card; Enter plays the inspected card; Esc cancels (stage5 #1/#2).
+  function handleKey(event) {
+    if (!combat || combat.over || state.ui.screen !== "run") return;
+    if (event.key >= "1" && event.key <= "9") {
+      const idx = Number(event.key) - 1;
+      if (idx < combat.hand.length) { pendingCardIndex = idx; route(); event.preventDefault(); }
+    } else if (event.key === "Enter" && pendingCardIndex != null) {
+      const src = root.querySelector(".s5db-inspect .s5db-card");
+      if (doPlay(pendingCardIndex, src)) { event.preventDefault(); commit(); }
+    } else if (event.key === "Escape" && pendingCardIndex != null) {
+      pendingCardIndex = null; route(); event.preventDefault();
+    }
+  }
+
+  // Resume the persisted fight for this exact node/run if one was checkpointed; otherwise create a
+  // fresh combat and checkpoint its opening state. The runSeed+nodeId guard prevents a stale snapshot
+  // from a previous run (node ids repeat across runs) being resumed into a different run.
+  function loadOrMakeCombat(run) {
+    const snap = combatRun?.restore();
+    if (snap && !snap.over && snap.runSeed === run.seed && snap.nodeId === run.currentNodeId) {
+      const c = restoreCombat(snap, { relics: relicsFor(run.relics) });
+      c.nodeId = run.currentNodeId;
+      return c;
+    }
+    const c = makeCombat(run);
+    checkpointCombat(c, run);
+    return c;
+  }
+
+  // Persist the live fight after a meaningful action (play card / end turn). Tagged with the run seed
+  // so resume only matches the same run.
+  function checkpointCombat(c, run) {
+    if (!combatRun || !c) return;
+    combatRun.checkpoint({ ...snapshotCombat(c), runSeed: run.seed });
+  }
+
+  // ── combat lifecycle ─────────────────────────────────────────────────────────────────────────
+  function makeCombat(run) {
+    const enemyId = enemyForCurrentNode(run, makeRng(strHash(`${run.seed}:${run.currentNodeId}:enemy`)));
+    const enemy = instantiateEnemy(enemyId, run.act);
+    // Ascension modifiers: scale non-boss enemies (the boss's HP is set by wireBossCombat below).
+    if (enemy.tier !== "boss") {
+      if (run.enemyHpMult && run.enemyHpMult !== 1) enemy.hp = Math.round(enemy.hp * run.enemyHpMult);
+      if (run.enemyArmorBonus) enemy.armor = Number(enemy.armor || 0) + run.enemyArmorBonus;
+    }
+    // Ascension modifier: meaner/brutal elites carry extra HP.
+    if (enemy.tier === "elite" && run.eliteHpBonus) enemy.hp += run.eliteHpBonus;
+    const c = createCombat({
+      deck: run.deck,
+      player: { hp: run.hp, maxHp: run.maxHp },
+      enemy,
+      seed: strHash(`${run.seed}:${run.currentNodeId}:combat`),
+      relics: relicsFor(run.relics),
+      congestion: congestionForAct(run.act), // THROUGHPUT: window opens in act 3 and persists for acts 3-6 (carry verbs forward)
+      windowCap: 5 + (run.windowCapMod || 0) // prestige tight-window modifier
+    });
+    c.nodeId = run.currentNodeId;
+    // The act-4 finale: layer the negotiation onto the real fight. ch9 unread ⇒ locked ⇒ every
+    // Signal deals 0 (the load-bearing un-cheat); reading the codex rebuilds this combat unlocked.
+    if (enemyId === REFUSED_CONNECTION) wireBossCombat(c, { locked: !lockState().unlocked, hpMult: run.bossHpMult || 1, extraPhase: Boolean(run.bossExtraPhase) });
+    // The key-gated superboss: a multi-phase real-deck fight (no lock, no un-cheat — pure bonus).
+    else if (enemyId === SUPERBOSS_ID) wireSuperboss(c);
+    return c;
+  }
+
+  function finishCombat(run) {
+    // The key-gated superboss resolves on its own path (it has no map node).
+    if (run.status === "superboss" || run.atSuperboss) return finishSuperboss(run);
+    const win = combat.result === "win";
+    const node = nodeById(run.map, run.currentNodeId);
+    const isFinalBoss = node?.type === "boss" && run.act >= finalActOf(run);
+    // A resolved fight must NOT resume on reload: clear the checkpoint slot (also bumps runs[6]).
+    if (combatRun) combatRun.reset();
+    resolveCombat(run, { win, hpRemaining: combat.player.hp });
+    if (win && run.act > (state.meta.bestAct || 0)) state.meta.bestAct = run.act;
+    if (!win) state.meta.banked = (state.meta.banked || 0) + Math.floor((run.handshakes || 0) * 0.5);
+    // M1: a first finished run (a death here) reveals the stat tiles on the hub.
+    if (run.status === "dead") state.meta.disclosed.stats = true;
+    combat = null;
+    pendingCardIndex = null; // combat over — drop any raised card / pending feedback so it can't leak
+    pendingFx = null;
+    if (win && isFinalBoss) finalBossDefeated(run);
+    // A run that just resolved (death, or the final-boss win) banks its self-competition score.
+    if (run.status === "dead" || run.status === "won") recordScore(run);
+  }
+
+  // The act-6 boss fell to the real deck: mark the codex gate answered. With all 3 keys the run
+  // diverts to the hidden superboss FIRST — stage completion is deferred to finishSuperboss (which
+  // completes the stage on win OR loss, so the superboss is never a progression trap — the gate was
+  // the negotiation, already passed here).
+  function finalBossDefeated(run) {
+    state.boss.defeated = true;
+    state.boss.reached = true;
+    state.meta.firstClearComplete = true;
+    // M1: the first WIN reveals the ascension picker + seed controls (announced once). Stats too.
+    state.meta.disclosed.stats = true;
+    if (!state.meta.disclosed.meta) { state.meta.disclosed.meta = true; pendingBanner = "difficulty ladder unlocked ⚑"; }
+    state.meta.runsCleared = (state.meta.runsCleared || 0) + 1;
+    // Record the ascension clear at the rule level this run actually played under (unlocks the next rung).
+    if (ascension) ascension.recordClear(run.ascension || 0);
+    state.meta.banked = (state.meta.banked || 0) + (run.handshakes || 0);
+    if (run.status === "superboss") return; // defer completion until the true-ending fight resolves
+    completeOnce({ stage: 5, defeated: true, reward: { handshakes: 80 }, btsPath: BTS_PATH });
+  }
+
+  // Resolve the key-gated superboss (true ending). The negotiation gate was already satisfied, so
+  // the stage completes either way; a win additionally flags the true ending. Pure bonus combat.
+  function finishSuperboss(run) {
+    const win = combat.result === "win";
+    if (combatRun) combatRun.reset();
+    run.hp = Math.max(0, combat.player.hp);
+    combat = null;
+    run.atSuperboss = false;
+    run.superbossCleared = true;
+    if (win && run.hp > 0) { run.status = "won"; run.trueEnding = true; }
+    else run.status = "dead"; // fell to the kernel — but the connection had already accepted you
+    recordScore(run);
+    completeOnce({ stage: 5, defeated: true, reward: { handshakes: 80 }, btsPath: BTS_PATH });
+  }
+
+  // First time a veteran run advances into act 5 (unlocked by the first win): announce the extended
+  // archive once. A 4-act first run never reaches act 5, so this can't fire there.
+  function maybeRevealActs(run) {
+    if (!run || run.act < 5 || !isVeteranRun(run) || state.meta.disclosed.actsRevealed) return;
+    state.meta.disclosed.actsRevealed = true;
+    pendingBanner = "the archive descends further — acts 5 and 6 unlocked";
+  }
+
+  // Prestige is a two-step action (UX audit follow-up: previously fired instantly with no reward
+  // choice). "reinforce protocol" opens a picker of the player's still-upgradable starting-deck
+  // slots (see run.js eligiblePrestigeUpgrades — sourced from the STATIC STARTING_DECK, never the
+  // run's live deck); picking one, or explicitly skipping, spends the cost and bumps the version.
+  function doPrestige() {
+    if (!canPrestige(state.meta)) return;
+    openPrestigeModal({
+      eligibleIndices: eligiblePrestigeUpgrades(state.meta.permanentUpgrades || []),
+      onPick: (index) => applyPrestige(index),
+      onSkip: () => applyPrestige(null)
+    });
+  }
+
+  function applyPrestige(index) {
+    if (!canPrestige(state.meta)) return; // defensive re-check (mirrors buy*/rest guards elsewhere)
+    state.meta.banked -= prestigeCost(state.meta.protocolVersion || 0);
+    state.meta.protocolVersion = (state.meta.protocolVersion || 0) + 1;
+    if (index != null) state.meta.permanentUpgrades = [...(state.meta.permanentUpgrades || []), index];
+    commit();
+  }
+
+  // ── run lifecycle ────────────────────────────────────────────────────────────────────────────
+  function beginRun({ mode = "standard", seedText = null } = {}) {
+    state.meta.runsStarted = (state.meta.runsStarted || 0) + 1;
+    let seed, dailyKey = null;
+    if (mode === "daily") {
+      dailyKey = currentDailyKey();
+      seed = strHash(`daily:${dailyKey}`); // deterministic from the date — same day = same run
+    } else if (mode === "custom" && String(seedText || "").trim()) {
+      dailyKey = String(seedText).trim().slice(0, 40);
+      seed = strHash(`custom:${dailyKey}`); // deterministic from the typed seed
+    } else {
+      mode = "standard";
+      seed = 1000 + state.meta.runsStarted * 7919 + (state.meta.protocolVersion || 0) * 131;
+    }
+    state.run = createRun({
+      seed,
+      version: state.meta.protocolVersion || 0,
+      handshakes: 0,
+      ascension: ascension ? ascension.level() : 0,
+      mode,
+      dailyKey,
+      // First-ever run (0 wins) ends at the act-4 story boss; ≥1 win restores the full six acts.
+      finalAct: finalActForWins(state.meta.runsCleared || 0),
+      permanentUpgrades: state.meta.permanentUpgrades || []
+    });
+    state.ui.screen = "run";
+    if (combatRun) combatRun.reset(); // drop any stale combat snapshot from a previous run
+    combat = null;
+    pendingCardIndex = null;
+    pendingFx = null;
+  }
+
+  // The daily seed key (YYYY-MM-DD). Read ONCE at run creation (a seed, not loop entropy); tests may
+  // pin it via window.__fvStage5.setDailyKey to keep the seeded run reproducible.
+  function currentDailyKey() {
+    if (dailyKeyOverride) return dailyKeyOverride;
+    try { return new Date().toISOString().slice(0, 10); } catch { return "1970-01-01"; }
+  }
+
+  // Record a finished run's self-competition score into meta (all-time best + per-seed best). Local
+  // only; no off-origin. Called when a run resolves to dead/won.
+  function recordScore(run) {
+    if (!run) return;
+    const score = runScore(run);
+    state.meta.lastScore = score;
+    state.meta.lastMode = run.mode || "standard";
+    state.meta.lastSeedKey = run.dailyKey || null;
+    if (score > (state.meta.bestScore || 0)) state.meta.bestScore = score;
+    if (run.dailyKey) {
+      if (!state.meta.dailyBest || typeof state.meta.dailyBest !== "object") state.meta.dailyBest = {};
+      if (score > (state.meta.dailyBest[run.dailyKey] || 0)) state.meta.dailyBest[run.dailyKey] = score;
+    }
+  }
+
+  // Resolve the player's choice for this node's (deterministically selected) event, then return to
+  // the map. The notice is surfaced on the next screen.
+  function resolveEvent(run, choiceId) {
+    const event = eventForNode(run);
+    const { notice } = applyEventChoice(run, event.id, choiceId);
+    closeNode(run);
+    if (notice) run.notice = notice;
+  }
+
+  // ── click delegation ─────────────────────────────────────────────────────────────────────────
+  function handleClick(event) {
+    const run = state.run;
+    // Inspect cancel (stage5 #2): a click anywhere that is NOT a card (hand card or the raised close-up,
+    // both [data-inspect]) while a card is raised drops the selection. Deferred (cancelled) so a click
+    // that ALSO triggers another action (e.g. end turn) still runs; a bare cancel re-renders at the end.
+    let cancelled = false;
+    if (pendingCardIndex != null && !event.target.closest("[data-inspect]")) {
+      pendingCardIndex = null; cancelled = true;
+    }
+    // Card click: FIRST click selects (raises the close-up); clicking the SAME card again PLAYS it;
+    // clicking outside deselects (handled above). No separate play button.
+    const inspect = event.target.closest("[data-inspect]");
+    if (inspect && combat && !combat.over) {
+      const i = Number(inspect.dataset.inspect);
+      if (pendingCardIndex === i) {
+        // Second click on the selected card → play it (fly from the raised close-up). If unaffordable,
+        // doPlay is a no-op and the card stays raised.
+        if (doPlay(i, root.querySelector(".s5db-inspect .s5db-card"))) return commit();
+        return route();
+      }
+      pendingCardIndex = i;
+      return route();
+    }
+    // Pile / deck / log modals (transient; no save). Deck view works in combat AND on the map.
+    const pile = event.target.closest("[data-pile]");
+    if (pile && combat) return openPileModal(combat, pile.dataset.pile);
+    if (event.target.closest("[data-deck]") && run) return openDeckModal(run.deck);
+    if (event.target.closest("[data-log]") && combat) return openLogModal(combat);
+
+    if (handleTarget(event, run)) return commit();
+    const btn = event.target.closest("button[data-action]");
+    if (btn && runAction(btn.dataset.action, run)) return commit();
+    if (cancelled) route();
+  }
+
+  function handleTarget(event, run) {
+    // Hub ascension picker (no run yet): choose the difficulty rung for the next run.
+    const ascBtn = event.target.closest("[data-ascension]");
+    if (ascBtn) { if (ascension) ascension.setLevel(Number(ascBtn.dataset.ascension)); return true; }
+    const potion = event.target.closest("[data-potion]");
+    if (potion && combat && !combat.over && run) {
+      const used = usePotion(run, Number(potion.dataset.potion));
+      if (used.ok) { applyPotionEffect(combat, potionById(used.id)); if (combat.over) finishCombat(run); else checkpointCombat(combat, run); }
+      return true;
+    }
+    if (!run) return false;
+    const takePot = event.target.closest("[data-take-potion]");
+    if (takePot) { takePotion(run, takePot.dataset.takePotion === "" ? undefined : Number(takePot.dataset.takePotion)); return true; }
+    const buyPot = event.target.closest("[data-buy-potion]");
+    if (buyPot) { buyPotion(run, buyPot.dataset.buyPotion, Number(buyPot.dataset.price)); return true; }
+    const node = event.target.closest("[data-node]");
+    if (node) { moveTo(run, node.dataset.node); return true; }
+    const take = event.target.closest("[data-take]");
+    if (take) { takeReward(run, take.dataset.take === "skip" ? null : take.dataset.take); return true; }
+    const bossRelic = event.target.closest("[data-boss-relic]");
+    if (bossRelic) { takeBossRelic(run, bossRelic.dataset.bossRelic === "skip" ? null : bossRelic.dataset.bossRelic); maybeRevealActs(run); return true; }
+    const remove = event.target.closest("[data-remove]");
+    if (remove) { removeCard(run, Number(remove.dataset.remove)); rest(run, "remove"); return true; }
+    const upgrade = event.target.closest("[data-upgrade]");
+    if (upgrade) { rest(run, "upgrade", Number(upgrade.dataset.upgrade)); return true; }
+    const restEl = event.target.closest("[data-rest]");
+    if (restEl) { rest(run, restEl.dataset.rest); return true; }
+    const buy = event.target.closest("[data-buy]");
+    if (buy) { buyCard(run, buy.dataset.buy, Number(buy.dataset.price)); return true; }
+    const buyRemove = event.target.closest("[data-buy-remove]");
+    if (buyRemove) { buyRemoval(run, Number(buyRemove.dataset.buyRemove)); return true; }
+    const buyUp = event.target.closest("[data-buy-upgrade]");
+    if (buyUp) { buyUpgrade(run, Number(buyUp.dataset.buyUpgrade), Number(buyUp.dataset.price)); return true; }
+    const buyRel = event.target.closest("[data-buy-relic]");
+    if (buyRel) { buyRelic(run, Number(buyRel.dataset.price)); return true; }
+    const ev = event.target.closest("[data-event]");
+    if (ev) { resolveEvent(run, ev.dataset.event); return true; }
+    return false;
+  }
+
+  function runAction(action, run) {
+    switch (action) {
+      case "begin-run": case "new-run": beginRun(); return true;
+      case "daily-run": beginRun({ mode: "daily" }); return true;
+      case "custom-run": {
+        const input = root.querySelector(".s5db-seed-input");
+        const seedText = input ? input.value : "";
+        if (!String(seedText || "").trim()) return false; // no seed typed → ignore
+        beginRun({ mode: "custom", seedText });
+        return true;
+      }
+      case "continue-run": state.ui.screen = "run"; return true;
+      case "abandon": if (combatRun) combatRun.reset(); state.run = null; combat = null; state.ui.screen = "hub"; return true;
+      case "prestige": doPrestige(); return true;
+      case "to-hub": state.ui.screen = "hub"; return true;
+      case "to-map": if (run) closeNode(run); return true;
+      case "end-turn":
+        if (combat && !combat.over) {
+          pendingCardIndex = null;
+          const hpBefore = combat.player.hp;
+          // Classify the enemy's telegraphed intent BEFORE endTurn (its intentIndex advances inside),
+          // so the avatar can lunge on an attack vs brace on a guard (stage5 #4 turn animation).
+          const intent = currentIntent(combat);
+          const enemyAction = intent?.attack || intent?.mirror || intent?.pierce ? "attack" : intent?.block ? "guard" : "buff";
+          endTurn(combat);
+          // Enemy-turn feedback (stage5 #4): a banner + damage floats in the same language as play.
+          pendingFx = { banner: "ENEMY TURN", playerDamage: Math.max(0, hpBefore - combat.player.hp), enemyAction };
+          if (combat.over) finishCombat(run); else checkpointCombat(combat, run);
+        }
+        return true;
+      case "epub":
+        openEpub({ viewer, actions, achievements, bell, state });
+        // 2026-07-11 playtest fix: ch9 is a buff now, not a gate — reading it mid-fight should not
+        // wipe progress you already fought for. Rescale the CURRENT fight's HP pool down in place
+        // (removing the unread-cost multiplier) instead of discarding the combat and restarting.
+        if (combat && combat.bossPhase && combat.bossLocked) {
+          const newMult = (combat.bossHpMult || UNCH9_HP_MULT) / UNCH9_HP_MULT;
+          const frac = combat.enemy.maxHp > 0 ? combat.enemy.hp / combat.enemy.maxHp : 1;
+          combat.bossLocked = false;
+          combat.bossHpMult = newMult;
+          combat.enemy.maxHp = Math.round((BOSS_PHASE_HP[combat.bossPhase] || BOSS_PHASE_HP[1]) * newMult);
+          combat.enemy.hp = Math.min(combat.enemy.maxHp, Math.max(1, Math.round(combat.enemy.maxHp * frac)));
+          checkpointCombat(combat, run);
+        }
+        return true;
+      case "bts": openBts({ bts, viewer }); return true;
+      default: return false;
+    }
   }
 }
 
-function once(fn) {
-  let called = false;
-  return (value) => {
-    if (called) return;
-    called = true;
-    fn(value);
-  };
-}
+export { openEpub } from "./renderer-open.js";

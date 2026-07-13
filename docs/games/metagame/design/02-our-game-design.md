@@ -45,7 +45,7 @@ Each is one entry in `stage.tiers[]` with an extended schema:
 `unlock` predicates read `state` (`bits` on hand, `totalBits` ever, `owned[id]` counts).
 **Convention:** "on hand" = current `state.bits`; "ever" = `state.totalBits` (monotonic).
 
-### Proposed sub-stage table
+### Initial sub-stage table
 
 | # | Name | Type | Unlocks at | Base cost | Output / effect | Growth |
 |---|------|------|-----------|-----------|-----------------|--------|
@@ -68,8 +68,8 @@ Each is one entry in `stage.tiers[]` with an extended schema:
 - **8 Quantum Tap** re-bases clicking so the manual action stays meaningful in the late stage.
 
 **Scaling cadence:** each base cost is ≈5–10× the previous; each output is ≈5–10× the previous.
-These are *proposed*, not final — see Open Questions in the summary. Tune so a fresh run reaches
-the boss gate in roughly 20–40 minutes of active play (see `03` §E simulation).
+These were the initial tuning values. Current balance and any future tuning work
+are tracked only in [`TASKS.md`](../../../../TASKS.md).
 
 **Bell messages on first unlock** (extend `messages1.js`, which already drives the bell):
 
@@ -263,18 +263,6 @@ boss-gate framing* rather than replacing the boss. Documented both ways so the u
 
 ---
 
-## H. Implementation checklist (for the developer)
+## Implementation status
 
-- [ ] Extend tier schema with `type:'timed'|'mult'|'enabler'`, `unlock` predicate, `bell` id.
-- [ ] Add `timed` tier runtime: progress bar, `timeMs` fill, `payout × level` credit on completion.
-- [ ] Add `stage.managers[]` + Managers tab; implement running cost, level (speed), shutdown rule.
-- [ ] Compute and display `netRate = totalRate + autoTimedRate − runningCosts`.
-- [ ] Generalize `reveal()` to track `progressToNextUnlock` (§B), not raw bits.
-- [ ] Add achievements set + Achievements tab (`achievementMult`).
-- [ ] Add Research tab (exponent nodes) gated on Neural Net.
-- [ ] Add prestige (`state.pull`, `state.resets`) + Reset tab; apply `pull` in `clickPower()`.
-- [ ] Swap `BOSS_AFTER` (5 buys) for `allSubStagesOwned` + 1B ticket.
-- [ ] Replace `fmt()` and all bit storage with the BigNum system (`03`).
-- [ ] Add the new bell messages to `messages1.js`.
-- [ ] Tab unlock gating + greyed "locked" affordances showing conditions.
-- [ ] Everything-disappears-at-0 + persistent Stats/Score menu (manual recovery path).
+The core game described here is implemented. Unfinished expansion, balance, and polish work is tracked only in [TASKS.md](../../../../TASKS.md).

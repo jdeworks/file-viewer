@@ -2891,6 +2891,13 @@ function renderStage4(ctx) {
       return;
     }
   }
+  function jumpToBoss() {
+    devSkipToBoss(state);
+    run?.reset?.();
+    persistNow();
+    render();
+    return state.campaign.status === "boss";
+  }
   const onHide = () => {
     if (typeof document === "undefined" || document.visibilityState === "hidden") persistNow();
   };
@@ -2899,6 +2906,7 @@ function renderStage4(ctx) {
   render();
   return {
     dev,
+    jumpToBoss,
     repaint: () => active2?.repaint?.(),
     destroy() {
       destroyActive();
@@ -2960,6 +2968,9 @@ function mountStage(ctx) {
     devControls: stageMeta.devControls,
     dev(id) {
       if (view && typeof view.dev === "function") view.dev(id);
+    },
+    jumpToBoss() {
+      return view?.jumpToBoss?.() || false;
     },
     repaint: view.repaint,
     destroy() {
