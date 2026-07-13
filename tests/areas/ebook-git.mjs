@@ -3,6 +3,23 @@ import zlib from 'node:zlib';
 export async function run(ctx) {
   const { browser, page, origin, frameOf, pass, fail, openExample, waitForFv } = ctx;
 
+  // FV_EBOOK_LITE=1 (check.sh default release gate): the full ebook-git area is ~70s — sql.js WASM
+  // (SQLite) plus a 20,010-entry virtual-tree git stress. The release gate only needs a fast proof
+  // that the ebook renderer family still mounts, so open ONE small EPUB (hand-rolled unzip reader,
+  // no WASM), assert it renders + zero off-origin, and return (<5s). The exhaustive gate runs the
+  // full sqlite / clip / mobi / djvu / git-tree coverage below.
+  if (process.env.FV_EBOOK_LITE === '1') {
+    await page.goto(origin, { waitUntil: 'load' });
+    await openExample('Sample.epub');
+    await page.waitForSelector('#previewHost .epub-doc', { timeout: 15000 });
+    const liteType = await page.$eval('#typeSelect', (s) => s.value);
+    if (liteType === 'epub') pass('ebook-lite: .epub detected as E-book'); else fail('ebook-lite epub type: ' + liteType);
+    const liteTitle = await page.$eval('#previewHost .epub-title', (e) => e.textContent);
+    if (/The Gift of the Magi/.test(liteTitle)) pass('ebook-lite: EPUB renders (OPF title parsed)'); else fail('ebook-lite epub title: ' + liteTitle);
+    if (ctx.offOrigin.length) fail('ebook-lite: off-origin requests: ' + ctx.offOrigin.join(', ')); else pass('ebook-lite: zero off-origin');
+    return;
+  }
+
   await page.evaluate(async () => {
     const tree = document.querySelector('#fileTree');
     if (tree && !tree.hidden) document.querySelector('#fileTree .ft-close')?.click();

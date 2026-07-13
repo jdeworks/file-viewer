@@ -205,17 +205,31 @@ export async function run(ctx) {
   // instead of all ~1,100. This keeps the "every registered type has coverage" assertion meaningful
   // (one open per type) while cutting the ~1,100-open sweep (the area's dominant cost) to ~one-per-type.
   // The exhaustive sweep still runs in the full gate (no FV_SMOKE_SUBSET) and asserts every sample opens.
+  // Three open-sweep tiers:
+  //  • FV_SMOKE_SUBSET=1  (check.sh --fast): one sample per declared type (~36) then early-return
+  //    before badges/ASCII (path-owned fast validation).
+  //  • FV_SMOKE_SAMPLE=release (check.sh default release gate): one-per-type PLUS every partial
+  //    sample (the riskiest renderers), then the full badge + ASCII-Studio checks run once — but the
+  //    exhaustive 1,129-open sweep and the "every registry type covered" guarantee are deferred to
+  //    the exhaustive gate.
+  //  • neither (check.sh --exhaustive): open ALL ~1,129 + full type-coverage assertion.
   const SUBSET = process.env.FV_SMOKE_SUBSET === '1';
+  const RELEASE = process.env.FV_SMOKE_SAMPLE === 'release';
   let toOpen = examples;
-  if (SUBSET) {
+  if (SUBSET || RELEASE) {
     const byType = new Map();
     for (const ex of [...examples].sort((a, b) => String(a.file).localeCompare(String(b.file)))) {
       if (!byType.has(ex.type)) byType.set(ex.type, ex);
     }
-    toOpen = [...byType.values()];
-    pass(`fast subset: opening ${toOpen.length} representative samples (one per type) of ${examples.length} — full sweep runs in the full gate`);
+    const picked = new Map([...byType.values()].map((ex) => [ex.file, ex]));
+    // Release tier additionally opens every partial sample so the format-limited renderers (the
+    // ones most likely to crash) all get an open-crash check, not just one representative per type.
+    if (RELEASE) for (const ex of examples) if (ex.partial) picked.set(ex.file, ex);
+    toOpen = [...picked.values()];
+    pass(`${RELEASE ? 'release' : 'fast'} subset: opening ${toOpen.length} representative samples (one per type${RELEASE ? ' + all partial' : ''}) of ${examples.length} — full sweep runs in the exhaustive gate`);
   }
   const seenTypes = new Set();
+  let sweptCount = 0;
   for (const ex of toOpen) {
     const opened = await page.evaluate((file) => window.__fv.openExampleFile(file), ex.file);
     if (!opened) { fail('sample did not open: ' + ex.file); continue; }
@@ -229,13 +243,29 @@ export async function run(ctx) {
     // names when they stand on their own (not glued to a preceding identifier char).
     const crashed = /Preview failed|Failed to execute|DjVu missing after load|Failed to load DjVu library|(?<![a-z0-9_])(?:TypeError|ReferenceError)\b/i.test(previewText);
     if (crashed && !ex.partial) fail('sample preview crashed: ' + ex.file + ' :: ' + previewText.replace(/\s+/g, ' ').slice(0, 160));
+    // Bound renderer memory over a long sweep. This raw open loop (unlike the harness openExample)
+    // has no periodic reload, so the exhaustive 1,129-open run accumulates disposed-but-retained
+    // Monaco models / blob URLs until the renderer OOM-crashes — which then took down the heavy
+    // ASCII-Studio conversions that follow ("died at two different points across runs"). Dispose +
+    // GC every 40 opens, and hard-reload every 250 to flush anything GC can't reach.
+    if (++sweptCount % 40 === 0) {
+      await page.evaluate(() => {
+        try { window.monaco?.editor?.getModels?.().forEach((m) => m.dispose()); } catch { /* no monaco */ }
+        try { (window.__fvBlobUrls || []).forEach((u) => URL.revokeObjectURL(u)); } catch { /* none */ }
+        try { window.gc?.(); } catch { /* gc not exposed */ }
+      }).catch(() => {});
+    }
+    if (sweptCount % 250 === 0) {
+      await page.goto(origin, { waitUntil: 'load' });
+      await page.waitForFunction(() => typeof window.__fv !== 'undefined', { timeout: 10000 }).catch(() => {});
+    }
     await page.waitForTimeout(10);
   }
-  pass(`all ${SUBSET ? 'representative' : 'indexed'} samples open without preview crashes (${toOpen.length})`);
+  pass(`all ${SUBSET || RELEASE ? 'representative' : 'indexed'} samples open without preview crashes (${toOpen.length})`);
   // "Every registered type has a working sample" is a FULL-SWEEP guarantee — a per-type subset opens
   // only ~36 of ~146 registry types (declared ex.type does not map 1:1 to registry ids), so this check
-  // only runs in the full gate. Under --fast it would spuriously fail; the full gate still enforces it.
-  if (!SUBSET) {
+  // only runs in the exhaustive gate. Under --fast/--release it would spuriously fail.
+  if (!SUBSET && !RELEASE) {
     const missingTypes = REGISTRY.map((t) => t.id).filter((id) => !seenTypes.has(id));
     if (missingTypes.length) {
       fail('registered types without indexed sample coverage: ' + missingTypes.join(', '));
@@ -249,10 +279,14 @@ export async function run(ctx) {
   else pass('sample catalog made zero off-origin requests');
 
   // Fast path stops here: catalog index integrity + a representative per-type open sweep are what a
-  // path-owned example change needs to validate. The remaining badge checks and — especially — the
-  // heavy ASCII-Studio tool sweep (repeated full-page image→ASCII canvas conversions, which can crash
-  // the renderer on a constrained host) are full-gate concerns, not fast-gate ones.
+  // path-owned example change needs to validate. The remaining badge checks and the heavy
+  // ASCII-Studio tool sweep are release-gate + exhaustive concerns, not fast-gate ones. (The
+  // release gate DOES run them — that path is FV_SMOKE_SAMPLE=release, which is not SUBSET.)
   if (SUBSET) return;
+
+  // Release the renderer memory accumulated by the open sweep BEFORE the heavy ASCII-Studio
+  // conversions, so those start from a clean heap instead of tipping an already-loaded renderer over.
+  await page.evaluate(() => { try { window.gc?.(); } catch { /* gc not exposed */ } });
 
   // Quality badges: sourced and partial examples display visual indicators
   await page.evaluate(() => { try { sessionStorage.clear(); } catch {} });
@@ -353,7 +387,9 @@ export async function run(ctx) {
     await page.goto(origin + '/tools/ascii-studio/index.html?sample=' + sampleName, { waitUntil: 'load' });
     await page.waitForSelector('.asx-root .asx-out', { timeout: 10000 });
     await page.waitForFunction(() => (document.querySelector('.asx-out')?.textContent || '').trim().length > 20, null, { timeout: 10000 });
-    return page.$eval('.asx-out', (el) => (el.textContent || '').trim());
+    const out = await page.$eval('.asx-out', (el) => (el.textContent || '').trim());
+    await page.evaluate(() => { try { window.gc?.(); } catch { /* gc not exposed */ } });
+    return out;
   };
   const jpegAscii = await asciiFor('sample.jpeg');
   const placeholderAscii = await asciiFor('__no_such_sample__.jpg');

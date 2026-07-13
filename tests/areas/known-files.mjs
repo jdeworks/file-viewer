@@ -22,23 +22,28 @@ import { run as p16 } from './known/part-16-sample-rst.mjs';
 import { run as p17 } from './known/part-17-sample-php.mjs';
 import { run as p18 } from './known/part-18-sample-agda.mjs';
 
+// Ordered full slice list — index N here == part-N. Each slice opens ~40–77 distinct known-file
+// plugins through the real viewer (a RENDER check the unit tests do not cover).
+const SLICES = [p01, p02, p03, p04, p05, p06, p07, p08, p09, p10, p11, p12, p13, p14, p15, p16, p17, p18];
+
+// FV_KNOWN_SAMPLE=release (check.sh default release gate): the full 18-slice / ~816-open sweep is
+// ~10–15 min, too heavy for a ~10-min gate. Run a fixed, auditable spread instead — the three
+// generic language slices (16 rst/org/doc-formats, 17 php+langs, 18 agda+langs), which each render
+// the widest variety of plugins, plus a config/data slice sampled across the alphabetical range
+// (01, 06, 11). This is a REAL coverage tradeoff: the plugins in the un-run slices (02–05, 07–10,
+// 12–15) are render-tested ONLY in the exhaustive gate — they mostly have no unit owner either, so
+// the log line below names exactly which slices are skipped. Slice-granular by design: slices carry
+// ordered intra-file state, so mid-slice capping is unsafe.
+const RELEASE_SLICE_INDEXES = [1, 6, 11, 16, 17, 18];
+
 export async function run(ctx) {
-  await p01(ctx);
-  await p02(ctx);
-  await p03(ctx);
-  await p04(ctx);
-  await p05(ctx);
-  await p06(ctx);
-  await p07(ctx);
-  await p08(ctx);
-  await p09(ctx);
-  await p10(ctx);
-  await p11(ctx);
-  await p12(ctx);
-  await p13(ctx);
-  await p14(ctx);
-  await p15(ctx);
-  await p16(ctx);
-  await p17(ctx);
-  await p18(ctx);
+  const release = process.env.FV_KNOWN_SAMPLE === 'release';
+  const runIndexes = release ? RELEASE_SLICE_INDEXES : SLICES.map((_, i) => i + 1);
+  if (release) {
+    const skipped = SLICES.map((_, i) => i + 1).filter((n) => !RELEASE_SLICE_INDEXES.includes(n));
+    ctx.pass(`known-files release sample: rendering slices ${RELEASE_SLICE_INDEXES.join(',')} of 18; slices ${skipped.join(',')} render-tested only in the exhaustive gate`);
+  }
+  for (const n of runIndexes) {
+    await SLICES[n - 1](ctx);
+  }
 }

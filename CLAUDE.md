@@ -128,15 +128,28 @@ tests → smoke tests. If a generated file changes, stage it. **A real git pre-c
 the generators (and stages the artifacts) is desirable so the bundle is never committed stale** —
 add one when convenient; until then `check.sh` is the gate.
 
-**Pre-push gate = `./scripts/check.sh --fast`.** This is the DEFAULT before every commit/push. It
-runs the generators + unit tests + CORE smoke but SKIPS the two heaviest Chromium suites (known-files
-`smoke-known.mjs` ≈812 Monaco-reloading `page.goto`s, and binary `smoke-binary.mjs` WebGL/wasm) —
-they dominate the gate's CPU/time, and skipping them keeps the machine cool. It still regenerates
-every bundle so core smoke runs against fresh artifacts, but it only WARNS (does not fail) on an
-unstaged regen — so when it reports a regenerated `*.generated.*` / `asset-manifest.json` / `sw.js`,
-`git add` it before you push. The **FULL `./scripts/check.sh`** (adds the two heavy suites) is a
-**recommendation before a release/tag**, not a per-push requirement. For a single concern, the
-cheapest path remains `node tests/smoke-area.mjs <area>` (one area, no heavy suites).
+**Three gate modes** (this host is CPU/RAM-constrained — WSL2 16 GB + Docker; the whole point is to
+never run more than one Chromium workload at a time and to keep each mode's cost bounded):
+
+- **`./scripts/check.sh --fast` — pre-push gate, the DEFAULT before every commit/push.** Generators +
+  scoped unit + scoped CORE smoke; SKIPS the heavy known/binary/sokoban suites. Only WARNS on an
+  unstaged regen (staleness is a pre-push concern) — so when it reports a regenerated `*.generated.*`
+  / `asset-manifest.json` / `sw.js`, `git add` it before you push.
+- **`./scripts/check.sh` (no flag) — RELEASE gate, ~10 min, run before a release/tag.** Full
+  non-browser layer + full core-tier smoke (ebook-git in its `<5s` LITE path) + a REPRESENTATIVE
+  sample of the exhaustive suites (examples-catalog one-per-type + all-partial; known-files a fixed
+  6-of-18 slice spread) + 2-of-4 privacy suites. HARD-FAILS on an unstaged regen. Samples are a real
+  coverage tradeoff (each sampled area logs what it deferred); the deep/every-file coverage is:
+- **`./scripts/check.sh --exhaustive` — open-EVERYTHING sweep, ≤30 min, run ON COMMAND (ideally on a
+  beefier/idle host).** Every sample, all 18 known slices, binary/WebGL, all 4 privacy suites, the
+  full ebook-git + git-tree stress, the emulator matrices, the Sokoban replay. Memory-floor-guarded
+  (`preflight_memory_floor`) and reaps browsers BETWEEN its separate-process suites so they never
+  pile up in RAM. HARD-FAILS on an unstaged regen.
+
+Append **`--dry-run`** to any mode to regenerate bundles then print that mode's selection and exit
+(no browser, ~7s) — use it to answer "what will this mode run?". For a single concern, the cheapest
+path remains `node tests/smoke-area.mjs <area>` (one area, no heavy suites). **Caution:** bare
+`check.sh` is now the RELEASE gate, not the old exhaustive sweep — use `--exhaustive` for the latter.
 
 ## Testing (keep it cheap — see [tests](tests/))
 
@@ -144,9 +157,12 @@ Headless-Chromium smoke tests live in `tests/areas/*.mjs`, each exporting `run(c
 - **`node tests/smoke-area.mjs <area> [<area>…]`** runs ONLY the named area(s) in one browser —
   use this for per-change verification. `--list` shows areas. This is the cheap path; prefer it
   while iterating.
-- `tests/smoke.mjs` runs the core areas; `tests/smoke-known.mjs` runs the heavy `known-files`
-  area in a fresh process. The `--fast` pre-push default runs only `smoke.mjs`; the full
-  `check.sh` (recommended before a release) runs both.
+- `tests/smoke.mjs` runs the core areas (tiered via `FV_SMOKE_TIER=core`); `tests/smoke-known.mjs`
+  runs the heavy `known-files` area in a fresh process (honours `FV_KNOWN_SAMPLE=release` = a 6-of-18
+  slice spread). `--fast` runs scoped `smoke.mjs`; the RELEASE gate runs core-tier + sampled
+  known/examples; `--exhaustive` runs every area + full known + binary. Sampling env knobs:
+  `FV_SMOKE_SAMPLE=release` (examples-catalog), `FV_KNOWN_SAMPLE=release` (known slices),
+  `FV_EBOOK_LITE=1` (ebook-git `<5s` path).
 - **Cost model:** the dominant test cost is full SPA reloads (`page.goto` re-parses Monaco's 13 MB
   bundle). The harness `openExample()` therefore reuses one page load and only reloads every ~50
   opens to flush accumulated state. Prefer `openExample` — let it manage isolation. **Exception:**

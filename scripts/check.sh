@@ -1,9 +1,19 @@
 #!/usr/bin/env bash
 # Local validation gate — the SAME checks the (now-disabled) CI ran, so we catch failures here
-# before pushing instead of paying for GitHub Actions. Run --fast before every commit/push.
+# before pushing instead of paying for GitHub Actions. THREE modes:
 #
-#   ./scripts/check.sh           full gate — recommended before a release/tag (adds heavy suites)
-#   ./scripts/check.sh --fast    DEFAULT pre-push gate: generators + unit tests + scoped smoke
+#   ./scripts/check.sh --fast        DEFAULT pre-push gate: generators + scoped unit + scoped smoke.
+#   ./scripts/check.sh               RELEASE gate (default, ~10 min): full non-browser layer + full
+#                                    core-tier smoke (ebook LITE) + a REPRESENTATIVE sample of the
+#                                    exhaustive suites (examples-catalog one-per-type, known-files
+#                                    slice spread) + 2-of-4 privacy suites. Run before a release/tag.
+#   ./scripts/check.sh --exhaustive  EXHAUSTIVE sweep (≤30 min, run ON COMMAND / on a beefy or idle
+#                                    host): opens EVERY sample, all 18 known slices, binary/WebGL,
+#                                    all 4 privacy suites, the full ebook-git + git-tree stress, the
+#                                    emulator matrices, and the Sokoban replay suite. Memory-guarded.
+#
+# Append --dry-run (-n) to ANY mode to regenerate bundles then PRINT that mode's unit/smoke/privacy
+# selection and exit (no browser, ~7s).  e.g. `check.sh --dry-run`, `check.sh --exhaustive --dry-run`.
 #
 # Does: (1) regenerate the asset manifest and fail if it was stale (the smoke test also asserts
 # this, but failing early is clearer); (2) the move-diff unit tests; (3) the headless smoke test
@@ -17,8 +27,11 @@
 # cost. It still regenerates every bundle (all generators total ~2s) so smoke runs against fresh
 # artifacts, but it does NOT hard-fail on an unstaged regen (that staleness gate is a pre-push concern).
 # When changes are owned by a smoke area, --fast runs just those areas through the shared zero-off-origin
-# harness; shared/global changes fall back to the aggregate smoke. --fast is the default before every push;
-# run the full gate before a release/tag.
+# harness; shared/global changes fall back to the aggregate smoke.
+#
+# The RELEASE gate (bare, no flag) samples those exhaustive suites down to a representative pass so the
+# routine pre-release check lands ~10 min on this constrained host; the open-EVERYTHING sweep is
+# --exhaustive, run on command. Both release + exhaustive HARD-FAIL on an unstaged regen (unlike --fast).
 #
 # Lane-scoped routing (so a lane's own changes never fall to the 15–20 min aggregate): docs/assets/games.css
 # is the metagame/arcade stylesheet → owned by the games area (NOT the shared app shell). docs/examples/
@@ -50,24 +63,66 @@ preflight_reap_stray_browsers() {
     exit 1
   fi
 }
-preflight_reap_stray_browsers
 
-FAST=0
+# Memory floor. This guards the CONCURRENCY / pile-up / orphan class of OOM (the one that hung the
+# machine for 100 min): it refuses to start a heavy gate when RAM is already low (Docker TTS, another
+# build, a leaked browser). It does NOT prevent within-a-single-process accumulation — that is handled
+# by the release gate's small samples, the examples-catalog GC fix, and known/binary running in their
+# own isolated processes. Thresholds are conservative starting points; override with FV_ALLOW_LOWMEM=1.
+preflight_memory_floor() {
+  local need_mb="$1" avail_mb
+  avail_mb=$(awk '/^MemAvailable:/{print int($2/1024)}' /proc/meminfo 2>/dev/null || echo 999999)
+  if [ "${avail_mb:-999999}" -lt "$need_mb" ] && [ "${FV_ALLOW_LOWMEM:-0}" != 1 ]; then
+    echo "✗ low memory: ${avail_mb} MB available, this gate wants ≥ ${need_mb} MB."
+    echo "  Free RAM (close Docker/other builds) or override with FV_ALLOW_LOWMEM=1 (risks OOM)."
+    exit 1
+  fi
+  echo "  memory floor OK (${avail_mb} MB available ≥ ${need_mb} MB)"
+}
+
+# Reap any browser a prior separate suite process left behind, so exhaustive's sequential suites
+# (core smoke → known → binary → emulator) never overlap in RAM. Called between those phases.
+reap_between_suites() {
+  local pid
+  for pid in $(pgrep -f chrome-headless 2>/dev/null || true); do
+    kill "$pid" 2>/dev/null || true
+  done
+}
+
+# Modes: fast | release (default) | exhaustive.  FAST/EXHAUSTIVE are derived flags so the existing
+# per-phase `if FAST`/`if !FAST` branches keep working; the new release path is explicit where needed.
+MODE=release
 DRY=0
-case "${1:-}" in
-  --fast|-f) FAST=1 ;;
-  --dry-run|-n) FAST=1; DRY=1 ;;   # regenerate + PRINT the fast unit/smoke/privacy selection, then exit (no browser)
-  "") ;;
-  *) echo "usage: $(basename "$0") [--fast|--dry-run]"; exit 2 ;;
-esac
+for arg in "$@"; do
+  case "$arg" in
+    --fast|-f) MODE=fast ;;
+    --exhaustive|--full) MODE=exhaustive ;;
+    --dry-run|-n) DRY=1 ;;
+    "") ;;
+    *) echo "usage: $(basename "$0") [--fast|--exhaustive] [--dry-run]"; exit 2 ;;
+  esac
+done
+FAST=0; EXHAUSTIVE=0
+[ "$MODE" = fast ] && FAST=1
+[ "$MODE" = exhaustive ] && EXHAUSTIVE=1
+
+preflight_reap_stray_browsers
+# Memory floor only gates the browser-heavy modes (skip for dry-run, which never launches a browser).
+if [ "$DRY" != 1 ]; then
+  if [ "$MODE" = exhaustive ]; then preflight_memory_floor 5000
+  elif [ "$MODE" = release ]; then preflight_memory_floor 2500
+  fi
+fi
 
 # Full mode: a generated artifact differing from HEAD means "you forgot to regenerate+stage" — fail
 # loudly. --fast mode: that's expected mid-iteration, so just note it and carry on.
 stale() {  # $1 = message, $2.. = paths to diff
   local msg="$1"; shift
   if ! git diff --quiet -- "$@"; then
-    if [ "$FAST" = 1 ]; then
-      echo "  (fast) $msg — regenerated but not staged; 'git add' it before you push"
+    # --fast and any --dry-run only WARN (staleness is a pre-push concern; dry-run never executes).
+    # The release + exhaustive gates HARD-FAIL so a stale bundle can never ship.
+    if [ "$FAST" = 1 ] || [ "$DRY" = 1 ]; then
+      echo "  ($MODE) $msg — regenerated but not staged; 'git add' it before you push"
     else
       echo "  $msg — stage it."
       exit 1
@@ -94,7 +149,9 @@ run_phase() {
 
   start_ts=$(_now_timestamp)
   start=$(_now_seconds)
-  if [ "$FAST" = 1 ]; then
+  # Per-phase timestamps + elapsed help track the ~10 min (release) / ≤30 min (exhaustive) budgets,
+  # so show them in every mode except a dry-run (which executes nothing).
+  if [ "$DRY" != 1 ]; then
     echo "→ [${start_ts}] $label"
   else
     echo "→ $label"
@@ -103,7 +160,7 @@ run_phase() {
   end=$(_now_seconds)
   end_ts=$(_now_timestamp)
   elapsed=$((end - start))
-  if [ "$FAST" = 1 ]; then
+  if [ "$DRY" != 1 ]; then
     echo "  ✓ ${label} in ${elapsed}s at [${end_ts}]"
   fi
 }
@@ -600,8 +657,22 @@ run_fast_unit_tests() {
 }
 
 run_smoke_core() {
-  if [ "$FAST" != 1 ]; then
+  if [ "$EXHAUSTIVE" = 1 ]; then
+    if [ "$DRY" = 1 ]; then echo "  (dry-run) smoke: FULL aggregate (all 19 areas)"; return 0; fi
     node tests/smoke.mjs
+    return
+  fi
+  if [ "$MODE" = release ]; then
+    if [ "$DRY" = 1 ]; then
+      echo "  (dry-run) smoke: core-tier aggregate (ebook LITE) + examples-catalog RELEASE sample"
+      return 0
+    fi
+    # Release gate: the core-tier light areas (shell + detection + games + interactions), with the
+    # ebook-git area in its <5s LITE path (FV_EBOOK_LITE) instead of the 70s sql.js/git-tree stress,
+    # PLUS examples-catalog opening a one-per-type + all-partial representative sample (its own process
+    # so the big open sweep never shares the core-tier browser). Full sweeps run under --exhaustive.
+    FV_SMOKE_TIER=core FV_EBOOK_LITE=1 FV_SMOKE_TIMING=1 node tests/smoke.mjs
+    FV_SMOKE_SAMPLE=release node tests/smoke-area.mjs examples-catalog
     return
   fi
 
@@ -756,6 +827,8 @@ run_phase "LOC housekeeping report (advisory)…" \
 if [ "$FAST" = 1 ]; then
   run_phase "unit tests (fast selected by changed paths)…" \
     run_fast_unit_tests
+elif [ "$DRY" = 1 ]; then
+  echo "→ unit tests (${MODE}): full existing unit set (dry-run — not executed)"
 else
   run_phase "unit tests (move-aware diff + parsers + metadata)…" \
     run_phase_unit_tests
@@ -772,8 +845,15 @@ run_privacy_and_offline_suites() {
   local run_markdown=0 run_html=0 run_embedded=0 run_offline=0
   local full_reason=""
 
-  if [ "$FAST" != 1 ]; then
+  if [ "$EXHAUSTIVE" = 1 ]; then
     run_markdown=1; run_html=1; run_embedded=1; run_offline=1
+  elif [ "$MODE" = release ]; then
+    # Release gate runs 2 of the 4 (each is a separate browser boot ~1-2 min): EMBEDDED covers the
+    # broadest remote-resource surface (SVG + email + EPUB blocking) and OFFLINE covers SW/precache
+    # readiness. The markdown + html remote-resource suites run under --exhaustive. (Every smoke area
+    # still asserts zero-off-origin via the harness, so same-origin enforcement is checked throughout;
+    # these 4 specifically test remote-resource *blocking* UX.)
+    run_embedded=1; run_offline=1
   else
     local changed_paths=()
     local collected_path path
@@ -840,24 +920,42 @@ fi
 
 if [ "$FAST" = 1 ]; then
   echo "→ fast mode: SKIPPING known-file + binary smoke suites + exhaustive Sokoban replay suite (the heaviest)."
-  echo "  This is the default pre-push gate. Run the full gate before a release:  ./scripts/check.sh"
+  echo "  This is the default pre-push gate. Run the release gate before a release:  ./scripts/check.sh"
   echo "✓ fast checks passed (known + binary + sokoban suites skipped)"
   exit 0
 fi
 
+if [ "$MODE" = release ]; then
+  # Release gate: known-files render coverage isn't reachable via the examples catalog (known files
+  # aren't examples), so run it here — but SAMPLED (FV_KNOWN_SAMPLE=release = a fixed 6-of-18 slice
+  # spread, ~250 opens instead of ~816). Binary/3D/media types are already opened representatively by
+  # the examples-catalog release sample above, so the dedicated binary suite, the Sokoban replay, and
+  # the emulator matrices are EXHAUSTIVE-only. Own process to keep it off the core-tier browser.
+  run_phase "smoke test: known-file viewers (RELEASE slice sample, fresh browser process)…" \
+    env FV_KNOWN_SAMPLE=release node tests/smoke-known.mjs
+  echo "✓ release checks passed (binary + sokoban + emulator suites are --exhaustive only)"
+  echo "  Open EVERYTHING before a tag with:  ./scripts/check.sh --exhaustive"
+  exit 0
+fi
+
+# --exhaustive: the open-everything sweep. Reap any browser a prior suite left behind BEFORE each of
+# the remaining separate-process suites so they never overlap in RAM (the pile-up OOM class).
 run_phase "running exhaustive Sokoban solution replay unit suite…" \
   node tests/sokoban-levels.test.mjs
 
+reap_between_suites
 run_phase "smoke test: known-file viewers (fresh browser process, avoids WSL2 OOM)…" \
   node tests/smoke-known.mjs
 
+reap_between_suites
 run_phase "smoke test: binary/container types (fresh browser process, ~45 heavy WebGL/wasm opens)…" \
   node tests/smoke-binary.mjs
 
+reap_between_suites
 run_phase "EmulatorJS six-core dependency closure (headless Chromium)…" \
   node tests/emulatorjs-core-load.mjs
 
 run_phase "Emulator settings responsive matrix (headless Chromium)…" \
   node tests/emulator-settings-responsive.mjs
 
-echo "✓ all checks passed"
+echo "✓ all checks passed (exhaustive)"
