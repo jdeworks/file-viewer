@@ -140,11 +140,14 @@ never run more than one Chromium workload at a time and to keep each mode's cost
   sample of the exhaustive suites (examples-catalog one-per-type + all-partial; known-files a fixed
   6-of-18 slice spread) + 2-of-4 privacy suites. HARD-FAILS on an unstaged regen. Samples are a real
   coverage tradeoff (each sampled area logs what it deferred); the deep/every-file coverage is:
-- **`./scripts/check.sh --exhaustive` — open-EVERYTHING sweep, ≤30 min, run ON COMMAND (ideally on a
-  beefier/idle host).** Every sample, all 18 known slices, binary/WebGL, all 4 privacy suites, the
-  full ebook-git + git-tree stress, the emulator matrices, the Sokoban replay. Memory-floor-guarded
-  (`preflight_memory_floor`) and reaps browsers BETWEEN its separate-process suites so they never
-  pile up in RAM. HARD-FAILS on an unstaged regen.
+- **`./scripts/check.sh --exhaustive` — open-EVERYTHING sweep (~13 min), run ON COMMAND.** Every
+  sample, all 18 known slices, binary/WebGL, all 4 privacy suites, the full ebook-git + git-tree
+  stress, the emulator matrices, the Sokoban replay. HARD-FAILS on an unstaged regen.
+  **⚠️ ALWAYS run this in a memory-capped container — never bare on the WSL2 host.** The full sweep
+  can spike to the RAM ceiling and OOM-thrash the host to a hang; a container with `--memory` +
+  `--memory-swap` equal (swap OFF) can only OOM *itself*. The script prints the exact `docker run`
+  command (reuses the host's playwright browser cache, no image pull) when you invoke `--exhaustive`
+  outside a container. Certified 2026-07-13: ~13 min, exit 0, peaks near the 8 GB cap. Give it ≥8 GB.
 
 Append **`--dry-run`** to any mode to regenerate bundles then print that mode's selection and exit
 (no browser, ~7s) — use it to answer "what will this mode run?". For a single concern, the cheapest

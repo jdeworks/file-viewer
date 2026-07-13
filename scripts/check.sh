@@ -7,10 +7,13 @@
 #                                    core-tier smoke (ebook LITE) + a REPRESENTATIVE sample of the
 #                                    exhaustive suites (examples-catalog one-per-type, known-files
 #                                    slice spread) + 2-of-4 privacy suites. Run before a release/tag.
-#   ./scripts/check.sh --exhaustive  EXHAUSTIVE sweep (≤30 min, run ON COMMAND / on a beefy or idle
-#                                    host): opens EVERY sample, all 18 known slices, binary/WebGL,
-#                                    all 4 privacy suites, the full ebook-git + git-tree stress, the
-#                                    emulator matrices, and the Sokoban replay suite. Memory-guarded.
+#   ./scripts/check.sh --exhaustive  EXHAUSTIVE sweep (~13 min): opens EVERY sample, all 18 known
+#                                    slices, binary/WebGL, all 4 privacy suites, the full ebook-git +
+#                                    git-tree stress, the emulator matrices, and the Sokoban replay.
+#                                    ⚠️ ALWAYS RUN THIS IN A MEMORY-CAPPED CONTAINER — it can spike to
+#                                    the RAM ceiling and OOM-thrash a bare WSL2 host to a hang. The
+#                                    container caps memory + disables swap so it can only OOM ITSELF,
+#                                    never the host. See "Certify --exhaustive" below for the command.
 #
 # Append --dry-run (-n) to ANY mode to regenerate bundles then PRINT that mode's unit/smoke/privacy
 # selection and exit (no browser, ~7s).  e.g. `check.sh --dry-run`, `check.sh --exhaustive --dry-run`.
@@ -106,10 +109,33 @@ FAST=0; EXHAUSTIVE=0
 [ "$MODE" = fast ] && FAST=1
 [ "$MODE" = exhaustive ] && EXHAUSTIVE=1
 
+# Certify --exhaustive SAFELY in a memory-capped container (the WSL2 dev host itself can OOM-thrash to
+# a hang on the full sweep; a container with a hard memory cap + swap OFF either completes or gets
+# cleanly OOM-killed INSIDE the container, host untouched). Reuses the HOST's playwright browser cache
+# so there is no ~2 GB image pull. Certified 2026-07-13 = ~13 min, exit 0, peaks near the 8 GB cap:
+#
+#   docker run --rm --memory=8g --memory-swap=8g --cpus=8 \
+#     --user "$(id -u):$(id -g)" -e HOME=/tmp -e PLAYWRIGHT_BROWSERS_PATH=/pw-browsers -e FV_IN_CONTAINER=1 \
+#     -v "$PWD:$PWD" -v "$HOME/.cache/ms-playwright:/pw-browsers:ro" -w "$PWD" \
+#     mcr.microsoft.com/playwright:v1.53.0-noble bash -c './scripts/check.sh --exhaustive'
+#
+warn_exhaustive_wants_container() {
+  # Skip the nudge when we ARE the container (marker env or docker/cgroup hint) or the user opts out.
+  if [ "${FV_IN_CONTAINER:-0}" = 1 ] || [ -f /.dockerenv ] || [ "${FV_ALLOW_HOST_EXHAUSTIVE:-0}" = 1 ]; then return; fi
+  echo "⚠️  --exhaustive should run in a MEMORY-CAPPED CONTAINER, not bare on this host —"
+  echo "    the full sweep can spike to the RAM ceiling and OOM-thrash WSL2 to a hang."
+  echo "    Recommended (caps memory, disables swap, reuses the host browser cache):"
+  echo "      docker run --rm --memory=8g --memory-swap=8g --cpus=8 \\"
+  echo "        --user \"\$(id -u):\$(id -g)\" -e HOME=/tmp -e PLAYWRIGHT_BROWSERS_PATH=/pw-browsers -e FV_IN_CONTAINER=1 \\"
+  echo "        -v \"\$PWD:\$PWD\" -v \"\$HOME/.cache/ms-playwright:/pw-browsers:ro\" -w \"\$PWD\" \\"
+  echo "        mcr.microsoft.com/playwright:v1.53.0-noble bash -c './scripts/check.sh --exhaustive'"
+  echo "    Proceeding on the host anyway (set FV_ALLOW_HOST_EXHAUSTIVE=1 to silence this)."
+}
+
 preflight_reap_stray_browsers
 # Memory floor only gates the browser-heavy modes (skip for dry-run, which never launches a browser).
 if [ "$DRY" != 1 ]; then
-  if [ "$MODE" = exhaustive ]; then preflight_memory_floor 5000
+  if [ "$MODE" = exhaustive ]; then warn_exhaustive_wants_container; preflight_memory_floor 5000
   elif [ "$MODE" = release ]; then preflight_memory_floor 2500
   fi
 fi
