@@ -47,7 +47,7 @@ export function mountLottieExports({
 
   const panel = document.createElement('section'); panel.className = 'lottie-export-panel'; panel.hidden = true;
   const settings = document.createElement('div'); settings.className = 'lottie-export-settings';
-  const scale = document.createElement('input'); scale.className = 'lottie-export-scale'; scale.type = 'number'; scale.min = '10'; scale.max = '400'; scale.step = '1'; scale.value = '100'; scale.setAttribute('aria-label', 'Export scale percent');
+  const scale = document.createElement('input'); scale.className = 'lottie-export-scale'; scale.type = 'number'; scale.min = '10'; scale.max = '2000'; scale.step = '1'; scale.value = '100'; scale.setAttribute('aria-label', 'Export scale percent');
   const scaleSuffix = document.createElement('span'); scaleSuffix.className = 'lottie-export-suffix'; scaleSuffix.textContent = '%';
   const scaleWrap = document.createElement('span'); scaleWrap.className = 'lottie-export-number'; scaleWrap.append(scale, scaleSuffix);
   const fps = document.createElement('input'); fps.className = 'lottie-export-fps'; fps.type = 'number'; fps.min = '1'; fps.max = '100'; fps.step = '0.01'; fps.value = String(normalizeFps(summary.fps, summary.fps)); fps.setAttribute('aria-label', 'GIF frames per second');

@@ -872,12 +872,13 @@ export async function run(ctx) {
   const exportControls = await page.evaluate(() => ({
     expanded: document.querySelector('#previewHost .lottie-export-toggle')?.getAttribute('aria-expanded'),
     scale: document.querySelector('#previewHost .lottie-export-scale')?.value,
+    scaleMax: document.querySelector('#previewHost .lottie-export-scale')?.max,
     fps: document.querySelector('#previewHost .lottie-export-fps')?.value,
     background: document.querySelector('#previewHost .lottie-export-background')?.value,
     loop: document.querySelector('#previewHost .lottie-export-loop-check')?.checked,
     splitDisabled: document.querySelector('#previewHost .lottie-export-split')?.disabled,
   }));
-  if (exportControls.expanded === 'true' && exportControls.scale === '100' && exportControls.fps === '30'
+  if (exportControls.expanded === 'true' && exportControls.scale === '100' && exportControls.scaleMax === '2000' && exportControls.fps === '30'
     && exportControls.background === 'transparent' && exportControls.loop && !exportControls.splitDisabled)
     pass('Lottie export options initialize from source settings and current Loop mode');
   else fail('Lottie export controls: ' + JSON.stringify(exportControls));

@@ -14,6 +14,7 @@ import {
   authoredFramePositions,
   frameFilename,
   gifFrameSchedule,
+  normalizeScale,
   outputDimensions,
   rasterCacheKey,
   stableCeil,
@@ -124,6 +125,12 @@ assert.deepEqual(authoredFramePositions({ ...summary, inFrame: 0.25, outFrame: 2
 assert.equal(frameFilename(0, 60), 'frame-001.png');
 assert.equal(frameFilename(1999, 2000), 'frame-2000.png');
 assert.deepEqual(outputDimensions(summary, 125), { width: 160, height: 160 });
+assert.equal(LOTTIE_EXPORT_LIMITS.maxScale, 2000);
+assert.equal(normalizeScale(2000), 2000);
+assert.equal(normalizeScale(2001), 2000);
+assert.deepEqual(outputDimensions({ ...summary, width: 16, height: 16 }, 2000), { width: 320, height: 320 });
+assert.equal(validateExportJob({ ...summary, width: 16, height: 16 }, { action: 'split', scale: 2000 }).ok, true);
+assert.match(validateExportJob({ ...summary, width: 256, height: 256 }, { action: 'split', scale: 2000 }).reason, /side limit/);
 assert.equal(rasterCacheKey({ scale: 100, backgroundMode: 'transparent', color: '#ABCDEF' }), '100:transparent:-');
 assert.equal(rasterCacheKey({ scale: 100, backgroundMode: 'solid', color: '#ABCDEF' }), '100:solid:#abcdef');
 for (const fps of [24, 30, 100]) {

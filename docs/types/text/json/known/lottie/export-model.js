@@ -1,6 +1,6 @@
 export const LOTTIE_EXPORT_LIMITS = Object.freeze({
   minScale: 10,
-  maxScale: 400,
+  maxScale: 2000,
   minFps: 1,
   maxFps: 100,
   maxFrames: 2000,
