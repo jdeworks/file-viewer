@@ -1,31 +1,81 @@
-// Deterministic playtime floor for the retained metagame stage with an engine-timed body.
-// Bodies only (no boss). Run: node scripts/metagame-playtime.mjs
+// Deterministic engine-time bounds for Stage 4's live five-map campaign.
+// Includes authored guardian waves; excludes the separate Infinite Loop boss and player build time.
+// Run: node scripts/metagame-playtime.mjs
 
-const fmt = (s) => (s >= 60 ? `${Math.floor(s / 60)}m ${Math.round(s % 60)}s` : `${Math.round(s)}s`);
+const fmt = (seconds) => {
+  if (seconds < 60) return `${Math.round(seconds)}s`;
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const secs = Math.round(seconds % 60);
+  return hours ? `${hours}h ${minutes}m ${secs}s` : `${minutes}m ${secs}s`;
+};
 
-const { waveComposition, SPAWN_INTERVAL_MS, WAVE_GAP_MS, FINAL_WAVE } = await import('../docs/games/metagame/stages/stage4/waves.js');
+const { MAPS, mapPathSeed } = await import('../docs/games/metagame/stages/stage4/maps.js');
+const { mapWaveComposition } = await import('../docs/games/metagame/stages/stage4/wavegen.js');
 const { ENEMY_TYPES } = await import('../docs/games/metagame/stages/stage4/enemies.js');
-const { buildPath, waveGroupDepth } = await import('../docs/games/metagame/stages/stage4/lsystem.js');
+const { subBossDef } = await import('../docs/games/metagame/stages/stage4/subboss.js');
+const { buildPath, mapPathDepth } = await import('../docs/games/metagame/stages/stage4/lsystem.js');
+const { SPAWN_INTERVAL_MS, WAVE_GAP_MS } = await import('../docs/games/metagame/stages/stage4/waves.js');
 
-let floorMs = 0;
-let tailMs = 0;
-let totalEnemies = 0;
-for (let wave = 1; wave < FINAL_WAVE; wave += 1) {
-  const composition = waveComposition(wave, 'x');
-  const enemyCount = composition.enemies.reduce((sum, entry) => sum + entry.count, 0);
-  totalEnemies += enemyCount;
-  const tiles = buildPath('x', waveGroupDepth(wave)).tiles;
-  let pathCells = 0;
+const CELL_SPEED = 8; // must match engine.js moveEnemies
+
+function pathLength(tiles) {
+  let cells = 0;
   for (let i = 0; i < tiles.length - 1; i += 1) {
-    pathCells += Math.abs(tiles[i + 1].x - tiles[i].x) + Math.abs(tiles[i + 1].y - tiles[i].y);
+    cells += Math.abs(tiles[i + 1].x - tiles[i].x) + Math.abs(tiles[i + 1].y - tiles[i].y);
   }
-  const cellSpeed = 8; // must match engine.js moveEnemies
-  const slowest = Math.min(...composition.enemies.map((entry) => ENEMY_TYPES[entry.type]?.speed || 1));
-  floorMs += Math.max(0, enemyCount - 1) * SPAWN_INTERVAL_MS + WAVE_GAP_MS;
-  tailMs += (pathCells / (slowest * cellSpeed)) * 1000;
+  return cells;
 }
 
-console.log('\nMETAGAME — ENGINE-TIMED BODY FLOOR (boss excluded)\n');
-console.log(`  Stage 4 Fractal Bastion: ${totalEnemies} enemies / ${FINAL_WAVE - 1} waves`);
-console.log(`  spawn-cadence floor: ${fmt(floorMs / 1000)}`);
-console.log(`  no-kill traversal upper bound: ${fmt((floorMs + tailMs) / 1000)}\n`);
+function measureMap(map, mapIndex) {
+  let cadenceMs = 0;
+  let traversalMs = 0;
+  let enemies = 0;
+  let guardians = 0;
+
+  for (let wave = 1; wave <= map.waveCount; wave += 1) {
+    const composition = mapWaveComposition(mapIndex, wave);
+    const trashCount = composition.enemies.reduce((sum, entry) => sum + entry.count, 0);
+    const guardian = composition.subBoss ? subBossDef(composition.subBoss) : null;
+    const enemyCount = trashCount + (guardian ? 1 : 0);
+    const speeds = composition.enemies.map((entry) => ENEMY_TYPES[entry.type]?.speed || 1);
+    if (guardian) speeds.push(guardian.speed);
+
+    const depth = mapPathDepth(map.depth, wave);
+    const tiles = buildPath(mapPathSeed('playtime', mapIndex), depth).tiles;
+    const slowest = Math.min(...speeds);
+
+    enemies += enemyCount;
+    guardians += guardian ? 1 : 0;
+    cadenceMs += Math.max(0, enemyCount - 1) * SPAWN_INTERVAL_MS + WAVE_GAP_MS;
+    traversalMs += (pathLength(tiles) / (slowest * CELL_SPEED)) * 1000;
+  }
+
+  return { waves: map.waveCount, enemies, guardians, cadenceMs, traversalMs };
+}
+
+const rows = MAPS.map(measureMap);
+const total = rows.reduce((sum, row) => ({
+  waves: sum.waves + row.waves,
+  enemies: sum.enemies + row.enemies,
+  guardians: sum.guardians + row.guardians,
+  cadenceMs: sum.cadenceMs + row.cadenceMs,
+  traversalMs: sum.traversalMs + row.traversalMs,
+}), { waves: 0, enemies: 0, guardians: 0, cadenceMs: 0, traversalMs: 0 });
+
+if (total.waves !== 90) throw new Error(`Expected 90 live campaign waves; measured ${total.waves}`);
+
+console.log('\nMETAGAME — STAGE 4 LIVE CAMPAIGN ENGINE-TIME BOUNDS\n');
+rows.forEach((row, index) => {
+  const unopposedMs = row.cadenceMs + row.traversalMs;
+  console.log(`  ${MAPS[index].name.padEnd(20)} ${String(row.waves).padStart(2)} waves / ${String(row.enemies).padStart(4)} enemies / ${String(row.guardians).padStart(2)} guardians  `
+    + `cadence ${fmt(row.cadenceMs / 1000)} · unopposed ${fmt(unopposedMs / 1000)}`);
+});
+
+const unopposedMs = total.cadenceMs + total.traversalMs;
+console.log(`\n  Total: ${total.waves} waves / ${total.enemies} enemies / ${total.guardians} guardians`);
+console.log(`  1× spawn-cadence floor:          ${fmt(total.cadenceMs / 1000)}`);
+console.log(`  1× unopposed traversal baseline: ${fmt(unopposedMs / 1000)}`);
+console.log(`  3× spawn-cadence floor:          ${fmt(total.cadenceMs / 3000)}`);
+console.log(`  3× unopposed traversal baseline: ${fmt(unopposedMs / 3000)}\n`);
+console.log('  Bounds exclude tower kills, pauses/build decisions, retries, and the separate Infinite Loop boss.');

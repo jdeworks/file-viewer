@@ -84,7 +84,56 @@ function encryptionSets(files) {
   return { supported, unsupported };
 }
 
+function hasBytes(bytes, expected, offset = 0) {
+  if (!(bytes instanceof Uint8Array) || bytes.length < offset + expected.length) return false;
+  return expected.every((value, index) => bytes[offset + index] === value);
+}
+
+function hasEndOfCentralDirectory(bytes) {
+  if (!(bytes instanceof Uint8Array)) return false;
+  const start = Math.max(0, bytes.length - 65557);
+  for (let offset = bytes.length - 4; offset >= start; offset -= 1) {
+    if (hasBytes(bytes, [0x50, 0x4b, 0x05, 0x06], offset)) return true;
+  }
+  return false;
+}
+
+export function archiveFailureDiagnostics(intake, error = null) {
+  const bytes = intake?.bytes;
+  const loaded = Number(intake?.loadedBytes || bytes?.length || 0);
+  const size = Number(intake?.size || loaded);
+  const partial = !!intake?.truncated || loaded < size;
+  const diagnostics = [];
+  if (partial) {
+    diagnostics.push(`Only ${loaded.toLocaleString()} of ${size.toLocaleString()} bytes were loaded. ZIP indexes are stored at the end of the archive, so a prefix cannot be browsed safely.`);
+  }
+  if (!hasBytes(bytes, [0x50, 0x4b, 0x03, 0x04])
+      && !hasBytes(bytes, [0x50, 0x4b, 0x05, 0x06])
+      && !hasBytes(bytes, [0x50, 0x4b, 0x07, 0x08])) {
+    diagnostics.push('No ZIP local-file or empty-archive signature was found at the start of the input.');
+  }
+  if (!partial && bytes?.length && !hasEndOfCentralDirectory(bytes)) {
+    diagnostics.push('The end-of-central-directory record is missing; the archive is truncated, corrupt, or uses an unsupported split layout.');
+  }
+  const parserMessage = String(error?.message || error || '').replace(/\s+/g, ' ').trim();
+  if (parserMessage) diagnostics.push(`Archive parser report: ${parserMessage.slice(0, 300)}`);
+  diagnostics.push('No entry was extracted; the original archive bytes remain available for download.');
+  return [...new Set(diagnostics)];
+}
+
+function archiveFailureHtml(title, diagnostics) {
+  return '<div class="json-error"><strong>' + esc(title) + '</strong><ul>'
+    + diagnostics.map((message) => '<li>' + esc(message) + '</li>').join('') + '</ul></div>';
+}
+
 export async function render(intake, ctx = {}) {
+  const loaded = Number(intake?.loadedBytes || intake?.bytes?.length || 0);
+  if (intake.truncated || (Number.isFinite(intake.size) && loaded < intake.size)) {
+    return {
+      bodyHtml: archiveFailureHtml('Incomplete archive input', archiveFailureDiagnostics(intake)),
+      hadUnsafe: false,
+    };
+  }
   const [docTpl, rowTpl] = await Promise.all([loadTemplate(DOC), loadTemplate(ROW)]);
   const cd = listCentralDirectory(intake.bytes);
 
@@ -95,7 +144,10 @@ export async function render(intake, ctx = {}) {
     canOpen = true;
   } catch (e) {
     if (!cd || !cd.files.length) {
-      return { bodyHtml: '<div class="json-error"><strong>Could not read archive</strong><br>' + esc(e.message) + '</div>', hadUnsafe: false };
+      return {
+        bodyHtml: archiveFailureHtml('Could not read archive', archiveFailureDiagnostics(intake, e)),
+        hadUnsafe: false,
+      };
     }
     z = cd;
     encrypted = cd.encrypted;
@@ -306,7 +358,6 @@ export async function render(intake, ctx = {}) {
           archive: intake.filename || 'archive.zip',
           entry: testName,
           mode: runMode,
-          password,
           attempts,
           durationMs: Math.round(elapsedMs),
           attemptsPerSecond: Math.round(rate),

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { csvColumnLabels, csvRowsToRecords, maxCsvColumns } from '../docs/types/text/csv/shape.js';
+import { csvColumnLabels, csvRowsToRecords, csvShapeDiagnostics, maxCsvColumns } from '../docs/types/text/csv/shape.js';
 
 assert.equal(maxCsvColumns([]), 0, 'empty input has no invented columns');
 for (const width of [2, 3, 4]) {
@@ -46,4 +46,15 @@ assert.deepEqual(Object.keys(prototypeHeader), ['__proto__', '__proto___2']);
 assert.equal(Object.hasOwn(prototypeHeader, '__proto__'), true, 'special header names stay ordinary own data properties');
 assert.equal(prototypeHeader.__proto__, 'left');
 
-console.log('CSV shape fidelity: ragged widths, labels, and records verified');
+const diagnostics = csvShapeDiagnostics([
+  ['name', 'score'],
+  ['Ada', '10'],
+  ['Bob'],
+  ['Cy', '30', 'extra'],
+], [{ code: 'MissingQuotes', row: 3, message: 'Quoted field unterminated' }], true);
+assert.match(diagnostics[0], /2 rows have inconsistent field counts/);
+assert.match(diagnostics[0], /row 3 has 1/);
+assert.match(diagnostics[0], /row 4 has 3/);
+assert.match(diagnostics[1], /Row 4: unterminated quoted field/);
+
+console.log('CSV shape fidelity: ragged widths, records, and recovery diagnostics verified');

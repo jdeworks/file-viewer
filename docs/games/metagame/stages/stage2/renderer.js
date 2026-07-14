@@ -168,7 +168,7 @@ export function renderStage2({
       ? (w && w.torch > 0 ? ` — torch lit (${w.torch} steps)` : " — DARK: foes hide beyond your light; ghosts mark where you last saw them")
       : "";
     setText(fields.objective, state.run.boss.reached
-      ? (lock.unlocked ? "the passage is open. challenge the boss." : "blocked. find PASSAGE in cipher.txt to open the way.")
+      ? (lock.unlocked ? "the passage is mapped. challenge the boss." : "unmapped: challenge at real risk, or find PASSAGE in cipher.txt for a clean clear.")
       : `${biome.name} — reach the stairs > (floor ${state.run.floor}/${MAX_FLOOR}). fight foes, grab weapons & glyphs.${darkNote}`);
     updateCompass();
     const sig = state.run.combatLog.slice(-4).join("\n");

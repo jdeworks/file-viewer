@@ -136,8 +136,8 @@ export async function runAudioExportAndPresetChecks(ctx) {
       status: status?.textContent || '',
     };
   }).catch(() => null);
-  if (chapterZip && !chapterZip.hidden && /Chapter ACX ZIP/i.test(chapterZip.text) && !chapterZip.disabled && /mono 44\.1 kHz MP3 192k CBR/i.test(chapterZip.status))
-    pass('R2: export panel shows enabled Chapter ACX ZIP action when chapters exist');
+  if (chapterZip && !chapterZip.hidden && /Chapter ACX-targeted ZIP/i.test(chapterZip.text) && !chapterZip.disabled && /mono 44\.1 kHz MP3 192k CBR/i.test(chapterZip.status))
+    pass('R2: export panel shows enabled Chapter ACX-targeted ZIP action when chapters exist');
   else fail('chapter zip action: ' + JSON.stringify(chapterZip));
   const exportSummary = exportPanel ? await page.$eval('#previewHost .media-mode-panel[data-mode="export"] .media-export-summary', (e) => e.textContent) : '';
   if (/live chain =/.test(exportSummary) && /Output =/.test(exportSummary) && /Provenance = -af "/.test(exportSummary)) pass('P1: provenance-style export summary rendered'); else fail('export summary: ' + exportSummary.slice(0, 120));
@@ -186,7 +186,7 @@ export async function runAudioExportAndPresetChecks(ctx) {
   await page.selectOption('#previewHost .media-mode-panel[data-mode="export"] .media-export-preset', 'acx-mp3');
   const acxSummary = await page.$eval('#previewHost .media-mode-panel[data-mode="export"] .media-export-summary', (e) => e.textContent).catch(() => '');
   const acxStage = await page.$eval('#previewHost .media-mode-panel[data-mode="export"] .media-export-stage-compare', (e) => e.textContent).catch(() => '');
-  if (/Profile Audiobook ACX MP3/.test(acxSummary) && /mono/.test(acxSummary)
+  if (/Profile Audiobook ACX-targeted MP3/.test(acxSummary) && /mono/.test(acxSummary)
     && /192k CBR/.test(acxSummary) && /loudnorm target -20 LUFS/.test(acxSummary) && /loudnorm TP target -3 dBTP/.test(acxSummary))
     pass('P2: ACX preset summary shows mono, 192k CBR, loudnorm -20 LUFS, TP target -3');
   else fail('acx summary: ' + acxSummary.slice(0, 180));
@@ -224,7 +224,7 @@ export async function runAudioExportAndPresetChecks(ctx) {
   else fail('custom stage should not show TP with loudness off: ' + customStage.slice(0, 220));
   await page.click('#previewHost .media-mode-panel[data-mode="export"] .media-export-preset-card[data-preset="acx-mp3"]');
   const acxCardSummary = await page.$eval('#previewHost .media-mode-panel[data-mode="export"] .media-export-summary', (e) => e.textContent).catch(() => '');
-  if (/Profile Audiobook ACX MP3/.test(acxCardSummary) && /Output =/.test(acxCardSummary))
+  if (/Profile Audiobook ACX-targeted MP3/.test(acxCardSummary) && /Output =/.test(acxCardSummary))
     pass('P2: ACX card path reselect keeps summary visible');
   else fail('acx card select: ' + acxCardSummary.slice(0, 120));
   // Verify the PURE preset/codec layer (no ffmpeg load): ACX → mono CBR mp3 args.

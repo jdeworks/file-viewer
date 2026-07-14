@@ -1,10 +1,9 @@
 // Format toolbars (JSON / YAML / XML / TOML) for the raw editor: Format / Minify / Validate
 // actions plus the inline validity indicator. Extracted from rawpane.js for modularity.
-// syncHasToolsClass lives in rawpane.js (it also tracks markdown/html toolbars) and is imported
-// at call-time — the cycle is safe because it's only invoked inside handlers, never at module load.
+// The stateless toolbar geometry helper is shared with the bundled raw-pane controller.
 import { state, $, toast } from './state.js';
 import { loadGlobal, vendor } from './script-loader.js';
-import { syncHasToolsClass } from './rawpane.js';
+import { syncHasToolsClass } from './rawpane-shared.js';
 import { getTrimMode, setTrimMode, lineTransformFor, b64encode, b64decode } from './text-utils.js';
 
 // ── JSON toolbar ──────────────────────────────────────────────────────────────

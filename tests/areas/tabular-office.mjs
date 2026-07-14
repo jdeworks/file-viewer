@@ -20,6 +20,20 @@ export async function run(ctx) {
   const hasEditor = await page.$('#editor .monaco-editor');
   if (!hasEditor) pass('PDF is preview-only (no raw editor)'); else fail('raw editor present for PDF');
 
+  // Real encrypted fixture: wrong-password feedback and successful local retry. Opening waits on
+  // the inline prompt, so start the app call without awaiting it and drive the prompt concurrently.
+  const lockedPdfOpen = page.evaluate(() => window.__fv.openExampleByLabel('Password-protected PDF (password: viewer)'));
+  await page.waitForSelector('#previewHost .pw-prompt #pwInput', { timeout: 12000 });
+  await page.fill('#previewHost #pwInput', 'wrong-password');
+  await page.click('#previewHost #pwSubmit');
+  await page.waitForFunction(() => /Incorrect password/i.test(document.querySelector('#previewHost .pw-hint')?.textContent || ''), null, { timeout: 12000 });
+  await page.fill('#previewHost #pwInput', 'viewer');
+  await page.click('#previewHost #pwSubmit');
+  await lockedPdfOpen;
+  await page.waitForSelector('#previewHost img.pdf-page', { timeout: 20000 });
+  const lockedPdfInfo = await page.$eval('#previewHost .pdf-info', (el) => el.textContent);
+  if (/1 page/.test(lockedPdfInfo)) pass('PDF password flow rejects a wrong password then unlocks locally'); else fail('locked PDF info: ' + lockedPdfInfo);
+
   // ── PDF lite editor ── rotate/delete pages with pdf-lib, then download the edited PDF. ──
   await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample (3 pages).pdf');
@@ -57,6 +71,12 @@ export async function run(ctx) {
   await page.waitForFunction(() => /rotated/.test(document.querySelector('#previewHost .pdf-changes')?.textContent || ''), null, { timeout: 8000 }).catch(() => {});
   const pdfChanges2 = await page.$eval('#previewHost .pdf-changes', (e) => e.textContent);
   if (/rotated 90/.test(pdfChanges2)) pass('PDF edit: rotation reflected in changes summary'); else fail('pdf changes2: ' + pdfChanges2);
+  // Add a real blank page — the last additive/destructive page operation from the regression list.
+  const beforeBlank = await page.$$eval('#previewHost img.pdf-page', (els) => els.length);
+  await page.click('#previewHost .pdf-addblank');
+  await page.waitForFunction((n) => document.querySelectorAll('#previewHost img.pdf-page').length === n + 1, beforeBlank, { timeout: 12000 });
+  const pdfBlankChanges = await page.$eval('#previewHost .pdf-changes', (e) => e.textContent);
+  if (/blank page.* added/.test(pdfBlankChanges)) pass('PDF edit: blank page inserted and tracked'); else fail('pdf blank changes: ' + pdfBlankChanges);
   // Insert an image as a new page: pick sample.png → page count grows + summary notes it.
   const beforeAdd = await page.$$eval('#previewHost img.pdf-page', (els) => els.length);
   await page.waitForSelector('#previewHost .pdf-addimg:not([hidden])', { timeout: 4000 });
@@ -66,15 +86,21 @@ export async function run(ctx) {
   const pdfChanges3 = await page.$eval('#previewHost .pdf-changes', (e) => e.textContent);
   if (/image page.* added/.test(pdfChanges3)) pass('PDF edit: image insertion noted in changes summary'); else fail('pdf changes3: ' + pdfChanges3);
   // Merge: append another PDF (sample.pdf, 1 page). The end state is deterministic — 3 original
-  // pages, −1 deleted, +1 image, +1 merged = 4 — and the changes summary records the merge. We
+  // pages, −1 deleted, +1 blank, +1 image, +1 merged = 5 — and the changes summary records the merge. We
   // assert that settled end-state rather than an afterMerge>beforeMerge count delta: the pre-merge
   // render can already be settled, making the delta flaky even though the merge always succeeds.
   await page.setInputFiles('#previewHost .pdf-pdfinput', new URL('../../docs/examples/sample.pdf', import.meta.url).pathname);
-  await page.waitForFunction(() => document.querySelectorAll('#previewHost img.pdf-page').length === 4
+  await page.waitForFunction(() => document.querySelectorAll('#previewHost img.pdf-page').length === 5
     && /merged in/.test(document.querySelector('#previewHost .pdf-changes')?.textContent || ''), null, { timeout: 20000 });
   const afterMerge = await page.$$eval('#previewHost img.pdf-page', (els) => els.length);
   const pdfChanges4 = await page.$eval('#previewHost .pdf-changes', (e) => e.textContent);
-  if (afterMerge === 4 && /merged in/.test(pdfChanges4)) pass('PDF edit: merge appends another PDF (→' + afterMerge + ' pages)'); else fail('pdf merge: pages=' + afterMerge + ' changes=' + pdfChanges4);
+  if (afterMerge === 5 && /merged in/.test(pdfChanges4)) pass('PDF edit: merge appends another PDF (→' + afterMerge + ' pages)'); else fail('pdf merge: pages=' + afterMerge + ' changes=' + pdfChanges4);
+  const pdfBinaryEdit = await page.evaluate(async () => {
+    const edit = window.__fv.state.binaryEdit;
+    const bytes = edit ? await edit.getBytes() : null;
+    return { dirty: !!edit?.dirty, signature: bytes ? Array.from(bytes.slice(0, 5)) : [] };
+  });
+  if (pdfBinaryEdit.dirty && pdfBinaryEdit.signature.join(',') === '37,80,68,70,45') pass('PDF edit: shared binary-save payload is ready for Companion'); else fail('pdf binary edit: ' + JSON.stringify(pdfBinaryEdit));
   // Book mode: the spread toggle lays pages two-up (wide screens). Pages wrap into rows.
   await page.click('#previewHost .pdf-spread');
   const spreadOn = await page.$eval('#previewHost .pdf-doc', (e) => e.classList.contains('pdf-spread-on'));

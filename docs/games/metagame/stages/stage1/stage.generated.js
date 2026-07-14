@@ -3678,7 +3678,7 @@ var GRID_COLS = 20;
 var GRID_ROWS = 5;
 var GRID_CELLS = GRID_COLS * GRID_ROWS;
 function stage1Markup(multTier) {
-  return '<div class="mg-wrap mg-s1"><div class="mg-s1-hud" hidden>  <span class="mg-s1-grav" hidden>🌀 ×1.0</span>  <span class="mg-s1-score"><strong class="mg-s1-score-val">0</strong> bits</span></div><div class="mg-s1-help" hidden></div><button class="mg-s1-echo" type="button" hidden aria-label="defrag the corrupted glyph">👾<span class="mg-s1-echo-t"></span></button><div class="mg-s1-top">  <div class="mg-s1-tap" aria-label="tap to compute"></div>  <div class="mg-s1-stage">    <button class="mg-s1-btn mg-compute" type="button">' + (multTier ? multTier.icon + " " + multTier.name : "Compute") + '</button>    <div class="mg-s1-grid" aria-hidden="true"></div>  </div></div><div class="mg-s1-tabs" role="tablist"></div><div class="mg-s1-panels"></div></div>';
+  return '<div class="mg-wrap mg-s1"><div class="mg-s1-hud" hidden>  <span class="mg-s1-grav" hidden>🌀 ×1.0</span>  <span class="mg-s1-score"><strong class="mg-s1-score-val">0</strong> bits</span></div><div class="mg-s1-help" hidden></div><button class="mg-s1-echo" type="button" hidden aria-label="defrag the corrupted glyph">👾<span class="mg-s1-echo-t"></span></button><div class="mg-s1-top">  <div class="mg-s1-tap" aria-label="tap to compute"></div>  <div class="mg-s1-stage">    <button class="mg-s1-btn mg-compute" type="button">' + (multTier ? multTier.icon + " " + multTier.name : "Compute") + '</button>    <div class="mg-s1-grid" aria-hidden="true"></div>  </div></div><div class="mg-s1-tabs" role="tablist" aria-label="Bit Foundry progression"></div><div class="mg-s1-panels"></div></div>';
 }
 var ECHO_STYLE_ID = "mg-s1-echo-style";
 function injectEchoStyle() {
@@ -3968,7 +3968,12 @@ function renderStage1(ctx2) {
     achievements: () => (state.achievements || []).length >= 1,
     reset: () => gte(state.totalBits, RESET_THRESHOLD) || (state.prestigeCount || 0) >= 1
   };
-  const TAB_LABELS = { bits: "🧮 Bits", managers: "🛠 Managers", achievements: "🏆 Achievements", reset: "🌀 Prestige" };
+  const TAB_STEPS = {
+    bits: { number: 1, label: "🧮 Bits" },
+    managers: { number: 2, label: "🛠 Managers" },
+    achievements: { number: 3, label: "🏆 Achievements" },
+    reset: { number: 4, label: "🌀 Prestige" }
+  };
   host.innerHTML = stage1Markup(multTier);
   const $ = (s) => host.querySelector(s);
   const tap = $(".mg-s1-tap");
@@ -4003,11 +4008,15 @@ function renderStage1(ctx2) {
   const { reveal } = createReveal({ host, grid, computeBtn, state, multTier });
   let tabsSig = null;
   function renderTabs() {
-    const visible = Object.keys(TAB_LABELS).filter((id) => tabVisible[id]());
+    const visible = Object.keys(TAB_STEPS).filter((id) => tabVisible[id]());
     const sig = visible.join(",") + "|" + activeTab;
     if (sig === tabsSig) return;
     tabsSig = sig;
-    tabsEl.innerHTML = visible.map((id) => '<button class="mg-s1-tab' + (id === activeTab ? " mg-s1-tab-on" : "") + '" type="button" role="tab" data-tab="' + id + '">' + TAB_LABELS[id] + "</button>").join("");
+    tabsEl.innerHTML = visible.map((id) => {
+      const step = TAB_STEPS[id];
+      const current = id === activeTab;
+      return '<button class="mg-s1-tab' + (current ? " mg-s1-tab-on" : "") + '" type="button" role="tab" data-tab="' + id + '" data-step="' + step.number + '" aria-selected="' + current + '"' + (current ? ' aria-current="step"' : "") + '><span class="mg-s1-step">Step ' + step.number + "</span><span>" + step.label + "</span></button>";
+    }).join("");
     tabsEl.querySelectorAll(".mg-s1-tab").forEach((b) => b.addEventListener("click", () => {
       activeTab = b.dataset.tab;
       renderTabs();

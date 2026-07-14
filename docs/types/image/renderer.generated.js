@@ -85,6 +85,7 @@ function queryEls(host, canEdit) {
     undoBtn: qe(".imgv-undo"),
     redoBtn: qe(".imgv-redo"),
     exportFmt: qe(".imgv-export-fmt"),
+    exportScale: qe(".imgv-export-scale"),
     editFont: qe(".imgv-text-font"),
     bgBtn: qe(".imgv-bg-btn"),
     bgTol: qe(".imgv-bg-tol"),
@@ -366,8 +367,8 @@ function lumAt(src, i) {
 function sobelMag(src, w, h) {
   const lum = new Float32Array(w * h);
   for (let p = 0; p < w * h; p++) lum[p] = lumAt(src, p << 2);
-  const clamp = (v, max) => v < 0 ? 0 : v > max ? max : v;
-  const L = (x, y) => lum[clamp(y, h - 1) * w + clamp(x, w - 1)];
+  const clamp2 = (v, max) => v < 0 ? 0 : v > max ? max : v;
+  const L = (x, y) => lum[clamp2(y, h - 1) * w + clamp2(x, w - 1)];
   const mag = new Float32Array(w * h);
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
     const gx = L(x + 1, y - 1) + 2 * L(x + 1, y) + L(x + 1, y + 1) - (L(x - 1, y - 1) + 2 * L(x - 1, y) + L(x - 1, y + 1));
@@ -1171,8 +1172,8 @@ function injectFilterStyle() {
 
 // ../../docs/types/image/curves.js
 function normalizePoints(points) {
-  const clamp = (v) => v < 0 ? 0 : v > 255 ? 255 : Math.round(v);
-  const pts = (points || []).map((p) => ({ x: clamp(p.x), y: clamp(p.y) })).sort((a, b) => a.x - b.x);
+  const clamp2 = (v) => v < 0 ? 0 : v > 255 ? 255 : Math.round(v);
+  const pts = (points || []).map((p) => ({ x: clamp2(p.x), y: clamp2(p.y) })).sort((a, b) => a.x - b.x);
   const out = [];
   for (const p of pts) {
     if (out.length && out[out.length - 1].x === p.x) out[out.length - 1] = p;
@@ -3389,7 +3390,9 @@ function installShapeControls(ctx) {
     snap,
     tr,
     refreshLayers,
-    syncToolbar
+    syncToolbar,
+    refreshComposition = () => {
+    }
   } = ctx;
   const sel = () => getSelected();
   $(".imgv-adv-add").addEventListener("click", addText);
@@ -3407,6 +3410,7 @@ function installShapeControls(ctx) {
   $(".imgv-adv-del").addEventListener("click", deleteSelection);
   $(".imgv-adv-fill").addEventListener("input", () => {
     sel().forEach((n) => (isLabel(n) ? textNodeOf(n) : n).fill($(".imgv-adv-fill").value));
+    refreshComposition(sel());
     layer.draw();
     markDirty();
   });
@@ -3466,6 +3470,7 @@ function installShapeControls(ctx) {
   function applySizeInputs() {
     const w = parseFloat($(".imgv-adv-w").value) || 1, h = parseFloat($(".imgv-adv-h").value) || 1;
     sel().forEach((n) => writeSize(n, w, h));
+    refreshComposition(sel());
     layer.draw();
     markDirty();
     syncToolbar();
@@ -3498,6 +3503,7 @@ function installShapeControls(ctx) {
       const v = Math.max(1, parseInt($(".imgv-adv-radius").value, 10) || 1);
       if (["Circle", "Wedge", "RegularPolygon"].includes(n.getClassName?.())) n.radius(v);
     });
+    refreshComposition(sel());
     layer.draw();
     markDirty();
   });
@@ -4064,6 +4070,8 @@ function advToolbarHtml() {
     <button class="imgv-adv-poly" title="Add polygon">⬠</button>
     <button class="imgv-adv-star" title="Add star">★</button>
     <button class="imgv-adv-more" title="Add circle, ring, wedge, or arc">More</button>
+    <button class="imgv-adv-image" title="Add a local image or sticker as an editable object">+ Image/sticker</button>
+    <input class="imgv-adv-image-file" type="file" accept="image/*" hidden>
     <span class="imgv-sep"></span>
     <input class="imgv-adv-text imgv-adv-txtctl" type="text" placeholder="Selected text" style="flex:1 1 120px;min-width:90px;max-width:100%">
     <label class="imgv-adv-txtctl" style="font-size:.8em">Size <input class="imgv-adv-size" type="number" min="6" max="400" value="${DEFAULTS.fontSize}" style="width:56px"></label>
@@ -4079,7 +4087,12 @@ function advToolbarHtml() {
     <label class="imgv-adv-txtctl" style="font-size:.8em">TW <input class="imgv-adv-tw" type="number" min="1" style="width:54px"></label>
     <label class="imgv-adv-txtctl" style="font-size:.8em">TH <input class="imgv-adv-th" type="number" min="1" style="width:54px"></label>
     <label class="imgv-adv-txtctl" style="font-size:.8em">Pad <input class="imgv-adv-pad" type="number" min="0" max="200" value="6" style="width:48px"></label>
-    <label style="font-size:.8em">Fill <input class="imgv-adv-fill" type="color" value="${DEFAULTS.fill}"></label>
+    <label class="imgv-adv-fillctl" style="font-size:.8em">Fill <input class="imgv-adv-fill" type="color" value="${DEFAULTS.fill}"></label>
+    <label class="imgv-adv-fillctl" style="font-size:.8em">Fill type <select class="imgv-adv-fillkind"><option value="solid">Solid</option><option value="linear">Linear gradient</option><option value="radial">Radial gradient</option><option value="pattern">Local pattern</option></select></label>
+    <label class="imgv-adv-fillctl imgv-adv-filldetail" style="font-size:.8em">To <input class="imgv-adv-fill2" type="color" value="#9b5cff"></label>
+    <label class="imgv-adv-fillctl imgv-adv-filldetail" style="font-size:.8em">Angle <input class="imgv-adv-fillangle" type="number" min="0" max="359" value="0" style="width:52px"></label>
+    <button class="imgv-adv-pattern imgv-adv-fillctl" title="Choose a local image for the selected shape's repeating pattern">Pattern…</button>
+    <input class="imgv-adv-pattern-file" type="file" accept="image/*" hidden>
     <label class="imgv-adv-txtctl" style="font-size:.8em">BG <input class="imgv-adv-bg" type="color" value="${DEFAULTS.bg}"></label>
     <label class="imgv-adv-txtctl" style="font-size:.8em">BG opacity <input class="imgv-adv-bgop" type="range" min="0" max="100" value="${DEFAULTS.bgOpacity * 100}" style="width:70px"></label>
     <label class="imgv-adv-txtctl" style="font-size:.8em">Text stroke <input class="imgv-adv-tstroke" type="color" value="#000000"></label>
@@ -4093,6 +4106,14 @@ function advToolbarHtml() {
     <label class="imgv-adv-linectl" style="font-size:.8em">Join <select class="imgv-adv-join"><option>miter</option><option>round</option><option>bevel</option></select></label>
     <button class="imgv-adv-pointedit imgv-adv-linectl" title="Edit line/arrow points">Points</button>
     <label class="imgv-adv-anyctl" style="font-size:.8em">Opacity <input class="imgv-adv-opacity" type="range" min="0" max="100" value="100" style="width:70px"></label>
+    <label class="imgv-adv-imgctl" style="font-size:.8em">Crop L <input class="imgv-adv-cropl" type="number" min="0" max="95" value="0" style="width:48px"></label>
+    <label class="imgv-adv-imgctl" style="font-size:.8em">T <input class="imgv-adv-cropt" type="number" min="0" max="95" value="0" style="width:48px"></label>
+    <label class="imgv-adv-imgctl" style="font-size:.8em">R <input class="imgv-adv-cropr" type="number" min="0" max="95" value="0" style="width:48px"></label>
+    <label class="imgv-adv-imgctl" style="font-size:.8em">B <input class="imgv-adv-cropb" type="number" min="0" max="95" value="0" style="width:48px"></label>
+    <button class="imgv-adv-cropreset imgv-adv-imgctl" title="Restore the full local image inside this object">Reset crop</button>
+    <label class="imgv-adv-imgctl" style="font-size:.8em">Frame <input class="imgv-adv-framec" type="color" value="#ffffff"></label>
+    <label class="imgv-adv-imgctl" style="font-size:.8em">Frame px <input class="imgv-adv-framew" type="number" min="0" max="100" value="0" style="width:48px"></label>
+    <label class="imgv-adv-imgctl" style="font-size:.8em">Round <input class="imgv-adv-framecorner" type="number" min="0" max="500" value="0" style="width:48px"></label>
     <label class="imgv-adv-anyctl" style="font-size:.8em">X <input class="imgv-adv-x" type="number" style="width:54px"></label>
     <label class="imgv-adv-anyctl" style="font-size:.8em">Y <input class="imgv-adv-y" type="number" style="width:54px"></label>
     <label class="imgv-adv-sizectl" style="font-size:.8em">W <input class="imgv-adv-w" type="number" min="1" style="width:54px"></label>
@@ -4113,7 +4134,9 @@ function advToolbarHtml() {
     <label class="imgv-adv-xformctl" style="font-size:.8em"><input class="imgv-adv-ratio" type="checkbox"> Ratio</label>
     <label class="imgv-adv-xformctl" style="font-size:.8em"><input class="imgv-adv-center" type="checkbox"> Center</label>
     <label class="imgv-adv-xformctl" style="font-size:.8em"><input class="imgv-adv-flip" type="checkbox" checked> Flip</label>
-    <label class="imgv-adv-anyctl" style="font-size:.8em" title="How this object blends with the objects BEHIND it in the overlay (not the base image)">Blend <select class="imgv-adv-blend"><option value="source-over">Normal</option><option value="multiply">Multiply</option><option value="screen">Screen</option><option value="overlay">Overlay</option><option value="darken">Darken</option><option value="lighten">Lighten</option><option value="color-dodge">Dodge</option><option value="color-burn">Burn</option><option value="hard-light">Hard light</option><option value="soft-light">Soft light</option><option value="difference">Difference</option><option value="exclusion">Exclusion</option></select></label>
+    <label class="imgv-adv-anyctl" style="font-size:.8em" title="How this object blends with both earlier objects and the raster image behind it">Blend <select class="imgv-adv-blend"><option value="source-over">Normal</option><option value="multiply">Multiply</option><option value="screen">Screen</option><option value="overlay">Overlay</option><option value="darken">Darken</option><option value="lighten">Lighten</option><option value="color-dodge">Dodge</option><option value="color-burn">Burn</option><option value="hard-light">Hard light</option><option value="soft-light">Soft light</option><option value="difference">Difference</option><option value="exclusion">Exclusion</option></select></label>
+    <label class="imgv-adv-anyctl" style="font-size:.8em">Object filter <select class="imgv-adv-filter"><option value="none">None</option><option value="grayscale">Grayscale</option><option value="invert">Invert</option><option value="sepia">Sepia</option><option value="blur">Blur</option><option value="brighten">Brightness</option><option value="contrast">Contrast</option></select></label>
+    <label class="imgv-adv-filtervalue imgv-adv-anyctl" style="font-size:.8em">Amount <input class="imgv-adv-filteramount" type="range" min="-100" max="100" value="20" style="width:70px"></label>
     <button class="imgv-adv-group" title="Group selected objects">Group</button>
     <button class="imgv-adv-ungroup" title="Ungroup selected groups">Ungroup</button>
     <button class="imgv-adv-front" title="Bring selected to front">Front</button>
@@ -4129,7 +4152,817 @@ function advToolbarHtml() {
     <button class="imgv-adv-dist" data-axis="y" title="Distribute vertically">DV</button>
     <span class="imgv-sep"></span>
     <button class="imgv-adv-flatten" title="Merge all objects into the image (bake to pixels), then continue in normal Edit">⤵ Merge to image</button>
+    <button class="imgv-adv-save" title="Download the editable overlay as a versioned File Viewer document">Save overlay</button>
+    <button class="imgv-adv-load" title="Load a File Viewer overlay document or migrate a legacy Konva layer snapshot">Load overlay</button>
+    <input class="imgv-adv-load-file" type="file" accept="application/json,.json,.fv-overlay.json" hidden>
+    <span class="imgv-adv-doc-status" role="status" aria-live="polite" style="font-size:.8em"></span>
     <button class="imgv-adv-del" title="Delete selected">🗑 Delete</button>`;
+}
+
+// ../../docs/types/image/adv-edit-composition.js
+var MAX_FILE_BYTES = 16 * 1024 * 1024;
+var MAX_PIXELS = 4 * 1024 * 1024;
+var MAX_SIDE = 4096;
+var BITMAP_EXT = /\.(?:avif|bmp|gif|ico|jpe?g|png|webp)$/i;
+var BITMAP_MIME = /^image\/(?:avif|bmp|gif|jpeg|png|webp|x-icon|vnd\.microsoft\.icon)$/i;
+var FILTERS = /* @__PURE__ */ new Set(["none", "grayscale", "invert", "sepia", "blur", "brighten", "contrast"]);
+var FILLS = /* @__PURE__ */ new Set(["solid", "linear", "radial", "pattern"]);
+function sourceSize(source) {
+  return {
+    width: Number(source?.naturalWidth || source?.videoWidth || source?.width || 0),
+    height: Number(source?.naturalHeight || source?.videoHeight || source?.height || 0)
+  };
+}
+function boundedCanvas(source) {
+  const size = sourceSize(source);
+  if (!(size.width > 0 && size.height > 0)) throw new Error("The local image has no decodable pixels.");
+  const scale = Math.min(1, MAX_SIDE / size.width, MAX_SIDE / size.height, Math.sqrt(MAX_PIXELS / (size.width * size.height)));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.round(size.width * scale));
+  canvas.height = Math.max(1, Math.round(size.height * scale));
+  const context = canvas.getContext("2d");
+  if (!context) throw new Error("A canvas context is unavailable for this local image.");
+  context.drawImage(source, 0, 0, canvas.width, canvas.height);
+  return canvas;
+}
+async function decodeBlob(blob) {
+  if (typeof createImageBitmap === "function") {
+    try {
+      return await createImageBitmap(blob);
+    } catch {
+    }
+  }
+  const url = URL.createObjectURL(blob);
+  try {
+    const image = new Image();
+    image.decoding = "async";
+    image.src = url;
+    await image.decode();
+    return image;
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+function dataUrlBlob(dataUrl) {
+  const comma = dataUrl.indexOf(",");
+  const header = dataUrl.slice(5, comma);
+  const mime = header.split(";")[0] || "image/png";
+  const raw = header.includes(";base64") ? atob(dataUrl.slice(comma + 1)) : decodeURIComponent(dataUrl.slice(comma + 1));
+  const bytes = new Uint8Array(raw.length);
+  for (let i = 0; i < raw.length; i += 1) bytes[i] = raw.charCodeAt(i);
+  return new Blob([bytes], { type: mime });
+}
+function assetId() {
+  return globalThis.crypto?.randomUUID?.() || `asset-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+}
+function clamp(value, min, max) {
+  const number = Number(value);
+  return Math.max(min, Math.min(max, Number.isFinite(number) ? number : min));
+}
+function cropRect(attrs = {}) {
+  const width = Math.max(1, Number(attrs.sourceWidth) || 1);
+  const height = Math.max(1, Number(attrs.sourceHeight) || 1);
+  const left = clamp(attrs.cropLeft, 0, 95);
+  const top = clamp(attrs.cropTop, 0, 95);
+  const right = Math.min(clamp(attrs.cropRight, 0, 95), 95 - left);
+  const bottom = Math.min(clamp(attrs.cropBottom, 0, 95), 95 - top);
+  return {
+    x: width * left / 100,
+    y: height * top / 100,
+    width: Math.max(1, width * (100 - left - right) / 100),
+    height: Math.max(1, height * (100 - top - bottom) / 100),
+    left,
+    top,
+    right,
+    bottom
+  };
+}
+function localBounds(node) {
+  const cls = node?.getClassName?.();
+  if (cls === "Circle" || cls === "Wedge" || cls === "RegularPolygon") {
+    const radius = Number(node.radius?.() || 1);
+    return { x: -radius, y: -radius, width: radius * 2, height: radius * 2 };
+  }
+  if (cls === "Ellipse") {
+    const x = Number(node.radiusX?.() || 1), y = Number(node.radiusY?.() || 1);
+    return { x: -x, y: -y, width: x * 2, height: y * 2 };
+  }
+  if (["Ring", "Arc", "Star"].includes(cls)) {
+    const radius = Number(node.outerRadius?.() || 1);
+    return { x: -radius, y: -radius, width: radius * 2, height: radius * 2 };
+  }
+  return { x: 0, y: 0, width: Math.max(1, Number(node?.width?.() || 1)), height: Math.max(1, Number(node?.height?.() || 1)) };
+}
+function fillGeometry(node, angleDegrees) {
+  const box = localBounds(node);
+  const cx = box.x + box.width / 2, cy = box.y + box.height / 2;
+  const radians = clamp(angleDegrees, 0, 359) * Math.PI / 180;
+  const reach = Math.sqrt(box.width ** 2 + box.height ** 2) / 2;
+  const dx = Math.cos(radians) * reach, dy = Math.sin(radians) * reach;
+  return {
+    start: { x: cx - dx, y: cy - dy },
+    end: { x: cx + dx, y: cy + dy },
+    center: { x: cx, y: cy },
+    radius: Math.max(1, Math.max(box.width, box.height) / 2)
+  };
+}
+function mountAdvComposition({ Konva, tb, $, getSelected, primary, layer, snap, markDirty, addImageObject, syncToolbar }) {
+  const assets = /* @__PURE__ */ new Map();
+  const pendingCache = /* @__PURE__ */ new Set();
+  let cacheFrame = 0;
+  function setStatus(message, error = false) {
+    const status = $(".imgv-adv-doc-status");
+    if (!status) return;
+    status.textContent = message;
+    status.style.color = error ? "var(--danger,#b42318)" : "";
+  }
+  function registerSource(source, { id = assetId(), name = "Pasted image" } = {}) {
+    const canvas = boundedCanvas(source);
+    const record = {
+      id,
+      name: String(name || "Local image").slice(0, 240),
+      mime: "image/png",
+      width: canvas.width,
+      height: canvas.height,
+      dataUrl: canvas.toDataURL("image/png"),
+      image: canvas
+    };
+    assets.set(id, record);
+    return record;
+  }
+  async function recordFromFile(file) {
+    if (!file || file.size > MAX_FILE_BYTES) throw new Error("Local overlay images are limited to 16 MB each.");
+    if (!(BITMAP_MIME.test(file.type || "") || !(file.type || "") && BITMAP_EXT.test(file.name || ""))) {
+      throw new Error("Choose a browser-decodable bitmap (PNG, JPEG, WebP, GIF, BMP, AVIF, or ICO). SVG and remote assets are intentionally excluded.");
+    }
+    const decoded = await decodeBlob(file);
+    try {
+      return registerSource(decoded, { name: file.name || "Local image" });
+    } finally {
+      decoded.close?.();
+    }
+  }
+  async function importAssets(records = []) {
+    for (const source of records) {
+      if (!BITMAP_MIME.test(source.mime || "") || !/^data:image\//i.test(source.dataUrl || "")) {
+        throw new Error(`Overlay asset ${source.id || ""} is not a supported embedded bitmap.`);
+      }
+      const decoded = await decodeBlob(dataUrlBlob(source.dataUrl));
+      const size = sourceSize(decoded);
+      assets.get(source.id)?.image?.close?.();
+      assets.set(source.id, { ...source, width: size.width, height: size.height, image: decoded });
+    }
+  }
+  function referencedAssetIds(nodes) {
+    const ids = /* @__PURE__ */ new Set();
+    const visit = (node) => {
+      const asset = node?.getAttr?.("assetId"), pattern = node?.getAttr?.("patternAssetId");
+      if (asset) ids.add(asset);
+      if (pattern) ids.add(pattern);
+      const children = node?.getChildren?.() || [];
+      Array.from(children).forEach(visit);
+    };
+    nodes.forEach(visit);
+    return ids;
+  }
+  function exportAssets(nodes) {
+    const used = referencedAssetIds(nodes);
+    return [...used].map((id) => assets.get(id)).filter(Boolean).map(({ image, ...record }) => record);
+  }
+  function applyCrop(node) {
+    if (node?.getClassName?.() !== "Image") return;
+    const asset = assets.get(node.getAttr("assetId"));
+    if (asset && node.image?.() !== asset.image) node.image(asset.image);
+    const crop = cropRect({ ...node.getAttrs(), sourceWidth: asset?.width || node.getAttr("sourceWidth"), sourceHeight: asset?.height || node.getAttr("sourceHeight") });
+    node.setAttrs({ sourceWidth: asset?.width || crop.width, sourceHeight: asset?.height || crop.height, cropLeft: crop.left, cropTop: crop.top, cropRight: crop.right, cropBottom: crop.bottom });
+    node.crop({ x: crop.x, y: crop.y, width: crop.width, height: crop.height });
+  }
+  function applyFill2(node) {
+    if (!node?.fillPriority) return;
+    const kind = FILLS.has(node.getAttr("fillKind")) ? node.getAttr("fillKind") : "solid";
+    const color1 = node.fill?.() || "#3388ff";
+    const color2 = node.getAttr("fillColor2") || "#9b5cff";
+    const geometry = fillGeometry(node, node.getAttr("fillAngle") || 0);
+    node.setAttr("fillKind", kind);
+    if (kind === "linear") {
+      node.fillPriority("linear-gradient");
+      node.fillLinearGradientStartPoint(geometry.start);
+      node.fillLinearGradientEndPoint(geometry.end);
+      node.fillLinearGradientColorStops([0, color1, 1, color2]);
+    } else if (kind === "radial") {
+      node.fillPriority("radial-gradient");
+      node.fillRadialGradientStartPoint(geometry.center);
+      node.fillRadialGradientEndPoint(geometry.center);
+      node.fillRadialGradientStartRadius(0);
+      node.fillRadialGradientEndRadius(geometry.radius);
+      node.fillRadialGradientColorStops([0, color1, 1, color2]);
+    } else if (kind === "pattern") {
+      const asset = assets.get(node.getAttr("patternAssetId"));
+      if (asset) {
+        node.fillPatternImage(asset.image);
+        node.fillPatternRepeat("repeat");
+        if (!node.getAttr("fillPatternScaleX")) {
+          const scale = Math.min(1, 96 / Math.max(asset.width, asset.height));
+          node.fillPatternScale({ x: scale, y: scale });
+        }
+        node.fillPriority("pattern");
+      } else node.fillPriority("color");
+    } else node.fillPriority("color");
+  }
+  function filterFunction(kind) {
+    return { grayscale: Konva.Filters.Grayscale, invert: Konva.Filters.Invert, sepia: Konva.Filters.Sepia, blur: Konva.Filters.Blur, brighten: Konva.Filters.Brighten, contrast: Konva.Filters.Contrast }[kind];
+  }
+  function refreshNode(node) {
+    if (!node || node.isDestroyed?.()) return;
+    const kind = FILTERS.has(node.getAttr?.("filterKind")) ? node.getAttr("filterKind") : "none";
+    node.clearCache?.();
+    node.filters?.([]);
+    if (kind === "none") return;
+    const fn = filterFunction(kind);
+    if (!fn) return;
+    const amount = clamp(node.getAttr("filterValue"), -100, 100);
+    if (kind === "blur") node.blurRadius(Math.max(0, amount));
+    if (kind === "brighten") node.brightness(amount / 100);
+    if (kind === "contrast") node.contrast(amount);
+    try {
+      node.cache();
+      node.filters([fn]);
+    } catch {
+      node.clearCache?.();
+      node.filters?.([]);
+    }
+  }
+  function scheduleRefresh(node) {
+    if (!node || (node.getAttr?.("filterKind") || "none") === "none") return;
+    pendingCache.add(node);
+    if (cacheFrame) return;
+    cacheFrame = requestAnimationFrame(() => {
+      cacheFrame = 0;
+      pendingCache.forEach(refreshNode);
+      pendingCache.clear();
+      layer.batchDraw();
+    });
+  }
+  function wireNode(node) {
+    const attrs = ["fill", "stroke", "strokeWidth", "width", "height", "radius", "radiusX", "radiusY", "innerRadius", "outerRadius", "points", "text", "fontSize", "fontFamily", "padding", "crop", "image", "shadowBlur", "cornerRadius"];
+    const descendants = [];
+    const collect = (item) => {
+      descendants.push(item);
+      Array.from(item?.getChildren?.() || []).forEach(collect);
+    };
+    collect(node);
+    descendants.forEach((child) => {
+      child.off?.(".fvComposition");
+      child.on?.(attrs.map((attr) => `${attr}Change.fvComposition`).join(" "), () => scheduleRefresh(node));
+    });
+  }
+  function applyRuntime(node) {
+    if (!node) return;
+    if (node.getClassName?.() === "Image") applyCrop(node);
+    applyFill2(node);
+    Array.from(node.getChildren?.() || []).forEach(applyRuntime);
+    refreshNode(node);
+    wireNode(node);
+  }
+  function mutateSelected(mutate, predicate = () => true) {
+    const nodes = getSelected().filter(predicate);
+    if (!nodes.length) return;
+    snap();
+    nodes.forEach((node) => {
+      mutate(node);
+      applyRuntime(node);
+    });
+    layer.draw();
+    markDirty();
+    syncToolbar();
+  }
+  function sync(node, { fillable = false } = {}) {
+    const isImage = node?.getClassName?.() === "Image";
+    tb.querySelectorAll(".imgv-adv-imgctl").forEach((element) => {
+      element.style.display = isImage ? "" : "none";
+    });
+    if (isImage) {
+      const crop = cropRect(node.getAttrs());
+      $(".imgv-adv-cropl").value = Math.round(crop.left);
+      $(".imgv-adv-cropt").value = Math.round(crop.top);
+      $(".imgv-adv-cropr").value = Math.round(crop.right);
+      $(".imgv-adv-cropb").value = Math.round(crop.bottom);
+      $(".imgv-adv-framec").value = node.stroke?.() || "#ffffff";
+      $(".imgv-adv-framew").value = Math.round(node.strokeWidth?.() || 0);
+      $(".imgv-adv-framecorner").value = Math.round(node.cornerRadius?.() || 0);
+    }
+    if (node) {
+      const kind = FILTERS.has(node.getAttr("filterKind")) ? node.getAttr("filterKind") : "none";
+      $(".imgv-adv-filter").value = kind;
+      $(".imgv-adv-filteramount").value = node.getAttr("filterValue") ?? (kind === "blur" ? 12 : 20);
+      $(".imgv-adv-filtervalue").style.display = ["blur", "brighten", "contrast"].includes(kind) ? "" : "none";
+      const fillKind = FILLS.has(node.getAttr("fillKind")) ? node.getAttr("fillKind") : "solid";
+      $(".imgv-adv-fillkind").value = fillKind;
+      $(".imgv-adv-fill2").value = node.getAttr("fillColor2") || "#9b5cff";
+      $(".imgv-adv-fillangle").value = Math.round(node.getAttr("fillAngle") || 0);
+      tb.querySelectorAll(".imgv-adv-filldetail").forEach((element) => {
+        element.style.display = fillable && ["linear", "radial"].includes(fillKind) ? "" : "none";
+      });
+      $(".imgv-adv-pattern").style.display = fillable && fillKind === "pattern" ? "" : "none";
+      const pattern = assets.get(node.getAttr("patternAssetId"));
+      $(".imgv-adv-pattern").textContent = pattern ? `Pattern: ${pattern.name.slice(0, 18)}` : "Pattern…";
+    }
+  }
+  $(".imgv-adv-image").addEventListener("click", () => $(".imgv-adv-image-file").click());
+  $(".imgv-adv-image-file").addEventListener("change", async () => {
+    const file = $(".imgv-adv-image-file").files?.[0];
+    $(".imgv-adv-image-file").value = "";
+    if (!file) return;
+    try {
+      const asset = await recordFromFile(file);
+      addImageObject(asset);
+      setStatus(`Added ${asset.name}.`);
+    } catch (error) {
+      setStatus(error.message || String(error), true);
+    }
+  });
+  $(".imgv-adv-pattern").addEventListener("click", () => $(".imgv-adv-pattern-file").click());
+  $(".imgv-adv-pattern-file").addEventListener("change", async () => {
+    const file = $(".imgv-adv-pattern-file").files?.[0];
+    $(".imgv-adv-pattern-file").value = "";
+    if (!file) return;
+    try {
+      const asset = await recordFromFile(file);
+      mutateSelected((node) => {
+        node.setAttrs({ patternAssetId: asset.id, fillKind: "pattern" });
+      }, (node) => !["Image", "Line", "Arrow", "Group", "Label"].includes(node.getClassName?.()));
+      setStatus(`Embedded ${asset.name} as a local pattern.`);
+    } catch (error) {
+      setStatus(error.message || String(error), true);
+    }
+  });
+  const cropInputs = [[".imgv-adv-cropl", "cropLeft"], [".imgv-adv-cropt", "cropTop"], [".imgv-adv-cropr", "cropRight"], [".imgv-adv-cropb", "cropBottom"]];
+  cropInputs.forEach(([selector, attr]) => $(selector).addEventListener("change", () => mutateSelected((node) => node.setAttr(attr, clamp($(selector).value, 0, 95)), (node) => node.getClassName?.() === "Image")));
+  $(".imgv-adv-cropreset").addEventListener("click", () => mutateSelected((node) => node.setAttrs({ cropLeft: 0, cropTop: 0, cropRight: 0, cropBottom: 0 }), (node) => node.getClassName?.() === "Image"));
+  $(".imgv-adv-framec").addEventListener("input", () => mutateSelected((node) => node.stroke($(".imgv-adv-framec").value), (node) => node.getClassName?.() === "Image"));
+  $(".imgv-adv-framew").addEventListener("change", () => mutateSelected((node) => node.strokeWidth(clamp($(".imgv-adv-framew").value, 0, 100)), (node) => node.getClassName?.() === "Image"));
+  $(".imgv-adv-framecorner").addEventListener("change", () => mutateSelected((node) => node.cornerRadius(clamp($(".imgv-adv-framecorner").value, 0, 500)), (node) => node.getClassName?.() === "Image"));
+  $(".imgv-adv-fillkind").addEventListener("change", () => mutateSelected((node) => node.setAttr("fillKind", $(".imgv-adv-fillkind").value)));
+  $(".imgv-adv-fill2").addEventListener("input", () => mutateSelected((node) => node.setAttr("fillColor2", $(".imgv-adv-fill2").value)));
+  $(".imgv-adv-fillangle").addEventListener("change", () => mutateSelected((node) => node.setAttr("fillAngle", clamp($(".imgv-adv-fillangle").value, 0, 359))));
+  $(".imgv-adv-filter").addEventListener("change", () => mutateSelected((node) => node.setAttr("filterKind", $(".imgv-adv-filter").value)));
+  $(".imgv-adv-filteramount").addEventListener("input", () => mutateSelected((node) => node.setAttr("filterValue", clamp($(".imgv-adv-filteramount").value, -100, 100))));
+  return {
+    registerSource,
+    importAssets,
+    exportAssets,
+    hasAsset: (id) => assets.has(id),
+    applyRuntime,
+    refreshNode,
+    wireNode,
+    sync,
+    setStatus,
+    destroy() {
+      if (cacheFrame) cancelAnimationFrame(cacheFrame);
+      assets.forEach((asset) => asset.image?.close?.());
+      assets.clear();
+    }
+  };
+}
+
+// ../../docs/types/image/adv-edit-document.js
+var OVERLAY_FORMAT = "file-viewer/image-overlay";
+var OVERLAY_VERSION = 1;
+var MAX_OBJECTS = 500;
+var MAX_DEPTH = 8;
+var MAX_ASSETS = 64;
+var MAX_ASSET_CHARS = 24 * 1024 * 1024;
+var MAX_TOTAL_ASSET_CHARS = 64 * 1024 * 1024;
+var OBJECT_TYPES = Object.freeze([
+  "Rect",
+  "Circle",
+  "Ellipse",
+  "Ring",
+  "Wedge",
+  "Arc",
+  "Line",
+  "Arrow",
+  "RegularPolygon",
+  "Star",
+  "Label",
+  "Text",
+  "Tag",
+  "Group",
+  "Image"
+]);
+var ATTRS = /* @__PURE__ */ new Set([
+  // Identity / interaction / transform.
+  "name",
+  "layerName",
+  "locked",
+  "x",
+  "y",
+  "width",
+  "height",
+  "scaleX",
+  "scaleY",
+  "rotation",
+  "skewX",
+  "skewY",
+  "offsetX",
+  "offsetY",
+  "opacity",
+  "visible",
+  "draggable",
+  "globalCompositeOperation",
+  // Shape/text appearance.
+  "fill",
+  "stroke",
+  "strokeWidth",
+  "dash",
+  "lineCap",
+  "lineJoin",
+  "hitStrokeWidth",
+  "shadowBlur",
+  "shadowColor",
+  "shadowOpacity",
+  "shadowOffsetX",
+  "shadowOffsetY",
+  "cornerRadius",
+  "radius",
+  "radiusX",
+  "radiusY",
+  "innerRadius",
+  "outerRadius",
+  "angle",
+  "clockwise",
+  "sides",
+  "numPoints",
+  "points",
+  "closed",
+  "tension",
+  "pointerLength",
+  "pointerWidth",
+  "pointerAtBeginning",
+  "pointerAtEnding",
+  "text",
+  "fontFamily",
+  "fontSize",
+  "fontStyle",
+  "textDecoration",
+  "align",
+  "verticalAlign",
+  "lineHeight",
+  "wrap",
+  "padding",
+  // Portable fill descriptors. Runtime HTMLImageElement/canvas attributes are never included.
+  "fillPriority",
+  "fillLinearGradientStartPoint",
+  "fillLinearGradientEndPoint",
+  "fillLinearGradientColorStops",
+  "fillRadialGradientStartPoint",
+  "fillRadialGradientEndPoint",
+  "fillRadialGradientStartRadius",
+  "fillRadialGradientEndRadius",
+  "fillRadialGradientColorStops",
+  "fillPatternRepeat",
+  "fillPatternScaleX",
+  "fillPatternScaleY",
+  "fillPatternOffsetX",
+  "fillPatternOffsetY",
+  // File Viewer composition semantics.
+  "assetId",
+  "patternAssetId",
+  "fillKind",
+  "fillColor2",
+  "fillAngle",
+  "filterKind",
+  "filterValue",
+  "cropLeft",
+  "cropTop",
+  "cropRight",
+  "cropBottom",
+  "sourceWidth",
+  "sourceHeight"
+]);
+var SAFE_COMPOSITES = /* @__PURE__ */ new Set([
+  "source-over",
+  "multiply",
+  "screen",
+  "overlay",
+  "darken",
+  "lighten",
+  "color-dodge",
+  "color-burn",
+  "hard-light",
+  "soft-light",
+  "difference",
+  "exclusion"
+]);
+var SAFE_FILTERS = /* @__PURE__ */ new Set(["none", "grayscale", "invert", "sepia", "blur", "brighten", "contrast"]);
+var SAFE_FILLS = /* @__PURE__ */ new Set(["solid", "linear", "radial", "pattern"]);
+function finite(value, fallback = 0) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : fallback;
+}
+function portableValue(value, depth = 0) {
+  if (depth > 4) return void 0;
+  if (value == null || typeof value === "string" || typeof value === "boolean") return value;
+  if (typeof value === "number") return Number.isFinite(value) ? value : void 0;
+  if (Array.isArray(value)) {
+    const output = value.slice(0, 4096).map((item) => portableValue(item, depth + 1));
+    return output.some((item) => item === void 0) ? void 0 : output;
+  }
+  if (typeof value === "object" && Object.getPrototypeOf(value) === Object.prototype) {
+    const output = {};
+    for (const [key, item] of Object.entries(value).slice(0, 64)) {
+      const clean = portableValue(item, depth + 1);
+      if (clean !== void 0) output[key] = clean;
+    }
+    return output;
+  }
+  return void 0;
+}
+function cleanAttrs(source = {}, { topLevel = false } = {}) {
+  const attrs = {};
+  for (const [key, value] of Object.entries(source || {})) {
+    if (!ATTRS.has(key)) continue;
+    const clean = portableValue(value);
+    if (clean !== void 0) attrs[key] = clean;
+  }
+  if (topLevel) attrs.name = "obj";
+  else if (typeof attrs.name === "string" && attrs.name.includes("obj")) delete attrs.name;
+  if (!SAFE_COMPOSITES.has(attrs.globalCompositeOperation)) attrs.globalCompositeOperation = "source-over";
+  if (!SAFE_FILTERS.has(attrs.filterKind)) attrs.filterKind = "none";
+  if (!SAFE_FILLS.has(attrs.fillKind)) attrs.fillKind = "solid";
+  return attrs;
+}
+function nodeChildren(node) {
+  const children = typeof node?.getChildren === "function" ? node.getChildren() : node?.children;
+  if (!children) return [];
+  return Array.isArray(children) ? children : Array.from(children);
+}
+function overlayObjectFromNode(node, depth = 0) {
+  if (!node || depth > MAX_DEPTH) return null;
+  const type = node.getClassName?.() || node.className || node.type;
+  if (!OBJECT_TYPES.includes(type)) return null;
+  const attrs = cleanAttrs(node.getAttrs?.() || node.attrs || {}, { topLevel: depth === 0 });
+  const children = nodeChildren(node).map((child) => overlayObjectFromNode(child, depth + 1)).filter(Boolean);
+  return { type, attrs, ...children.length ? { children } : {} };
+}
+function normalizeObject(input, depth, count) {
+  if (!input || typeof input !== "object" || depth > MAX_DEPTH) throw new Error("Overlay object nesting is too deep.");
+  const type = input.type || input.className;
+  if (!OBJECT_TYPES.includes(type)) throw new Error(`Unsupported overlay object type: ${String(type || "unknown")}.`);
+  count.value += 1;
+  if (count.value > MAX_OBJECTS) throw new Error(`Overlay documents are limited to ${MAX_OBJECTS} objects.`);
+  const children = (input.children || []).map((child) => normalizeObject(child, depth + 1, count));
+  return { type, attrs: cleanAttrs(input.attrs, { topLevel: depth === 0 }), ...children.length ? { children } : {} };
+}
+function normalizeAsset(asset) {
+  const id = String(asset?.id || "").slice(0, 120);
+  const dataUrl = String(asset?.dataUrl || "");
+  if (!id) throw new Error("Overlay asset is missing an id.");
+  if (!/^data:image\/(?:avif|bmp|gif|jpeg|png|webp|x-icon|vnd\.microsoft\.icon)(?:;[^,]*)?,/i.test(dataUrl)) {
+    throw new Error(`Overlay asset ${id} is not a supported embedded image data URL (bitmap formats only).`);
+  }
+  if (dataUrl.length > MAX_ASSET_CHARS) throw new Error(`Overlay asset ${id} exceeds the 24 MB document limit.`);
+  return {
+    id,
+    name: String(asset?.name || "local image").slice(0, 240),
+    mime: String(asset?.mime || dataUrl.slice(5, dataUrl.indexOf(";") > 0 ? dataUrl.indexOf(";") : dataUrl.indexOf(","))).slice(0, 120),
+    width: Math.max(1, Math.round(finite(asset?.width, 1))),
+    height: Math.max(1, Math.round(finite(asset?.height, 1))),
+    dataUrl
+  };
+}
+function normalizeCurrentDocument(input) {
+  if (Number(input.version) !== OVERLAY_VERSION) {
+    throw new Error(`Unsupported overlay document version ${String(input.version)}; this viewer supports version ${OVERLAY_VERSION}.`);
+  }
+  const count = { value: 0 };
+  const objects = (input.objects || []).map((object) => normalizeObject(object, 0, count));
+  const assets = (input.assets || []).map(normalizeAsset);
+  if (assets.length > MAX_ASSETS) throw new Error(`Overlay documents are limited to ${MAX_ASSETS} embedded assets.`);
+  if (assets.reduce((sum, asset) => sum + asset.dataUrl.length, 0) > MAX_TOTAL_ASSET_CHARS) {
+    throw new Error("Overlay embedded assets exceed the 64 MB document limit.");
+  }
+  const ids = /* @__PURE__ */ new Set();
+  for (const asset of assets) {
+    if (ids.has(asset.id)) throw new Error(`Duplicate overlay asset id: ${asset.id}.`);
+    ids.add(asset.id);
+  }
+  return {
+    format: OVERLAY_FORMAT,
+    version: OVERLAY_VERSION,
+    canvas: {
+      width: Math.max(1, Math.round(finite(input.canvas?.width, 1))),
+      height: Math.max(1, Math.round(finite(input.canvas?.height, 1)))
+    },
+    viewport: {
+      width: Math.max(1, Math.round(finite(input.viewport?.width, input.canvas?.width || 1))),
+      height: Math.max(1, Math.round(finite(input.viewport?.height, input.canvas?.height || 1)))
+    },
+    objects,
+    assets
+  };
+}
+function legacyRoot(input) {
+  if (input?.className === "Stage") return (input.children || []).find((child) => child.className === "Layer") || input;
+  return input;
+}
+function migrateLegacyKonva(input) {
+  const root = legacyRoot(input);
+  if (!root || !["Layer", "Stage"].includes(root.className)) return null;
+  const count = { value: 0 };
+  const objects = (root.children || []).filter((child) => child?.className !== "Transformer" && String(child?.attrs?.name || "").includes("obj")).map((child) => normalizeObject({ type: child.className, attrs: child.attrs, children: child.children }, 0, count));
+  return {
+    format: OVERLAY_FORMAT,
+    version: OVERLAY_VERSION,
+    canvas: { width: 1, height: 1 },
+    viewport: { width: 1, height: 1 },
+    objects,
+    assets: []
+  };
+}
+function migrateOverlayDocument(input) {
+  let parsed = input;
+  if (typeof input === "string") {
+    try {
+      parsed = JSON.parse(input);
+    } catch {
+      throw new Error("Overlay document is not valid JSON.");
+    }
+  }
+  if (!parsed || typeof parsed !== "object") throw new Error("Overlay document must be a JSON object.");
+  if (parsed.format === OVERLAY_FORMAT) return normalizeCurrentDocument(parsed);
+  const migrated = migrateLegacyKonva(parsed);
+  if (migrated) return migrated;
+  throw new Error("This is neither a File Viewer overlay document nor a supported legacy Konva layer snapshot.");
+}
+function createOverlayDocument({ nodes = [], assets = [], canvasWidth = 1, canvasHeight = 1, viewportWidth = 1, viewportHeight = 1 } = {}) {
+  const objects = nodes.map((node) => overlayObjectFromNode(node)).filter(Boolean);
+  return normalizeCurrentDocument({
+    format: OVERLAY_FORMAT,
+    version: OVERLAY_VERSION,
+    canvas: { width: canvasWidth, height: canvasHeight },
+    viewport: { width: viewportWidth, height: viewportHeight },
+    objects,
+    assets
+  });
+}
+function overlayDocumentJson(documentModel) {
+  return JSON.stringify(migrateOverlayDocument(documentModel), null, 2) + "\n";
+}
+
+// ../../docs/types/image/adv-edit-io.js
+var MAX_DOCUMENT_BYTES = 70 * 1024 * 1024;
+function parseForKind(input) {
+  if (typeof input !== "string") return input;
+  try {
+    return JSON.parse(input);
+  } catch {
+    return null;
+  }
+}
+function createAdvDocumentIO({
+  Konva,
+  tb,
+  layer,
+  tr,
+  getObjects,
+  wireObject,
+  composition,
+  select,
+  markDirty,
+  refreshLayers,
+  snap,
+  canvasWidth,
+  canvasHeight,
+  viewportWidth,
+  viewportHeight
+}) {
+  function model(includeAssets = false) {
+    const nodes = getObjects();
+    return createOverlayDocument({
+      nodes,
+      assets: includeAssets ? composition.exportAssets(nodes) : [],
+      canvasWidth: canvasWidth(),
+      canvasHeight: canvasHeight(),
+      viewportWidth: viewportWidth(),
+      viewportHeight: viewportHeight()
+    });
+  }
+  function constructObject(object) {
+    const Constructor = Konva[object.type];
+    if (typeof Constructor !== "function") throw new Error(`This Konva build cannot create ${object.type} overlay objects.`);
+    if (object.type === "Image" && !composition.hasAsset(object.attrs.assetId)) return null;
+    const node = new Constructor({ ...object.attrs });
+    (object.children || []).forEach((childModel) => {
+      const child = constructObject(childModel);
+      if (child) node.add(child);
+    });
+    composition.applyRuntime(node);
+    return node;
+  }
+  function missingImageCount(objects) {
+    let count = 0;
+    const visit = (object) => {
+      if (object.type === "Image" && !composition.hasAsset(object.attrs.assetId)) count += 1;
+      (object.children || []).forEach(visit);
+    };
+    objects.forEach(visit);
+    return count;
+  }
+  function rebuild(documentModel) {
+    const document2 = migrateOverlayDocument(documentModel);
+    select(null);
+    getObjects().forEach((node) => node.destroy());
+    const legacyCoordinates = document2.canvas.width === 1 && document2.canvas.height === 1 && document2.viewport.width === 1 && document2.viewport.height === 1;
+    const sx = legacyCoordinates ? 1 : viewportWidth() / document2.viewport.width;
+    const sy = legacyCoordinates ? 1 : viewportHeight() / document2.viewport.height;
+    const omittedImages = missingImageCount(document2.objects);
+    document2.objects.forEach((object) => {
+      const node = constructObject(object);
+      if (!node) return;
+      node.setAttrs({
+        x: (Number(node.x()) || 0) * sx,
+        y: (Number(node.y()) || 0) * sy,
+        scaleX: (Number(node.scaleX()) || 1) * sx,
+        scaleY: (Number(node.scaleY()) || 1) * sy,
+        draggable: !node.getAttr("locked") && node.getAttr("draggable") !== false
+      });
+      wireObject(node);
+      layer.add(node);
+    });
+    layer.add(tr);
+    tr.moveToTop();
+    layer.draw();
+    refreshLayers();
+    markDirty();
+    return { document: document2, omittedImages };
+  }
+  function clearDocument() {
+    select(null);
+    getObjects().forEach((node) => node.destroy());
+    layer.add(tr);
+    tr.moveToTop();
+    layer.draw();
+    refreshLayers();
+    markDirty();
+  }
+  async function importDocument(input) {
+    const raw = parseForKind(input);
+    const wasLegacy = raw && raw.format !== OVERLAY_FORMAT;
+    const document2 = migrateOverlayDocument(input);
+    await composition.importAssets(document2.assets);
+    snap();
+    const result = rebuild(document2);
+    const suffix = result.omittedImages ? ` ${result.omittedImages} legacy image object(s) had no embedded bitmap and were omitted.` : "";
+    composition.setStatus(`${wasLegacy ? "Migrated legacy overlay" : `Loaded overlay v${document2.version}`} (${document2.objects.length} object${document2.objects.length === 1 ? "" : "s"}).${suffix}`, !!result.omittedImages);
+    return result;
+  }
+  function installControls() {
+    const save = tb.querySelector(".imgv-adv-save");
+    const load = tb.querySelector(".imgv-adv-load");
+    const input = tb.querySelector(".imgv-adv-load-file");
+    save?.addEventListener("click", () => {
+      try {
+        const json = overlayDocumentJson(model(true));
+        const url = URL.createObjectURL(new Blob([json], { type: "application/json" }));
+        const anchor = document.createElement("a");
+        anchor.href = url;
+        anchor.download = "image-overlay.fv-overlay.json";
+        anchor.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1e3);
+        composition.setStatus("Saved a portable editable overlay document.");
+      } catch (error) {
+        composition.setStatus(error.message || String(error), true);
+      }
+    });
+    load?.addEventListener("click", () => input?.click());
+    input?.addEventListener("change", async () => {
+      const file = input.files?.[0];
+      input.value = "";
+      if (!file) return;
+      if (file.size > MAX_DOCUMENT_BYTES) {
+        composition.setStatus("Overlay documents are limited to 70 MB.", true);
+        return;
+      }
+      load.disabled = true;
+      try {
+        await importDocument(await file.text());
+      } catch (error) {
+        composition.setStatus(error.message || String(error), true);
+      }
+      load.disabled = false;
+    });
+  }
+  installControls();
+  return {
+    snapshot: () => model(false),
+    restore: (document2) => {
+      if (document2) rebuild(document2);
+      else clearDocument();
+    },
+    exportDocument: () => model(true),
+    importDocument
+  };
 }
 
 // ../../docs/types/image/adv-edit.js
@@ -4197,16 +5030,33 @@ async function mountAdvEdit({ host, img, onDirty, pushUndo, onFlatten }) {
   const isGroup = (n) => n instanceof Konva.Group || n?.getClassName?.() === "Group";
   const isLocked = (n) => !!n?.getAttr?.("locked");
   const primary = () => selected[selected.length - 1] || null;
+  const composition = mountAdvComposition({
+    Konva,
+    tb,
+    $,
+    getSelected: () => selected,
+    primary,
+    layer,
+    snap,
+    markDirty,
+    addImageObject,
+    syncToolbar
+  });
   function syncToolbar() {
     const node = primary();
     const has = !!node, label = isLabel(node), multi = selected.length > 1;
     const cls = node?.getClassName?.();
-    const shape = has && !label && !isGroup(node);
+    const image = cls === "Image";
+    const shape = has && !label && !isGroup(node) && !image;
+    const fillable = shape && !["Line", "Arrow"].includes(cls);
     tb.querySelectorAll(".imgv-adv-txtctl").forEach((el) => {
       el.style.display = label ? "" : "none";
     });
     tb.querySelectorAll(".imgv-adv-shpctl").forEach((el) => {
       el.style.display = shape ? "" : "none";
+    });
+    tb.querySelectorAll(".imgv-adv-fillctl").forEach((el) => {
+      el.style.display = fillable ? "" : "none";
     });
     const line = ["Line", "Arrow"].includes(cls);
     const arc = ["Ring", "Wedge", "Arc"].includes(cls);
@@ -4251,6 +5101,7 @@ async function mountAdvEdit({ host, img, onDirty, pushUndo, onFlatten }) {
     $(".imgv-adv-fill").disabled = !has || isGroup(node);
     $(".imgv-adv-group").disabled = selected.length < 2;
     $(".imgv-adv-ungroup").disabled = !selected.some(isGroup);
+    composition.sync(node, { fillable });
     if (!has) return;
     $(".imgv-adv-blend").value = node.globalCompositeOperation() || "source-over";
     $(".imgv-adv-opacity").value = Math.round((node.opacity() ?? 1) * 100);
@@ -4323,7 +5174,10 @@ async function mountAdvEdit({ host, img, onDirty, pushUndo, onFlatten }) {
     node.on("dragstart transformstart", () => snap());
     node.on("dragmove", () => precision.snapDrag(node));
     node.on("transformend", () => {
-      selected.forEach(normalizeTransform);
+      selected.forEach((item) => {
+        normalizeTransform(item);
+        composition.applyRuntime(item);
+      });
       layer.draw();
       markDirty();
       syncToolbar();
@@ -4332,10 +5186,12 @@ async function mountAdvEdit({ host, img, onDirty, pushUndo, onFlatten }) {
       precision.clearGuides();
       markDirty();
     });
+    composition.wireNode(node);
   }
   function placeObject(node) {
     wireObject(node);
     layer.add(node);
+    composition.applyRuntime(node);
     select(node);
     markDirty();
   }
@@ -4364,7 +5220,8 @@ async function mountAdvEdit({ host, img, onDirty, pushUndo, onFlatten }) {
     placeObject(label);
   }
   const isLabel = (n) => n && n.getClassName && n.getClassName() === "Label";
-  function addImage(source) {
+  function addImageObject(asset) {
+    const source = asset?.image;
     if (!source || !source.width) return null;
     snap();
     const k = naturalW ? stageW / naturalW : 1;
@@ -4372,9 +5229,30 @@ async function mountAdvEdit({ host, img, onDirty, pushUndo, onFlatten }) {
     const fit = Math.min(1, stageW * 0.9 / w, stageH * 0.9 / h);
     w = Math.max(1, w * fit);
     h = Math.max(1, h * fit);
-    const node = new Konva.Image({ image: source, x: stageW / 2 - w / 2, y: stageH / 2 - h / 2, width: w, height: h, draggable: true });
+    const node = new Konva.Image({
+      image: source,
+      assetId: asset.id,
+      sourceWidth: asset.width,
+      sourceHeight: asset.height,
+      cropLeft: 0,
+      cropTop: 0,
+      cropRight: 0,
+      cropBottom: 0,
+      x: stageW / 2 - w / 2,
+      y: stageH / 2 - h / 2,
+      width: w,
+      height: h,
+      stroke: "#ffffff",
+      strokeWidth: 0,
+      cornerRadius: 0,
+      draggable: true
+    });
     placeObject(node);
     return node;
+  }
+  function addImage(source) {
+    if (!source || !source.width) return null;
+    return addImageObject(composition.registerSource(source));
   }
   function editLabelText(label) {
     const text = textNodeOf(label);
@@ -4488,7 +5366,8 @@ async function mountAdvEdit({ host, img, onDirty, pushUndo, onFlatten }) {
     snap,
     tr,
     refreshLayers: () => refreshLayers(),
-    syncToolbar
+    syncToolbar,
+    refreshComposition: (nodes) => nodes.forEach((node) => composition.applyRuntime(node))
   });
   tb.querySelector(".imgv-adv-flatten")?.addEventListener("click", async () => {
     if (objects().length === 0) return;
@@ -4524,24 +5403,73 @@ async function mountAdvEdit({ host, img, onDirty, pushUndo, onFlatten }) {
   const panel = layersPanel.panel;
   const refreshLayers = layersPanel.refresh;
   installTextControls({ $, selectedLabels: () => selected.filter(isLabel), textNodeOf, tagNodeOf, layer, markDirty, refreshLayers });
-  function flattenToCanvas() {
+  const documentIO = createAdvDocumentIO({
+    Konva,
+    tb,
+    layer,
+    tr,
+    getObjects: objects,
+    wireObject,
+    composition,
+    select,
+    markDirty,
+    refreshLayers,
+    snap,
+    canvasWidth: () => img.naturalWidth || naturalW,
+    canvasHeight: () => img.naturalHeight || naturalH,
+    viewportWidth: () => stageW,
+    viewportHeight: () => stageH
+  });
+  function flattenToCanvas({ pixelRatio = 1 } = {}) {
     const wasSel = selected.slice();
     select(null);
     const nW = img.naturalWidth || naturalW, nH = img.naturalHeight || naturalH;
+    const ratio = Math.max(0.25, Math.min(4, Number(pixelRatio) || 1));
     const canvas = document.createElement("canvas");
-    canvas.width = nW;
-    canvas.height = nH;
+    canvas.width = Math.max(1, Math.round(nW * ratio));
+    canvas.height = Math.max(1, Math.round(nH * ratio));
     const g = canvas.getContext("2d");
-    g.drawImage(img, 0, 0, nW, nH);
+    g.drawImage(img, 0, 0, canvas.width, canvas.height);
     const precisionWasVisible = precision.layer.visible();
     const pointsWasVisible = pointEdit.layer.visible();
     precision.layer.visible(false);
     pointEdit.layer.visible(false);
-    const overlay = stage.toCanvas({ pixelRatio: nW / stageW });
-    precision.layer.visible(precisionWasVisible);
-    pointEdit.layer.visible(pointsWasVisible);
-    g.drawImage(overlay, 0, 0, nW, nH);
-    if (wasSel.length) select(wasSel);
+    const states = objects().map((node) => ({
+      node,
+      visible: node.visible(),
+      blend: node.globalCompositeOperation() || "source-over"
+    }));
+    const renderRatio = canvas.width / stageW;
+    try {
+      if (!states.some((state) => state.visible && state.blend !== "source-over")) {
+        const overlay = stage.toCanvas({ pixelRatio: renderRatio });
+        g.drawImage(overlay, 0, 0, canvas.width, canvas.height);
+      } else {
+        states.forEach(({ node }) => node.visible(false));
+        for (const state of states) {
+          if (!state.visible) continue;
+          state.node.visible(true);
+          state.node.globalCompositeOperation("source-over");
+          layer.draw();
+          const objectCanvas = stage.toCanvas({ pixelRatio: renderRatio });
+          g.save();
+          g.globalCompositeOperation = state.blend;
+          g.drawImage(objectCanvas, 0, 0, canvas.width, canvas.height);
+          g.restore();
+          state.node.globalCompositeOperation(state.blend);
+          state.node.visible(false);
+        }
+      }
+    } finally {
+      states.forEach((state) => {
+        state.node.visible(state.visible);
+        state.node.globalCompositeOperation(state.blend);
+      });
+      precision.layer.visible(precisionWasVisible);
+      pointEdit.layer.visible(pointsWasVisible);
+      layer.draw();
+      if (wasSel.length) select(wasSel);
+    }
     return canvas;
   }
   function relayout() {
@@ -4619,12 +5547,11 @@ async function mountAdvEdit({ host, img, onDirty, pushUndo, onFlatten }) {
       if (on) refreshLayers();
       else select(null);
     },
-    // Overlay history bridge for editor-core's unified undo.
-    serialize: () => layer.toJSON(),
-    restore: (json) => {
-      if (json) rebuild(json);
-      else clear();
-    },
+    // Overlay history and portable-file bridge: raw Konva JSON is accepted only as migration input.
+    serialize: () => documentIO.snapshot(),
+    restore: (document2) => documentIO.restore(document2),
+    exportDocument: () => documentIO.exportDocument(),
+    importDocument: (document2) => documentIO.importDocument(document2),
     flattenToCanvas,
     relayout,
     rebaseline,
@@ -4636,6 +5563,7 @@ async function mountAdvEdit({ host, img, onDirty, pushUndo, onFlatten }) {
       container.removeEventListener("keyup", onContainerDelete, true);
       container.onkeydown = null;
       container.onkeyup = null;
+      composition.destroy();
       pointEdit.destroy();
       precision.destroy();
       tr.destroy();
@@ -4645,19 +5573,6 @@ async function mountAdvEdit({ host, img, onDirty, pushUndo, onFlatten }) {
       layersPanel.destroy();
     }
   };
-  function rebuild(json) {
-    layer.destroyChildren();
-    const tmp = Konva.Node.create(json);
-    tmp.find(".obj").forEach((src) => {
-      const node = src.clone();
-      node.draggable(true);
-      wireObject(node);
-      layer.add(node);
-    });
-    layer.add(tr);
-    select(null);
-    markDirty();
-  }
 }
 
 // ../../docs/types/image/gif-decode.js
@@ -5108,7 +6023,26 @@ function sanitizeSvg(source) {
 var DOC_TPL = new URL("./doc.html", import.meta.url);
 var EDIT_TOOLS_TPL = new URL("./edit-tools.html", import.meta.url);
 var EDITABLE_MIME = /* @__PURE__ */ new Set(["image/png", "image/jpeg", "image/webp", "image/avif", "image/bmp", "image/gif"]);
+function imageInputDiagnostics(intake) {
+  const loaded = Number(intake?.loadedBytes || intake?.bytes?.length || 0);
+  const size = Number(intake?.size || loaded);
+  if (intake?.truncated || loaded < size) {
+    return [
+      `Only ${loaded.toLocaleString()} of ${size.toLocaleString()} bytes were loaded.`,
+      "Image decoders require the complete payload; a partial preview could look valid while omitting data, so rendering and editing are disabled.",
+      "The original file handle remains available for download."
+    ];
+  }
+  return [];
+}
 async function render(intake, ctx = {}) {
+  const inputDiagnostics = imageInputDiagnostics(intake);
+  if (inputDiagnostics.length) {
+    return {
+      bodyHtml: '<div class="json-error"><strong>Incomplete image input</strong><ul>' + inputDiagnostics.map((message) => "<li>" + String(message).replace(/[&<>"]/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[char]) + "</li>").join("") + "</ul></div>",
+      hadUnsafe: false
+    };
+  }
   if (isSvg(intake)) {
     const DOMPurify = await loadGlobal4(vendor4("dompurify/purify.min.js"), "DOMPurify");
     DOMPurify.removed = [];
@@ -5175,6 +6109,7 @@ async function render(intake, ctx = {}) {
     undoBtn,
     redoBtn,
     exportFmt,
+    exportScale,
     editFont,
     bgBtn,
     bgTol,
@@ -5242,6 +6177,7 @@ async function render(intake, ctx = {}) {
   let pendingGeom = null;
   const hostOnBinaryEdit = ctx.onBinaryEdit;
   let lastRasterEdit = null;
+  const outputScale = () => Math.max(0.5, Math.min(3, Number(exportScale?.value) || 1));
   function emitBinaryEdit() {
     if (!hostOnBinaryEdit) return;
     if (overlayActive()) {
@@ -5249,7 +6185,7 @@ async function render(intake, ctx = {}) {
         dirty: true,
         mimeType: core.getExportMime(),
         getBytes: async () => {
-          const canvas = advController.flattenToCanvas();
+          const canvas = advController.flattenToCanvas({ pixelRatio: outputScale() });
           const mt = core.getExportMime();
           const blob = await new Promise((r) => canvas.toBlob(r, mt, mt === "image/jpeg" ? 0.92 : void 0));
           return new Uint8Array(await blob.arrayBuffer());
@@ -5363,12 +6299,12 @@ async function render(intake, ctx = {}) {
     try {
       let canvas;
       if (overlayActive()) {
-        canvas = advController.flattenToCanvas();
+        canvas = advController.flattenToCanvas({ pixelRatio: outputScale() });
       } else {
         const base = await core.loadBase();
         canvas = document.createElement("canvas");
-        canvas.width = base.naturalWidth || img.naturalWidth;
-        canvas.height = base.naturalHeight || img.naturalHeight;
+        canvas.width = Math.max(1, Math.round((base.naturalWidth || img.naturalWidth) * outputScale()));
+        canvas.height = Math.max(1, Math.round((base.naturalHeight || img.naturalHeight) * outputScale()));
         const g = canvas.getContext("2d");
         if (mt === "image/jpeg") {
           g.fillStyle = "#fff";
@@ -5389,6 +6325,9 @@ async function render(intake, ctx = {}) {
       downloadBtn.textContent = label;
       delete downloadBtn.dataset.busy;
     }
+  });
+  exportScale?.addEventListener("change", () => {
+    if (overlayActive()) emitBinaryEdit();
   });
   const editTools = [];
   const viewCtl = createView({
@@ -5416,6 +6355,9 @@ async function render(intake, ctx = {}) {
   const isJxl = (intake.filename || "").split(".").pop()?.toLowerCase() === "jxl" || mime === "image/jxl";
   img.addEventListener("error", () => {
     if (isJxl) return;
+    img.hidden = true;
+    note.hidden = false;
+    note.textContent = "This image could not be decoded. It may be malformed, truncated before intake, or unsupported by this browser; the original file still downloads.";
   });
   if (isJxl) {
     img.hidden = true;
@@ -5694,5 +6636,6 @@ async function render(intake, ctx = {}) {
   } };
 }
 export {
+  imageInputDiagnostics,
   render
 };

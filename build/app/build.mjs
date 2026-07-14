@@ -8,16 +8,19 @@ import { build } from 'esbuild';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve, relative } from 'node:path';
 import { readFileSync, writeFileSync } from 'node:fs';
+import { brotliCompressSync, constants as zlibConstants, gzipSync } from 'node:zlib';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(here, '..', '..');
 const entry = resolve(repoRoot, 'docs/core/app.js');
 const outfile = resolve(repoRoot, 'docs/core/app.generated.js');
+const graphFile = resolve(repoRoot, 'build/app/app-graph.generated.json');
 const outDir = dirname(outfile);
 const SHARED_SINGLETONS = new Set([
   resolve(repoRoot, 'docs/core/state.js'),
   resolve(repoRoot, 'docs/core/script-loader.js'),
   resolve(repoRoot, 'docs/core/monaco-loader.js'),
+  resolve(repoRoot, 'docs/core/companion.js'),
 ]);
 
 const lazy = new Set();
@@ -52,7 +55,9 @@ const result = await build({
   entryPoints: [entry],
   bundle: true,
   format: 'esm',
-  minify: false,
+  minify: true,
+  target: ['es2022'],
+  treeShaking: true,
   legalComments: 'none',
   charset: 'utf8',
   outfile,
@@ -65,5 +70,28 @@ const result = await build({
 writeFileSync(outfile, readFileSync(outfile));
 const bytes = readFileSync(outfile);
 const inlined = Object.keys(result.metafile.inputs).filter((p) => !p.includes('node_modules')).length;
+const outputMeta = Object.values(result.metafile.outputs)[0];
+const inputRows = Object.entries(outputMeta?.inputs || {}).map(([input, info]) => ({
+  path: input.split('\\').join('/'),
+  bytesInOutput: info.bytesInOutput,
+})).sort((a, b) => b.bytesInOutput - a.bytesInOutput || a.path.localeCompare(b.path));
+const graph = {
+  schemaVersion: 1,
+  entry: relative(repoRoot, entry).split('\\').join('/'),
+  output: relative(repoRoot, outfile).split('\\').join('/'),
+  format: 'esm',
+  target: 'es2022',
+  minified: true,
+  bytes: bytes.length,
+  gzipBytes: gzipSync(bytes, { level: 9 }).length,
+  brotliBytes: brotliCompressSync(bytes, {
+    params: { [zlibConstants.BROTLI_PARAM_QUALITY]: 11 },
+  }).length,
+  inlinedModules: inlined,
+  dynamicImports: [...lazy].sort(),
+  inputs: inputRows,
+};
+writeFileSync(graphFile, JSON.stringify(graph, null, 2) + '\n');
 console.log(`Wrote ${relative(repoRoot, outfile)} (${(bytes.length / 1024).toFixed(1)} KB, ${inlined} modules inlined)`);
 console.log(`Kept ${lazy.size} dynamic imports external.`);
+console.log(`Wrote ${relative(repoRoot, graphFile)} (${(graph.gzipBytes / 1024).toFixed(1)} KB gzip, ${(graph.brotliBytes / 1024).toFixed(1)} KB brotli)`);

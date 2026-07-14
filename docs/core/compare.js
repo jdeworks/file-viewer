@@ -2,7 +2,7 @@
 // diff in the main editor. Instead it shows the `#compareBar` drop target as a file-2 PICKER —
 // drop a sidebar file or choose one — and hands the picked intake to the side-by-side overlay
 // (which now folds "diff" into a shared mode bar). The user reaches the actual comparison by
-// clicking the Diff mode inside the overlay. syncRawModeButtons (raw-pane toolbar) is injected via
+// clicking Text diff inside the overlay. syncRawModeButtons (raw-pane toolbar) is injected via
 // initCompare so this module doesn't import app.js back.
 import { state, $, toast } from './state.js';
 import { intakeFromFile } from './intake.js';

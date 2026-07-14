@@ -1,12 +1,6 @@
 import { intakeFromFile, withSourceText } from './intake.js';
-import { currentEditableSource } from './rawpane.js';
-import { layoutTopbar } from './layout.js';
 import { $, state, toast, escapeHtml } from './state.js';
-import { detectCompanion, findFile, findFolder, saveFile, deleteFile, pickFolder, getToken, setToken, isEnabled as companionEnabled, setEnabled as setCompanionEnabled, getWatchedPaths, addWatchedPath, removeWatchedPath, watchFile, revealFile } from './companion.js';
-import { browseForFolder, joinPath } from './companion-browse.js';
-import { setupFolderRefresh, onFolderRootResolved, onFolderRootCleared, refreshFolderFromDisk } from './companion-folder.js';
-export { renderCompanionSettings } from './companion-settings.js';
-export { refreshFolderFromDisk } from './companion-folder.js';
+import { detectCompanion, findFile, findFolder, fetchFileBlob, saveFile, deleteFile, pickFolder, getToken, setToken, isEnabled as companionEnabled, setEnabled as setCompanionEnabled, getWatchedPaths, addWatchedPath, removeWatchedPath, watchFile, revealFile } from './companion.js';
 
 let companionAvailable = false;
 let companionLinkedPath = null;
@@ -16,6 +10,37 @@ let _watchCleanup = null;
 let _fileWatchGeneration = 0;
 let _healthTimer = null;
 let _availabilityGeneration = 0;
+let folderRefreshApi = null;
+let folderRefreshPromise = null;
+let folderRefreshConfig = null;
+let currentEditableSource = () => '';
+let layoutTopbar = () => {};
+let renderSidebarRoots = () => {};
+let onAvailabilityChange = () => {};
+
+function setupFolderRefresh(config) {
+  folderRefreshConfig = config;
+  if (folderRefreshApi) folderRefreshApi.setupFolderRefresh({ ...config, renderSidebarRoots });
+}
+async function loadFolderRefresh() {
+  if (!folderRefreshPromise) {
+    folderRefreshPromise = import('./companion-folder.js').then((module) => {
+      folderRefreshApi = module;
+      if (folderRefreshConfig) module.setupFolderRefresh({ ...folderRefreshConfig, renderSidebarRoots });
+      return module;
+    });
+  }
+  return folderRefreshPromise;
+}
+function onFolderRootResolved() {
+  void loadFolderRefresh().then((module) => module.onFolderRootResolved());
+}
+function onFolderRootCleared() {
+  folderRefreshApi?.onFolderRootCleared();
+}
+export async function refreshFolderFromDisk(options) {
+  return (await loadFolderRefresh()).refreshFolderFromDisk(options);
+}
 // Paths we just wrote ourselves → suppress the "changed on disk" banner for our OWN save (the
 // watcher fires a modify event for it). Map of absolute path → expiry timestamp (ms).
 const _selfSaved = new Map();
@@ -32,8 +57,18 @@ function wasSelfSaved(absPath) {
   return true;
 }
 
-export function initCompanionUi({ loadIntake }) {
+export function initCompanionUi({
+  loadIntake,
+  currentEditableSource: getEditableSource,
+  layoutTopbar: updateTopbar,
+  renderSidebarRoots: renderRoots,
+  onAvailabilityChange: availabilityChanged,
+}) {
   loadIntakeCallback = loadIntake;
+  currentEditableSource = getEditableSource || currentEditableSource;
+  layoutTopbar = updateTopbar || layoutTopbar;
+  renderSidebarRoots = renderRoots || renderSidebarRoots;
+  onAvailabilityChange = availabilityChanged || onAvailabilityChange;
   setupFolderRefresh({
     getFolderContext: () => {
       if (!companionAvailable || !companionEnabled() || !companionFolderRoot) return null;
@@ -89,6 +124,7 @@ export function setCompanionAvailable(v) {
   // programmatically clickable destructive controls in the DOM.
   state.treeApi?.rerender?.();
   syncSaveBtn();
+  onAvailabilityChange(companionAvailable);
 }
 
 export function hasCompanionFolderRoot() {
@@ -267,6 +303,28 @@ export function absolutePathForFile(relPath, { sidebarPath = false } = {}) {
   const sep = (companionFolderRoot.includes('\\') && !companionFolderRoot.includes('/')) ? '\\' : '/';
   const base = companionFolderRoot.endsWith(sep) ? companionFolderRoot.slice(0, -1) : companionFolderRoot;
   return base + sep + relFromRoot.join(sep);
+}
+
+// A File obtained from a directory picker is a point-in-time browser snapshot. Chromium can make
+// it unreadable after the backing file changes. For an already-linked Companion folder only,
+// recover the current bytes from the exact active disk root and let folder.js replace that stale
+// entry. This is never reached for ordinary browser-only folders or before an actual read failure.
+export async function recoverFolderFile(node) {
+  if (!companionAvailable || !companionEnabled() || !companionFolderRoot || !node?.path) return null;
+  const rootId = state.activeSidebarRootId;
+  const rootPath = companionFolderRoot;
+  const authorizationGeneration = _availabilityGeneration;
+  const absolutePath = absolutePathForFile(node.path);
+  if (!absolutePath) return null;
+  const blob = await fetchFileBlob(absolutePath);
+  if (!companionAvailable || !companionEnabled()
+    || authorizationGeneration !== _availabilityGeneration
+    || state.activeSidebarRootId !== rootId
+    || companionFolderRoot !== rootPath) return null;
+  return new File([blob], node.file?.name || node.path.split('/').pop() || 'file', {
+    type: blob.type || node.file?.type || '',
+    lastModified: Date.now(),
+  });
 }
 
 // On opening a single file, silently associate it with its on-disk path when exactly one watched
@@ -493,6 +551,7 @@ export async function onSaveClick() {
       if (!matches || matches.length === 0) {
         // Not on disk yet → offer to CREATE it in a watched folder the user browses to.
         if (!confirm(`Couldn't find "${filename}" in your watched folders.\n\nDo you want to create it as a new file? You'll choose which watched folder to put it in.`)) return;
+        const { browseForFolder, joinPath } = await import('./companion-browse.js');
         const dir = await browseForFolder({ title: `Choose a folder to create "${filename}" in:` });
         if (!operationContextCurrent(context, token)) return;
         if (!dir) return;
@@ -511,7 +570,7 @@ export async function onSaveClick() {
     const isBinaryEdit = !!(state.binaryEdit?.dirty && typeof state.binaryEdit.getBytes === 'function');
     const binaryEdit = state.binaryEdit;
     const msg = isBinaryEdit
-      ? `Overwrite image on disk?\n\n${absPath}\n\nThis replaces the original file with the edited image bytes.`
+      ? `Overwrite file on disk?\n\n${absPath}\n\nThis replaces the original file with the edited binary bytes.`
       : `Save to:\n${absPath}?`;
     // For a freshly-chosen create target the user already confirmed + picked the folder — don't
     // double-prompt.

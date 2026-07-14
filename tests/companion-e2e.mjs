@@ -820,7 +820,22 @@ async function main() {
     null, { timeout: 8000 }).then(() => true).catch(() => false);
     if (restoredSavedSnapshot) {
       pass('switching away/back restores exact saved bytes and the standalone Companion link');
-    } else fail('saved sidebar snapshot/link was stale after root switch');
+    } else {
+      const restoredState = await page.evaluate((label) => {
+        const root = window.__fv?.state?.sidebarRoots?.find((candidate) => candidate.label === label);
+        return {
+          activeRootId: window.__fv?.state?.activeSidebarRootId,
+          expectedRootId: root?.id,
+          editorValue: window.__fv?.state?.rawview?.getValue?.(),
+          entryText: root?.treeEntries?.[0]?.intake?.text,
+          linkedPath: root?.companionLinkedPath,
+          saveHidden: document.getElementById('saveBtn')?.hidden,
+          deleteHidden: document.getElementById('deleteBtn')?.hidden,
+          navigationPending: window.__fv?.state?.sidebarNavigationPending,
+        };
+      }, savedRootLabel);
+      fail('saved sidebar snapshot/link was stale after root switch: ' + JSON.stringify(restoredState));
+    }
 
     // Item 3 (create-unknown-file, backend): saveFile to a path that does NOT exist yet must create
     // it inside the watched folder (server validate_path_for_write parent-dir check).
@@ -1021,6 +1036,11 @@ async function main() {
       );
       return active?.label === root && !!active.companionFolderRoot;
     }, secondWatchedName, { timeout: 8000 });
+    // Combined trees now materialize nested folders lazily. Expand only the two paths this
+    // isolation scenario exercises instead of relying on the old eager expand-everything tree.
+    await page.evaluate(({ first, second }) => window.__fv.state.treeApi.openPaths([
+      first, `${first}/shared`, second, `${second}/shared`,
+    ]), { first: watchedName, second: secondWatchedName });
     const firstInactive = page.locator(`.ft-row.ft-file[data-full-path="${watchedName}/shared/same.txt"]`);
     const secondActive = page.locator(`.ft-row.ft-file[data-full-path="${secondWatchedName}/shared/same.txt"]`);
     await firstInactive.waitFor({ state: 'visible' });
@@ -1415,12 +1435,27 @@ async function main() {
     await page.check('#companionEnabledToggle');
     await page.waitForFunction(() => document.body.classList.contains('companion-active'));
     await page.click('#settingsDrawer [data-close]');
+    await page.waitForFunction(() => !window.__fv?.state?.companionOperationToken
+      && !window.__fv?.state?.sidebarNavigationPending);
 
     // Reduce to one linked folder through the test seam, then remove it through the real UI. The
     // empty-list transition must clear the global association, controls, actions, and live watcher.
     await page.locator('.ft-row.ft-file[data-full-path="slow-root/slow-only.txt"]').click();
-    await page.waitForFunction(() => !window.__fv?.state?.sidebarNavigationPending
-      && window.__fv.state.currentFolderPath === 'slow-only.txt');
+    const slowRootOpened = await page.waitForFunction(() => !window.__fv?.state?.sidebarNavigationPending
+      && window.__fv.state.currentFolderPath === 'slow-only.txt', null, { timeout: 8000 })
+      .then(() => true).catch(() => false);
+    if (!slowRootOpened) {
+      const navigationState = await page.evaluate(() => ({
+        activeRootId: window.__fv?.state?.activeSidebarRootId,
+        currentFolderPath: window.__fv?.state?.currentFolderPath,
+        intake: window.__fv?.state?.intake?.filename,
+        navigationPending: window.__fv?.state?.sidebarNavigationPending,
+        operationPending: !!window.__fv?.state?.companionOperationToken,
+        toast: document.getElementById('toast')?.textContent || '',
+        slowRoot: window.__fv?.state?.sidebarRoots?.find((root) => root.label === 'slow-root'),
+      }));
+      throw new Error('slow-root navigation did not settle: ' + JSON.stringify(navigationState));
+    }
     const watchedRootRow = page.locator('.ft-row.ft-folder', { hasText: 'slow-root' }).first();
     await watchedRootRow.hover();
     dialogMsg = null;

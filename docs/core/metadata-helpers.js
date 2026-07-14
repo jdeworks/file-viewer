@@ -8,8 +8,13 @@ export const META_SECTIONS = Object.freeze({
 export const META_KEYS = Object.freeze({
   extension: 'extension',
   contentKind: 'content-kind',
+  detectedContent: 'detected-content-signature',
+  contentRisk: 'content-risk',
+  contentWarnings: 'content-warnings',
   loadedBytes: 'loaded-bytes',
   bom: 'byte-order-mark',
+  encoding: 'text-encoding',
+  encodingWarnings: 'encoding-warnings',
   lineEndings: 'line-endings',
   lineBreakCount: 'line-break-count',
   logicalLines: 'logical-lines',
@@ -20,6 +25,7 @@ export const META_KEYS = Object.freeze({
   filenameWarnings: 'filename-warnings',
   archiveRisk: 'archive-risk',
   archiveWarnings: 'archive-warnings',
+  sha256: 'sha256-local',
 });
 
 export function metadataRow(label, value, { section = '', dedupeKey = '', priority } = {}) {

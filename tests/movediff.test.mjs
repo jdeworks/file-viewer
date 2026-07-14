@@ -123,6 +123,30 @@ const P3 = 'A third paragraph at the bottom.';
   ok(r.stats.added === 1 && r.stats.removed === 1, 'line file: low-similarity line is add/remove');
 }
 
+// 5f. A single change set can contain a moved+edited row and an unrelated insertion.
+{
+  const before = [
+    'name,role,city,commits',
+    'Ada Lovelace,Engineer,London,1843',
+    'Alan Turing,Researcher,Manchester,1936',
+    'Grace Hopper,Engineer,New York,1959',
+    'Margaret Hamilton,Engineer,Boston,1969',
+  ].join('\n');
+  const after = [
+    'name,role,city,commits',
+    'Margaret Hamilton,Engineer,Cambridge,1969',
+    'Ada Lovelace,Engineer,London,1843',
+    'New Person,Designer,Berlin,2026',
+    'Alan Turing,Researcher,Manchester,1936',
+    'Grace Hopper,Engineer,New York,1959',
+  ].join('\n');
+  const r = computeMoveDiff(before, after);
+  ok(r.stats['moved-modified'] === 1 && r.stats.added === 1,
+    'mixed change set: moved+edited row and unrelated insertion retain distinct classifications');
+  ok(r.stats.removed === 0 && r.stats.modified === 0,
+    'mixed change set: no spurious removal or in-place modification');
+}
+
 // 6. Word-level diff: a one-word change marks ONLY that word, not the whole sentence.
 {
   const wd = wordDiff('The quick brown fox jumps', 'The quick red fox jumps');

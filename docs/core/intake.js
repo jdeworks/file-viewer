@@ -52,26 +52,133 @@ export function withParserText(intake, parserText) {
   return withSourceText(intake, sourceTextFromParser(intake, parserText));
 }
 
-// Decode bytes as UTF-8. Returns null if it looks binary. A leading BOM is retained in
-// sourceText for exact-source/edit/download fidelity and omitted only from parser-facing text.
-function decodeText(bytes) {
-  let start = 0;
-  if (bytes.length >= 3 && bytes[0] === 0xef && bytes[1] === 0xbb && bytes[2] === 0xbf) start = 3;
-  // Quick binary heuristic: NUL byte in the first sniff window => treat as binary.
+const CHARSET_ALIASES = new Map([
+  ['utf-8', { encoding: 'utf-8', label: 'UTF-8' }],
+  ['utf8', { encoding: 'utf-8', label: 'UTF-8' }],
+  ['unicode-1-1-utf-8', { encoding: 'utf-8', label: 'UTF-8' }],
+  ['utf-16', { encoding: 'utf-16le', label: 'UTF-16 LE' }],
+  ['utf-16le', { encoding: 'utf-16le', label: 'UTF-16 LE' }],
+  ['utf16le', { encoding: 'utf-16le', label: 'UTF-16 LE' }],
+  ['utf-16be', { encoding: 'utf-16be', label: 'UTF-16 BE' }],
+  ['utf16be', { encoding: 'utf-16be', label: 'UTF-16 BE' }],
+  ['windows-1252', { encoding: 'windows-1252', label: 'Windows-1252' }],
+  ['cp1252', { encoding: 'windows-1252', label: 'Windows-1252' }],
+  ['iso-8859-1', { encoding: 'windows-1252', label: 'Windows-1252' }],
+  ['latin1', { encoding: 'windows-1252', label: 'Windows-1252' }],
+]);
+
+function bomEncoding(bytes) {
+  if (bytes.length >= 3 && bytes[0] === 0xef && bytes[1] === 0xbb && bytes[2] === 0xbf) {
+    return { encoding: 'utf-8', label: 'UTF-8', length: 3 };
+  }
+  if (bytes.length >= 2 && bytes[0] === 0xff && bytes[1] === 0xfe) {
+    return { encoding: 'utf-16le', label: 'UTF-16 LE', length: 2 };
+  }
+  if (bytes.length >= 2 && bytes[0] === 0xfe && bytes[1] === 0xff) {
+    return { encoding: 'utf-16be', label: 'UTF-16 BE', length: 2 };
+  }
+  return null;
+}
+
+function declaredCharset(mimeType = '') {
+  const match = String(mimeType).match(/(?:^|;)\s*charset\s*=\s*(?:"([^"]+)"|'([^']+)'|([^;\s]+))/i);
+  if (!match) return null;
+  const raw = String(match[1] || match[2] || match[3] || '').trim().toLowerCase();
+  return { raw, known: CHARSET_ALIASES.get(raw) || null };
+}
+
+// ASCII-heavy UTF-16 without a BOM has a very distinctive alternating-NUL shape. Requiring four
+// complete pairs and a strong one-sided ratio keeps ordinary binary blobs on the binary path.
+function inferredUtf16(bytes) {
+  const length = Math.min(bytes.length - (bytes.length % 2), TEXT_SNIFF_BYTES);
+  const pairs = length / 2;
+  if (pairs < 4) return null;
+  let evenNuls = 0;
+  let oddNuls = 0;
+  for (let i = 0; i < length; i += 2) {
+    if (bytes[i] === 0) evenNuls += 1;
+    if (bytes[i + 1] === 0) oddNuls += 1;
+  }
+  if (oddNuls / pairs >= 0.6 && evenNuls / pairs <= 0.1) {
+    return { encoding: 'utf-16le', label: 'UTF-16 LE' };
+  }
+  if (evenNuls / pairs >= 0.6 && oddNuls / pairs <= 0.1) {
+    return { encoding: 'utf-16be', label: 'UTF-16 BE' };
+  }
+  return null;
+}
+
+function containsNul(bytes, start = 0) {
   const window = bytes.subarray(start, start + TEXT_SNIFF_BYTES);
-  for (let i = 0; i < window.length; i++) {
-    if (window[i] === 0) return null;
+  for (let i = 0; i < window.length; i++) if (window[i] === 0) return true;
+  return false;
+}
+
+// Decode a text candidate without silently guessing away useful evidence. BOMs take precedence,
+// then an explicit supported MIME charset, then a conservative UTF-16 shape inference, and finally
+// UTF-8. Returns null for binary-looking data. The leading BOM remains in sourceText so raw editing
+// and exact-source downloads retain the current source semantics.
+export function decodeTextBytes(bytes, mimeType = '') {
+  const bom = bomEncoding(bytes);
+  const declared = declaredCharset(mimeType);
+  const inferred = bom ? null : inferredUtf16(bytes);
+  const warnings = [];
+  let choice = bom || declared?.known || inferred || CHARSET_ALIASES.get('utf-8');
+  let source = bom ? 'BOM' : declared?.known ? 'MIME charset' : inferred ? 'byte pattern' : 'default';
+
+  if (declared && !declared.known) {
+    warnings.push(`Declared charset ${declared.raw} is unsupported; decoded as UTF-8.`);
   }
+  if (bom && declared?.known && bom.encoding !== declared.known.encoding) {
+    warnings.push(`BOM says ${bom.label}, but the MIME charset says ${declared.known.label}; the BOM took precedence.`);
+  }
+  if (inferred) {
+    warnings.push(`${inferred.label} was inferred from alternating NUL bytes because no BOM was present.`);
+  }
+
+  const isUtf16 = choice.encoding === 'utf-16le' || choice.encoding === 'utf-16be';
+  if (!isUtf16 && containsNul(bytes, bom?.length || 0)) return null;
+
+  let sourceText;
+  let hadDecodingErrors = false;
   try {
-    const sourceText = new TextDecoder('utf-8', { fatal: false, ignoreBOM: true }).decode(bytes);
-    return { sourceText, text: parserTextFromSource(sourceText) };
+    sourceText = new TextDecoder(choice.encoding, { fatal: true, ignoreBOM: true }).decode(bytes);
   } catch {
-    return null;
+    try {
+      sourceText = new TextDecoder(choice.encoding, { fatal: false, ignoreBOM: true }).decode(bytes);
+      hadDecodingErrors = true;
+      warnings.push(`Invalid ${choice.label} byte sequence(s) were replaced while decoding; raw bytes remain available.`);
+    } catch {
+      // A browser missing a declared legacy decoder should still offer a bounded UTF-8 diagnostic
+      // instead of misclassifying otherwise textual content as an opaque binary file.
+      choice = CHARSET_ALIASES.get('utf-8');
+      source = 'fallback';
+      try {
+        sourceText = new TextDecoder('utf-8', { fatal: false, ignoreBOM: true }).decode(bytes);
+        hadDecodingErrors = true;
+        warnings.push('The declared text encoding is unavailable in this browser; UTF-8 replacement decoding was used.');
+      } catch {
+        return null;
+      }
+    }
   }
+
+  // TextDecoder implementations normally retain BOM characters with ignoreBOM:true. Normalize
+  // that contract explicitly because sourceText/parserText fidelity relies on it across browsers.
+  if (bom && !sourceText.startsWith('\ufeff')) sourceText = '\ufeff' + sourceText;
+  return {
+    sourceText,
+    text: parserTextFromSource(sourceText),
+    encoding: choice.label,
+    encodingSource: source,
+    encodingWarnings: warnings,
+    declaredCharset: declared?.raw || '',
+    hadDecodingErrors,
+  };
 }
 
 function buildIntake({ filename, mimeType, bytes, isPaste, lastModified, file = null, size, streamed = false, truncated = false }) {
-  const decoded = streamed ? null : decodeText(bytes);
+  const decoded = streamed ? null : decodeTextBytes(bytes, mimeType);
   const text = decoded?.text ?? null;
   const sourceText = decoded?.sourceText ?? null;
   return {
@@ -82,6 +189,11 @@ function buildIntake({ filename, mimeType, bytes, isPaste, lastModified, file = 
     sourceText,                             // exact decoded working source (retains a leading BOM)
     originalText: sourceText,               // immutable as-opened decoded baseline
     hadBom: sourceText?.startsWith('\ufeff') || false,
+    encoding: decoded?.encoding || null,
+    encodingSource: decoded?.encodingSource || null,
+    encodingWarnings: decoded?.encodingWarnings || [],
+    declaredCharset: decoded?.declaredCharset || '',
+    hadDecodingErrors: decoded?.hadDecodingErrors || false,
     textSample: text ? text.slice(0, TEXT_SNIFF_BYTES) : '',
     isBinary: text === null,
     isPaste: !!isPaste,

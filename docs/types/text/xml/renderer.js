@@ -40,11 +40,74 @@ function elNode(el, counter) {
     + '<div class="j-children">' + children + '</div></details>';
 }
 
+function normalizeEncodingName(value = '') {
+  const normalized = String(value).trim().toLowerCase().replace(/_/g, '-');
+  if (['utf8', 'utf-8'].includes(normalized)) return 'UTF-8';
+  if (['utf16', 'utf-16', 'utf-16le'].includes(normalized)) return 'UTF-16 LE';
+  if (normalized === 'utf-16be') return 'UTF-16 BE';
+  if (['iso-8859-1', 'latin1', 'windows-1252'].includes(normalized)) return 'Windows-1252';
+  return value ? String(value) : '';
+}
+
+function tagBalanceHint(text) {
+  const stack = [];
+  const scrubbed = String(text || '')
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .replace(/<!\[CDATA\[[\s\S]*?\]\]>/g, '')
+    .replace(/<\?[^>]*\?>/g, '')
+    .replace(/<!DOCTYPE[\s\S]*?(?:>|\]\s*>)/gi, '');
+  const tags = scrubbed.matchAll(/<\s*(\/?)\s*([A-Za-z_][\w:.-]*)\b([^>]*)>/g);
+  for (const match of tags) {
+    const closing = !!match[1];
+    const name = match[2];
+    const tail = match[3] || '';
+    if (!closing && /\/\s*$/.test(tail)) continue;
+    if (!closing) {
+      stack.push(name);
+      continue;
+    }
+    const open = stack.pop();
+    if (open && open !== name) return `Closing </${name}> does not match the open <${open}> element.`;
+    if (!open) return `Closing </${name}> has no matching open element.`;
+  }
+  return stack.length ? `Unclosed <${stack[stack.length - 1]}> element near the end of the file.` : '';
+}
+
+export function xmlFailureDiagnostics(intake, parserMessage = '') {
+  const source = String(intake?.text || '');
+  const diagnostics = [];
+  const parser = String(parserMessage || '').replace(/\s+/g, ' ').trim();
+  if (parser) diagnostics.push(parser.slice(0, 300));
+
+  if (intake?.truncated) {
+    diagnostics.push(`Only ${Number(intake.loadedBytes || intake.bytes?.length || 0).toLocaleString()} of ${Number(intake.size || 0).toLocaleString()} bytes were loaded, so closing markup may be outside the loaded prefix.`);
+  } else if (source.trim() && !source.trimEnd().endsWith('>')) {
+    diagnostics.push('The final markup is incomplete, which usually means the XML was truncated.');
+  }
+
+  const balance = tagBalanceHint(source);
+  if (balance && !diagnostics.some((message) => message.includes(balance))) diagnostics.push(balance);
+
+  const declaration = source.match(/^\s*<\?xml\b[^>]*\bencoding\s*=\s*["']([^"']+)["']/i)?.[1];
+  const declared = normalizeEncodingName(declaration);
+  const decoded = normalizeEncodingName(intake?.encoding);
+  if (declared && decoded && declared !== decoded) {
+    diagnostics.push(`The XML declaration says ${declared}, but intake decoded the bytes as ${decoded}; verify the declaration or source encoding.`);
+  }
+  diagnostics.push('Raw view preserves the original decoded source for repair; no XML content was executed.');
+  return [...new Set(diagnostics)];
+}
+
 export async function render(intake, _ctx) {
   const doc = new DOMParser().parseFromString(intake.text || '', 'application/xml');
   const err = doc.querySelector('parsererror');
   if (err) {
-    return { bodyHtml: '<div class="json-error"><strong>Invalid XML</strong><br>' + esc(err.textContent.slice(0, 300)) + '</div>', hadUnsafe: false };
+    const diagnostics = xmlFailureDiagnostics(intake, err.textContent);
+    return {
+      bodyHtml: '<div class="json-error"><strong>Invalid XML</strong><ul>'
+        + diagnostics.map((message) => '<li>' + esc(message) + '</li>').join('') + '</ul></div>',
+      hadUnsafe: false,
+    };
   }
   const root = doc.documentElement;
   if (!root) return { bodyHtml: '<div class="json-tree"><div class="j-row"><span class="j-null">empty document</span></div></div>', hadUnsafe: false };

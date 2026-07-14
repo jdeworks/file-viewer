@@ -3,10 +3,9 @@ import { bellMessages } from "./messages.js";
 // Stage 5 save shape (v2 — full Protocol Codex roguelite):
 //   meta  — persists across runs (prestige economy + the codex/boss gate flags).
 //   boss  — The Refused Connection negotiation state (boss.js owns the mechanics).
-//   run   — the active run.js state machine, or null between runs. Combat itself is
-//           transient (held in the renderer, never persisted): a reload mid-fight
-//           re-instantiates the encounter from the run's node.
-//   ui    — top-level screen: "hub" | "run". (The boss is an in-run act-4 node, never a
+//   run   — the active run.js state machine, or null between runs. Live combat is checkpointed
+//           separately in the shared run-state slot so a reload resumes the same shuffle/turn.
+//   ui    — top-level screen: "hub" | "run". (The boss is an in-run terminal node, never a
 //           standalone top-level screen — legacy "boss" saves normalize to "hub".)
 const VERSION = 2;
 

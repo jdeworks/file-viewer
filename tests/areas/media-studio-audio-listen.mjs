@@ -48,6 +48,7 @@ export async function runAudioListenAndChapters(ctx) {
         fadeIn: !!el.querySelector('.al-f-fade-in'),
         fadeOut: !!el.querySelector('.al-f-fade-out'),
         room: !!el.querySelector('.al-f-room'),
+        regionLoop: !!el.querySelector('.al-region-loop'),
       },
     };
   });
@@ -150,6 +151,16 @@ export async function runAudioListenAndChapters(ctx) {
     pass('audio listen: start/end/fade/gain controls update lane state and room-tone option');
   else fail('listen lane state controls: ' + JSON.stringify(laneState));
 
+  await page.click('#previewHost .al-region-loop');
+  const regionLoopState = await page.$eval('#previewHost .media-listen-surface', (el) => {
+    const button = el.querySelector('.al-region-loop');
+    return { pressed: button?.getAttribute('aria-pressed'), reflected: el.dataset.mixerRegionLoop };
+  });
+  if (regionLoopState.pressed === 'true' && regionLoopState.reflected === 'true')
+    pass('audio listen: Loop selection toggles bounded In–Out region playback state');
+  else fail('region loop state: ' + JSON.stringify(regionLoopState));
+  await page.click('#previewHost .al-region-loop');
+
   await page.waitForFunction(() => document.querySelectorAll('#previewHost .al-chapters .al-chapter').length >= 3, null, { timeout: 6000 });
   const chapterMarkers = await page.$$eval('#previewHost .al-chapters .al-chapter', (els) => els.map((el) => ({
     left: el.style.left,
@@ -162,6 +173,28 @@ export async function runAudioListenAndChapters(ctx) {
   const chapterSource = await page.$eval('#previewHost .media-chapters-source', (el) => el.textContent.trim()).catch(() => '');
   if (/Chapters: test fixture/.test(chapterSource)) pass('R2: chapter source status appears in Listen mode');
   else fail('chapter source status: ' + chapterSource);
+
+  await page.click('#previewHost .media-chapters-edit');
+  await page.$eval('#previewHost .media-chapter-title-input', (input) => {
+    input.value = 'Edited Prologue';
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+  await page.waitForFunction(() => [...document.querySelectorAll('#previewHost .al-chapter')]
+    .some((marker) => marker.title === 'Edited Prologue'));
+  await page.click('#previewHost .media-chapters-edit');
+  const editedChapter = await page.evaluate(() => ({
+    label: document.querySelector('#previewHost .media-chapter-label')?.textContent || '',
+    source: document.querySelector('#previewHost .media-chapters-source')?.textContent || '',
+  }));
+  if (editedChapter.label === 'Edited Prologue' && /edited locally/.test(editedChapter.source))
+    pass('R2: chapter title edits update the seek list, waveform markers, and shared export state');
+  else fail('chapter edit: ' + JSON.stringify(editedChapter));
+  const chapterDownload = page.waitForEvent('download');
+  await page.click('#previewHost .media-chapters-download');
+  const chapterDownloadName = (await chapterDownload).suggestedFilename();
+  if (/\.chapters\.vtt$/.test(chapterDownloadName))
+    pass('R2: edited chapters download as a local WebVTT sidecar');
+  else fail('chapter sidecar filename: ' + chapterDownloadName);
 
   await page.evaluate(async () => {
     delete window.__fvMediaTestChapters;

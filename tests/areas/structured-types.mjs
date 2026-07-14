@@ -661,6 +661,24 @@ export async function run(ctx) {
     const tabs = [...document.querySelectorAll('#previewHost .sc-tab')];
     tabs.find((tab) => tab.textContent === 'prod')?.click();
   });
+  const sshProtected = await page.$eval('#previewHost .sc-panel.active', (panel) => ({
+    settingFilter: getComputedStyle(panel.querySelector('.sc-setting-value')).filter,
+    commandFilter: getComputedStyle(panel.querySelector('.sc-cmd-text')).filter,
+    settingSelectable: getComputedStyle(panel.querySelector('.sc-setting-value')).userSelect,
+  }));
+  if (sshProtected.settingFilter !== 'none' && sshProtected.commandFilter !== 'none' && sshProtected.settingSelectable === 'none') pass('SSH values and generated commands start blurred and non-selectable');
+  else fail('ssh protected defaults: ' + JSON.stringify(sshProtected));
+  await page.click('#previewHost .sc-panel.active .sc-reveal-btn');
+  await page.waitForFunction(() => {
+    const value = document.querySelector('#previewHost .sc-panel.active .sc-setting-value');
+    return value?.classList.contains('revealed') && getComputedStyle(value).filter === 'none';
+  }, null, { timeout: 2000 }).catch(() => {});
+  const sshRevealed = await page.$eval('#previewHost .sc-panel.active', (panel) => {
+    const value = panel.querySelector('.sc-setting-value');
+    return value.classList.contains('revealed') && getComputedStyle(value).filter === 'none'
+      && panel.querySelector('.sc-reveal-btn')?.textContent === 'Hide';
+  });
+  if (sshRevealed) pass('SSH setting value reveals only after explicit click'); else fail('ssh setting did not reveal explicitly');
   const sshCommand = await page.$$eval('#previewHost .sc-panel.active .sc-cmd-text', (els) => els.map((e) => e.textContent).find((text) => text.startsWith('ssh -p')) || '');
   if (/ssh -p 2222 -i ~\/\.ssh\/id_ed25519 -J bastion -A deploy@prod-server\.example\.com/.test(sshCommand)) pass('SSH config preview builds full command from parsed directives'); else fail('ssh command: ' + sshCommand);
   await page.evaluate(async () => {
@@ -681,6 +699,17 @@ export async function run(ctx) {
   await page.waitForSelector('#editor .monaco-editor', { timeout: 8000 });
   const sshRawMode = await page.$eval('#panes', (e) => e.dataset.mode || '');
   if (sshRawMode === 'raw') pass('SSH config raw view remains explicitly available'); else fail('ssh raw mode: ' + sshRawMode);
+
+  await page.goto(origin, { waitUntil: 'load' });
+  await openExample('sample.pem');
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  const pemDefault = await page.evaluate(() => ({
+    type: document.querySelector('#typeSelect')?.value,
+    mode: document.querySelector('#panes')?.dataset.mode || '',
+    rawKeyInPreview: /BEGIN (?:RSA |EC |ENCRYPTED )?PRIVATE KEY/.test(document.querySelector('#previewHost iframe')?.srcdoc || ''),
+  }));
+  if (pemDefault.type === 'pem' && pemDefault.mode === 'preview' && !pemDefault.rawKeyInPreview) pass('PEM/private-key files default to the security-redacted rendered view');
+  else fail('pem safe default: ' + JSON.stringify(pemDefault));
 
   // ── RDP ── connection info card, mstsc command. ──
   await page.goto(origin, { waitUntil: 'load' });

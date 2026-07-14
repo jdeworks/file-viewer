@@ -186,11 +186,19 @@ export async function run(ctx) {
   const catChipCount = await page.$$eval('#examples .ex-cat-chip', (els) => els.length);
   if (catChipCount === 0) pass('examples omit duplicate category filter chips');
   else fail('examples category chips still rendered: ' + catChipCount);
+  const packageTip = await page.$$eval('#examples .ex-known-btn', (buttons) =>
+    buttons.find((button) => button.textContent === 'package.json')?.getAttribute('title') || '');
+  if (/package\.json.*(package|project|dependencies)/i.test(packageTip)) pass('known-file samples expose format-specific hover explanations');
+  else fail('known-file hover description missing: ' + packageTip);
   await page.click('#examples .ex-showall-btn');
   await page.waitForSelector('#examples .ex-file-btn', { timeout: 4000 });
   const welcomeTip = await page.$eval('#examples .ex-file-btn', (el) => el.getAttribute('title') || '');
   if (/used for/i.test(welcomeTip)) pass('sample files expose hover descriptions');
   else fail('sample hover description missing: ' + welcomeTip);
+  const protectedPdfTip = await page.$eval('#examples .ex-file-btn[data-search*="sample-password.pdf"]', (el) => el.getAttribute('title') || '');
+  if (/incorrect-password and unlock flow/i.test(protectedPdfTip) && /License: CC0-1.0/.test(protectedPdfTip)) {
+    pass('sample-specific descriptions and provenance survive the compact gallery summary');
+  } else fail('sample-specific gallery description missing: ' + protectedPdfTip);
 
   // Single large-file reads show progress before the editor/render pipeline starts. Keep the
   // sample below the existing 8 MB warning threshold so this tests feedback, not confirmation.
@@ -277,6 +285,17 @@ export async function run(ctx) {
   else fail('format info metadata missing: ' + formatInfo.replace(/\s+/g, ' ').slice(0, 160));
   if (/Extension\s*md/.test(formatInfo) && /Line endings\s*LF/.test(formatInfo) && /Lines\s*\d+/.test(formatInfo)) pass('metadata drawer includes generic text facts');
   else fail('generic text metadata missing: ' + formatInfo.replace(/\s+/g, ' ').slice(0, 220));
+  const metadataLayout = await page.$$eval('#metaBody details.meta-section', (sections) => sections.map((section) => ({
+    title: section.querySelector('summary')?.textContent || '',
+    open: section.open,
+  })));
+  const textSection = metadataLayout.find((section) => section.title === 'Text structure');
+  const advancedSection = metadataLayout.find((section) => section.title === 'Advanced file facts');
+  const typeSection = metadataLayout.find((section) => section.title === 'Type-specific details');
+  if (typeSection?.open && textSection?.open === false && advancedSection?.open === false) pass('metadata sections prioritize open type facts and collapsed text/technical facts');
+  else fail('metadata section disclosure state: ' + JSON.stringify(metadataLayout));
+  if (/SHA-256 \(local\)\s*[0-9a-f]{64}/.test(formatInfo) && /neither the hash nor the file is sent/.test(formatInfo)) pass('metadata drawer shows a disclosed local-only fingerprint');
+  else fail('local fingerprint metadata missing: ' + formatInfo.replace(/\s+/g, ' ').slice(-260));
   await page.click('#metaDrawer [data-close]');
 
   await openExample('Welcome.md');
@@ -519,6 +538,37 @@ export async function run(ctx) {
     return !!d?.parentElement?.open;
   });
   if (advancedStillOpen) pass('settings remember group open state within the session'); else fail('Advanced group did not stay open');
+  const dockButton = await page.$('#settingsDockBtn');
+  if (dockButton) {
+    await dockButton.click();
+    await page.waitForTimeout(120);
+    const docked = await page.evaluate(() => {
+      const main = document.querySelector('.main-area').getBoundingClientRect();
+      const drawer = document.getElementById('settingsDrawer').getBoundingClientRect();
+      return {
+        docked: document.getElementById('app').classList.contains('settings-docked'),
+        open: document.getElementById('app').classList.contains('settings-open'),
+        pressed: document.getElementById('settingsDockBtn').getAttribute('aria-pressed'),
+        scrimHidden: document.getElementById('scrim').hidden,
+        alongside: main.right <= drawer.left + 1,
+      };
+    });
+    if (docked.docked && docked.open && docked.pressed === 'true' && docked.scrimHidden && docked.alongside) {
+      pass('settings can dock beside the live file without a blocking scrim');
+    } else fail('docked settings geometry/state: ' + JSON.stringify(docked));
+    await page.click('#settingsDrawer [data-close]');
+    await page.click('#settingsBtn');
+    await page.waitForSelector('#settingsDrawer:not([hidden])');
+    const dockRemembered = await page.evaluate(() => document.getElementById('settingsDockBtn').getAttribute('aria-pressed') === 'true'
+      && document.getElementById('scrim').hidden && document.getElementById('app').classList.contains('settings-open'));
+    if (dockRemembered) pass('settings dock choice persists when the drawer is reopened');
+    else fail('docked settings state was not retained');
+    await page.click('#settingsDockBtn');
+    const overlayRestored = await page.evaluate(() => !document.getElementById('app').classList.contains('settings-docked')
+      && !document.getElementById('scrim').hidden && localStorage.getItem('fv:settings:docked') === '0');
+    if (overlayRestored) pass('settings can switch back to the modal overlay');
+    else fail('settings overlay mode did not restore');
+  } else fail('settings dock control missing');
   await page.waitForSelector('#set-reduceMotion', { timeout: 3000 });
   await page.click('label[for="set-reduceMotion"]');
   await page.waitForTimeout(120);

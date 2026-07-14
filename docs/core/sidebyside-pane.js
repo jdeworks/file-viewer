@@ -6,7 +6,8 @@
 // Editable panes (type.capabilities.rawView && !isBinary) get a Source ⇆ Preview toggle backed by
 // a dedicated createRawView() Monaco editor (lazy: created the first time Source is shown) plus a
 // Download of the editor's current text. Preview-only panes (images/PDF/binary/audio/video) get
-// just the rendered preview + a Download of the original bytes.
+// just the rendered preview + a Download of the original bytes. A pane intentionally never offers
+// its own Split mode: two files with two source/preview splits would produce four competing views.
 import { themeIsDark, escapeHtml, state, activeRawviews } from './state.js';
 import { pickType } from './detect.js';
 import { matchKnown } from '../known/registry.generated.js';
@@ -65,7 +66,7 @@ async function renderPreviewInto(host, intake, request) {
     }
     const ctrl = mountPreview(host, {
       bodyHtml: rendered.bodyHtml, fullDoc: rendered.fullDoc, allowScripts: !!rendered.ranScripts,
-      theme: request.snapshot.theme, style: previewStyle({}),
+      theme: request.snapshot.theme, style: previewStyle({}), readerPrefs: rendered.readerPrefs,
     });
     request.registerCleanup(() => ctrl.destroy());
     return { destroy() { request.dispose('side-by-side preview removed'); host.innerHTML = ''; } };
@@ -127,7 +128,7 @@ export function buildPane(paneEl, intake) {
   const previewRequests = createLatestRequestController();
   let view = editable ? 'source' : 'preview';
   let toggleBtns = [];
-  // Non-editable panes can't show a Monaco source; the shared Raw mode reveals this note instead.
+  // Non-editable panes cannot show a Monaco source; shared Sources mode reveals this note instead.
   const sourceNote = document.createElement('p');
   sourceNote.className = 'sbs-note';
   sourceNote.textContent = 'No source view for this file type.';
@@ -167,21 +168,20 @@ export function buildPane(paneEl, intake) {
   }
 
   async function show(next) {
+    if (next !== 'source' && next !== 'preview') next = editable ? 'source' : 'preview';
     view = next;
-    host.classList.toggle('sbs-split', next === 'split');
-    const wantSource = next === 'source' || next === 'split';
-    const wantPreview = next === 'preview' || next === 'split';
+    const wantSource = next === 'source';
+    const wantPreview = next === 'preview';
     sourceHost.style.display = wantSource ? '' : 'none';
     previewHost.style.display = wantPreview ? '' : 'none';
     if (wantSource && editable) {
       sourceNote.style.display = 'none';
       await ensureRawview(); rawview.layout();
     } else if (wantSource) {
-      // Non-editable pane forced to Source by the shared Raw mode: show the note, no Monaco.
+      // Non-editable pane forced to Source by shared Sources mode: show the note, no Monaco.
       sourceNote.style.display = '';
     }
     if (wantPreview) await ensurePreview();
-    if (next === 'split' && rawview) rawview.layout();   // relayout after the split flex sizes it
     syncToggle();
   }
 
@@ -194,7 +194,7 @@ export function buildPane(paneEl, intake) {
   }
 
   if (editable) {
-    [['source', 'Source'], ['preview', 'Preview'], ['split', 'Split']].forEach(([v, label]) => {
+    [['source', 'Source'], ['preview', 'Preview']].forEach(([v, label]) => {
       const btn = document.createElement('button');
       btn.className = 'sbs-toggle';
       btn.dataset.sbsView = v;
@@ -231,8 +231,8 @@ export function buildPane(paneEl, intake) {
     nameEl.insertAdjacentElement('afterend', tools);
   }
 
-  // Show/hide the per-pane Source/Preview/Split toggle. The shared mode bar HIDES it when it
-  // governs the view (Raw/Preview/Diff); Current mode SHOWS it so each pane drives itself.
+  // Show/hide the per-pane Source/Preview toggle. The shared mode bar hides it when it governs
+  // the view; Choose views mode shows it so each pane drives itself.
   function setToggleVisible(on) {
     toggleBtns.forEach((b) => { b.style.display = on ? '' : 'none'; });
   }

@@ -40,6 +40,24 @@ export async function run(ctx) {
   const sqQueryText = await page.$eval('#previewHost .sq-grid', (e) => e.textContent);
   if (/Aphex Twin/.test(sqQueryText) && /Bonobo/.test(sqQueryText) && !/Tycho/.test(sqQueryText)) pass('SQLite query executes (filtered result)'); else fail('sqlite query: ' + sqQueryText.replace(/\s+/g, ' ').slice(0, 80));
 
+  // SQLCipher v4 defaults: prompt is visible before unlock, wrong passwords fail closed,
+  // and a correct password yields the ordinary offline SQLite browser.
+  await page.goto(origin, { waitUntil: 'load' });
+  await openExample('Password-protected SQLCipher SQLite (password: viewer)');
+  await page.waitForSelector('#previewHost .pw-prompt', { timeout: 10000 });
+  await page.fill('#previewHost .pw-input', 'wrong');
+  await page.click('#previewHost .pw-btn-primary');
+  await page.waitForSelector('#previewHost .pw-error:not([hidden])', { timeout: 10000 });
+  const cipherError = await page.$eval('#previewHost .pw-error', (e) => e.textContent || '');
+  if (/Wrong password|unsupported SQLCipher/i.test(cipherError)) pass('SQLCipher rejects an incorrect password locally');
+  else fail('SQLCipher wrong-password diagnostic: ' + cipherError);
+  await page.fill('#previewHost .pw-input', 'viewer');
+  await page.click('#previewHost .pw-btn-primary');
+  await page.waitForSelector('#previewHost .sq-grid', { timeout: 15000 });
+  const cipherText = await page.$eval('#previewHost .sq-doc', (e) => e.textContent || '');
+  if (/notes/.test(cipherText) && /SQLCipher fixture/.test(cipherText) && /Decrypted locally/.test(cipherText)) pass('SQLCipher v4 database unlocks into the SQLite browser');
+  else fail('SQLCipher unlocked content: ' + cipherText.replace(/\s+/g, ' ').slice(0, 180));
+
   // ── Clip Studio Paint (.clip) ── SQLite-backed structure view with partial-support banner.
   await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.clip');
@@ -61,6 +79,7 @@ export async function run(ctx) {
 
   // ── FictionBook (.fb2) ── XML ebook → sanitized reading HTML with inline data: images. ──
   await page.goto(origin, { waitUntil: 'load' });
+  await page.evaluate(() => localStorage.removeItem('fv:reader:prefs:fb2'));
   await openExample('Sample.fb2');
   const fb2frame = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 15000 });
   const fb2f = await frameOf('iframe.fv-preview-frame');
@@ -88,10 +107,24 @@ export async function run(ctx) {
   if (parseFloat(fb2Prefs.size) > parseFloat(fb2Size0) && /system|Segoe|Roboto|sans/i.test(fb2Prefs.font) && fb2Prefs.bg !== 'rgba(0, 0, 0, 0)' && parseFloat(fb2Prefs.line) > 35 && parseFloat(fb2Prefs.maxWidth) < 600)
     pass('FB2 reader controls adjust size, font, theme, line height, and margins');
   else fail('fb2 reader controls: ' + JSON.stringify({ before: fb2Size0, after: fb2Prefs }));
+  await page.waitForFunction(() => {
+    const value = JSON.parse(localStorage.getItem('fv:reader:prefs:fb2') || 'null');
+    return value?.size === 'large' && value?.font === 'sans' && value?.theme === 'sepia'
+      && value?.line === 'loose' && value?.margin === 'wide';
+  });
+  await openExample('Sample.fb2');
+  const fb2f2 = await frameOf('iframe.fv-preview-frame');
+  await fb2f2.waitForFunction(() => document.querySelector('#fb2-size-large')?.checked
+    && document.querySelector('#fb2-font-sans')?.checked
+    && document.querySelector('#fb2-theme-sepia')?.checked
+    && document.querySelector('#fb2-line-loose')?.checked
+    && document.querySelector('#fb2-margin-wide')?.checked);
+  pass('FB2 reader preferences persist through the sandboxed parent-message bridge');
 
   // ── MOBI / Kindle (.mobi) ── PalmDB parse + PalmDOC text → sanitized HTML, inline data: images. ──
   // Now rendered in parentNode mode with external sticky toolbar (no sandboxed iframe).
   await page.goto(origin, { waitUntil: 'load' });
+  await page.evaluate(() => localStorage.removeItem('fv:reader:prefs:mobi'));
   await openExample('Sample.mobi');
   await page.waitForSelector('#previewHost .mobi-toolbar', { timeout: 12000 });
   const mobiType = await page.$eval('#typeSelect', (s) => s.value);
@@ -124,6 +157,16 @@ export async function run(ctx) {
       && parseFloat(mobiPrefs.line) > 35 && parseFloat(mobiPrefs.maxWidth) < 600)
     pass('MOBI reader toolbar adjusts size, font, theme, line height, and margins');
   else fail('mobi reader controls: ' + JSON.stringify({ before: mobiSize0, after: mobiPrefs }));
+  await page.waitForFunction(() => {
+    const value = JSON.parse(localStorage.getItem('fv:reader:prefs:mobi') || 'null');
+    return value?.size === 'large' && value?.font === 'sans' && value?.theme === 'sepia'
+      && value?.line === 'loose' && value?.margin === 'wide';
+  });
+  await openExample('Sample.mobi');
+  await page.waitForSelector('#previewHost .mobi-reader.mk-size-large.mk-font-sans.mk-theme-sepia.mk-line-loose.mk-margin-wide', { timeout: 12000 });
+  const mobiActivePrefs = await page.$$eval('#previewHost .mobi-tb-btn.mk-active', (buttons) => buttons.map((button) => button.textContent));
+  if (mobiActivePrefs.join(',') === 'A+,Sans,Sepia,Loose,Wide') pass('MOBI reader preferences persist when the book is reopened');
+  else fail('mobi persisted controls: ' + mobiActivePrefs.join(','));
 
   // ── Sony LRF (BBeB) ── real binary reader. Build a MINIMAL synthetic .lrf in-test (header +
   // object index + PageTree/Page/Block + a zlib-compressed UTF-16LE TextBlock) so the suite is
@@ -259,6 +302,32 @@ export async function run(ctx) {
   const hexVal = await page.evaluate(() => window.__fv.state.rawview.getValue());
   if (/^00000000\s+([0-9a-f]{2} )+/m.test(hexVal)) pass('binary file rendered as hex dump (offset + hex columns)'); else fail('no hex dump: ' + hexVal.slice(0, 40));
   if (/\|.*Hello.*\|/.test(hexVal)) pass('hex dump shows ASCII column (printable bytes)'); else fail('no ASCII column in hex dump');
+  await page.waitForSelector('#binaryTools:not([hidden])', { timeout: 5000 });
+  await page.fill('#binaryTools [data-bin-offset]', '0x40');
+  await page.click('#binaryTools [data-bin-action="go"]');
+  const jumpedHex = await page.evaluate(() => window.__fv.state.rawview.getValue());
+  if (/^00000040\s+21 22 23/m.test(jumpedHex)) pass('binary offset jump replaces the bounded hex window at an aligned address');
+  else fail('binary offset jump: ' + jumpedHex.slice(0, 80));
+  await page.fill('#binaryTools [data-bin-pattern]', '48 65 6c 6c 6f');
+  await page.click('#binaryTools [data-bin-action="find"]');
+  const findStatus = await page.$eval('#binaryTools [data-bin-status]', (el) => el.textContent);
+  if (/Match at 0x0/.test(findStatus)) pass('binary hex-pattern search finds and reveals a local byte sequence');
+  else fail('binary find status: ' + findStatus);
+  await page.click('#binaryTools [data-bin-action="stats"]');
+  await page.waitForSelector('dialog.binary-inspector-dialog[open] .binary-histogram');
+  const statsText = await page.$eval('dialog.binary-inspector-dialog[open]', (el) => el.textContent);
+  if (/Shannon entropy\s+[\d.]+ bits\/byte/.test(statsText) && /Most frequent byte values/.test(statsText)) pass('binary stats show byte frequency and Shannon entropy');
+  else fail('binary stats: ' + statsText.replace(/\s+/g, ' ').slice(0, 180));
+  await page.click('dialog.binary-inspector-dialog[open] header button');
+  await page.click('#binaryTools [data-bin-action="strings"]');
+  await page.waitForSelector('dialog.binary-inspector-dialog[open] .binary-strings');
+  const stringsText = await page.$eval('dialog.binary-inspector-dialog[open]', (el) => el.textContent);
+  if (/Hello/.test(stringsText) && /World/.test(stringsText) && /0x00000000/.test(stringsText)) pass('binary printable-string extraction reports text with byte offsets');
+  else fail('binary strings: ' + stringsText.replace(/\s+/g, ' ').slice(0, 180));
+  await page.click('dialog.binary-inspector-dialog[open] header button');
+  const binaryClean = await page.evaluate(() => !window.__fv.hasUnsavedWork());
+  if (binaryClean) pass('binary window/search navigation never marks the read-only file dirty');
+  else fail('binary inspector marked the read-only file dirty');
 
   // ── Folder tree sidebar ──
   await page.goto(origin, { waitUntil: 'load' });
@@ -402,6 +471,9 @@ export async function run(ctx) {
       { file: new File(['no match'], 'app.js', { type: 'text/javascript' }), path: 'project/src/app.js' },
     ]);
   });
+  await page.waitForFunction(() => window.__fv.state.folderSearchIndex?.complete
+    && window.__fv.state.folderSearchIndex.indexed === 2, null, { timeout: 5000 });
+  pass('folder search: bounded content index warms in the background');
   await page.fill('#ftSearchInput', 'needle');
   await page.keyboard.press('Enter');
   await page.waitForFunction(() => /1 file/.test(document.getElementById('ftSearchCount').textContent), null, { timeout: 5000 });
@@ -411,6 +483,28 @@ export async function run(ctx) {
   else fail('shared-root content search: readme=' + prefixedReadme + ' count=' + prefixedCount);
   await page.fill('#ftSearchInput', '');
   await page.waitForTimeout(100);
+
+  const lazyTree = await page.evaluate(async () => {
+    const { buildTree, renderTree } = await import('/core/filetree.js');
+    const tree = buildTree([
+      { path: 'root/a/b/one.txt', file: new File(['1'], 'one.txt') },
+      { path: 'root/a/c/two.txt', file: new File(['2'], 'two.txt') },
+    ], { lazy: true });
+    const rootNode = tree.children.get('root');
+    const lazyBeforeRender = rootNode.children === null && rootNode._pendingChildren.length === 2;
+    const host = document.createElement('div');
+    host.style.cssText = 'position:fixed;width:300px;height:200px;left:-1000px;overflow:auto';
+    document.body.appendChild(host);
+    const api = renderTree(host, tree, { onOpen() {}, initialOpenDepth: 0 });
+    const branch = rootNode.children.get('a');
+    const deeperStillLazy = branch.children === null && branch._pendingChildren.length === 2;
+    api.stop();
+    host.remove();
+    return { lazyBeforeRender, deeperStillLazy };
+  });
+  if (lazyTree.lazyBeforeRender && lazyTree.deeperStillLazy)
+    pass('folder tree constructs deeper directory children only when expanded');
+  else fail('lazy folder tree: ' + JSON.stringify(lazyTree));
 
   // ── Huge-folder virtual scroll: all 20 010 entries load; only a viewport slice is in the DOM ──
   const loadingSeen = await page.evaluate(() => {
@@ -422,7 +516,8 @@ export async function run(ctx) {
     return !notice.hidden && /Preparing big|Building file tree/.test(notice.textContent);
   });
   if (loadingSeen) pass('folder load shows progress feedback'); else fail('folder load progress not shown');
-  await page.waitForFunction(() => window.__fv.state.treeEntries?.length === 20010, null, { timeout: 15000 });
+  await page.waitForFunction(() => window.__fv.state.treeEntries?.length === 20010
+    && document.getElementById('ftNotice').hidden, null, { timeout: 15000 });
   const ftNoticeHidden = await page.$eval('#ftNotice', (e) => e.hidden);
   const domRows = await page.$$eval('#fileTree .ft-row', (els) => els.length);
   const loadedCount = await page.evaluate(() => window.__fv.state.treeEntries.length);

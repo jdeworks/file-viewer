@@ -1,10 +1,10 @@
 // Shared mode bar for the side-by-side overlay. One radio-style switch governs BOTH panes:
-//   • Current  — the two independent panes as built (each keeps its own Source/Preview/Split
-//                toggle + toolbar); panes scroll independently.
-//   • Raw      — force both panes to their Monaco source; per-pane toggles hidden; independent scroll.
-//   • Preview  — force both panes to their rendered preview; per-pane toggles hidden.
-//   • Diff     — replace the two panes with ONE full-width Monaco diff (pane1.text ↔ pane2.text),
-//                synced scroll handled natively by Monaco. Disabled when either file is binary.
+//   • Choose views — the two independent panes as built; each chooses Source or Preview.
+//   • Sources      — force both panes to Monaco source; independent scrolling.
+//   • Previews     — force both panes to their rendered preview.
+//   • Text diff    — replace both panes with ONE full-width Monaco source diff, whose synced
+//                    scrolling is handled natively. Disabled when either file is binary.
+// No pane offers an inner Split choice, so this overlay never grows into four competing views.
 //
 // This module owns only the mode-bar + diff orchestration; the panes themselves live in
 // sidebyside-pane.js. It is overlay-local: the diff rawview is NOT the global state.rawview.
@@ -62,16 +62,24 @@ export function initModeBar(headEl, body, panes, { initialMode } = {}) {
   if (mode === 'merge' && !bothKv) mode = 'current';
   if (mode === 'diff' && (eitherBinary || eitherEnv)) mode = 'current';
 
-  // Base modes; Merge is appended only for env/ini pairs.
-  const modeDefs = [['current', 'Current'], ['raw', 'Raw'], ['preview', 'Preview'], ['diff', 'Diff']];
-  if (bothKv) modeDefs.push(['merge', 'Merge']);
+  // Internal mode IDs remain stable for persisted preferences; visible labels explain the actual
+  // two-file result rather than reusing the main workspace's ambiguous Current/Raw/Diff terms.
+  const modeDefs = [
+    ['current', 'Choose views', 'Choose Source or Preview independently for each file.'],
+    ['raw', 'Sources', 'Show one source editor for each file.'],
+    ['preview', 'Previews', 'Show one rendered preview for each file.'],
+    ['diff', 'Text diff', 'Compare both files\' source text in one read-only diff.'],
+  ];
+  if (bothKv) modeDefs.push(['merge', 'Merge', 'Compare keys and transfer selected values into a combined file.']);
   const btns = [];
-  for (const [m, label] of modeDefs) {
+  for (const [m, label, description] of modeDefs) {
     const b = document.createElement('button');
     b.className = 'sbs-mode-btn';
     b.dataset.sbsMode = m;
     b.textContent = label;
     b.type = 'button';
+    b.setAttribute('role', 'tab');
+    b.title = description;
     if (m === 'diff' && (eitherBinary || eitherEnv)) {
       b.disabled = true;
       b.title = eitherEnv ? 'Text diff disabled for .env (would expose secrets) — use Merge' : 'Diff not available for binary files';
@@ -165,6 +173,8 @@ export function initModeBar(headEl, body, panes, { initialMode } = {}) {
       const on = b.dataset.sbsMode === mode;
       b.classList.toggle('active', on);
       b.setAttribute('aria-pressed', String(on));
+      b.setAttribute('aria-selected', String(on));
+      b.tabIndex = on ? 0 : -1;
     });
   }
 

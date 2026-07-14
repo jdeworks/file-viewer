@@ -5,7 +5,7 @@
 // ── EQ presets ───────────────────────────────────────────────────────────────
 export const PRESETS = [
   { id: 'flat',             name: 'Flat',                gains: [0,0,0,0,0,0,0,0,0],            hpf: 20,  lpf: 20000 },
-  { id: 'acx-standard',     name: 'ACX Standard',        gains: [0,0,0,0,0,0,0,0,0],            hpf: 80,  lpf: 16000, category: 'audiobook', note: 'Audible/Amazon compliant.' },
+  { id: 'acx-standard',     name: 'ACX Standard',        gains: [0,0,0,0,0,0,0,0,0],            hpf: 80,  lpf: 16000, category: 'audiobook', note: 'ACX-oriented tonal starting point; run QC before submission.' },
   { id: 'findaway',         name: 'Findaway Voices',      gains: [0,0,0,0,0,1,2,0,0],            hpf: 80,  lpf: 20000, category: 'audiobook', note: 'Gentle presence lift.' },
   { id: 'intimate-audiobook', name: 'Intimate Audiobook', gains: [0,2,3,0,-1,1,2,0,-2],          hpf: 60,  lpf: 20000, category: 'audiobook', note: 'Warm narrator with bass body.' },
   { id: 'audacity-rolloff',  name: 'Audacity Low Rolloff',gains: [-6,-2,0,0,0,0,0,0,0],         hpf: 80,  lpf: 20000, category: 'audiobook', note: 'Classic speech cleanup.' },

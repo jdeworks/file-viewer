@@ -4,15 +4,7 @@ export const plugin = {
   tags: ['gleam', 'functional', 'erlang', 'beam'],
   match(intake) {
     const name = (intake.name || intake.filename || '').toLowerCase();
-    if (name.endsWith('.gleam')) return true;
-    const text = intake.text || '';
-    const hits = [
-      /^import\s+/m.test(text),
-      /^pub\s+fn\s+\w+/m.test(text),
-      /^type\s+\w+/m.test(text),
-      /^pub\s+type\s+\w+/m.test(text),
-    ].filter(Boolean).length;
-    return hits >= 2;
+    return name.endsWith('.gleam');
   },
   loadRenderer: () => import('./renderer.js'),
   about: {

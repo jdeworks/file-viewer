@@ -1,11 +1,13 @@
-// P8b/P8e — Audiobook ACX QC panel: pass/fail report card + one-click compliant
+// P8b/P8e — Audiobook ACX QC panel: pass/fail report card + targeted export.
 // export. CPU-lazy: nothing decodes or loads ffmpeg until the user clicks a button.
 //
 // mountAcxQcPanel(panel, intake, mediaEl) → { destroy() }. Vanilla DOM, media-ed-*
 // class conventions. The decode is read-only (no ffmpeg); the export uses the
-// `acxExport` transcoder op and re-runs QC on the OUTPUT to confirm a pass.
+// `acxExport` transcoder op and re-runs the measurable checks on the actual output.
 
 import { analyzeMetrics, evaluateAcx, acxVerdict } from './qc.js';
+import { inspectAcxEncoding } from './qc-encoding.js';
+import { buildWorkingCopyButton } from './media-working-copy.js';
 
 const CHECKS = [
   { key: 'rms', label: 'RMS' },
@@ -15,8 +17,10 @@ const CHECKS = [
   { key: 'noise', label: 'Noise floor' },
   { key: 'sr', label: 'Sample rate' },
   { key: 'ch', label: 'Channels' },
-  { key: 'head', label: 'Head silence' },
-  { key: 'tail', label: 'Tail silence' },
+  { key: 'format', label: 'Submission format' },
+  { key: 'bitrate', label: 'MP3 bitrate mode' },
+  { key: 'head', label: 'Quiet head spacing' },
+  { key: 'tail', label: 'Quiet tail spacing' },
 ];
 
 const STATUS_TEXT = {
@@ -26,9 +30,9 @@ const STATUS_TEXT = {
 };
 
 const VERDICT_TEXT = {
-  pass: '✓ ACX-compliant',
+  pass: '✓ Passes measured ACX checks',
   warn: '⚠ Borderline — review the amber rows',
-  fail: '✕ Not ACX-compliant',
+  fail: '✕ Does not pass measured ACX checks',
 };
 
 // Decode an audio File/bytes to channel Float32Arrays. decodeAudioData reads the
@@ -47,7 +51,12 @@ async function decodeFile(intake) {
     const audio = await ctx.decodeAudioData(buf.slice ? buf.slice(0) : buf);
     const channels = [];
     for (let c = 0; c < audio.numberOfChannels; c++) channels.push(audio.getChannelData(c));
-    return { channels, fs: audio.sampleRate, duration: audio.duration };
+    return {
+      channels,
+      fs: audio.sampleRate,
+      duration: audio.duration,
+      encoding: inspectAcxEncoding(new Uint8Array(buf), intake.filename),
+    };
   } finally {
     try { await ctx.close(); } catch { /* ignore */ }
   }
@@ -96,13 +105,15 @@ function renderCard(host, rows, verdict) {
   const table = document.createElement('table');
   table.className = 'media-qc-table';
   for (const r of rows) {
+    const visualStatus = r.required === false && r.status !== 'pass' ? 'warn' : r.status;
     const tr = document.createElement('tr');
-    tr.className = 'media-qc-row media-qc-' + r.status;
+    tr.className = 'media-qc-row media-qc-' + visualStatus;
     tr.dataset.metric = r.key;
+    tr.dataset.required = r.required === false ? 'false' : 'true';
 
     const dot = document.createElement('td');
-    dot.className = 'media-qc-dot media-qc-dot-' + r.status;
-    dot.textContent = r.status === 'pass' ? '●' : (r.status === 'warn' ? '●' : '●');
+    dot.className = 'media-qc-dot media-qc-dot-' + visualStatus;
+    dot.textContent = '●';
 
     const name = document.createElement('td');
     name.className = 'media-qc-metric';
@@ -114,7 +125,7 @@ function renderCard(host, rows, verdict) {
 
     const action = document.createElement('td');
     action.className = 'media-qc-action';
-    action.textContent = statusText(r.status);
+    action.textContent = r.required === false ? 'Guidance' : statusText(r.status);
 
     tr.append(dot, name, val, action);
     table.appendChild(tr);
@@ -143,7 +154,7 @@ function renderQueuedState(host, checklistHost) {
   renderPendingChecklist(checklistHost);
 }
 
-export function mountAcxQcPanel(panel, intake) {
+export function mountAcxQcPanel(panel, intake, _mediaEl, options = {}) {
   panel.classList.add('media-qc-panel');
   const blobUrls = [];
 
@@ -154,7 +165,7 @@ export function mountAcxQcPanel(panel, intake) {
   shellHead.className = 'media-qc-shell-head';
   const shellTitle = document.createElement('div');
   shellTitle.className = 'media-qc-shell-title';
-  shellTitle.textContent = 'ACX QC';
+  shellTitle.textContent = 'ACX submission checks';
   const shellStatus = document.createElement('div');
   shellStatus.className = 'media-qc-shell-status';
   shellStatus.textContent = 'Ready for analysis';
@@ -177,11 +188,11 @@ export function mountAcxQcPanel(panel, intake) {
   const exportBtn = document.createElement('button');
   exportBtn.type = 'button';
   exportBtn.className = 'media-ed-btn media-qc-export';
-  exportBtn.textContent = 'Export for ACX';
+  exportBtn.textContent = 'Export ACX-targeted MP3';
 
   const exportHint = document.createElement('div');
   exportHint.className = 'media-qc-export-hint';
-  exportHint.textContent = 'Export target: mono 44.1 kHz MP3 192k CBR, loudnorm −20 LUFS / TP −3 dBTP (QC true peak is estimated)';
+  exportHint.textContent = 'Target: mono 44.1 kHz MP3 192k CBR, loudnorm −20 LUFS / TP −3 dBTP. Existing edge spacing is preserved; the tool does not synthesize room tone.';
 
   const status = document.createElement('div');
   status.className = 'media-ed-msg media-qc-status';
@@ -201,8 +212,13 @@ export function mountAcxQcPanel(panel, intake) {
   }
 
   async function analyzeIntake(target) {
-    const { channels, fs, duration } = await decodeFile(target);
-    const metrics = analyzeMetrics(channels, fs, { sampleRate: fs, channels: channels.length, duration });
+    const { channels, fs, duration, encoding } = await decodeFile(target);
+    const metrics = analyzeMetrics(channels, fs, {
+      sampleRate: fs,
+      channels: channels.length,
+      duration,
+      encoding,
+    });
     const rows = evaluateAcx(metrics);
     return { rows, verdict: acxVerdict(rows) };
   }
@@ -234,7 +250,7 @@ export function mountAcxQcPanel(panel, intake) {
     exportBtn.disabled = true;
     result.hidden = true;
     result.innerHTML = '';
-    setStatus('Loading ffmpeg + encoding (mono 44.1 k MP3 192 k CBR)…');
+    setStatus('Loading ffmpeg + encoding (mono 44.1 kHz MP3 192 kbps CBR)…');
     try {
       const { classifyFfmpegError, loadFfmpeg, runOperation } = await import('./transcoder.js');
       const ff = await loadFfmpeg(({ ratio }) => {
@@ -243,11 +259,11 @@ export function mountAcxQcPanel(panel, intake) {
       const out = await runOperation(ff, 'acxExport', {}, intake);
       blobUrls.push(out.url);
       setStatus('Re-checking the exported file…');
-      // Re-run QC on the OUTPUT to confirm it now passes.
+      // Re-run QC on the actual output bytes; this still cannot replace listening review or
+      // production-wide checks such as keeping every chapter mono/stereo consistently.
       let postVerdict = null;
       try {
-        const blob = await (await fetch(out.url)).blob();
-        const post = await analyzeIntake({ file: new File([blob], out.filename) });
+        const post = await analyzeIntake({ file: new File([out.blob], out.filename), filename: out.filename });
         renderCard(reportWrap, post.rows, post.verdict);
         shellStatus.textContent = 'Report ready';
         postVerdict = post.verdict;
@@ -256,13 +272,15 @@ export function mountAcxQcPanel(panel, intake) {
       const done = document.createElement('span');
       done.className = 'media-ed-done';
       done.textContent = 'Exported ' + out.filename + ' (' + (out.bytes / 1048576).toFixed(1) + ' MB)'
-        + (postVerdict === 'pass' ? ' — verified ACX-compliant.' : '.');
+        + (postVerdict === 'pass' ? ' — passes the measured single-file checks; listen before submission.' : '.');
       const dl = document.createElement('a');
       dl.href = out.url;
       dl.download = out.filename;
       dl.className = 'media-tx-download';
       dl.textContent = 'Download ' + out.filename;
       result.append(done, dl);
+      const workingCopyButton = buildWorkingCopyButton(out, options.workingCopy);
+      if (workingCopyButton) result.append(workingCopyButton);
       result.hidden = false;
       setStatus('');
       dl.click();

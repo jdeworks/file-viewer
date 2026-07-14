@@ -1,4 +1,4 @@
-// cards-signal.js — the SYN-Flood archetype: aggro / tempo. Signals carry the damage; at the act-4
+// cards-signal.js — the SYN-Flood archetype: aggro / tempo. Signals carry the damage; at the terminal
 // boss they only land when the handshake is satisfied (lead SYN / play ACK), so this is the kill
 // engine you must thread through the negotiation. Each card: { id, type:"Signal", cost, rarity, text,
 // effect(ctx), exhaust? }. Keep ≤300 LOC; effects are declarative ctx mutations only.

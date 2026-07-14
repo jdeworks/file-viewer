@@ -1,6 +1,6 @@
 // Client-side PDF page editing via vendored pdf-lib (pure JS — no WASM, no server). Lite PDF-tool
-// page ops: rotate, delete, reorder, AND insert an image as a new page. Edits are tracked as an
-// ordered list of items (original page refs + inserted images) and re-applied onto a fresh
+// page ops: rotate, delete, reorder, insert a blank page, and insert an image as a new page. Edits
+// are tracked as an ordered list of items (original page refs + inserted pages) and re-applied onto a fresh
 // document, so the original bytes are never mutated; `build()` returns the edited PDF bytes for
 // re-render / download. Lazy-loaded — pdf-lib is only fetched when the user enters edit mode.
 import { loadGlobal, vendor } from '../../core/script-loader.js';
@@ -39,6 +39,14 @@ export async function createEditor(origBytes) {
       const item = { kind: 'image', bytes: pngBytes, rot: 0 };
       if (pos == null || pos >= order.length) order.push(item); else order.splice(Math.max(0, pos), 0, item);
     },
+    // Add a genuinely empty A4 page. It remains a first-class page item, so it can be moved,
+    // rotated, deleted, extracted, split, and watermarked like every other page.
+    addBlank(pos, size = [A4_W, A4_H]) {
+      const width = Number(size?.[0]) > 0 ? Number(size[0]) : A4_W;
+      const height = Number(size?.[1]) > 0 ? Number(size[1]) : A4_H;
+      const item = { kind: 'blank', width, height, rot: 0 };
+      if (pos == null || pos >= order.length) order.push(item); else order.splice(Math.max(0, pos), 0, item);
+    },
     // Merge: append every page of another PDF (by bytes) to the end. Returns how many were added.
     async addPdf(bytes) {
       const doc = await PDFLib.PDFDocument.load(bytes, { ignoreEncryption: true });
@@ -59,6 +67,8 @@ export async function createEditor(origBytes) {
       for (const it of orig) { const d = ((it.rot || 0) - (it.rot0 || 0) + 360) % 360; if (d) out.push('Page ' + (it.oi + 1) + ' rotated ' + d + '°'); }
       const added = order.filter((it) => it.kind === 'image').length;
       if (added) out.push(added + ' image page' + (added === 1 ? '' : 's') + ' added');
+      const blanks = order.filter((it) => it.kind === 'blank').length;
+      if (blanks) out.push(blanks + ' blank page' + (blanks === 1 ? '' : 's') + ' added');
       const merged = order.filter((it) => it.kind === 'page' && it.merged).length;
       if (merged) out.push(merged + ' page' + (merged === 1 ? '' : 's') + ' merged in');
       const pageSeq = orig.map((it) => it.oi).join(',');
@@ -92,12 +102,15 @@ export async function createEditor(origBytes) {
           const [p] = await out.copyPages(srcs[it.doc || 0], [it.oi]);
           p.setRotation(PDFLib.degrees(it.rot || 0));
           out.addPage(p);
-        } else {
+        } else if (it.kind === 'image') {
           const img = await out.embedPng(it.bytes);
           const scale = Math.min(A4_W / img.width, A4_H / img.height, 1);
           const w = img.width * scale, h = img.height * scale;
           const page = out.addPage([w, h]);
           page.drawImage(img, { x: 0, y: 0, width: w, height: h });
+          if (it.rot) page.setRotation(PDFLib.degrees(it.rot));
+        } else {
+          const page = out.addPage([it.width || A4_W, it.height || A4_H]);
           if (it.rot) page.setRotation(PDFLib.degrees(it.rot));
         }
       }
@@ -125,12 +138,15 @@ export async function createEditor(origBytes) {
           p.setRotation(PDFLib.degrees(it.rot || 0));
           out.addPage(p);
           page = p;
-        } else {
+        } else if (it.kind === 'image') {
           const img = await out.embedPng(it.bytes);
           const scale = Math.min(A4_W / img.width, A4_H / img.height, 1);
           const w = img.width * scale, h = img.height * scale;
           page = out.addPage([w, h]);
           page.drawImage(img, { x: 0, y: 0, width: w, height: h });
+          if (it.rot) page.setRotation(PDFLib.degrees(it.rot));
+        } else {
+          page = out.addPage([it.width || A4_W, it.height || A4_H]);
           if (it.rot) page.setRotation(PDFLib.degrees(it.rot));
         }
         if (this._watermark) {

@@ -85,7 +85,6 @@ export function addGeneratedLane(project, kind, label, roomTone) {
 // fields live in `clips`.
 export function buildLaneClips(project, laneId, cursorMs, pxPerSec = 0) {
   const elements = (project.elements || []).filter((element) => element.laneId === laneId);
-  if (!elements.length) return null;
   const durationMs = Math.max(1000, project.project?.durationMs || 1000);
   const clips = elements.map((element) => {
     const rawDur = element.timeline.rawDurationMs || element.timeline.durationMs || durationMs;
@@ -226,9 +225,11 @@ export function buildMixToolbar() {
   const exportStatus = Object.assign(document.createElement('span'), { className: 'mmx-mix-export-status' });
   exportStatus.setAttribute('role', 'status');
   exportStatus.setAttribute('aria-live', 'polite');
+  const workingCopySlot = document.createElement('span');
+  workingCopySlot.className = 'mmx-mix-working-copy';
   const exportGroup = group('export', formatSelect,
     mk('Download mix', 'Render and download the audio mix', 'mmx-mix-download al-btn'),
-    videoPlanBtn, exportStatus);
+    videoPlanBtn, exportStatus, workingCopySlot);
   const projectGroup = group('project');
   const fullscreenBtn = mk('⛶ Fullscreen', 'Enter Mix workspace fullscreen', 'mmx-mix-fullscreen al-btn');
   fullscreenBtn.setAttribute('aria-pressed', 'false');
@@ -239,7 +240,7 @@ export function buildMixToolbar() {
   const toolbar = document.createElement('div');
   toolbar.className = 'al-toolbar mmx-toolbar';
   toolbar.append(Object.assign(document.createElement('span'), { className: 'al-title mmx-title', textContent: 'Mix' }), controls);
-  return { toolbar, masterSlider, videoPlanBtn, formatSelect, fullscreenBtn, exportStatus };
+  return { toolbar, masterSlider, videoPlanBtn, formatSelect, fullscreenBtn, exportStatus, workingCopySlot };
 }
 
 // --- DOM decoration helpers ---
@@ -354,6 +355,7 @@ export function buildSelectionPanel({ getProject, setProject, getClipLanes, getV
   panelEl.append(hint);
 
   let currentElementId = null;
+  let currentLaneSignature = '';
   let refs = null; // live input refs for value-only refresh (no DOM rebuild during drag)
 
   function elData(elem) {
@@ -364,11 +366,22 @@ export function buildSelectionPanel({ getProject, setProject, getClipLanes, getV
     return { startMs, si, so, lenMs: Math.max(0, so - si) };
   }
 
+  function refreshLaneId(p, laneId) {
+    const lane = getClipLanes().get(laneId);
+    if (lane) lane.update(buildLaneClips(p, laneId, getViewport().cursorMs, getViewport().pxPerMs * 1000));
+  }
+
   function refreshLane(p, elementId) {
     const elem = p.elements.find((e) => e.id === elementId);
-    if (!elem) return;
-    const lane = getClipLanes().get(elem.laneId);
-    if (lane) lane.update(buildLaneClips(p, elem.laneId, getViewport().cursorMs, getViewport().pxPerMs * 1000));
+    if (elem) refreshLaneId(p, elem.laneId);
+  }
+
+  function eligibleLanes(project, element) {
+    const visual = !!(element.capabilities?.hasVideo || element.capabilities?.hasImage);
+    return project.lanes.filter((lane) => {
+      const occupants = project.elements.filter((item) => item.laneId === lane.id && item.id !== element.id);
+      return occupants.every((item) => !!(item.capabilities?.hasVideo || item.capabilities?.hasImage) === visual);
+    });
   }
 
   function rebuildPanel(element) {
@@ -383,6 +396,7 @@ export function buildSelectionPanel({ getProject, setProject, getClipLanes, getV
 
     const elementId = element.id;
     const { startMs, si, lenMs } = elData(element);
+    const project = getProject();
 
     const startInp = mkNumInp('al-f-start', startMs / 1000);
     const endInp = mkNumInp('al-f-end', (startMs + lenMs) / 1000);
@@ -416,6 +430,26 @@ export function buildSelectionPanel({ getProject, setProject, getClipLanes, getV
 
     const numGrid = document.createElement('div');
     numGrid.className = 'al-grid';
+    const lanes = eligibleLanes(project, element);
+    let laneSelect = null;
+    if (lanes.length > 1) {
+      laneSelect = document.createElement('select');
+      laneSelect.className = 'mmx-selection-lane';
+      laneSelect.setAttribute('aria-label', 'Move clip to lane');
+      for (const lane of lanes) laneSelect.append(new Option(lane.label || lane.role || 'Lane', lane.id));
+      laneSelect.value = element.laneId;
+      laneSelect.addEventListener('change', () => {
+        let p = getProject();
+        const current = p.elements.find((item) => item.id === elementId);
+        if (!current || !p.lanes.some((lane) => lane.id === laneSelect.value)) return;
+        const previousLaneId = current.laneId;
+        p = moveElement(p, elementId, current.timeline.startMs || 0, laneSelect.value);
+        setProject(p);
+        refreshLaneId(p, previousLaneId);
+        refreshLaneId(p, laneSelect.value);
+      });
+    }
+    if (laneSelect) numGrid.append(mkFld('Lane', laneSelect));
     numGrid.append(mkFld('Start (s)', startInp), mkFld('End (s)', endInp), mkFld('Duration', durSpan));
 
     const gainS = mkSliderPair('Gain', 0, 2, 0.01, element.audio?.gain ?? 1, (v) => `${Math.round(v * 100)}%`);
@@ -448,19 +482,20 @@ export function buildSelectionPanel({ getProject, setProject, getClipLanes, getV
     sliders.className = 'al-sliders';
     sliders.append(gainS.el, fiS.el, foS.el);
     panelEl.append(head, numGrid, sliders);
-    refs = { startInp, endInp, durSpan, gainS, fiS, foS };
+    refs = { startInp, endInp, durSpan, gainS, fiS, foS, laneSelect };
   }
 
   function refreshValues(element) {
     if (!refs) return;
     const { startMs, lenMs } = elData(element);
-    const { startInp, endInp, durSpan, gainS, fiS, foS } = refs;
+    const { startInp, endInp, durSpan, gainS, fiS, foS, laneSelect } = refs;
     if (document.activeElement !== startInp) startInp.value = String(r2(startMs / 1000));
     if (document.activeElement !== endInp) endInp.value = String(r2((startMs + lenMs) / 1000));
     durSpan.textContent = fmtTime(lenMs / 1000);
     if (document.activeElement !== gainS.input) gainS.input.value = String(element.audio?.gain ?? 1);
     if (document.activeElement !== fiS.input) fiS.input.value = String(element.audio?.fadeInMs ?? 0);
     if (document.activeElement !== foS.input) foS.input.value = String(element.audio?.fadeOutMs ?? 0);
+    if (laneSelect && document.activeElement !== laneSelect) laneSelect.value = element.laneId;
   }
 
   return {
@@ -468,10 +503,15 @@ export function buildSelectionPanel({ getProject, setProject, getClipLanes, getV
     update(project) {
       const element = selectedElementInfo(project);
       if (!element) {
-        if (currentElementId !== null) { currentElementId = null; refs = null; panelEl.replaceChildren(hint); }
+        if (currentElementId !== null) { currentElementId = null; currentLaneSignature = ''; refs = null; panelEl.replaceChildren(hint); }
         return;
       }
-      if (element.id !== currentElementId) { currentElementId = element.id; rebuildPanel(element); }
+      const laneSignature = project.lanes.map((lane) => `${lane.id}:${lane.label}:${lane.role}`).join('|');
+      if (element.id !== currentElementId || laneSignature !== currentLaneSignature) {
+        currentElementId = element.id;
+        currentLaneSignature = laneSignature;
+        rebuildPanel(element);
+      }
       else refreshValues(element);
     },
   };

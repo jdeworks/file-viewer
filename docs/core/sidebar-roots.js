@@ -186,8 +186,9 @@ export function renderSidebarRoots(activeRoot = null, activeInnerPath = null, { 
   }
   const active = activeRoot || list.find((root) => root.id === state.activeSidebarRootId) || list[list.length - 1];
   activateSidebarRoot(active, { skipCapture });
+  const previouslyOpen = state.treeApi?.getOpenFolders?.() || [];
   state.treeApi?.stop?.();
-  state.treeApi = renderTree($('ftBody'), buildTree(displayEntries()), {
+  state.treeApi = renderTree($('ftBody'), buildTree(displayEntries(), { lazy: true }), {
     onOpen: async (node) => {
       const root = roots().find((item) => item.id === node.sidebarRootId);
       if (!root || !loadIntake) return;
@@ -224,11 +225,19 @@ export function renderSidebarRoots(activeRoot = null, activeInnerPath = null, { 
             })) !== false;
           } else {
             const edited = root.folderEdits?.get(innerPath);
+            const targetIntake = edited != null
+              ? withSourceText(entry.intake, edited)
+              : entry.intake;
             state._skipDiscardGuard = true;
             state._skipSidebarRoot = true;
-            loaded = (await loadIntake(edited != null
-              ? withSourceText(entry.intake, edited)
-              : entry.intake, { sidebarNavigationToken: navigationToken })) !== false;
+            const loadResult = await loadIntake(targetIntake, {
+              sidebarNavigationToken: navigationToken,
+            });
+            // A same-document reactivation (for example a type/settings refresh) can supersede
+            // this request after it has already committed the exact target intake. Treat that as
+            // a successful root switch; rolling back the sidebar while leaving the target editor
+            // visible produces mismatched Save/Delete authorization.
+            loaded = loadResult !== false || state.intake === targetIntake;
           }
           if (loaded) {
             state.currentFolderPath = root.kind === 'file' ? null : innerPath;
@@ -276,9 +285,11 @@ export function renderSidebarRoots(activeRoot = null, activeInnerPath = null, { 
         && !state.companionOperationToken
         && document.body.classList.contains('companion-folder-active');
     },
-    initialOpenDepth: Infinity,
+    initialOpenDepth: 0,
   });
-  const activePath = activeInnerPath || active.currentFolderPath || (active.treeEntries || [])[0]?.path;
+  if (previouslyOpen.length) state.treeApi.openPaths(previouslyOpen);
+  const activePath = activeInnerPath || active.currentFolderPath
+    || (active.kind === 'file' ? (active.treeEntries || [])[0]?.path : null);
   if (activePath) {
     let full;
     if (active.kind === 'file') {

@@ -23,8 +23,9 @@ File Viewer has different network behavior depending on the mode you choose:
 | Mode | What to expect |
 | --- | --- |
 | Browser mode (default) | By default, app requests stay on the app's own origin. The normal browser workflow is designed without file uploads, accounts, analytics, telemetry, or runtime CDN dependencies. |
-| Documents with external resources | A file can reference remote images, media, fonts, or links. Preview behavior varies by format; an allowed resource can make a browser request to its referenced origin. Markdown remote images are shown without loading them by default. |
-| Confirmed script-enabled HTML | HTML previews are sanitized by default. If you explicitly confirm that a document's scripts may run, that document can make network requests according to its own code. |
+| Documents with external resources | Eager off-origin resources in Markdown, safe HTML, SVG, email, and EPUB previews are blocked by default. Ordinary links remain user-initiated; a blocked Markdown image exposes a labelled source link that states it will request that exact URL in a new tab. |
+| HTML dependency presets | Selecting Bootstrap or Tailwind makes no request. **Load** opens a separate confirmation listing every exact CSS/JavaScript URL; uncached resources use credential-free, no-referrer CORS GETs and successful responses may enter the dedicated dependency cache. |
+| Confirmed script-enabled HTML | HTML previews are sanitized by default. The raw-document confirmation explains that trusted HTML can request images, styles, fonts, media, frames, form targets, and URLs computed by JavaScript. It remains in an opaque-origin script sandbox, but its network behavior is controlled by the document. |
 | Optional Companion | The desktop Companion is opt-in. When enabled, the browser exchanges selected file paths and bytes with its local service at `127.0.0.1` for watched-folder workflows and save-back. |
 
 Browser developer tools remain the best way to inspect requests for your browser, deployment, and selected file. The viewer is designed so ordinary file handling stays in the tab; external references are not the same as uploading the opened file, but they can still disclose normal request metadata to their destination.
@@ -99,6 +100,17 @@ node tests/smoke.mjs
 ```
 
 The smoke test serves the app and drives Chromium while checking for unexpected off-origin requests in the default browser mode. The gate has three modes: `--fast` for every push, bare `./scripts/check.sh` as the release gate, and `--exhaustive` for the full open-everything sweep (add `--dry-run` to any mode to print its selection without launching a browser).
+
+To verify the real static host negotiates compression after a deployment, run:
+
+```sh
+node scripts/check-deployed-compression.mjs
+# or: node scripts/check-deployed-compression.mjs https://example.test/file-viewer/
+```
+
+This checks representative JavaScript and CSS responses for `Content-Encoding: br|gzip` and
+`Vary: Accept-Encoding`. The repository deliberately does not treat nearby `.gz` or `.br` files
+as proof of compression because a static host must be configured to serve the matching headers.
 
 ## License
 

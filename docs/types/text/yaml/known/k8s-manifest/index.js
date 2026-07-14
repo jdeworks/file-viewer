@@ -7,6 +7,9 @@ export default {
   match: (intake, baseType) => {
     if (baseType.id !== 'yaml' && baseType.id !== 'docker-compose') return false;
     const text = intake.textSample || intake.text || '';
+    const name = (intake.filename || intake.name || '').replace(/\\/g, '/').split('/').pop().toLowerCase();
+    // These cluster-wide samples have a more specific structural summary later in the registry.
+    if (name === 'cluster.yaml' || name === 'cluster-config.yaml') return false;
     // Defer to the specialized cert-manager viewer for its resources (it renders issuer/ACME
     // details this generic manifest view can't). matchKnown() is first-match-wins in registry
     // order, and k8s-manifest precedes cert-manager — so bow out explicitly here.
@@ -21,6 +24,7 @@ export default {
     if (!apiMatch && !kindMatch) return false;
     const api = (apiMatch?.[1] || '').trim();
     const kind = (kindMatch?.[1] || '').trim();
+    if (kind === 'StorageClass' || kind === 'PriorityClass') return false;
     return K8S_API_VERSIONS.test(api) || K8S_KINDS.has(kind);
   },
   loadRenderer: () => import('./renderer.js'),

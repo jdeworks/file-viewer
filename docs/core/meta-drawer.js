@@ -2,12 +2,13 @@
 // per-type extracted metadata (EXIF, ID3, PDF info, …). Extracted from app.js; reads shared state.
 import { state, $, escapeHtml, formatBytes } from './state.js';
 import { getTypeInfo, getTypeFeatures } from './type-info.js';
-import { genericMetadata } from './generic-metadata.js';
+import { genericMetadata, localFingerprintMetadata } from './generic-metadata.js';
 import { META_SECTIONS } from './metadata-helpers.js';
 
 const SENSITIVE_KEY_RE = /(SECRET|PASSWORD|TOKEN|KEY|PRIVATE)/i;
-const ADVANCED_LABELS = new Set(['MIME', 'Modified', 'Extension', 'Content kind', 'Loaded bytes', 'Byte order mark']);
+const ADVANCED_LABELS = new Set(['MIME', 'Modified', 'Extension', 'Content kind', 'Loaded bytes', 'Byte order mark', 'SHA-256 (local)']);
 const SECURITY_LABELS = new Set(['Filename risk', 'Filename warnings', 'Archive entry risk', 'Archive entry warnings']);
+const SECURITY_LABEL_RE = /(?:risk|warning|security|sensitive|credential|jwt|oauth|encrypt|signature|scripts?|inline handlers?|remote|external)/i;
 const TEXT_FACT_LABELS = new Set(['Line endings', 'Line break count', 'Lines', 'Blank lines', 'Longest line', 'Trailing newline']);
 const BUILT_IN_SECTIONS = new Set(Object.values(META_SECTIONS));
 
@@ -263,16 +264,36 @@ export function dedupeMetadataRows(rows) {
     const prev = explicit.get(row.dedupeKey);
     if (!prev || (row.priority || 0) > (prev.priority || 0)) explicit.set(row.dedupeKey, { row, priority: row.priority || 0 });
   });
+  const candidates = rows.filter((row) => !row.dedupeKey || explicit.get(row.dedupeKey)?.row === row);
+  const exact = new Map();
+  const sectionRank = (section) => {
+    if (section === META_SECTIONS.security) return 5;
+    if (!BUILT_IN_SECTIONS.has(section)) return 4;
+    if (section === META_SECTIONS.type) return 3;
+    if (section === META_SECTIONS.text) return 2;
+    return 1;
+  };
+  for (const row of candidates) {
+    const section = row.section || fallbackSection(row.label);
+    const key = `${row.label.toLowerCase()}\u0000${String(row.value)}`;
+    const prev = exact.get(key);
+    const rank = sectionRank(section);
+    if (!prev || rank > prev.rank || (rank === prev.rank && (row.priority || 0) > (prev.row.priority || 0))) {
+      exact.set(key, { row, rank });
+    }
+  }
   const seenLabels = new Set();
   const seenExplicit = new Set();
   const out = [];
-  for (const row of rows) {
+  for (const row of candidates) {
     if (row.dedupeKey) {
-      if (explicit.get(row.dedupeKey)?.row !== row) continue;
       if (seenExplicit.has(row.dedupeKey)) continue;
       seenExplicit.add(row.dedupeKey);
     }
-    const key = `${row.section || ''}\u0000${row.label.toLowerCase()}`;
+    const section = row.section || fallbackSection(row.label);
+    const exactKey = `${row.label.toLowerCase()}\u0000${String(row.value)}`;
+    if (exact.get(exactKey)?.row !== row) continue;
+    const key = `${section}\u0000${row.label.toLowerCase()}`;
     if (seenLabels.has(key)) continue;
     seenLabels.add(key);
     out.push(row);
@@ -288,12 +309,14 @@ function rowFromMetadata(entry) {
   return Array.isArray(entry) ? row(entry[0], entry[1]) : entry;
 }
 
-function fallbackSection(label) {
+export function metadataSectionForLabel(label) {
   if (ADVANCED_LABELS.has(label)) return META_SECTIONS.advanced;
-  if (SECURITY_LABELS.has(label)) return META_SECTIONS.security;
+  if (SECURITY_LABELS.has(label) || SECURITY_LABEL_RE.test(label)) return META_SECTIONS.security;
   if (TEXT_FACT_LABELS.has(label)) return META_SECTIONS.text;
   return META_SECTIONS.type;
 }
+
+const fallbackSection = metadataSectionForLabel;
 
 function rowsForSection(rows, sectionTitle) {
   return rows
@@ -331,12 +354,14 @@ export async function buildMetadata() {
   const basics = [
     ['Name', i.filename],
     ['Type', displayTypeLabel()],
+    ...(state.known && !state.forceBase ? [['Enhanced view', state.known.label || state.known.id]] : []),
     ['Size', formatBytes(i.size)],
   ];
   const rows = [
     row('MIME', i.mimeType || '—', META_SECTIONS.advanced),
     row('Modified', i.lastModified ? new Date(i.lastModified).toLocaleString() : '—', META_SECTIONS.advanced),
     ...genericMetadata(i).map(rowFromMetadata),
+    ...(await localFingerprintMetadata(i)).map(rowFromMetadata),
   ];
   if (state.type.loadMetadata) {
     try { await appendExtractedRows(rows, state.type.loadMetadata, i); } catch {}
@@ -355,6 +380,6 @@ export async function buildMetadata() {
   appendSection(body, META_SECTIONS.advanced, rowsForSection(unique, META_SECTIONS.advanced), false);
   const note = document.createElement('p'); note.className = 'muted'; note.style.marginTop = '12px';
   note.style.fontSize = '12px';
-  note.textContent = 'Note: browsers expose only the file’s modified time, never its OS creation time. “Created” dates come only from inside the file (e.g. PDF/EXIF).';
+  note.textContent = 'SHA-256 fingerprints are calculated locally from complete loaded bytes; neither the hash nor the file is sent. Browsers expose only the file’s modified time, never its OS creation time. “Created” dates come only from inside the file (e.g. PDF/EXIF).';
   body.appendChild(note);
 }

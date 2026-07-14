@@ -40,6 +40,7 @@ export function queryEls(host, canEdit) {
     undoBtn: qe('.imgv-undo'),
     redoBtn: qe('.imgv-redo'),
     exportFmt: qe('.imgv-export-fmt'),
+    exportScale: qe('.imgv-export-scale'),
     editFont: qe('.imgv-text-font'),
     bgBtn: qe('.imgv-bg-btn'),
     bgTol: qe('.imgv-bg-tol'),

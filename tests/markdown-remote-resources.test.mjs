@@ -48,16 +48,17 @@ try {
 
   assert.deepEqual(emittedRemoteRequests, [], 'default Markdown preview must emit no remote resource request');
   assert.equal(await frame.locator('.md-remote-image-blocked').count(), 4, 'remote HTML and Markdown images become visible notices');
-  assert.equal(
-    await frame.locator('.md-remote-image-blocked').first().textContent(),
-    'Remote image blocked: Quarterly chart',
-    'the blocked image keeps useful alt-text context',
-  );
+  const firstNotice = await frame.locator('.md-remote-image-blocked').first().textContent();
+  assert.match(firstNotice, /^Remote image blocked: Quarterly chart — open remote source/,
+    'the blocked image keeps useful alt-text context');
+  assert.match(firstNotice, /requests this exact URL only after you click/,
+    'the explicit source opt-in states its network effect');
   assert.equal(
     await frame.locator(`.md-remote-image-blocked a[href="${remoteUrls[0]}"]`).count(),
     1,
     'the blocked Markdown image keeps a user-visible link to its source',
   );
+  assert.equal(await frame.locator(`.md-remote-image-blocked a[href="${remoteUrls[0]}"]`).getAttribute('target'), '_blank');
   assert.equal(await frame.locator('svg image[href], svg use[href]').count(), 0, 'remote SVG resource references are removed');
 
   const safeSources = await frame.locator('img').evaluateAll((images) => images.map((img) => img.getAttribute('src')));

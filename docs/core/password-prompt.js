@@ -6,7 +6,7 @@
 
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
-export function showPasswordPrompt(container, { filename = '', hint = '', error = '' } = {}) {
+export function showPasswordPrompt(container, { filename = '', hint = '', error = '', signal = null } = {}) {
   return new Promise((resolve) => {
     container.innerHTML = `
       <div class="pw-prompt">
@@ -31,10 +31,20 @@ export function showPasswordPrompt(container, { filename = '', hint = '', error 
 
     input.focus();
 
-    const doSubmit = () => { if (input.value) resolve(input.value); };
+    let settled = false;
+    const finish = (value) => {
+      if (settled) return;
+      settled = true;
+      signal?.removeEventListener('abort', onAbort);
+      resolve(value);
+    };
+    const onAbort = () => finish(null);
+    const doSubmit = () => { if (input.value) finish(input.value); };
     submit.addEventListener('click', doSubmit);
     input.addEventListener('keydown', (e) => { if (e.key === 'Enter') doSubmit(); });
-    cancel.addEventListener('click', () => resolve(null));
+    cancel.addEventListener('click', () => finish(null));
+    if (signal?.aborted) finish(null);
+    else signal?.addEventListener('abort', onAbort, { once: true });
 
     // Attach a helper so callers can show inline errors (e.g. wrong password) without
     // re-creating the whole prompt. Clears the input and re-focuses for the next attempt.

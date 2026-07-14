@@ -46,7 +46,7 @@ export const EXPORT_PRESETS = [
     cleanupChain: 'spoken-cleanup',
   },
   {
-    id: 'acx-mp3', label: 'Audiobook ACX MP3 (mono, 44.1k, 192k CBR, −20 LUFS)', kind: 'audio',
+    id: 'acx-mp3', label: 'Audiobook ACX-targeted MP3 (mono, 44.1k, 192k CBR, −20 LUFS)', kind: 'audio',
     container: 'mp3', bitrate: '192k', sampleRate: 44100, channels: 1,
     lufsTarget: -20, truePeak: -3, cbr: true,
     acxChain: true,
@@ -131,11 +131,11 @@ export function resolveExportAudioSettings(p, settings = {}) {
   return chainSettings;
 }
 
-// Human-readable params summary fragment ("ACX chain, mono, 44.1k, 192k CBR,
+// Human-readable params summary fragment ("ACX-targeted chain, mono, 44.1k, 192k CBR,
 // normalize −20 LUFS").
 export function describeParams(p) {
   const bits = [];
-  if (p.acxChain) bits.push('ACX chain');
+  if (p.acxChain) bits.push('ACX-targeted chain');
   if (p.cleanupChain) bits.push('cleanup: de-hum, de-noise, de-plosive, leveler');
   if (p.masterBus) bits.push('master bus');
   if (p.video) {

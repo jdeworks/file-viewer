@@ -334,23 +334,23 @@ export function describeDynamics(dyn) {
   return bits.join(', ');
 }
 
-// ── P8c/P8e: ACX silence-cut + room-tone + one-click compliant export args ─────
+// ── P8c/P8e: ACX-targeted encoding helpers ────────────────────────────────────
 //
-// silenceremove trims dead air. We trim the leading silence (start_periods=1) and,
-// via the area/all-passing form, also clamp long internal gaps. opts:
+// Optional silenceremove trims only the leading/trailing edges. It is not enabled by
+// the ACX preset because automatic silence removal can discard real room tone. opts:
 //   { thresholdDb?:−50, minSilenceSec?:0.4 }. PURE.
 export function silenceRemoveFilter(opts = {}) {
   const thDb = isFinite(Number(opts.thresholdDb)) ? round(Number(opts.thresholdDb)) : -50;
   const dur = isFinite(Number(opts.minSilenceSec)) ? round(Math.max(0.05, Number(opts.minSilenceSec))) : 0.4;
-  // Trim leading + trailing dead air; stop_periods=-1 with detection clamps trailing.
+  // Positive stop_periods trims the trailing edge without collapsing internal pauses.
   return 'silenceremove=start_periods=1:start_duration=' + dur
     + ':start_threshold=' + thDb + 'dB'
-    + ':stop_periods=-1:stop_duration=' + dur + ':stop_threshold=' + thDb + 'dB';
+    + ':stop_periods=1:stop_duration=' + dur + ':stop_threshold=' + thDb + 'dB';
 }
 
-// Head/tail room-tone pad via apad + adelay. ACX wants 0.5–1 s head / 1–5 s tail of
-// quiet room tone. We synthesize it as silence padding (a true room-tone slice would
-// need a second input); apad extends the tail, adelay shifts the head. opts:
+// Optional head/tail DIGITAL-SILENCE pad via apad + adelay. This is intentionally not
+// enabled by the ACX preset: digital silence is not clean room tone. The helper remains
+// available for explicit generic spacing operations. opts:
 //   { headSec?:0.75, tailSec?:2 }. Returns '' when both are 0.
 export function roomTonePadFilter(opts = {}) {
   const head = Math.max(0, Number(opts.headSec ?? 0.75));
@@ -361,19 +361,20 @@ export function roomTonePadFilter(opts = {}) {
   return parts.join(',');
 }
 
-// Full ACX `-af` chain: loudnorm (−20 LUFS / −3 dBTP) → silence-cut → room-tone pad.
-// opts: { lufs?:−20, truePeak?:−3, silence?:{...}, pad?:{...} }. PURE.
+// ACX-targeted `-af` chain. Loudness/peak processing is automatic; edge trimming and
+// digital-silence padding are explicit opt-ins so source room tone is preserved.
+// opts: { lufs?:−20, truePeak?:−3, silence?:{...}|false, pad?:{...} }. PURE.
 export function buildAcxFilterChain(opts = {}) {
   const lufs = isFinite(Number(opts.lufs)) ? round(Number(opts.lufs)) : -20;
   const tp = isFinite(Number(opts.truePeak)) ? round(Number(opts.truePeak)) : -3;
   const out = ['loudnorm=I=' + lufs + ':TP=' + tp + ':LRA=11'];
-  if (opts.silence !== false) out.push(silenceRemoveFilter(opts.silence || {}));
-  const pad = roomTonePadFilter(opts.pad || {});
+  if (opts.silence && opts.silence !== false) out.push(silenceRemoveFilter(opts.silence));
+  const pad = opts.pad ? roomTonePadFilter(opts.pad) : '';
   if (pad) out.push(pad);
   return out.join(',');
 }
 
-// Full ffmpeg arg list for the one-click ACX export (P8e). PURE — produces exactly
+// Full ffmpeg arg list for the ACX-targeted export (P8e). PURE — produces exactly
 // `-ac 1 -ar 44100 -c:a libmp3lame -b:a 192k` + the ACX -af chain. inputName/outputName
 // are MEMFS paths the caller writes/reads.
 export function buildAcxExportArgs(inputName, outputName, opts = {}) {

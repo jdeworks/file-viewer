@@ -156,6 +156,7 @@ export async function mountAudioModePanels({
   trackListEl,
   enableFfmpeg,
   exportPanel,
+  workingCopy,
   listenSurfaceEl,
   onRegisterController,
   onReleaseController,
@@ -179,7 +180,7 @@ export async function mountAudioModePanels({
   registerMode('tune', 'Tune', async (panel) => mountTuneMode(panel, mediaElement));
   registerMode('qc', 'QC', async (panel) => {
     const { mountAcxQcPanel } = await import('./qc-ui.js');
-    return mountAcxQcPanel(panel, intake, mediaElement);
+    return mountAcxQcPanel(panel, intake, mediaElement, { workingCopy });
   });
   registerMode('export', 'Export', async (panel) => {
     if (!enableFfmpeg) {
@@ -198,7 +199,7 @@ export async function mountAudioModePanels({
   });
   registerMode('mix', 'Mix', async (panel) => {
     const { mountModularAudioMixer } = await import('./mixer/mixer-audio-multi.js');
-    return mountModularAudioMixer(panel, intake, mediaElement, { enableFfmpeg });
+    return mountModularAudioMixer(panel, intake, mediaElement, { enableFfmpeg, workingCopy });
   });
 
   const audioListenMode = states.states.get('listen');
@@ -222,6 +223,7 @@ export async function mountVideoModePanels({
   videoStudio,
   editorPanel,
   exportPanel,
+  workingCopy,
   onRegisterController,
   onReleaseController,
 }) {
@@ -259,7 +261,7 @@ export async function mountVideoModePanels({
   });
   registerMode('timeline', 'Timeline', async (panel) => {
     const { mountModularVideoSourceMixer } = await import('./mixer/mixer-video-source.js');
-    const mixerController = mountModularVideoSourceMixer(panel, intake, mediaElement, { enableFfmpeg });
+    const mixerController = mountModularVideoSourceMixer(panel, intake, mediaElement, { enableFfmpeg, workingCopy });
     if (!enableFfmpeg) {
       panel.append(buildFfNotEnabledHint(
         'Enable <strong>Media transcoding</strong> in <strong>Settings → Advanced</strong> to unlock conversion, proxy generation, and final video render.',

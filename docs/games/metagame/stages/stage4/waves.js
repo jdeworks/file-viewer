@@ -1,6 +1,7 @@
 // waves.js — Stage 4 Fractal Bastion: wave composition definitions (data + a little shaping logic).
-// engine.js calls waveComposition to populate the spawn queue. Waves 1–5 (PLACE verb) for now;
-// later increments extend this toward wave 31 (the boss). Pure/deterministic from (waveNum, seed).
+// engine.js calls waveComposition to populate the legacy 31-wave composition table. The live
+// five-map campaign shapes its 90 waves through wavegen.js; this table remains deterministic support
+// for the engine/unit surface and the original single-map progression.
 
 // Pacing: a tighter spawn cadence (~0.7s) so long campaign maps don't drag — combined with the
 // fast-forward (1×/2×/3×) and player-driven wave starts in the renderer, forced time comes from the
@@ -50,8 +51,8 @@ const WAVES = {
   31: { isBoss: true, enemies: [] }
 };
 
-// Composition for a wave. Authored waves use the table; unauthored waves (6+ until built) fall back
-// to a deterministic scaling recursion wave so the engine never crashes on a missing definition.
+// Composition for a wave. Authored waves use the table; overflow waves fall back to a deterministic
+// scaling recursion wave so prestige/debug callers never crash on a missing definition.
 export function waveComposition(waveNum, seed) {
   const n = Math.max(1, Math.trunc(Number(waveNum)) || 1);
   const authored = WAVES[n];

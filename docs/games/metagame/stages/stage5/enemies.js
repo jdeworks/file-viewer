@@ -1,7 +1,7 @@
 // enemies.js — Stage 5 Protocol Codex enemy archetypes.
 //
 // Each archetype declares base stats and a looping intent SCRIPT (telegraphed one step ahead in the
-// UI). instantiateEnemy(id, act) returns a fresh combat-ready enemy scaled by act (1..4).
+// UI). instantiateEnemy(id, act) returns a fresh combat-ready enemy scaled by act (1..6).
 // Intent shape: { label, attack?, hits?, block?, pierce?, mirror?, applyPlayer?: {status, value}, applySelf?: {…} }.
 //
 // Tiers: "standard" trash (scales with act), "elite" (lethal mid-act spikes), "boss" (per-act

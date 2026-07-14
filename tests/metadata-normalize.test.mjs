@@ -1,12 +1,13 @@
 import assert from 'node:assert/strict';
 
-import { dedupeMetadataRows, normalizeMetadata } from '../docs/core/meta-drawer.js';
+import { dedupeMetadataRows, metadataSectionForLabel, normalizeMetadata } from '../docs/core/meta-drawer.js';
 import { META_KEYS, META_SECTIONS, textFact, securityFact } from '../docs/core/metadata-helpers.js';
-import { genericMetadata } from '../docs/core/generic-metadata.js';
+import { genericMetadata, localFingerprintMetadata } from '../docs/core/generic-metadata.js';
 import { extract as markdownMeta } from '../docs/types/markdown/metadata.js';
 import { extract as codeMeta } from '../docs/types/text/code/metadata.js';
 import { extractMetadata as sshMeta } from '../docs/types/text/ssh-config/metadata.js';
 import { extractMetadata as wasmMeta } from '../docs/types/binary/wasm/metadata.js';
+import { riskyArchiveEntries } from '../docs/types/zip/metadata.js';
 
 function value(rows, label) {
   const row = rows.find((r) => r.label === label);
@@ -103,6 +104,68 @@ function value(rows, label) {
 }
 
 {
+  const rows = normalizeMetadata(genericMetadata({
+    filename: 'holiday.jpg',
+    mimeType: 'image/jpeg',
+    bytes: Uint8Array.from([0x4d, 0x5a, 0x90, 0x00]),
+    text: null,
+    isBinary: true,
+    size: 4,
+    loadedBytes: 4,
+  }));
+  assert.equal(value(rows, 'Detected content'), 'Windows PE/DOS executable');
+  assert.equal(value(rows, 'Content risk'), 'high (90/100)');
+  assert.match(value(rows, 'Content warnings'), /Extension \.jpg does not match/);
+  assert.match(value(rows, 'Content warnings'), /MIME type image\/jpeg does not match/);
+  assert.equal(rows.find((r) => r.label === 'Content risk').section, META_SECTIONS.security);
+}
+
+{
+  const rows = normalizeMetadata(genericMetadata({
+    filename: 'document.pdf',
+    mimeType: 'application/pdf',
+    bytes: Uint8Array.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+    text: null,
+    isBinary: true,
+    size: 8,
+    loadedBytes: 8,
+  }));
+  assert.equal(value(rows, 'Detected content'), 'PNG image');
+  assert.equal(value(rows, 'Content risk'), 'caution (45/100)');
+}
+
+{
+  const rows = normalizeMetadata(genericMetadata({
+    filename: 'legacy.txt',
+    mimeType: 'text/plain; charset=utf-8',
+    bytes: Uint8Array.from([0xff, 0xfe, 0x41, 0x00]),
+    text: 'A',
+    isBinary: false,
+    size: 4,
+    loadedBytes: 4,
+    encoding: 'UTF-16 LE',
+    encodingSource: 'BOM',
+    encodingWarnings: ['BOM says UTF-16 LE, but the MIME charset says UTF-8; the BOM took precedence.'],
+  }));
+  assert.equal(value(rows, 'Text encoding'), 'UTF-16 LE (BOM)');
+  assert.match(value(rows, 'Encoding warnings'), /BOM says UTF-16 LE/);
+}
+
+{
+  const archive = riskyArchiveEntries([
+    { name: 'docs/invoice.pdf.exe' },
+    { name: 'images/photo.jpg\u202e.exe' },
+    { name: 'safe/readme.txt' },
+  ]);
+  assert.equal(archive.score, 100);
+  assert.deepEqual(archive.entries.map((entry) => entry.name), [
+    'docs/invoice.pdf.exe',
+    'images/photo.jpg\u202e.exe',
+  ]);
+  assert.equal(archive.entries[0].level, 'high');
+}
+
+{
   const rows = normalizeMetadata({ fields: [{ label: 'Rows', value: 4 }] });
   assert.equal(value(rows, 'Rows'), '4');
 }
@@ -190,6 +253,56 @@ function value(rows, label) {
     'Code metrics:Lines=8',
     'Text structure:Line break count=9',
   ]);
+}
+
+{
+  const rows = normalizeMetadata([
+    { label: 'Records', value: 4, section: META_SECTIONS.advanced },
+    { label: 'Records', value: 4, section: META_SECTIONS.type },
+    { label: 'Records', value: 7, section: 'Container details' },
+  ]);
+  const deduped = dedupeMetadataRows(rows);
+  assert.deepEqual(deduped.map((r) => `${r.section}:${r.label}=${r.value}`), [
+    `${META_SECTIONS.type}:Records=4`,
+    'Container details:Records=7',
+  ]);
+}
+
+{
+  assert.equal(metadataSectionForLabel('Sensitive variables'), META_SECTIONS.security);
+  assert.equal(metadataSectionForLabel('Detected JWT'), META_SECTIONS.security);
+  assert.equal(metadataSectionForLabel('Inline handlers'), META_SECTIONS.security);
+  assert.equal(metadataSectionForLabel('External resources'), META_SECTIONS.security);
+  assert.equal(metadataSectionForLabel('Functions'), META_SECTIONS.type);
+}
+
+{
+  let calls = 0;
+  const subtle = {
+    async digest(algorithm, bytes) {
+      calls += 1;
+      assert.equal(algorithm, 'SHA-256');
+      assert.deepEqual(Array.from(bytes), [1, 2, 3]);
+      return Uint8Array.from({ length: 32 }, (_, i) => i).buffer;
+    },
+  };
+  const rows = normalizeMetadata(await localFingerprintMetadata({
+    bytes: new Uint8Array([1, 2, 3]),
+    size: 3,
+    loadedBytes: 3,
+  }, { subtle }));
+  assert.equal(calls, 1);
+  assert.equal(value(rows, 'SHA-256 (local)'), '000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f');
+  assert.equal(rows[0].section, META_SECTIONS.advanced);
+
+  const partial = normalizeMetadata(await localFingerprintMetadata({
+    bytes: new Uint8Array([1, 2, 3]),
+    size: 9,
+    loadedBytes: 3,
+    truncated: true,
+  }, { subtle }));
+  assert.equal(calls, 1, 'partial files must not be fingerprinted');
+  assert.match(value(partial, 'SHA-256 (local)'), /complete file is not loaded/);
 }
 
 {

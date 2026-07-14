@@ -75,17 +75,24 @@
 .preview-host .comic-doc { position: absolute; inset: 0; display: flex; flex-direction: column; background: var(--bg); }
 .comic-bar { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--border); background: var(--bg-2); }
 .comic-info { font-size: 12px; color: var(--fg-2); flex: 1; }
-.comic-bar .comic-spread { font-size: 12px; padding: 4px 12px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); color: var(--fg); cursor: pointer; }
-.comic-bar .comic-spread.active { border-color: var(--accent); color: var(--accent); }
+.comic-bar .comic-setting { font-size: 12px; padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); color: var(--fg); cursor: pointer; white-space: nowrap; }
+.comic-bar .comic-setting.active { border-color: var(--accent); color: var(--accent); }
 .comic-pages { flex: 1; overflow: auto; padding: 16px; display: flex; flex-direction: column; align-items: center; gap: 12px; }
 .comic-page-wrap { max-width: 100%; display: flex; justify-content: center; }
 .comic-page { max-width: min(900px, 100%); height: auto; box-shadow: 0 1px 10px rgba(0,0,0,.25); background: #fff; border-radius: 2px; }
+.comic-doc.comic-fit-page .comic-page-wrap { width: 100%; min-height: calc(100vh - 120px) !important; align-items: center; }
+.comic-doc.comic-fit-page .comic-page { width: auto; max-width: 100%; max-height: calc(100vh - 120px); object-fit: contain; }
 .comic-note { margin: 24px auto; max-width: 560px; padding: 16px 18px; border: 1px solid var(--border); border-radius: 10px; background: var(--bg-2); color: var(--fg-2); font-size: 14px; line-height: 1.5; }
 .comic-note code { font-size: 12px; }
 @media (min-width: 761px) {
   .comic-doc.comic-spread-on .comic-pages { flex-flow: row wrap; align-items: flex-start; align-content: flex-start; justify-content: center; gap: 12px; }
   .comic-doc.comic-spread-on .comic-page-wrap { flex: 0 1 calc(50% - 12px); min-width: 0; }
   .comic-doc.comic-spread-on .comic-page { max-width: 100%; }
+}
+@media (max-width: 720px) {
+  .comic-bar { flex-wrap: wrap; }
+  .comic-bar .comic-info { flex-basis: 100%; }
+  .comic-bar .comic-setting { flex: 1 1 auto; }
 }
 /* PDF viewer + lite editor (parent pane). */
 .preview-host .pdf-doc { position: absolute; inset: 0; display: flex; flex-direction: column; background: var(--bg); }
@@ -158,10 +165,18 @@
 .stl-bar button { margin-left: 0; font-size: 12px; padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); color: var(--fg); cursor: pointer; }
 .stl-bar .stl-reset { margin-left: auto; }
 .stl-color { width: 28px; height: 28px; border: 1px solid var(--border); border-radius: 6px; padding: 1px; cursor: pointer; background: none; }
-.stl-stage { flex: 1; min-height: 0; overflow: hidden; }
+.stl-stage { position: relative; flex: 1; min-height: 0; overflow: hidden; }
 .stl-canvas { display: block; touch-action: none; cursor: grab; }
 .stl-canvas:active { cursor: grabbing; }
 .stl-empty { color: var(--fg-2); padding: 16px; }
+.stl-bar button.active { border-color: var(--accent); color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--bg)); }
+.mv-axes { position: absolute; left: 8px; bottom: 8px; pointer-events: none; background: color-mix(in srgb, var(--bg) 78%, transparent); border: 1px solid var(--border); border-radius: 8px; }
+.mv-stats-panel { position: absolute; z-index: 2; top: 10px; right: 10px; width: min(300px, calc(100% - 20px)); max-height: calc(100% - 20px); overflow: auto; padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: color-mix(in srgb, var(--bg) 96%, transparent); box-shadow: 0 4px 18px rgb(0 0 0 / .14); }
+.mv-stats-panel h3 { margin: 0 0 8px; font-size: 14px; }
+.mv-stats-panel dl { display: grid; grid-template-columns: minmax(90px, auto) 1fr; gap: 6px 10px; margin: 0; font-size: 12px; }
+.mv-stats-panel dt { color: var(--fg-2); }
+.mv-stats-panel dd { margin: 0; overflow-wrap: anywhere; }
+.mv-measure-readout { position: absolute; z-index: 2; left: 50%; bottom: 12px; translate: -50% 0; max-width: calc(100% - 190px); padding: 5px 9px; border: 1px solid var(--border); border-radius: 999px; background: color-mix(in srgb, var(--bg) 94%, transparent); color: var(--fg); font-size: 12px; white-space: nowrap; }
 @media (max-width: 520px) {
   .stl-bar { flex-wrap: wrap; gap: 5px; padding: 6px 8px; align-content: flex-start; }
   .stl-info { flex: 1 0 100%; white-space: normal; line-height: 1.25; }
@@ -432,6 +447,8 @@
 /* CSV / TSV table editor (parentNode) */
 .csv-doc { display: flex; flex-direction: column; height: 100%; overflow: hidden; }
 .csv-info { display: flex; gap: 10px; padding: 6px 12px; background: var(--bg-2); border-bottom: 1px solid var(--border); font-size: 12px; }
+.csv-warning { color: #8a5a00; background: #fff8db; border-bottom: 1px solid #e3c35c; padding: 9px 12px; font: 12px/1.45 system-ui, sans-serif; }
+html[data-theme="dark"] .csv-warning { color: #ffd166; background: #2a2110; border-color: #8a6a22; }
 .csv-stat { color: var(--fg-2); }
 .csv-sep { color: var(--fg-2); font-family: ui-monospace, monospace; }
 .csv-toolbar { display: flex; gap: 4px; padding: 6px 10px; background: var(--bg); border-bottom: 1px solid var(--border); align-items: center; }
@@ -626,8 +643,10 @@
 .exe-sha256 { font: 12px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace; overflow-wrap: anywhere; word-break: break-all; }
 .exe-vt { margin-top: 14px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 7px; background: var(--bg-2); }
 .exe-vt-link { color: var(--accent); font-weight: 650; overflow-wrap: anywhere; }
-.exe-vt-note,.exe-vt-terms { margin: 5px 0 0; color: var(--fg-2); font-size: 12px; line-height: 1.45; }
+.exe-vt-link[aria-disabled="true"] { color: var(--fg-2); cursor: not-allowed; text-decoration: none; }
+.exe-vt-note,.exe-vt-terms,.exe-vt-status { margin: 5px 0 0; color: var(--fg-2); font-size: 12px; line-height: 1.45; }
 .exe-vt-terms { font-style: italic; }
+.exe-vt-status:empty { display: none; }
 .exe-vt-unavailable { margin: 14px 0 0; padding: 9px 11px; border-left: 3px solid var(--border); border-radius: 4px; background: var(--bg-2); color: var(--fg-2); font-size: 12px; line-height: 1.45; overflow-wrap: anywhere; }
 /* GeoJSON / TopoJSON */
 .geo-preview { padding: 12px; } .geo-header { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }

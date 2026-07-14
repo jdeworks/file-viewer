@@ -700,7 +700,18 @@
 /* Chapter list — clickable seek rows. */
 .preview-host .media-chapters { display: flex; flex-direction: column; gap: 2px;
   max-width: min(420px, 100%); margin: 0 auto; }
-.preview-host .media-chapters-head { font-size: 12px; color: var(--fg-2); margin: 4px 0 2px; }
+.preview-host .media-chapters-head { display: flex; align-items: center; justify-content: space-between;
+  gap: 8px; font-size: 12px; color: var(--fg-2); margin: 4px 0 2px; }
+.preview-host .media-chapters-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 4px; }
+.preview-host .media-chapters-actions button,
+.preview-host .media-chapter-delete { border: 1px solid var(--border); border-radius: 5px; padding: 3px 7px;
+  background: var(--bg); color: var(--fg); cursor: pointer; font-size: 11px; }
+.preview-host .media-chapters-actions button:hover,
+.preview-host .media-chapter-delete:hover { border-color: var(--accent); }
+.preview-host .media-chapters-actions button:disabled { cursor: default; opacity: .55; }
+.preview-host .media-chapters-body { display: flex; flex-direction: column; gap: 2px; }
+.preview-host .media-chapters-empty { margin: 0; padding: 8px; border: 1px dashed var(--border);
+  border-radius: 6px; color: var(--fg-2); font-size: 11px; }
 .preview-host .media-chapters-source { max-width: min(420px, 100%); margin: 2px auto 0;
   color: var(--fg-2); font-size: 11px; text-align: center; word-break: break-word; }
 .preview-host .media-chapter { display: flex; align-items: center; gap: 10px; text-align: left;
@@ -709,6 +720,15 @@
 .preview-host .media-chapter:hover { border-color: var(--accent); }
 .preview-host .media-chapter-time { color: var(--accent); font-variant-numeric: tabular-nums; flex-shrink: 0; }
 .preview-host .media-chapter-label { flex: 1; word-break: break-word; }
+.preview-host .media-chapter-edit-row { display: grid; grid-template-columns: minmax(74px, .35fr) minmax(120px, 1fr) auto; }
+.preview-host .media-chapter-edit-row input { min-width: 0; border: 1px solid var(--border); border-radius: 4px;
+  padding: 3px 5px; background: var(--bg); color: var(--fg); font: inherit; }
+@media (max-width: 520px) {
+  .preview-host .media-chapters-head { align-items: flex-start; flex-direction: column; }
+  .preview-host .media-chapters-actions { justify-content: flex-start; }
+  .preview-host .media-chapter-edit-row { grid-template-columns: 82px 1fr; }
+  .preview-host .media-chapter-delete { grid-column: 1 / -1; }
+}
 
 /* ── Spectrum & EQ panel (spectrum.js) ── */
 .media-sp-panel { padding: 0; background: var(--bg); }

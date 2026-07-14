@@ -3,7 +3,7 @@
 // postMessage. Chart.js is lazy-loaded only when the Chart tab is shown.
 import { loadGlobal, vendor } from '../../../core/script-loader.js';
 import { TableEditor } from './table-editor.js';
-import { csvColumnLabels, maxCsvColumns } from './shape.js';
+import { csvColumnLabels, csvShapeDiagnostics, maxCsvColumns } from './shape.js';
 
 const DELIMS = { auto: '', comma: ',', semicolon: ';', tab: '\t', pipe: '|' };
 
@@ -13,7 +13,11 @@ export async function parseCsv(intake, settings = {}) {
     delimiter: DELIMS[settings.delimiter || 'auto'] ?? '',
     skipEmptyLines: 'greedy',
   });
-  return { rows: res.data, delimiter: res.meta?.delimiter || ',' };
+  return {
+    rows: res.data,
+    delimiter: res.meta?.delimiter || ',',
+    diagnostics: csvShapeDiagnostics(res.data, res.errors, settings.csvHeader !== false),
+  };
 }
 
 function csvEsc(v) {
@@ -33,7 +37,7 @@ function rowsToCsv(rows, sep) {
 export async function render(intake, ctx) {
   const settings = ctx?.settings || {};
   const hasHeader = settings.csvHeader !== false;
-  const { rows, delimiter } = await parseCsv(intake, settings);
+  const { rows, delimiter, diagnostics } = await parseCsv(intake, settings);
 
   const sep = delimiter || ',';
   const numRows = rows.length;
@@ -69,6 +73,13 @@ export async function render(intake, ctx) {
   chartPanel.innerHTML = '<canvas class="csv-chart-canvas"></canvas>';
 
   host.append(info, toolbar, tablePanel, chartPanel);
+  if (diagnostics.length) {
+    const warning = document.createElement('div');
+    warning.className = 'csv-warning';
+    warning.setAttribute('role', 'note');
+    warning.textContent = 'Recovered CSV with warnings: ' + diagnostics.join(' ');
+    host.prepend(warning);
+  }
 
   // Mount table editor
   let tableEditor = null;

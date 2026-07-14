@@ -6,6 +6,8 @@ import { mountAdvPrecision } from './adv-edit-precision.js';
 import { mountAdvPointEditor } from './adv-edit-points.js';
 import { installTextControls, syncTextControls } from './adv-edit-text.js';
 import { DEFAULTS, advToolbarHtml } from './adv-edit-toolbar.js';
+import { mountAdvComposition } from './adv-edit-composition.js';
+import { createAdvDocumentIO } from './adv-edit-io.js';
 
 let konvaPromise = null;
 export function loadKonva() {
@@ -74,13 +76,20 @@ export async function mountAdvEdit({ host, img, onDirty, pushUndo, onFlatten }) 
   const isLocked = (n) => !!n?.getAttr?.('locked');
 
   const primary = () => selected[selected.length - 1] || null;
+  const composition = mountAdvComposition({
+    Konva, tb, $, getSelected: () => selected, primary, layer, snap, markDirty,
+    addImageObject, syncToolbar,
+  });
   function syncToolbar() {
     const node = primary();
     const has = !!node, label = isLabel(node), multi = selected.length > 1;
     const cls = node?.getClassName?.();
-    const shape = has && !label && !isGroup(node);
+    const image = cls === 'Image';
+    const shape = has && !label && !isGroup(node) && !image;
+    const fillable = shape && !['Line', 'Arrow'].includes(cls);
     tb.querySelectorAll('.imgv-adv-txtctl').forEach((el) => { el.style.display = label ? '' : 'none'; });
     tb.querySelectorAll('.imgv-adv-shpctl').forEach((el) => { el.style.display = shape ? '' : 'none'; });
+    tb.querySelectorAll('.imgv-adv-fillctl').forEach((el) => { el.style.display = fillable ? '' : 'none'; });
     const line = ['Line', 'Arrow'].includes(cls);
     const arc = ['Ring', 'Wedge', 'Arc'].includes(cls);
     tb.querySelectorAll('.imgv-adv-anyctl').forEach((el) => { el.style.display = has ? '' : 'none'; });
@@ -100,6 +109,7 @@ export async function mountAdvEdit({ host, img, onDirty, pushUndo, onFlatten }) 
     $('.imgv-adv-fill').disabled = !has || isGroup(node);
     $('.imgv-adv-group').disabled = selected.length < 2;
     $('.imgv-adv-ungroup').disabled = !selected.some(isGroup);
+    composition.sync(node, { fillable });
     if (!has) return;
     $('.imgv-adv-blend').value = node.globalCompositeOperation() || 'source-over';
     $('.imgv-adv-opacity').value = Math.round((node.opacity() ?? 1) * 100);
@@ -155,13 +165,15 @@ export async function mountAdvEdit({ host, img, onDirty, pushUndo, onFlatten }) 
     node.on('dblclick dbltap', (e) => { e.cancelBubble = true; if (interactive && isLabel(node)) editLabelText(node); });
     node.on('dragstart transformstart', () => snap());   // snapshot the PRE-drag state
     node.on('dragmove', () => precision.snapDrag(node));
-    node.on('transformend', () => { selected.forEach(normalizeTransform); layer.draw(); markDirty(); syncToolbar(); });
+    node.on('transformend', () => { selected.forEach((item) => { normalizeTransform(item); composition.applyRuntime(item); }); layer.draw(); markDirty(); syncToolbar(); });
     node.on('dragend', () => { precision.clearGuides(); markDirty(); });
+    composition.wireNode(node);
   }
 
   function placeObject(node) {
     wireObject(node);
     layer.add(node);
+    composition.applyRuntime(node);
     select(node);
     markDirty();
   }
@@ -196,16 +208,27 @@ export async function mountAdvEdit({ host, img, onDirty, pushUndo, onFlatten }) 
   // Add a pasted image as a free, transformable pane (move/rotate/resize via the
   // Transformer). `source` is a canvas/image at NATURAL pixels; size it into stage
   // coords (k = stage px per natural px) and fit within the stage, then place centered.
-  function addImage(source) {
+  function addImageObject(asset) {
+    const source = asset?.image;
     if (!source || !source.width) return null;
     snap();
     const k = naturalW ? stageW / naturalW : 1;
     let w = source.width * k, h = source.height * k;
     const fit = Math.min(1, (stageW * 0.9) / w, (stageH * 0.9) / h);
     w = Math.max(1, w * fit); h = Math.max(1, h * fit);
-    const node = new Konva.Image({ image: source, x: stageW / 2 - w / 2, y: stageH / 2 - h / 2, width: w, height: h, draggable: true });
+    const node = new Konva.Image({
+      image: source, assetId: asset.id, sourceWidth: asset.width, sourceHeight: asset.height,
+      cropLeft: 0, cropTop: 0, cropRight: 0, cropBottom: 0,
+      x: stageW / 2 - w / 2, y: stageH / 2 - h / 2, width: w, height: h,
+      stroke: '#ffffff', strokeWidth: 0, cornerRadius: 0, draggable: true,
+    });
     placeObject(node);
     return node;
+  }
+
+  function addImage(source) {
+    if (!source || !source.width) return null;
+    return addImageObject(composition.registerSource(source));
   }
 
   function editLabelText(label) {
@@ -269,6 +292,7 @@ export async function mountAdvEdit({ host, img, onDirty, pushUndo, onFlatten }) 
     $, tb, addText, addShape, deleteSelection, groupSelection, ungroupSelection,
     pointEdit, precision, getSelected: () => selected, primary, isLabel, textNodeOf, layer, markDirty, snap, tr,
     refreshLayers: () => refreshLayers(), syncToolbar,
+    refreshComposition: (nodes) => nodes.forEach((node) => composition.applyRuntime(node)),
   });
   // Merge to image: bake the whole overlay onto the base pixels (one commit), then clear
   // the now-redundant vector objects so the user continues in normal pixel Edit.
@@ -307,24 +331,62 @@ export async function mountAdvEdit({ host, img, onDirty, pushUndo, onFlatten }) 
   const panel = layersPanel.panel;
   const refreshLayers = layersPanel.refresh;
   installTextControls({ $, selectedLabels: () => selected.filter(isLabel), textNodeOf, tagNodeOf, layer, markDirty, refreshLayers });
+  const documentIO = createAdvDocumentIO({
+    Konva, tb, layer, tr, getObjects: objects, wireObject, composition, select, markDirty,
+    refreshLayers, snap,
+    canvasWidth: () => img.naturalWidth || naturalW,
+    canvasHeight: () => img.naturalHeight || naturalH,
+    viewportWidth: () => stageW,
+    viewportHeight: () => stageH,
+  });
 
   // Flatten a copy for export/ASCII without baking the editor state.
-  function flattenToCanvas() {
+  function flattenToCanvas({ pixelRatio = 1 } = {}) {
     const wasSel = selected.slice(); select(null);
     const nW = img.naturalWidth || naturalW, nH = img.naturalHeight || naturalH;
+    const ratio = Math.max(0.25, Math.min(4, Number(pixelRatio) || 1));
     const canvas = document.createElement('canvas');
-    canvas.width = nW; canvas.height = nH;
+    canvas.width = Math.max(1, Math.round(nW * ratio));
+    canvas.height = Math.max(1, Math.round(nH * ratio));
     const g = canvas.getContext('2d');
-    g.drawImage(img, 0, 0, nW, nH);
+    g.drawImage(img, 0, 0, canvas.width, canvas.height);
     const precisionWasVisible = precision.layer.visible();
     const pointsWasVisible = pointEdit.layer.visible();
     precision.layer.visible(false);
     pointEdit.layer.visible(false);
-    const overlay = stage.toCanvas({ pixelRatio: nW / stageW });
-    precision.layer.visible(precisionWasVisible);
-    pointEdit.layer.visible(pointsWasVisible);
-    g.drawImage(overlay, 0, 0, nW, nH);
-    if (wasSel.length) select(wasSel);
+    const states = objects().map((node) => ({
+      node,
+      visible: node.visible(),
+      blend: node.globalCompositeOperation() || 'source-over',
+    }));
+    const renderRatio = canvas.width / stageW;
+    try {
+      if (!states.some((state) => state.visible && state.blend !== 'source-over')) {
+        const overlay = stage.toCanvas({ pixelRatio: renderRatio });
+        g.drawImage(overlay, 0, 0, canvas.width, canvas.height);
+      } else {
+        states.forEach(({ node }) => node.visible(false));
+        for (const state of states) {
+          if (!state.visible) continue;
+          state.node.visible(true);
+          state.node.globalCompositeOperation('source-over');
+          layer.draw();
+          const objectCanvas = stage.toCanvas({ pixelRatio: renderRatio });
+          g.save();
+          g.globalCompositeOperation = state.blend;
+          g.drawImage(objectCanvas, 0, 0, canvas.width, canvas.height);
+          g.restore();
+          state.node.globalCompositeOperation(state.blend);
+          state.node.visible(false);
+        }
+      }
+    } finally {
+      states.forEach((state) => { state.node.visible(state.visible); state.node.globalCompositeOperation(state.blend); });
+      precision.layer.visible(precisionWasVisible);
+      pointEdit.layer.visible(pointsWasVisible);
+      layer.draw();
+      if (wasSel.length) select(wasSel);
+    }
     return canvas;
   }
 
@@ -395,28 +457,16 @@ export async function mountAdvEdit({ host, img, onDirty, pushUndo, onFlatten }) 
       container.style.pointerEvents = on ? 'auto' : 'none';
       if (on) refreshLayers(); else select(null);
     },
-    // Overlay history bridge for editor-core's unified undo.
-    serialize: () => layer.toJSON(),
-    restore: (json) => { if (json) rebuild(json); else clear(); },
+    // Overlay history and portable-file bridge: raw Konva JSON is accepted only as migration input.
+    serialize: () => documentIO.snapshot(),
+    restore: (document) => documentIO.restore(document),
+    exportDocument: () => documentIO.exportDocument(),
+    importDocument: (document) => documentIO.importDocument(document),
     flattenToCanvas,
     relayout,
     rebaseline,
     applyGeometry,
     clear,
-    destroy() { uninstallKeys(); container.removeEventListener('keydown', onContainerDelete, true); container.removeEventListener('keyup', onContainerDelete, true); container.onkeydown = null; container.onkeyup = null; pointEdit.destroy(); precision.destroy(); tr.destroy(); stage.destroy(); container.remove(); tb.remove(); layersPanel.destroy(); },
+    destroy() { uninstallKeys(); container.removeEventListener('keydown', onContainerDelete, true); container.removeEventListener('keyup', onContainerDelete, true); container.onkeydown = null; container.onkeyup = null; composition.destroy(); pointEdit.destroy(); precision.destroy(); tr.destroy(); stage.destroy(); container.remove(); tb.remove(); layersPanel.destroy(); },
   };
-
-  function rebuild(json) {
-    layer.destroyChildren();
-    const tmp = Konva.Node.create(json);
-    tmp.find('.obj').forEach((src) => {
-      const node = src.clone();
-      node.draggable(true);
-      wireObject(node);
-      layer.add(node);
-    });
-    layer.add(tr);
-    select(null);
-    markDirty();
-  }
 }

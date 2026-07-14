@@ -19,7 +19,9 @@ import {
   parseChapterSidecar,
 } from './chapters.js';
 import { likelyNeedsTranscode } from './transcoder.js';
-import { attachShortcuts, buildChapterList, buildCoverArt } from './playback-extras.js';
+import { attachShortcuts, buildCoverArt } from './playback-extras.js';
+import { buildChapterEditor } from './chapter-editor.js';
+import { createMediaWorkingCopyController } from './media-working-copy.js';
 import { buildMediaWorkspace } from './renderer-workspace.js';
 import { buildMediaTools, buildPlaybackExtras } from './renderer-tools.js';
 import { mountAudioModePanels, mountVideoModePanels } from './renderer-mode-panels.js';
@@ -90,6 +92,7 @@ function fmtTimeValue(seconds) {
 export async function render(intake, ctx = {}) {
   const info = mediaInfo(intake);
   const playlist = buildPlaylist(intake, ctx.folder);
+  const workingCopy = createMediaWorkingCopyController(intake, ctx);
   if (!info.kind) {
     const host = document.createElement('div');
     host.className = 'media-doc media-' + (info.kind || 'audio');
@@ -133,13 +136,20 @@ export async function render(intake, ctx = {}) {
   let rawChapters = [];
   let chapterSource = '';
   let normalizedChapters = [];
-  let chapterList = null;
+  let chapterEditor = null;
+  let chapterSourceEl = null;
   let coverEl = null;
   let coverRevoke = null;
   const refreshChapters = () => {
     normalizedChapters = normalizeChapters(rawChapters, Number.isFinite(el.duration) ? el.duration : undefined);
     listenSurface?.setChapters?.(normalizedChapters);
     exportPanel?.updateChapters?.(normalizedChapters);
+    chapterEditor?.update?.(normalizedChapters);
+    if (chapterSourceEl) {
+      chapterSourceEl.textContent = chapterSource
+        ? `Chapters: ${chapterSource}`
+        : 'Chapters: no embedded or sidecar markers found';
+    }
   };
   // Bind metadata synchronization before any file reads or lazy studio imports can yield. The
   // immediate call also covers a tiny media file whose metadata completed between assigning src
@@ -228,14 +238,14 @@ export async function render(intake, ctx = {}) {
 
   if (enableFfmpeg) {
     const buildEditorPanel = await getEditorPanel();
-    const editor = buildEditorPanel(intake, el, applyTranscodedSource);
+    const editor = buildEditorPanel(intake, el, applyTranscodedSource, { workingCopy });
     editorController = editor;
     editorPanel = editor.el;
     editorRevoke = editor.revoke;
 
     // P1 (export processed/EQ'd audio) + P3 (baked fades). Reads the live EQ graph.
     const { buildExportPanel } = await import('./studio-export.js');
-    const exp = buildExportPanel(intake, el, info.kind, { chapters: normalizedChapters });
+    const exp = buildExportPanel(intake, el, info.kind, { chapters: normalizedChapters, workingCopy });
     exportPanel = exp.el;
     exportRevoke = exp.revoke;
     refreshChapters();
@@ -283,6 +293,7 @@ export async function render(intake, ctx = {}) {
       trackListEl,
       enableFfmpeg,
       exportPanel,
+      workingCopy,
       listenSurfaceEl: listenSurface?.el,
       onRegisterController: registerModeController,
       onReleaseController: releaseModeController,
@@ -304,6 +315,7 @@ export async function render(intake, ctx = {}) {
       videoStudio,
       editorPanel,
       exportPanel,
+      workingCopy,
       onRegisterController: registerModeController,
       onReleaseController: releaseModeController,
     });
@@ -313,12 +325,20 @@ export async function render(intake, ctx = {}) {
   // Keyboard shortcuts scoped to the (focusable) host; removed on teardown.
   host.tabIndex = 0;
   const detachKeys = attachShortcuts(host, el, { kind: info.kind });
-  if (normalizedChapters.length) chapterList = buildChapterList(normalizedChapters, el);
-  let chapterSourceEl = null;
-  if (normalizedChapters.length && chapterSource) {
+  if (info.kind === 'audio') {
+    chapterEditor = buildChapterEditor({
+      chapters: normalizedChapters,
+      mediaEl: el,
+      filename: intake.filename,
+      onChange: (next) => {
+        rawChapters = next;
+        chapterSource = 'edited locally; download the VTT sidecar to keep these markers';
+        refreshChapters();
+      },
+    });
     chapterSourceEl = document.createElement('div');
     chapterSourceEl.className = 'media-chapters-source';
-    chapterSourceEl.textContent = 'Chapters: ' + chapterSource;
+    refreshChapters();
   }
 
   if (info.kind === 'audio') {
@@ -328,7 +348,7 @@ export async function render(intake, ctx = {}) {
     if (head) head.append(extras.extras); else audioListenMode?.panel.append(extras.extras);
     if (audioListenMode) {
       if (chapterSourceEl) audioListenMode.panel.append(chapterSourceEl);
-      if (chapterList) audioListenMode.panel.append(chapterList);
+      if (chapterEditor) audioListenMode.panel.append(chapterEditor.el);
     }
     host.append(audioWorkspace, audioModes);
   } else {

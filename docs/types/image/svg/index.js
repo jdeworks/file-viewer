@@ -15,5 +15,6 @@ export default {
   syntaxLanguage: 'xml',          // Monaco highlights SVG as XML
   preferredMode: 'split',         // Default to side-by-side editor + preview
   loadRenderer: () => import('./renderer.js'),
+  loadMetadata: () => import('../metadata.js'),
   settingsUrl: new URL('./settings.default.json', import.meta.url),
 };

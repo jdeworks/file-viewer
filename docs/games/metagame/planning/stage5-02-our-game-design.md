@@ -378,16 +378,19 @@ alongside the game during the boss encounter.
 
 ## H. Prestige — Protocol Version
 
-**Implementation note (2026-07-11):** the card-upgrade mechanic below shipped, with two deviations
-from this spec worth knowing — see the Protocol Codex follow-ups in `../../../../TASKS.md` for the
-full rationale: (1) the picker is triggered from the **hub** via a "reinforce protocol" button
+**Implementation note (resolved 2026-07-14):** the card-upgrade mechanic below shipped, with two
+intentional deviations from this spec: (1) the picker is triggered from the **hub** via a
+"reinforce protocol" button
 ("run-end screen" below is the original framing; in practice the win screen has no direct path
 back to the hub, so prestige is a hub action, not a run-end one), and (2) the upgrade offer is
 drawn from the fixed 10-card `STARTING_DECK` constant, not literally "the current run's deck" —
 this keeps the picker's indexing stable across in-run card removal/upgrades and avoids penalizing
-a card the player already upgraded mid-run. `bonusHandshakes`/`cardOfferBonus` below were NOT
-shipped (deferred — see the plan doc); the existing ad hoc +5 max HP / +1 relic per version
-(pre-dating this doc, not spec'd here) were kept as-is alongside the new card upgrade.
+a card the player already upgraded mid-run. The proposed `bonusHandshakes` and `cardOfferBonus`
+were deliberately rejected after late-run playtesting: starting currency would neutralize the
+lean/austere economy rungs, while an unbounded offer bonus would cancel the fewer-options rung and
+flatten seeded draft variance. Protocol Versions already leave three power traces (+5 max HP, one
+starting relic while available, and one permanent starting-card upgrade) while also setting the
+minimum ascension rule level.
 
 ### When available
 After any successful boss clear (all 3 acts). Prestige can be triggered from the hub once a run has
@@ -411,9 +414,8 @@ protocolVersion = prestige count
 // On prestige: choose one card from the current run's deck to permanently upgrade
 // This "version 2" card appears in its upgraded form at the start of every future run
 
-// Additionally:
-bonusHandshakes = protocolVersion * 25   // starting gold bonus per prestige level
-cardOfferBonus  = Math.floor(protocolVersion / 2)  // +1 card in reward offers per 2 levels
+// Rejected after playtest: no starting-handshake or card-offer multiplier.
+// Those bonuses counteracted the cumulative ascension economy/draft rules.
 ```
 
 Each prestige thus leaves a permanent trace: a better starting card. After 3 prestiges,

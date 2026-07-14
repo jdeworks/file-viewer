@@ -10,7 +10,6 @@
 // keep whichever) and decide.
 import { state, toast } from './state.js';
 import { getTree, fetchFileBlob, watchFolder } from './companion.js';
-import { renderSidebarRoots } from './sidebar-roots.js';
 
 const MAX_SYNC_FILES = 1000;
 const DEBOUNCE_MS = 1200;
@@ -24,9 +23,11 @@ let _refreshBtn = null;
 let _autoBtn = null;
 let _spinnerOwner = null;
 const _busyRoots = new WeakSet();
+let renderSidebarRoots = () => {};
 
-export function setupFolderRefresh({ getFolderContext: getter }) {
+export function setupFolderRefresh({ getFolderContext: getter, renderSidebarRoots: renderRoots }) {
   getFolderContext = getter || getFolderContext;
+  renderSidebarRoots = renderRoots || renderSidebarRoots;
   autoRefresh = localStorage.getItem(LS_AUTO) === 'true';
 }
 

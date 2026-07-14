@@ -48,8 +48,21 @@ let _dragNode = null;
 export function getDraggedTreeNode() { return _dragNode; }
 export const TREE_DRAG_TYPE = 'text/x-fv-tree-path';
 
-// entries: [{ file, path }]. Returns a nested tree.
-export function buildTree(entries) {
+// entries: [{ file, path }]. Returns a nested tree. Large folder/sidebar callers can request a
+// lazy tree: only root children are grouped initially, and each deeper directory is materialized
+// when it is expanded, searched, or selected.
+export function buildTree(entries, { lazy = false } = {}) {
+  if (lazy) {
+    const root = {
+      name: '', dir: true, children: null,
+      _pendingChildren: entries.map((entry) => ({
+        entry,
+        parts: entry.path.split('/').filter(Boolean),
+      })).filter((record) => record.parts.length),
+    };
+    materializeChildren(root);
+    return root;
+  }
   const root = { name: '', dir: true, children: new Map() };
   for (const e of entries) {
     const parts = e.path.split('/').filter(Boolean);
@@ -71,8 +84,55 @@ export function buildTree(entries) {
   return root;
 }
 
+function materializeChildren(node) {
+  if (node.children instanceof Map) return node.children;
+  const groups = new Map();
+  for (const record of node._pendingChildren || []) {
+    const [name, ...rest] = record.parts;
+    if (!name) continue;
+    let group = groups.get(name);
+    if (!group) {
+      group = { direct: null, descendants: [] };
+      groups.set(name, group);
+    }
+    if (!rest.length) group.direct = record.entry; // same-path duplicates retain last-write behavior
+    else group.descendants.push({ entry: record.entry, parts: rest });
+  }
+  const children = new Map();
+  for (const [name, group] of groups) {
+    if (group.direct) {
+      const entry = group.direct;
+      const child = {
+        ...entry,
+        name,
+        dir: false,
+        file: entry.file,
+        path: entry.path,
+        originalPath: entry.originalPath || entry.path,
+        children: group.descendants.length ? null : entry.children,
+      };
+      if (group.descendants.length) child._pendingChildren = group.descendants;
+      children.set(name, child);
+    } else {
+      children.set(name, {
+        name,
+        dir: true,
+        children: null,
+        _pendingChildren: group.descendants,
+      });
+    }
+  }
+  node.children = children;
+  node._pendingChildren = null;
+  return children;
+}
+
+function hasChildren(node) {
+  return !!(node._pendingChildren?.length || (node.children instanceof Map && node.children.size));
+}
+
 function sortedChildren(node) {
-  return [...node.children.values()].sort((a, b) =>
+  return [...materializeChildren(node).values()].sort((a, b) =>
     (a.dir === b.dir) ? a.name.localeCompare(b.name) : (a.dir ? -1 : 1));
 }
 
@@ -84,10 +144,10 @@ const OVERSCAN = 8;
 // expanded across re-renders — they carry a `children` Map like a folder does.
 function collectFolderPaths(node, prefix, out, depth = 0, maxDepth = Infinity) {
   for (const c of sortedChildren(node)) {
-    if (c.children && c.children.size) {
+    if (hasChildren(c)) {
       const fp = prefix ? prefix + '/' + c.name : c.name;
       if (depth <= maxDepth) out.add(fp);
-      collectFolderPaths(c, fp, out, depth + 1, maxDepth);
+      if (depth < maxDepth) collectFolderPaths(c, fp, out, depth + 1, maxDepth);
     }
   }
 }
@@ -128,7 +188,7 @@ export function renderTree(host, root, {
             walk(c, depth + 1, fp);
           }
         } else {
-          const kids = c.children && c.children.size;   // a file that also has children (e.g. a split GIF)
+          const kids = hasChildren(c);   // a file that also has children (e.g. a split GIF)
           if (!filterFn || filterFn(c.path)) {
             items.push({ node: c, depth: filterFn ? 0 : depth, isFolder: false, folderPath: kids ? fp : '', expandable: !!kids });
           }

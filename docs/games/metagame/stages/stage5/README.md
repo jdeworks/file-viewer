@@ -5,14 +5,14 @@ the far end is answering — not clearly, but answering. Build a deck to negotia
 
 ## How to play
 
-- Travel a branching **act map** across acts 1–3, choosing nodes: combats, elites,
-  shops, rests, and events.
+- Travel a branching **act map**, choosing combats, elites, shops, rests, and events.
+  A first run reaches the story boss in act 4; winning unlocks acts 5–6 for later runs.
 - In **combat**, you have **energy** each turn. **Play cards** to attack and defend,
   then **End Turn**. Cards come in families (Daemon, Layer, Protocol, Recursion, Signal).
 - Win fights to take **card rewards**, **relics**, and **potions**; spend currency in
   shops; **rest** to heal or upgrade.
-- The deck you build across acts 1–3 is the deck you fight the boss with — there's also
-  a hidden **superboss** for the bold.
+- The deck you build during the run is the deck you fight the boss with. Three optional
+  challenge keys can open a hidden **superboss** on a veteran run.
 
 ## Controls
 
@@ -21,10 +21,10 @@ the far end is answering — not clearly, but answering. Build a deck to negotia
 
 ## The boss — The Refused Connection (Act 4)
 
-The boss **refuses every packet**: until a protocol is established, every **Signal**
-card resolves to **zero**. It accepts damage only in the right order — **SYN**, then
-**ACK**.
+The boss accepts damage only when you negotiate in the right order. Its demands mutate
+across phases; an unread codex also gives every phase a 40% HP surcharge.
 
-> **Un-cheat hint:** the rules it accepts are literally written down. A real e-book,
+> **Viewer-path hint:** the rules it accepts are literally written down. A real e-book,
 > `protocols_of_the_entity.epub`, sits in the viewer — open it and **read Chapter 9**.
-> Once you've read the fine print, your Signals land. Then beat it with your deck.
+> That reveals the phase rules and removes the unread HP surcharge without replacing
+> the real-deck fight.

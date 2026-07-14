@@ -12,7 +12,10 @@ export function parseJsonLike(text, fallback = 'null') {
     };
   } catch (strictError) {
     const cleaned = stripJsonCommentsAndTrailingCommas(parseSource);
-    if (cleaned === parseSource) throw strictError;
+    if (cleaned === parseSource) {
+      strictError.jsonDiagnostics = diagnoseJsonFailure(parseSource);
+      throw strictError;
+    }
     try {
       return {
         data: JSON.parse(cleaned),
@@ -23,10 +26,60 @@ export function parseJsonLike(text, fallback = 'null') {
           'Parsed as JSONC: comments or trailing commas were ignored.',
         ],
       };
-    } catch {
+    } catch (recoveryError) {
+      strictError.jsonDiagnostics = diagnoseJsonFailure(parseSource, {
+        jsoncAttempted: true,
+        recoveryError,
+        cleaned,
+      });
       throw strictError;
     }
   }
+}
+
+function unclosedContainerCount(text) {
+  let depth = 0;
+  let inString = false;
+  let quote = '';
+  let escaped = false;
+  for (const ch of String(text || '')) {
+    if (inString) {
+      if (escaped) escaped = false;
+      else if (ch === '\\') escaped = true;
+      else if (ch === quote) inString = false;
+      continue;
+    }
+    if (ch === '"' || ch === "'") {
+      inString = true;
+      quote = ch;
+    } else if (ch === '{' || ch === '[') depth += 1;
+    else if (ch === '}' || ch === ']') depth -= 1;
+  }
+  return { depth, inString };
+}
+
+export function diagnoseJsonFailure(text, { jsoncAttempted = false, recoveryError = null, cleaned = '' } = {}) {
+  const source = String(text || '');
+  const diagnostics = [];
+  if (jsoncAttempted) {
+    const detail = recoveryError?.message ? ` (${recoveryError.message})` : '';
+    diagnostics.push(`JSONC comments/trailing commas were safely ignored, but the remaining document is still invalid${detail}.`);
+  }
+
+  const json5Features = [];
+  if (/(?:^|[\{\[,]\s*)[A-Za-z_$][\w$-]*\s*:/m.test(source)) json5Features.push('unquoted keys');
+  if (/'(?:\\.|[^'\\])*'\s*(?=[:,}\]])/.test(source)) json5Features.push('single-quoted strings');
+  if (/\b(?:NaN|Infinity|undefined)\b/.test(source)) json5Features.push('non-JSON values');
+  if (/\b[+-]?0x[\da-f]+\b/i.test(source)) json5Features.push('hexadecimal numbers');
+  if (json5Features.length) {
+    diagnostics.push(`JSON5-like syntax detected (${[...new Set(json5Features)].join(', ')}). It was not executed; convert or edit those constructs in Raw view.`);
+  }
+
+  const shape = unclosedContainerCount(cleaned || source);
+  if (shape.depth > 0 || shape.inString || /[,:[{]\s*$/.test((cleaned || source).trim())) {
+    diagnostics.push('The source appears truncated or incomplete; Raw view preserves it for repair.');
+  }
+  return diagnostics;
 }
 
 export function stripJsonCommentsAndTrailingCommas(text) {

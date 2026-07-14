@@ -201,7 +201,7 @@ run_phase "regenerating settings defaults (must be committed fresh)…" \
 
 run_phase_runtime_registry() {
   node scripts/gen-registry-runtime.mjs >/dev/null
-  stale "runtime registry changed" docs/core/registry-runtime.generated.js docs/core/registry-detect.generated.*.js
+  stale "runtime registry changed" docs/core/registry-runtime.generated.js docs/core/registry-detect.generated*.js
 }
 
 run_phase "regenerating runtime registry (must be committed fresh)…" \
@@ -233,7 +233,7 @@ run_phase "regenerating metagame stage bundles (must be committed fresh)…" \
 
 run_phase_app_core() {
   node scripts/gen-app-core.mjs >/dev/null
-  stale "app.generated.js changed (startup app graph changed since last regen)" docs/core/app.generated.js
+  stale "app.generated.js or its production graph changed (startup app graph changed since last regen)" docs/core/app.generated.js build/app/app-graph.generated.json
 }
 
 run_phase "regenerating bundled app core (must be committed fresh)…" \
@@ -292,6 +292,7 @@ run_phase "verifying pinned EmulatorJS vendor closure…" \
 
 FULL_UNIT_TESTS=(
   tests/media-parsers.test.mjs
+  tests/media-qc-fixture.test.mjs
   tests/media-mixer-model.test.mjs
   tests/media-mixer-import-export.test.mjs
   tests/media-mixer-capabilities.test.mjs
@@ -306,6 +307,7 @@ FULL_UNIT_TESTS=(
   tests/image-curves.test.mjs
   tests/image-convolve.test.mjs
   tests/image-gif.test.mjs
+  tests/image-overlay-document.test.mjs
   tests/layered-psd.test.mjs
   tests/molview.test.mjs
   tests/mobile-renderer-layout.test.mjs
@@ -331,9 +333,12 @@ FULL_UNIT_TESTS=(
   tests/asset-manifest.test.mjs
   tests/settings-defaults.test.mjs
   tests/registry-runtime.test.mjs
+  tests/production-bundle.test.mjs
+  tests/request-budgets.test.mjs
   tests/emulatorjs-runtime-contract.test.mjs
   tests/example-compatibility.test.mjs
   tests/type-info.test.mjs
+  tests/metadata-coverage.test.mjs
   tests/metadata-normalize.test.mjs
   tests/metadata-owned.test.mjs
   tests/ocr.test.mjs
@@ -559,8 +564,9 @@ run_fast_unit_tests() {
       docs/types/media/mixer/*|tests/media-mixer-*.test.mjs)
         add_media_mixer_unit_tests
         ;;
-      docs/types/media/*|docs/assets/preview-media.css|tests/media-parsers.test.mjs|tests/areas/media-studio.mjs|tests/areas/media-studio-*.mjs)
+      docs/types/media/*|docs/assets/preview-media.css|docs/examples/acx-qc-reference.mp3|scripts/gen-media-qc-fixture.py|tests/media-parsers.test.mjs|tests/media-qc-fixture.test.mjs|tests/areas/media-studio.mjs|tests/areas/media-studio-*.mjs)
         add_unit_test tests/media-parsers.test.mjs
+        add_unit_test tests/media-qc-fixture.test.mjs
         ;;
       docs/types/ebook/comic/*|docs/readme/comic.md|tests/comic-resource-bounds.test.mjs)
         add_unit_test tests/comic-resource-bounds.test.mjs
@@ -616,6 +622,9 @@ run_fast_unit_tests() {
         ;;
       tests/type-info.test.mjs)
         add_unit_test tests/type-info.test.mjs
+        ;;
+      tests/metadata-coverage.test.mjs)
+        add_unit_test tests/metadata-coverage.test.mjs
         ;;
       tests/metadata-normalize.test.mjs)
         add_unit_test tests/metadata-normalize.test.mjs
@@ -747,7 +756,7 @@ run_smoke_core() {
       docs/types/media/mixer/*|tests/areas/media-studio-mixer-shell.mjs)
         add_smoke_area media-studio-mixer-shell
         ;;
-      docs/types/media/*|docs/assets/preview-media.css|tests/media-parsers.test.mjs|tests/areas/media-studio.mjs|tests/areas/media-studio-*.mjs)
+      docs/types/media/*|docs/assets/preview-media.css|docs/examples/acx-qc-reference.mp3|scripts/gen-media-qc-fixture.py|tests/media-parsers.test.mjs|tests/media-qc-fixture.test.mjs|tests/areas/media-studio.mjs|tests/areas/media-studio-*.mjs)
         add_smoke_area media-studio
         ;;
       tests/areas/media-3d.mjs|docs/types/3d/*|docs/types/image/*|docs/types/binary/midi/*|docs/types/binary/gamerom/*)

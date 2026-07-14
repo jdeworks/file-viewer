@@ -4,15 +4,7 @@ export const plugin = {
   tags: ['elvish', 'elv', 'shell', 'script'],
   match(intake) {
     const name = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
-    if (name.endsWith('.elv')) return true;
-    const text = intake.textSample || intake.text || '';
-    const hits = [
-      /^fn\s+\w+/m.test(text),
-      /^var\s+\w+/m.test(text),
-      /^use\s+\S+/m.test(text),
-      /^set\s+\w+/m.test(text),
-    ].filter(Boolean).length;
-    return hits >= 2;
+    return name.endsWith('.elv');
   },
   loadRenderer: () => import('./renderer.js'),
   about: {

@@ -6,24 +6,12 @@
 // from the branch tip. Fully-packed history (.git/objects/pack/*.pack, delta-compressed)
 // is not expanded here — we fall back to the reflog, which still lists recent commits.
 
+import { findGitDir, isGitInternal } from './git-detect.js';
+export { findGitDir, isGitInternal } from './git-detect.js';
+
 const dec = new TextDecoder();
 const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const TEXT_DIFF_LIMIT = 512 * 1024;
-
-// Locate the .git dir from a flat [{file, path}] list. Returns { gitPrefix, repoName } or null.
-export function findGitDir(entries) {
-  const head = entries.find((e) => e.path === '.git/HEAD' || e.path.endsWith('/.git/HEAD'));
-  if (!head) return null;
-  const gitPrefix = head.path.slice(0, -'/HEAD'.length);          // "…/.git"
-  const repoRoot = gitPrefix.slice(0, -'/.git'.length);           // "…" (may be "")
-  const repoName = repoRoot.split('/').filter(Boolean).pop() || 'repository';
-  return { gitPrefix, repoName, repoRoot };
-}
-
-// True if a path lives inside the repo's .git dir (so we can hide it from the file tree).
-export function isGitInternal(path) {
-  return path === '.git' || path.startsWith('.git/') || /\/\.git(\/|$)/.test(path);
-}
 
 async function inflate(u8) {
   const stream = new Blob([u8]).stream().pipeThrough(new DecompressionStream('deflate'));

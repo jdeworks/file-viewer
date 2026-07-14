@@ -1198,9 +1198,20 @@ follow.
   winnable → win → `ach-boss-victory`, Stage 2 unlocks; prestige reachable at the
   ticket gate and correctly preserves `totalBits`/achievements/pull/`bossSeen`/`bossLossCount`.
 
-### 11.3 Historical Stage 1 exclusions
+### 11.3 Stage 1 exclusions (re-audited 2026-07-13)
 
-The shipped scope excluded the Research tab (exponent nodes), offline/catch-up
-progress, timed bonus events, and three-letter suffixes beyond `zz`. Any decision
-to revisit those ideas belongs in [`TASKS.md`](../../../../TASKS.md). The
-achievement set and sub-stage numbers above record the initial tuning baseline.
+The Research tab (exponent nodes), offline/catch-up progress, timed bonus events,
+and three-letter suffixes beyond `zz` remain deliberately excluded:
+
+- Research duplicates the shipped post-prestige Pipeline, Flux, Entropy, Echoes,
+  and Resonance progression without adding a distinct player verb.
+- Offline catch-up would turn a deliberately legible live economy into an opaque
+  burst on return and would complicate the deterministic tick/save contract.
+- Timed bonus events would add another wall-clock loop while the existing boss,
+  builders, Flux, and Echoes already provide time pressure and attention beats.
+- Values do not reach the two-letter suffix ceiling in normal or tested play, so
+  a third suffix tier would be unreachable UI rather than useful progression.
+
+Reconsider an exclusion only when playtest evidence shows a concrete gap that the
+existing progression cannot address. The achievement set and sub-stage numbers
+above remain the tuning baseline.

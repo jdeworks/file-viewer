@@ -141,6 +141,9 @@ const STYLES = `
   color: var(--fg, #111);
   word-break: break-all;
 }
+.sc-setting-value { display:inline-block;max-width:calc(100% - 74px);filter:blur(4px);user-select:none;transition:filter .15s; }
+.sc-setting-value.revealed { filter:none;user-select:text; }
+.sc-reveal-btn { margin-left:8px;padding:2px 7px;border:1px solid var(--border,#ddd);border-radius:4px;background:var(--bg,#fff);color:var(--fg-2,#666);cursor:pointer;font-size:10px;vertical-align:top; }
 .sc-host-label {
   padding: 10px 16px 4px;
   font-weight: 600;
@@ -317,7 +320,13 @@ export async function render(intake) {
         if (k === 'hostname' && values.length === 1 && (values[0].startsWith('http://') || values[0].startsWith('https://'))) {
           valHtml += ` <a class="sc-hostname-link" href="${esc(values[0])}" target="_blank" rel="noopener">Open in tab →</a>`;
         }
-        tr.innerHTML = `<td>${esc(displayDirective(k))}</td><td>${valHtml}</td>`;
+        tr.innerHTML = `<td>${esc(displayDirective(k))}</td><td><span class="sc-setting-value">${valHtml}</span><button type="button" class="sc-reveal-btn">Reveal</button></td>`;
+        const valueEl = tr.querySelector('.sc-setting-value');
+        const revealBtn = tr.querySelector('.sc-reveal-btn');
+        revealBtn.addEventListener('click', () => {
+          const revealed = valueEl.classList.toggle('revealed');
+          revealBtn.textContent = revealed ? 'Hide' : 'Reveal';
+        });
         tbody.appendChild(tr);
       }
       table.appendChild(tbody);
@@ -357,17 +366,7 @@ export async function render(intake) {
         row.appendChild(copyBtn);
         cmdsSection.appendChild(row);
 
-        // Hover-reveal: 200ms delay
-        let revealTimer = null;
-        row.addEventListener('mouseenter', () => {
-          revealTimer = setTimeout(() => textEl.classList.add('revealed'), 200);
-        });
-        row.addEventListener('mouseleave', () => {
-          clearTimeout(revealTimer);
-          // Don't un-reveal on leave — keep it visible once shown
-        });
-
-        // Click-to-reveal immediately
+        // Click-to-reveal keeps connection details blurred until an intentional action.
         row.addEventListener('click', (e) => {
           if (e.target === copyBtn) return;
           textEl.classList.add('revealed');

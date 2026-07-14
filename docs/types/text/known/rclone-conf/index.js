@@ -5,6 +5,7 @@ export default {
     const n = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
     // Defer to dedicated TOML plugins (these are TOML, not rclone INI).
     if (n === 'frpc.toml' || n === 'listmonk-config.toml') return false;
+    if (n === 'radicale.conf') return false;
     if (n === 'rclone.conf') return true;
     const text = intake.textSample || intake.text || '';
     // rclone remotes have [name] sections with type = s3/drive/dropbox/etc.

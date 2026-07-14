@@ -4,15 +4,7 @@ export const plugin = {
   tags: ['odin', 'systems', 'native', 'c-alternative'],
   match(intake) {
     const name = (intake.name || intake.filename || '').toLowerCase();
-    if (name.endsWith('.odin')) return true;
-    const text = intake.text || '';
-    const hits = [
-      /^package\s+\w+/m.test(text),
-      /^import\s+/m.test(text),
-      /\bproc\s+\w+/m.test(text),
-      /\bstruct\s*\{/.test(text),
-    ].filter(Boolean).length;
-    return hits >= 3;
+    return name.endsWith('.odin');
   },
   loadRenderer: () => import('./renderer.js'),
   about: {

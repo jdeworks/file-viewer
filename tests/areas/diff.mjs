@@ -142,6 +142,31 @@ export async function run(ctx) {
     else fail('diff divider drag: ' + Math.round(diffBefore) + ' -> ' + Math.round(diffAfter));
   } else fail('split divider missing for Monaco diff split');
 
+  // ── Enhanced line-oriented custom diff ──
+  // Seven known-file plugins share this path. Exercise the loader through a real .gitattributes
+  // view so a missing module, an unhighlighted change, or a fallback Monaco diff is caught.
+  await openExample('.gitattributes');
+  await page.waitForSelector('#previewHost .gitattr-doc', { timeout: 12000 });
+  await page.waitForFunction(() => !!window.__fv?.state?.rawview, null, { timeout: 8000 });
+  await page.evaluate(() => {
+    const rv = window.__fv.state.rawview;
+    rv.setValue(rv.originalValue()
+      .replace('*.sh        text eol=lf', '*.sh        text eol=crlf')
+      + '\n*.snapshot  binary\n');
+  });
+  await page.click('#rawMode button[data-raw="diff"]');
+  await page.waitForSelector('#editor .rule-diff', { timeout: 8000 });
+  const ruleDiff = await page.$eval('#editor .rule-diff', (root) => ({
+    heading: root.querySelector('.md-head')?.textContent || '',
+    added: root.querySelectorAll('.k-added').length,
+    editedWords: root.querySelectorAll('.w-del, .w-ins').length,
+    monacoDiffs: document.querySelectorAll('#editor .monaco-diff-editor').length,
+  }));
+  if (/Rule-aware line diff/.test(ruleDiff.heading) && ruleDiff.added >= 1 && ruleDiff.editedWords >= 2 && ruleDiff.monacoDiffs === 0)
+    pass('enhanced rule diff loads and visibly distinguishes added and edited rules');
+  else fail('enhanced rule diff: ' + JSON.stringify(ruleDiff));
+  await page.click('#rawMode button[data-raw="current"]');
+
   // ── Inline open button (next to type dropdown) ──
   await page.click('#openInlineBtn');
   const intakeShown = await page.$eval('#intake', (e) => !e.hidden);

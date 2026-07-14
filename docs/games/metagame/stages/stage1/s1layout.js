@@ -18,7 +18,7 @@ export function stage1Markup(multTier) {
     + '    <div class="mg-s1-grid" aria-hidden="true"></div>'
     + '  </div>'
     + '</div>'
-    + '<div class="mg-s1-tabs" role="tablist"></div>'
+    + '<div class="mg-s1-tabs" role="tablist" aria-label="Bit Foundry progression"></div>'
     + '<div class="mg-s1-panels"></div>'
     + '</div>';
 }

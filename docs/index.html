@@ -133,10 +133,10 @@
 
       <!-- Raw-side content switch (4-way, icons). Visible when the type is editable/diffable. -->
       <div class="seg rawmode" id="rawMode" hidden role="tablist" aria-label="Raw content mode">
-        <button data-raw="original" title="Original" aria-label="Original">⟲</button>
-        <button data-raw="current" class="active" title="Current" aria-label="Current">≡</button>
-        <button data-raw="diff" title="Diff" aria-label="Diff">⇄</button>
-        <button data-raw="movediff" title="Move-aware diff" aria-label="Move-aware diff">⇅</button>
+        <button data-raw="original" title="Opened original (read-only)" aria-label="Show opened original">⟲</button>
+        <button data-raw="current" class="active" title="Current working copy" aria-label="Show current working copy">≡</button>
+        <button data-raw="diff" title="Compare opened original with current edits" aria-label="Compare original with current edits">⇄</button>
+        <button data-raw="movediff" title="Compare original with current edits and detect moved blocks" aria-label="Move-aware comparison of original and current edits">⇅</button>
       </div>
       <!-- Compare/merge lives OUTSIDE #rawMode so it stays reachable for types (e.g. .env) that
            intentionally disable the in-editor Diff. Gated on its own #compareBtn visibility. -->
@@ -321,6 +321,19 @@
             <button class="md-btn" data-textutil="b64decode" title="Decode Base64 selection (or full text)">B64 ↓</button>
             <span id="textUtilsCount" class="tu-count" hidden></span>
           </div>
+          <div id="binaryTools" class="md-tools-bar binary-tools-bar" hidden aria-label="Binary inspection tools">
+            <button class="md-btn" type="button" data-bin-action="prev" title="Previous 64 KiB window">←</button>
+            <label>Offset <input type="text" inputmode="text" data-bin-offset value="0x0" aria-label="Binary offset"></label>
+            <button class="md-btn" type="button" data-bin-action="go">Go</button>
+            <button class="md-btn" type="button" data-bin-action="next" title="Next 64 KiB window">→</button>
+            <span class="md-sep"></span>
+            <label>Hex <input type="search" data-bin-pattern placeholder="50 4b 03 04" aria-label="Hex byte pattern" spellcheck="false"></label>
+            <button class="md-btn" type="button" data-bin-action="find">Find next</button>
+            <span class="md-sep"></span>
+            <button class="md-btn" type="button" data-bin-action="stats">Stats</button>
+            <button class="md-btn" type="button" data-bin-action="strings">Strings</button>
+            <span class="binary-tools-status" data-bin-status></span>
+          </div>
           <div id="htmlToolbar" class="html-toolbar" hidden>
             <button type="button" class="ht-btn" data-cmd="bold" title="Bold (Ctrl+B)"><b>B</b></button>
             <button type="button" class="ht-btn ht-italic" data-cmd="italic" title="Italic (Ctrl+I)"><i>I</i></button>
@@ -340,6 +353,11 @@
             <button type="button" class="ht-btn" data-cmd="redo" title="Redo">&#x21AA;</button>
           </div>
           <div id="editor" class="editor-host"></div>
+          <div id="editorStatus" class="editor-status" hidden>
+            <label for="editorLanguageSelect">Language</label>
+            <select id="editorLanguageSelect" aria-label="Editor language mode"></select>
+            <span id="editorIndentStatus" class="editor-indent-status"></span>
+          </div>
         </div>
         <div class="split-divider" id="splitDivider" hidden role="separator" aria-orientation="vertical" aria-label="Drag to resize panes" title="Drag to resize"></div>
         <div class="pane preview-pane" id="previewPane"><div id="previewHost" class="preview-host"></div></div>
@@ -350,7 +368,10 @@
 
     <!-- Settings drawer (collapsible, off-canvas) -->
     <aside id="settingsDrawer" class="drawer" hidden aria-label="Settings">
-      <div class="drawer-head"><h2>Settings</h2><button class="icon-btn" data-close>✕</button></div>
+      <div class="drawer-head"><h2>Settings</h2><div class="drawer-head-actions">
+        <button class="icon-btn settings-dock-btn" id="settingsDockBtn" type="button" title="Dock settings beside the file" aria-label="Dock settings beside the file" aria-pressed="false">⇥</button>
+        <button class="icon-btn" data-close aria-label="Close settings">✕</button>
+      </div></div>
       <div class="drawer-body" id="settingsBody"></div>
     </aside>
 

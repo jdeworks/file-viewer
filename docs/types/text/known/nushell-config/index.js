@@ -6,6 +6,7 @@ export default {
     // Well-known Nushell filenames
     if (n === 'config.nu' || n === 'env.nu' || n === 'login.nu') return true;
     // Content heuristic for other .nu files
+    if (!n.endsWith('.nu')) return false;
     const text = intake.textSample || intake.text || '';
     if (text.includes('$env.config') || text.includes('use std') || text.includes('let-env')) return true;
     return false;

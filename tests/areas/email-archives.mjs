@@ -35,8 +35,21 @@ export async function run(ctx) {
   if (!zipHasEditor) pass('archive is preview-only (no raw editor)'); else fail('raw editor present for zip');
   await page.waitForSelector('#fileTree:not([hidden]) #ftBody .ft-file', { timeout: 8000 });
   const zipTreeRoot = await page.$eval('#ftRoot', (e) => e.textContent);
-  const zipTreeNames = await page.$$eval('#ftBody .ft-file .ft-name', (els) => els.map((e) => e.textContent));
-  if (/sample\.zip/i.test(zipTreeRoot) && zipTreeNames.includes('rows.csv')) pass('archive mounted as sidebar tree'); else fail('zip tree root=' + zipTreeRoot + ' names=' + zipTreeNames.join(','));
+  const zipTreeInitial = await page.evaluate(() => ({
+    files: [...document.querySelectorAll('#ftBody .ft-file .ft-name')].map((e) => e.textContent),
+    folders: [...document.querySelectorAll('#ftBody .ft-folder .ft-name')].map((e) => e.textContent),
+  }));
+  if (/sample\.zip/i.test(zipTreeRoot) && zipTreeInitial.folders.includes('data') && !zipTreeInitial.files.includes('rows.csv'))
+    pass('archive sidebar starts with bounded first-level expansion');
+  else fail('zip initial tree=' + JSON.stringify(zipTreeInitial));
+  await page.evaluate(() => {
+    const row = [...document.querySelectorAll('#ftBody .ft-folder')]
+      .find((e) => e.querySelector('.ft-name')?.textContent === 'data');
+    row?.click();
+  });
+  await page.waitForSelector('#ftBody .ft-file[data-path="data/rows.csv"]', { timeout: 5000 });
+  if (/sample\.zip/i.test(zipTreeRoot)) pass('archive mounts lazily expandable sidebar entries');
+  else fail('zip tree root=' + zipTreeRoot);
   // Open-file-inside-zip: entry names are clickable → the entry opens through normal detection.
   const openable = await zf.$$eval('.zip-table .z-open', (els) => els.map((e) => e.getAttribute('data-fv-open')));
   if (openable.includes('README.txt') && openable.includes('data/rows.csv')) pass('archive entries are clickable (open-inside-zip)'); else fail('zip openable: ' + openable.join(','));
@@ -110,6 +123,14 @@ export async function run(ctx) {
   const lockBanner = await page.$eval('#previewHost .zip-locked', (e) => e.textContent).catch(() => '');
   const lockedOpenable = await page.$$eval('#previewHost .zip-table .z-open', (els) => els.map((e) => e.getAttribute('data-fv-open')));
   if (lockBadge === 1 && /unlock/i.test(lockBanner) && lockedOpenable.includes('secret.txt')) pass('password-protected entry flagged and unlockable'); else fail('lock badge=' + lockBadge + ' banner=' + lockBanner.slice(0, 80) + ' openable=' + lockedOpenable.join(','));
+  await page.click('#ftBody .ft-file[data-path="secret.txt"]');
+  await page.waitForSelector('#previewHost .zip-unlock', { timeout: 5000 });
+  const extractionNotice = await page.$eval('#ftNotice', (e) => ({ hidden: e.hidden, text: e.textContent }));
+  if (!extractionNotice.hidden && /Extracting secret\.txt/.test(extractionNotice.text))
+    pass('archive sidebar shows extraction progress while prompting for a password');
+  else fail('archive password progress=' + JSON.stringify(extractionNotice));
+  await page.click('#previewHost [data-zip-act="cancel"]');
+  await page.waitForFunction(() => document.getElementById('ftNotice').hidden, null, { timeout: 5000 });
 
   // ── Archive repack ── edit a zip entry in memory, download the modified archive ──
   await page.goto(origin, { waitUntil: 'load' });

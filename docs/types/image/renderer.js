@@ -39,7 +39,29 @@ const EDIT_TOOLS_TPL = new URL('./edit-tools.html', import.meta.url);
 // matter as long as it decodes. AVIF belongs here for parity with PNG/JPEG/WebP.
 const EDITABLE_MIME = new Set(['image/png', 'image/jpeg', 'image/webp', 'image/avif', 'image/bmp', 'image/gif']);
 
+export function imageInputDiagnostics(intake) {
+  const loaded = Number(intake?.loadedBytes || intake?.bytes?.length || 0);
+  const size = Number(intake?.size || loaded);
+  if (intake?.truncated || loaded < size) {
+    return [
+      `Only ${loaded.toLocaleString()} of ${size.toLocaleString()} bytes were loaded.`,
+      'Image decoders require the complete payload; a partial preview could look valid while omitting data, so rendering and editing are disabled.',
+      'The original file handle remains available for download.',
+    ];
+  }
+  return [];
+}
+
 export async function render(intake, ctx = {}) {
+  const inputDiagnostics = imageInputDiagnostics(intake);
+  if (inputDiagnostics.length) {
+    return {
+      bodyHtml: '<div class="json-error"><strong>Incomplete image input</strong><ul>'
+        + inputDiagnostics.map((message) => '<li>' + String(message).replace(/[&<>"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[char])) + '</li>').join('')
+        + '</ul></div>',
+      hadUnsafe: false,
+    };
+  }
   if (isSvg(intake)) {
     const DOMPurify = await loadGlobal(vendor('dompurify/purify.min.js'), 'DOMPurify');
     DOMPurify.removed = [];
@@ -87,7 +109,7 @@ export async function render(intake, ctx = {}) {
     editInput, editSize, editColor, editApply, editReset,
     pencilBtn, eraserBtn, fillBtn, cloneBtn, healBtn, fillTol, fillTolV, fillMode, fillPercep, fillFeather, fillOpts,
     selectBtn, marqueeBtn, ellipseBtn, lassoBtn, deselectBtn, selInvertBtn, selCutBtn, moveBtn,
-    drawColorPicker, drawSizePicker, undoBtn, redoBtn, exportFmt, editFont,
+    drawColorPicker, drawSizePicker, undoBtn, redoBtn, exportFmt, exportScale, editFont,
     bgBtn, bgTol, bgOk, bgX,
     cropBtn, cropApplyBtn, cropCancelBtn,
     resizeBtn, resizePanel, resizeW, resizeH, resizeLock, resizeApplyBtn, resizeCancelBtn,
@@ -130,6 +152,7 @@ export async function render(intake, ctx = {}) {
   // passes through untouched.
   const hostOnBinaryEdit = ctx.onBinaryEdit;
   let lastRasterEdit = null;
+  const outputScale = () => Math.max(0.5, Math.min(3, Number(exportScale?.value) || 1));
   function emitBinaryEdit() {
     if (!hostOnBinaryEdit) return;
     if (overlayActive()) {
@@ -137,7 +160,7 @@ export async function render(intake, ctx = {}) {
         dirty: true,
         mimeType: core.getExportMime(),
         getBytes: async () => {
-          const canvas = advController.flattenToCanvas();
+          const canvas = advController.flattenToCanvas({ pixelRatio: outputScale() });
           const mt = core.getExportMime();
           const blob = await new Promise((r) => canvas.toBlob(r, mt, mt === 'image/jpeg' ? 0.92 : undefined));
           return new Uint8Array(await blob.arrayBuffer());
@@ -199,11 +222,12 @@ export async function render(intake, ctx = {}) {
     await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
     try {
       let canvas;
-      if (overlayActive()) { canvas = advController.flattenToCanvas(); }
+      if (overlayActive()) { canvas = advController.flattenToCanvas({ pixelRatio: outputScale() }); }
       else {
         const base = await core.loadBase();
         canvas = document.createElement('canvas');
-        canvas.width = base.naturalWidth || img.naturalWidth; canvas.height = base.naturalHeight || img.naturalHeight;
+        canvas.width = Math.max(1, Math.round((base.naturalWidth || img.naturalWidth) * outputScale()));
+        canvas.height = Math.max(1, Math.round((base.naturalHeight || img.naturalHeight) * outputScale()));
         const g = canvas.getContext('2d');
         if (mt === 'image/jpeg') { g.fillStyle = '#fff'; g.fillRect(0, 0, canvas.width, canvas.height); }
         g.drawImage(base, 0, 0);
@@ -220,6 +244,7 @@ export async function render(intake, ctx = {}) {
       downloadBtn.disabled = false; downloadBtn.textContent = label; delete downloadBtn.dataset.busy;
     }
   });
+  exportScale?.addEventListener('change', () => { if (overlayActive()) emitBinaryEdit(); });
 
   // Interactive tools (text placement, crop, BG pick) register here so the pan
   // logic stands down while a tool owns the pointer; each exposes isActive().
@@ -253,6 +278,9 @@ export async function render(intake, ctx = {}) {
   const isJxl = ((intake.filename || '').split('.').pop()?.toLowerCase() === 'jxl') || mime === 'image/jxl';
   img.addEventListener('error', () => {
     if (isJxl) return; // jxl is decoded in JS below, never via img.src
+    img.hidden = true;
+    note.hidden = false;
+    note.textContent = 'This image could not be decoded. It may be malformed, truncated before intake, or unsupported by this browser; the original file still downloads.';
   });
   if (isJxl) {
     // Browsers can't decode JPEG XL — decode it in JS (lazy, heavy wasm) into a

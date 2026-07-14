@@ -14,6 +14,7 @@ import {
 } from './editor-advanced.js';
 import { toTrimTime, parseTimestamp, parseTrimInputText, makeBtn } from './editor-helpers.js';
 import { buildInputsFor, collectParams } from './editor-inputs.js';
+import { buildWorkingCopyButton } from './media-working-copy.js';
 
 const OPERATIONS = [
   { id: 'trim',        label: 'Trim' },
@@ -33,7 +34,7 @@ const OPERATIONS = [
 // Build and return the full editor panel element. `mediaEl` is the native <video>/<audio>.
 // `intake` is the file descriptor from the renderer. `onNewUrl` is called with (blobUrl, filename)
 // after a successful operation so the caller can update the player.
-export function buildEditorPanel(intake, mediaEl, onNewUrl) {
+export function buildEditorPanel(intake, mediaEl, onNewUrl, options = {}) {
   const baseName = (intake.filename || 'output').replace(/\.[^.]+$/, '');
   let currentOp = null;
   let currentCtx = null;
@@ -201,7 +202,8 @@ export function buildEditorPanel(intake, mediaEl, onNewUrl) {
     if (endVal) inputs[1].value = endVal;
   }
 
-  function showResult(url, filename, sizeBytes, { chainable = false } = {}) {
+  function showResult(output, { chainable = false } = {}) {
+    const { url, filename, bytes: sizeBytes, blob } = output;
     const sizeMB = (sizeBytes / 1048576).toFixed(1);
     resultArea.innerHTML = '';
     const msg = document.createElement('span');
@@ -219,13 +221,14 @@ export function buildEditorPanel(intake, mediaEl, onNewUrl) {
       chainBtn.addEventListener('click', async () => {
         chainBtn.disabled = true;
         try {
-          const blob = await (await fetch(url)).blob();
           setWorkingIntake({ file: blob, filename }, chainDepth + 1);
           if (currentOp) selectOp(currentOp); // fresh op state on the new working source
         } catch { showError('Could not load the result to continue editing.'); }
       });
       resultArea.append(chainBtn);
     }
+    const workingCopyButton = buildWorkingCopyButton(output, options.workingCopy);
+    if (workingCopyButton) resultArea.append(workingCopyButton);
     resultArea.hidden = false;
   }
 
@@ -308,15 +311,15 @@ export function buildEditorPanel(intake, mediaEl, onNewUrl) {
       ffInstance = ff;
       progressMsg.textContent = 'Encoding…';
 
-      const { url, filename, bytes } = await runOperation(ff, currentOp, params, workingIntake);
-      blobUrls.push(url);
+      const output = await runOperation(ff, currentOp, params, workingIntake);
+      blobUrls.push(output.url);
 
       // For ops that produce playable media, offer to play the result AND chain further edits onto it.
       const nonPlayable = new Set(['screenshot', 'thumbstrip', 'gif', 'webp']);
       const playable = !nonPlayable.has(currentOp);
-      if (playable) onNewUrl(url);
+      if (playable) onNewUrl(output.url);
 
-      showResult(url, filename, bytes, { chainable: playable });
+      showResult(output, { chainable: playable });
     } catch (err) {
       showErrorWithDetail(formatFfmpegError(err));
     } finally {

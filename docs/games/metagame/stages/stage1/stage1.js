@@ -77,7 +77,12 @@ export function renderStage1(ctx) {
     achievements: () => (state.achievements || []).length >= 1,
     reset: () => gte(state.totalBits, RESET_THRESHOLD) || (state.prestigeCount || 0) >= 1,
   };
-  const TAB_LABELS = { bits: '🧮 Bits', managers: '🛠 Managers', achievements: '🏆 Achievements', reset: '🌀 Prestige' };
+  const TAB_STEPS = {
+    bits: { number: 1, label: '🧮 Bits' },
+    managers: { number: 2, label: '🛠 Managers' },
+    achievements: { number: 3, label: '🏆 Achievements' },
+    reset: { number: 4, label: '🌀 Prestige' },
+  };
 
   host.innerHTML = stage1Markup(multTier);
 
@@ -118,12 +123,19 @@ export function renderStage1(ctx) {
   // ── Tab framework (dirty-checked: rebuilt only when the visible set / active tab changes) ──
   let tabsSig = null;
   function renderTabs() {
-    const visible = Object.keys(TAB_LABELS).filter((id) => tabVisible[id]());
+    const visible = Object.keys(TAB_STEPS).filter((id) => tabVisible[id]());
     const sig = visible.join(',') + '|' + activeTab;
     if (sig === tabsSig) return;
     tabsSig = sig;
     tabsEl.innerHTML = visible
-      .map((id) => '<button class="mg-s1-tab' + (id === activeTab ? ' mg-s1-tab-on' : '') + '" type="button" role="tab" data-tab="' + id + '">' + TAB_LABELS[id] + '</button>')
+      .map((id) => {
+        const step = TAB_STEPS[id];
+        const current = id === activeTab;
+        return '<button class="mg-s1-tab' + (current ? ' mg-s1-tab-on' : '')
+          + '" type="button" role="tab" data-tab="' + id + '" data-step="' + step.number
+          + '" aria-selected="' + current + '"' + (current ? ' aria-current="step"' : '') + '>'
+          + '<span class="mg-s1-step">Step ' + step.number + '</span><span>' + step.label + '</span></button>';
+      })
       .join('');
     tabsEl.querySelectorAll('.mg-s1-tab').forEach((b) => b.addEventListener('click', () => {
       activeTab = b.dataset.tab;

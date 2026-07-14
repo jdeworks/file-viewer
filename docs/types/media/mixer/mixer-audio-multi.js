@@ -63,6 +63,7 @@ import {
   updateMixRuler,
 } from './mixer-audio-multi-ui.js';
 import { buildLaneEditorModal, updateLaneModalValues } from './mixer-audio-multi-eq.js';
+import { buildWorkingCopyButton } from '../media-working-copy.js';
 
 export function mountModularAudioMixer(panel, intake, mediaEl = null, options = {}) {
   ensureMixerStyles();
@@ -105,7 +106,9 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
     filename: `${(intake?.filename || 'media-mix').replace(/\.[^.]+$/, '')}.mixer.json`,
   });
 
-  const { toolbar, masterSlider, videoPlanBtn, formatSelect, fullscreenBtn, exportStatus } = buildMixToolbar();
+  const {
+    toolbar, masterSlider, videoPlanBtn, formatSelect, fullscreenBtn, exportStatus, workingCopySlot,
+  } = buildMixToolbar();
   const rulerEl = Object.assign(document.createElement('div'), { className: 'al-mix-ruler' });
   const lanesContainer = document.createElement('div');
   lanesContainer.className = 'al-lanes';
@@ -486,6 +489,10 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
       root.dataset.lastMixdownBytes = String(blob.size);
       root.dataset.mixdownState = 'complete';
       exportStatus.textContent = `${format.toUpperCase()} ready`;
+      const output = { blob, filename: plan.filename, mime: blob.type };
+      workingCopySlot.replaceChildren();
+      const workingCopyButton = buildWorkingCopyButton(output, options.workingCopy, 'al-btn media-working-copy');
+      if (workingCopyButton) workingCopySlot.append(workingCopyButton);
       downloadBlob(blob, plan.filename);
     } catch (error) {
       root.dataset.lastMixdownError = error?.message || String(error);
@@ -555,6 +562,9 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
       root.dataset.videoExportRunState = 'complete';
       root.dataset.lastVideoExportBytes = String(result.bytes);
       root.dataset.lastVideoExportFilename = result.filename;
+      workingCopySlot.replaceChildren();
+      const workingCopyButton = buildWorkingCopyButton(result, options.workingCopy, 'al-btn media-working-copy');
+      if (workingCopyButton) workingCopySlot.append(workingCopyButton);
       downloadBlob(result.blob, result.filename);
     } catch (error) {
       const { formatFfmpegError } = await import('../transcoder.js').catch(() => ({ formatFfmpegError: (err) => err?.message || String(err) }));

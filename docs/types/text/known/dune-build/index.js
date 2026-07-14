@@ -3,10 +3,7 @@ export default {
   label: 'Dune Build',
   match(intake) {
     const n = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
-    const text = intake.textSample || intake.text || '';
-    if (n === 'dune-project' || n === 'dune') return true;
-    if (text.includes('(lang dune') || (text.includes('(library') && text.includes('(name'))) return true;
-    return false;
+    return n === 'dune-project' || n === 'dune' || n === 'dune-workspace';
   },
   loadRenderer: () => import('./renderer.js'),
   about: {

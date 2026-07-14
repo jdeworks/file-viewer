@@ -115,6 +115,34 @@ const TYPE_INFO = {
   prproj: ['Adobe Premiere Project', 'used for Adobe Premiere Pro video editing projects.', 'https://en.wikipedia.org/wiki/Adobe_Premiere_Pro'],
   qif: ['QIF Financial', 'used for Quicken, Microsoft Money, and GnuCash account exports.', 'https://en.wikipedia.org/wiki/Quicken_Interchange_Format'],
   sarif: ['SARIF Security Report', 'used to exchange static analysis results between tools like CodeQL, ESLint, Semgrep, and Bandit.', 'https://sarifweb.azurewebsites.net/'],
+  'docker-compose': ['Docker Compose', 'used to define multi-container services, networks, volumes, and build settings.', 'https://docs.docker.com/compose/compose-file/'],
+  dockerfile: ['Dockerfile', 'used to define the ordered instructions that build a container image.', 'https://docs.docker.com/reference/dockerfile/'],
+  jsonl: ['JSON Lines', 'used for streams and datasets containing one independent JSON value per line.', 'https://jsonlines.org/'],
+  tiff: ['TIFF image', 'used for high-quality raster images, scans, publishing assets, and image metadata.', 'https://www.loc.gov/preservation/digital/formats/fdd/fdd000022.shtml'],
+  svg: ['SVG image', 'used for resolution-independent vector graphics described with XML.', 'https://www.w3.org/TR/SVG2/'],
+  dxf: ['AutoCAD DXF drawing', 'used to exchange CAD drawings, layers, blocks, geometry, and annotations.', 'https://en.wikipedia.org/wiki/AutoCAD_DXF'],
+  pcap: ['Packet capture', 'used to store captured network packets for protocol analysis and troubleshooting.', 'https://www.tcpdump.org/manpages/pcap-savefile.5.html'],
+  xyz: ['XYZ molecular structure', 'used for simple atom coordinates and molecular geometry interchange.', 'https://en.wikipedia.org/wiki/XYZ_file_format'],
+  shapefile: ['ESRI Shapefile', 'used to store vector map geometry together with tabular attributes and indexes.', 'https://support.esri.com/en-us/technical-paper/esri-shapefile-technical-description-398'],
+  bsp: ['BSP game map', 'used to store partitioned game levels, geometry, visibility data, entities, and textures.', 'https://developer.valvesoftware.com/wiki/BSP_(Source)'],
+  cbor: ['CBOR', 'used for compact, schema-free binary data interchange defined by RFC 8949.', 'https://cbor.io/'],
+  arrow: ['Apache Arrow', 'used for language-independent, columnar in-memory data and IPC/Feather files.', 'https://arrow.apache.org/docs/format/Columnar.html'],
+  parquet: ['Apache Parquet', 'used for compressed columnar analytical datasets with schemas and row groups.', 'https://parquet.apache.org/docs/file-format/'],
+  avro: ['Apache Avro', 'used for schema-described records, data serialization, and container files.', 'https://avro.apache.org/docs/current/specification/'],
+  bson: ['BSON', 'used for a binary representation of JSON-like documents, notably by MongoDB.', 'https://bsonspec.org/spec.html'],
+  dbf: ['dBase / DBF Database', 'used for fixed-record tabular data in dBase and shapefile attribute tables.', 'https://en.wikipedia.org/wiki/.dbf'],
+  step: ['STEP CAD Exchange', 'used to exchange product-model and CAD geometry data using ISO 10303-21 text records.', 'https://en.wikipedia.org/wiki/ISO_10303-21'],
+  blend: ['Blender scene', 'used to store Blender scenes, objects, materials, animation, and project state.', 'https://docs.blender.org/manual/en/latest/files/blend/open_save.html'],
+  mat: ['MATLAB MAT-file', 'used to store MATLAB arrays, variables, structures, and scientific workspace data.', 'https://www.mathworks.com/help/matlab/import_export/mat-file-versions.html'],
+  pyc: ['Python bytecode', 'used to cache compiled Python code objects for faster module imports.', 'https://docs.python.org/3/library/marshal.html'],
+  lmms: ['LMMS project', 'used to store LMMS songs, instruments, effects, automation, and project settings.', 'https://docs.lmms.io/user-manual/getting-started/files'],
+  rpm: ['RPM package', 'used to distribute software, metadata, scripts, and payloads on RPM-based Linux systems.', 'https://rpm.org/docs/'],
+  nupkg: ['ZIP-based software package', 'used by ecosystems such as NuGet, VSIX, Python wheels, and Java archives to distribute software and metadata.', 'https://learn.microsoft.com/nuget/create-packages/creating-a-package'],
+  sdf: ['SDF / MDL Molfile', 'used to exchange chemical structures, atom bonds, coordinates, and per-molecule properties.', 'https://en.wikipedia.org/wiki/Chemical_table_file'],
+  kicad: ['KiCad EDA file', 'used for electronic schematics, PCB layouts, footprints, symbols, and project data.', 'https://dev-docs.kicad.org/en/file-formats/'],
+  'guitar-pro': ['Guitar Pro tablature', 'used for guitar tablature, standard notation, tracks, effects, and playback data.', 'https://en.wikipedia.org/wiki/Guitar_Pro'],
+  kml: ['KML map', 'used to describe geographic placemarks, paths, polygons, models, and overlays.', 'https://www.ogc.org/standard/kml/'],
+  apk: ['Android package', 'used to distribute installable Android apps and app bundles with code, resources, and manifests.', 'https://developer.android.com/guide/app-bundle'],
 };
 
 const KNOWN_INFO = {
@@ -130,7 +158,6 @@ const KNOWN_INFO = {
   gemfile: ['Gemfile', 'lists Ruby gems and dependency groups for Bundler.', 'https://bundler.io/gemfile.html'],
   codeowners: ['CODEOWNERS', 'assigns review ownership for paths in a repository.', 'https://docs.github.com/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners'],
   editorconfig: ['.editorconfig', 'shares indentation and formatting rules between editors.', 'https://editorconfig.org/'],
-  'pom-xml': ['pom.xml', 'describes a Maven project, dependencies, plugins, and build metadata.', 'https://maven.apache.org/pom.html'],
   'build-gradle': ['build.gradle', 'defines Gradle build logic, plugins, and dependencies.', 'https://docs.gradle.org/current/userguide/writing_build_scripts.html'],
   pipfile: ['Pipfile', 'describes Python project packages and Python version for Pipenv.', 'https://pipenv.pypa.io/en/latest/pipfile.html'],
   openapi: ['OpenAPI', 'describes HTTP APIs, schemas, operations, and examples.', 'https://spec.openapis.org/oas/latest.html'],
@@ -142,7 +169,25 @@ function fromEntry(entry) {
 
 export function getTypeInfo(type, known = null) {
   if (known && KNOWN_INFO[known.id]) return fromEntry(KNOWN_INFO[known.id]);
-  if (type && TYPE_INFO[type.id]) return fromEntry(TYPE_INFO[type.id]);
+  const base = type && TYPE_INFO[type.id]
+    ? fromEntry(TYPE_INFO[type.id])
+    : {
+        name: type?.label || 'File format',
+        description: 'used to store or exchange data in a format-specific structure.',
+        href: 'https://en.wikipedia.org/wiki/File_format',
+      };
+  if (known) {
+    const linkedPurpose = Array.isArray(known.about?.usedFor)
+      ? known.about.usedFor.find((item) => item?.href)
+      : null;
+    return {
+      name: known.label || known.id || base.name,
+      description: known.about?.description
+        || `recognized as ${known.label || known.id} and shown with a tailored structure summary.`,
+      href: linkedPurpose?.href || base.href,
+    };
+  }
+  if (type && TYPE_INFO[type.id]) return base;
   const label = type?.label || 'File format';
   return {
     name: label,
@@ -186,7 +231,11 @@ export function getTypeFeatures(type, known) {
 export function sampleDescription(example, info) {
   const label = example.label || example.file || 'Sample file';
   const typeName = info?.name || 'file';
-  const parts = [`${label}: ${typeName} ${info?.description || 'sample file.'}`];
+  const explicit = String(example.description || '').trim();
+  const description = explicit
+    ? explicit + (/[.!?]$/.test(explicit) ? '' : '.')
+    : `${typeName} ${info?.description || 'sample file.'}`;
+  const parts = [`${label}: ${description}`];
   const cats = example.categories || example.groups || example.category;
   const list = Array.isArray(cats) ? cats : cats ? [cats] : [];
   if (list.length > 1) parts.push('Groups: ' + list.join(', ') + '.');

@@ -1,9 +1,8 @@
 // renderer.js — Stage 5 Protocol Codex controller: routes between the hub and the act-map run
 // (combat / reward / rest / shop / event). Owns the transient combat instance (never persisted —
-// a reload re-instantiates from the run's node). The act-4 boss, The Refused Connection, is fought
-// with the player's REAL deck (boss-combat.js wires the negotiation as an acceptance hook); reading
-// the codex (epub) is an optional buff — unread, the boss just carries more HP (UNCH9_HP_MULT) — not
-// a requirement to defeat it with the deck built across acts 1–3.
+// a reload re-instantiates from the run's node). The terminal boss, The Refused Connection, is fought
+// with the player's REAL deck (act 4 on a first run, act 6 thereafter). Reading the codex is an
+// optional buff: unread, the boss carries more HP (UNCH9_HP_MULT), but the negotiation remains fair.
 
 import { createCombat, playCard, endTurn, makeRng, applyPotionEffect, strHash, congestionForAct, currentIntent } from "./combat.js";
 import { cardById } from "./cards.js";
@@ -13,11 +12,11 @@ import { potionById } from "./potions.js";
 import { eventForNode, applyEventChoice } from "./events.js";
 import { nodeById } from "./mapgen.js";
 import {
-  createRun, moveTo, enemyForCurrentNode, resolveCombat,
+  moveTo, enemyForCurrentNode, resolveCombat,
   takeReward, takePotion, usePotion, buyPotion, takeBossRelic, rest, removeCard, closeNode,
   buyCard, buyRemoval, buyUpgrade, buyRelic,
   prestigeCost, canPrestige, eligiblePrestigeUpgrades, seatAtFinalBoss, runScore,
-  finalActForWins, finalActOf, isVeteranRun
+  finalActOf, isVeteranRun
 } from "./run.js";
 import { banner } from "../../shared/feedback.js";
 import { getBossLockState } from "./boss.js";
@@ -37,6 +36,7 @@ import { hubView, mapView, paintMapEdges, deathView, wonView } from "./ui-map.js
 import { rewardView, restView, shopView, eventView, bossRewardView } from "./ui-rewards.js";
 import { openEpub, openBts, once } from "./renderer-open.js";
 import { applyDev, devSkipToBoss } from "./s5dev.js";
+import { beginProtocolRun, recordProtocolScore } from "./run-lifecycle.js";
 
 const REFUSED_CONNECTION = "the-refused-connection";
 
@@ -254,8 +254,8 @@ export function renderStage5({ host, state, actions, achievements, bell, bts, vi
       windowCap: 5 + (run.windowCapMod || 0) // prestige tight-window modifier
     });
     c.nodeId = run.currentNodeId;
-    // The act-4 finale: layer the negotiation onto the real fight. ch9 unread ⇒ locked ⇒ every
-    // Signal deals 0 (the load-bearing un-cheat); reading the codex rebuilds this combat unlocked.
+    // Terminal finale: layer the negotiation onto the real fight. Chapter 9 reveals the accepted
+    // sequence and removes the unread HP surcharge without replacing the player's real deck.
     if (enemyId === REFUSED_CONNECTION) wireBossCombat(c, { locked: !lockState().unlocked, hpMult: run.bossHpMult || 1, extraPhase: Boolean(run.bossExtraPhase) });
     // The key-gated superboss: a multi-phase real-deck fight (no lock, no un-cheat — pure bonus).
     else if (enemyId === SUPERBOSS_ID) wireSuperboss(c);
@@ -280,7 +280,7 @@ export function renderStage5({ host, state, actions, achievements, bell, bts, vi
     pendingFx = null;
     if (win && isFinalBoss) finalBossDefeated(run);
     // A run that just resolved (death, or the final-boss win) banks its self-competition score.
-    if (run.status === "dead" || run.status === "won") recordScore(run);
+    if (run.status === "dead" || run.status === "won") recordProtocolScore(state.meta, run);
   }
 
   // The act-6 boss fell to the real deck: mark the codex gate answered. With all 3 keys the run
@@ -313,7 +313,7 @@ export function renderStage5({ host, state, actions, achievements, bell, bts, vi
     run.superbossCleared = true;
     if (win && run.hp > 0) { run.status = "won"; run.trueEnding = true; }
     else run.status = "dead"; // fell to the kernel — but the connection had already accepted you
-    recordScore(run);
+    recordProtocolScore(state.meta, run);
     completeOnce({ stage: 5, defeated: true, reward: { handshakes: 80 }, btsPath: BTS_PATH });
   }
 
@@ -347,57 +347,17 @@ export function renderStage5({ host, state, actions, achievements, bell, bts, vi
   }
 
   // ── run lifecycle ────────────────────────────────────────────────────────────────────────────
-  function beginRun({ mode = "standard", seedText = null } = {}) {
-    state.meta.runsStarted = (state.meta.runsStarted || 0) + 1;
-    let seed, dailyKey = null;
-    if (mode === "daily") {
-      dailyKey = currentDailyKey();
-      seed = strHash(`daily:${dailyKey}`); // deterministic from the date — same day = same run
-    } else if (mode === "custom" && String(seedText || "").trim()) {
-      dailyKey = String(seedText).trim().slice(0, 40);
-      seed = strHash(`custom:${dailyKey}`); // deterministic from the typed seed
-    } else {
-      mode = "standard";
-      seed = 1000 + state.meta.runsStarted * 7919 + (state.meta.protocolVersion || 0) * 131;
-    }
-    state.run = createRun({
-      seed,
-      version: state.meta.protocolVersion || 0,
-      handshakes: 0,
-      ascension: ascension ? ascension.level() : 0,
-      mode,
-      dailyKey,
-      // First-ever run (0 wins) ends at the act-4 story boss; ≥1 win restores the full six acts.
-      finalAct: finalActForWins(state.meta.runsCleared || 0),
-      permanentUpgrades: state.meta.permanentUpgrades || []
+  function beginRun(opts = {}) {
+    beginProtocolRun({
+      state,
+      ascensionLevel: ascension ? ascension.level() : 0,
+      dailyKeyOverride,
+      ...opts,
     });
-    state.ui.screen = "run";
     if (combatRun) combatRun.reset(); // drop any stale combat snapshot from a previous run
     combat = null;
     pendingCardIndex = null;
     pendingFx = null;
-  }
-
-  // The daily seed key (YYYY-MM-DD). Read ONCE at run creation (a seed, not loop entropy); tests may
-  // pin it via window.__fvStage5.setDailyKey to keep the seeded run reproducible.
-  function currentDailyKey() {
-    if (dailyKeyOverride) return dailyKeyOverride;
-    try { return new Date().toISOString().slice(0, 10); } catch { return "1970-01-01"; }
-  }
-
-  // Record a finished run's self-competition score into meta (all-time best + per-seed best). Local
-  // only; no off-origin. Called when a run resolves to dead/won.
-  function recordScore(run) {
-    if (!run) return;
-    const score = runScore(run);
-    state.meta.lastScore = score;
-    state.meta.lastMode = run.mode || "standard";
-    state.meta.lastSeedKey = run.dailyKey || null;
-    if (score > (state.meta.bestScore || 0)) state.meta.bestScore = score;
-    if (run.dailyKey) {
-      if (!state.meta.dailyBest || typeof state.meta.dailyBest !== "object") state.meta.dailyBest = {};
-      if (score > (state.meta.dailyBest[run.dailyKey] || 0)) state.meta.dailyBest[run.dailyKey] = score;
-    }
   }
 
   // Resolve the player's choice for this node's (deterministically selected) event, then return to

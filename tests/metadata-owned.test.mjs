@@ -232,6 +232,16 @@ function bspHeaderBytes(magic, version, entityText) {
   const rows = jsonMeta({ filename: 'edge.jsonc', text: jsonc });
   assert.equal(value(rows, 'Valid JSON'), 'yes');
   assert.equal(value(rows, 'Parse mode'), 'JSONC recovery');
+  assert.throws(
+    () => parseJsonLike("{unquoted: 'value'}"),
+    (error) => error.jsonDiagnostics?.some((message) => /JSON5-like syntax/.test(message)),
+    'JSON5-only syntax is diagnosed without evaluating it',
+  );
+  assert.throws(
+    () => parseJsonLike('{/* recoverable */ "name": "cut",'),
+    (error) => error.jsonDiagnostics?.some((message) => /truncated or incomplete/.test(message)),
+    'failed JSONC recovery explains an incomplete tail',
+  );
 }
 
 {

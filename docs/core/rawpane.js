@@ -3,7 +3,6 @@
 // Extracted from app.js; renderPreview (the core re-render) is injected via initRawPane so this
 // module doesn't import app.js back.
 import { state, $, toast, themeIsDark, debounce } from './state.js';
-import { loadGlobal, vendor } from './script-loader.js';
 import { startAutosave, stopAutosave, clearAutosave, getAutosave } from './autosave.js';
 import { createRawView } from './rawview.js';
 import { hexDump } from './hexdump.js';
@@ -13,37 +12,55 @@ import { captureBodyHtml } from './iframe.js';
 import { mapRawToPreview, syncScrollFromRaw } from './sync.js';
 import { applyLayout } from './layout.js';
 import { markdownLinkForPastedUrl } from '../types/markdown/edit-actions.js';
-import { mountWysiwyg, unmountWysiwyg, getWysiwygValue, isWysiwygActive } from '../types/markdown/wysiwyg.js';
-import { toggleHtmlWysiwyg, teardownHtmlWysiwyg, getHtmlWysiwygValue,
-  setTableMode, wireTableModeBtn, teardownTableEditor, getTableEditorValue } from './rawpane-editors.js';
-import { setEnvFormMode, setIniFormMode, setTomlFormMode, setYamlFormMode,
-  wireEnvFormBtn, wireIniFormBtn, wireTomlFormBtn, wireYamlFormBtn, getActiveFormValue } from './rawpane-forms.js';
-import { setJsonToolsVisible, wireJsonTools, setYamlToolsVisible, wireYamlTools,
-  setXmlToolsVisible, wireXmlTools, setTomlToolsVisible, wireTomlTools,
-  setTextUtilsVisible, wireTextUtils } from './rawpane-toolbars.js';
-import { runMarkdownAction, closeTablePicker, onMarkdownContextMenu } from './rawpane-markdown.js';
 import { showEditDisclaimer, showAutosaveBanner, updateWordCount, hideWordCount } from './rawpane-banners.js';
 import { applyEditorMode } from './editor-mode.js';
+import { hideEditorStatus, mountEditorStatus, resolveEditorLanguage } from './editor-language.js';
 import { parserTextFromSource, sourceTextFromParser, sourceTextOf, withParserText, withSourceText } from './intake.js';
+import { syncHasToolsClass } from './rawpane-shared.js';
 
 let renderPreview = async () => {};
 export function initRawPane(deps) { renderPreview = deps.renderPreview; }
 
 let wysiwygMode = false;
 let viewerActionsPromise = null;
+const indentationNotices = new Set();
+let wysiwygApi = null;
+let editorSurfacesApi = null;
+let formEditorsApi = null;
+let toolbarsApi = null;
+let markdownToolsApi = null;
+let binaryInspectorApi = null;
+
+async function loadWysiwyg() {
+  return wysiwygApi || (wysiwygApi = await import('../types/markdown/wysiwyg.js'));
+}
+async function loadEditorSurfaces() {
+  if (!editorSurfacesApi) {
+    editorSurfacesApi = await import('./rawpane-editors.js');
+    editorSurfacesApi.initRawpaneEditors({ buildRawView });
+  }
+  return editorSurfacesApi;
+}
+async function loadFormEditors() {
+  if (!formEditorsApi) {
+    formEditorsApi = await import('./rawpane-forms.js');
+    formEditorsApi.initRawpaneForms({ applyLayout });
+  }
+  return formEditorsApi;
+}
+async function loadToolbars() {
+  return toolbarsApi || (toolbarsApi = await import('./rawpane-toolbars.js'));
+}
+async function loadMarkdownTools() {
+  return markdownToolsApi || (markdownToolsApi = await import('./rawpane-markdown.js'));
+}
+async function loadBinaryInspector() {
+  return binaryInspectorApi || (binaryInspectorApi = await import('./binary-inspector.js'));
+}
+
 function viewerActions() {
   if (!viewerActionsPromise) viewerActionsPromise = import('../games/metagame/viewer-actions.js');
   return viewerActionsPromise;
-}
-
-// Re-syncs the has-tools class on rawPane: true iff ANY type-specific toolbar is visible.
-// Called after each setXxxToolsVisible so that showing one toolbar and then hiding another
-// doesn't incorrectly clear the class when a third toolbar is still active.
-export function syncHasToolsClass() {
-  const anyVisible = ['markdownTools', 'jsonTools', 'yamlTools', 'xmlTools', 'tomlTools', 'htmlToolbar'].some(
-    (id) => { const el = $(id) || document.getElementById(id); return el && !el.hidden; }
-  );
-  $('rawPane')?.classList.toggle('has-tools', anyVisible);
 }
 
 function setMarkdownToolsVisible(visible) {
@@ -63,7 +80,7 @@ function wireMarkdownTools() {
     const btn = e.target.closest('[data-md-action]');
     if (!btn || btn.dataset.mdAction === 'table') return;
     e.preventDefault();
-    runMarkdownAction(btn.dataset.mdAction, btn);
+    markdownToolsApi?.runMarkdownAction(btn.dataset.mdAction, btn);
   });
   el.addEventListener('click', (e) => {
     const btn = e.target.closest('[data-md-action]');
@@ -74,12 +91,12 @@ function wireMarkdownTools() {
   el.addEventListener('click', (e) => {
     const btn = e.target.closest('[data-md-action="table"]');
     if (!btn) return;
-    runMarkdownAction('table', btn);
+    markdownToolsApi?.runMarkdownAction('table', btn);
   });
   // Dismiss the table picker when clicking outside
   document.addEventListener('click', (e) => {
     if (!e.target.closest('.md-table-picker') && !e.target.closest('[data-md-action="table"]')) {
-      closeTablePicker();
+      markdownToolsApi?.closeTablePicker();
     }
   });
   // WYSIWYG toggle button
@@ -100,6 +117,7 @@ function updateWysiwygBtn() {
 
 export async function toggleWysiwyg({ skipPersist = false } = {}) {
   if (state.type?.id !== 'markdown') return;
+  const wysiwyg = await loadWysiwyg();
 
   if (!wysiwygMode) {
     // Switching TO WYSIWYG: capture current Monaco text, dispose Monaco, mount EasyMDE
@@ -107,9 +125,10 @@ export async function toggleWysiwyg({ skipPersist = false } = {}) {
     const text = parserTextFromSource(state.rawview.getValue());
     state.rawview.dispose();
     state.rawview = null;
+    hideEditorStatus();
     wysiwygMode = true;
     updateWysiwygBtn();
-    await mountWysiwyg(document.getElementById('editor'), text, async (value) => {
+    await wysiwyg.mountWysiwyg(document.getElementById('editor'), text, async (value) => {
       state.intake = withParserText(state.intake, value);
       state.downloadedSinceEdit = false;
       if (state.currentFolderPath) {
@@ -129,11 +148,11 @@ export async function toggleWysiwyg({ skipPersist = false } = {}) {
       persistTypeKey('markdown', 'markdownEditor', 'wysiwyg');
     }
     applyLayout();   // go full-width: hide the now-redundant preview pane
-    setTextUtilsVisible(false);   // line-based utils (sort/trim/dedup/base64) don't apply to the rich editor
+    toolbarsApi?.setTextUtilsVisible(false);   // line-based utils don't apply to the rich editor
   } else {
     // Switching BACK to Monaco: capture EasyMDE text, unmount, rebuild rawview.
-    const text = getWysiwygValue();
-    unmountWysiwyg();
+    const text = wysiwyg.getWysiwygValue();
+    wysiwyg.unmountWysiwyg();
     wysiwygMode = false;
     state.intake = withParserText(state.intake, text);
     updateWysiwygBtn();
@@ -165,32 +184,38 @@ export async function buildRawView({ isCurrent = () => true, signal } = {}) {
   stopAutosave();
   hideWordCount();
   // Tear down the alternate editor surfaces (HTML visual / CSV table) when rebuilding.
-  teardownHtmlWysiwyg();
-  teardownTableEditor();
+  editorSurfacesApi?.teardownHtmlWysiwyg();
+  editorSurfacesApi?.teardownTableEditor();
   // Tear down env form editor when rebuilding (e.g. file changed)
-  setEnvFormMode(false);
+  formEditorsApi?.setEnvFormMode(false);
   // Tear down ini form editor when rebuilding (e.g. file changed)
-  setIniFormMode(false);
+  formEditorsApi?.setIniFormMode(false);
   // Tear down toml form editor when rebuilding (e.g. file changed)
-  setTomlFormMode(false);
+  formEditorsApi?.setTomlFormMode(false);
   // Tear down yaml form editor when rebuilding (e.g. file changed)
-  setYamlFormMode(false);
+  formEditorsApi?.setYamlFormMode(false);
   // If WYSIWYG was active (e.g. file changed), tear it down first
   if (wysiwygMode) {
-    unmountWysiwyg();
+    wysiwygApi?.unmountWysiwyg();
     wysiwygMode = false;
     updateWysiwygBtn();
   }
   state.rawview?.dispose();
   state.rawview = null;
+  binaryInspectorApi?.unmountBinaryInspector();
   // syntaxLanguage may be a function(intake) for types that pick the language per file (code).
   const sl = state.type.syntaxLanguage;
-  const lang = state.intake.isBinary ? 'plaintext' : ((typeof sl === 'function' ? sl(state.intake) : sl) || 'plaintext');
+  const detectedLang = state.intake.isBinary ? 'plaintext' : ((typeof sl === 'function' ? sl(state.intake) : sl) || 'plaintext');
+  const lang = state.intake.isBinary ? 'plaintext' : resolveEditorLanguage(state.type, state.intake, detectedLang);
   // Binary files get a read-only hex dump (offset / hex / ASCII) instead of a placeholder.
   const text = state.intake.isBinary
     ? hexDump(state.intake.bytes)
     : sourceTextOf(state.intake);
   const originalText = state.intake.isBinary ? text : (state.intake.originalText ?? text);
+  const markdownTools = state.type?.id === 'markdown' && !state.intake.isBinary
+    ? await loadMarkdownTools()
+    : markdownToolsApi;
+  if (!isCurrent() || signal?.aborted) return false;
   const nextRawview = await createRawView($('editor'), {
     originalText, currentText: text, language: lang,
     theme: themeIsDark() ? 'dark' : 'light',
@@ -198,7 +223,7 @@ export async function buildRawView({ isCurrent = () => true, signal } = {}) {
     onChange: debounce((value) => onRawEdited(value), 250),
     onCursor: (line) => mapRawToPreview(line),
     onScroll: () => syncScrollFromRaw(),
-    onContextMenu: state.type?.id === 'markdown' ? onMarkdownContextMenu : undefined,
+    onContextMenu: state.type?.id === 'markdown' ? markdownTools?.onMarkdownContextMenu : undefined,
     onPaste: state.type?.id === 'markdown'
       ? ({ text, selected }) => markdownLinkForPastedUrl(selected, text)
       : undefined,
@@ -219,12 +244,42 @@ export async function buildRawView({ isCurrent = () => true, signal } = {}) {
       : undefined,
     signal,
     isCurrent,
+    detectIndentation: !state.intake.isBinary,
   });
   if (!nextRawview || !isCurrent() || signal?.aborted) {
     nextRawview?.dispose();
     return false;
   }
   state.rawview = nextRawview;
+  if (state.intake.isBinary) {
+    const binaryInspector = await loadBinaryInspector();
+    if (!isCurrent() || signal?.aborted) return false;
+    binaryInspector.mountBinaryInspector({ intake: state.intake, rawview: state.rawview });
+  }
+  const configuredIndentation = {
+    tabSize: Number(state.settingsModel?.values?.tabSize) || 2,
+    insertSpaces: state.settingsModel?.values?.insertSpaces !== false,
+  };
+  mountEditorStatus({
+    rawview: state.rawview,
+    type: state.type,
+    intake: state.intake,
+    detectedLanguage: detectedLang,
+    configuredIndentation,
+  });
+  const actualIndentation = state.rawview.indentation?.();
+  const temporaryIndentation = actualIndentation?.detected
+    && (actualIndentation.insertSpaces !== configuredIndentation.insertSpaces
+      || (actualIndentation.insertSpaces && actualIndentation.tabSize !== configuredIndentation.tabSize));
+  if (temporaryIndentation) {
+    const style = actualIndentation.insertSpaces ? `${actualIndentation.tabSize} spaces` : 'tabs';
+    const configured = configuredIndentation.insertSpaces ? `${configuredIndentation.tabSize} spaces` : 'tabs';
+    const noticeKey = `${state.intake.filename}:${state.intake.originalText?.length || text.length}:${style}:${configured}`;
+    if (!indentationNotices.has(noticeKey)) {
+      indentationNotices.add(noticeKey);
+      toast(`Detected ${style}; using it for this file only. Your ${configured} editor setting is unchanged.`, 4800);
+    }
+  }
   if (!state.intake.isBinary) state.rawview.addCommand?.('ctrl+s', downloadCurrent);
   // Editor mode for Monaco-backed code types (code/dockerfile/dxf/gcode): explicitly editable
   // Monaco + Ctrl+S download. Additive — read view + Download button are untouched.
@@ -232,8 +287,8 @@ export async function buildRawView({ isCurrent = () => true, signal } = {}) {
   wireMarkdownTools();
   setMarkdownToolsVisible(state.type?.id === 'markdown' && !state.intake.isBinary);
   if (state.type?.id === 'markdown' && !state.intake.isBinary) {
-    state.rawview.addCommand?.('ctrl+b', () => runMarkdownAction('bold'));
-    state.rawview.addCommand?.('ctrl+i', () => runMarkdownAction('italic'));
+    state.rawview.addCommand?.('ctrl+b', () => markdownToolsApi?.runMarkdownAction('bold'));
+    state.rawview.addCommand?.('ctrl+i', () => markdownToolsApi?.runMarkdownAction('italic'));
   }
   // Auto-activate WYSIWYG if the user's preference is set
   if (state.type?.id === 'markdown' && !state.intake.isBinary
@@ -242,55 +297,64 @@ export async function buildRawView({ isCurrent = () => true, signal } = {}) {
     await toggleWysiwyg({ skipPersist: true });
     if (!isCurrent() || signal?.aborted) return false;
   }
-  wireJsonTools();
-  setJsonToolsVisible(state.type?.id === 'json' && !state.intake.isBinary);
-  wireYamlTools();
-  setYamlToolsVisible(state.type?.id === 'yaml' && !state.intake.isBinary);
-  wireXmlTools();
-  setXmlToolsVisible(state.type?.id === 'xml' && !state.intake.isBinary);
-  wireTomlTools();
-  setTomlToolsVisible(state.type?.id === 'toml' && !state.intake.isBinary);
-  wireTableModeBtn();
+  const toolbars = !state.intake.isBinary ? await loadToolbars() : toolbarsApi;
+  if (!isCurrent() || signal?.aborted) return false;
+  toolbars?.wireJsonTools();
+  toolbars?.setJsonToolsVisible(state.type?.id === 'json' && !state.intake.isBinary);
+  toolbars?.wireYamlTools();
+  toolbars?.setYamlToolsVisible(state.type?.id === 'yaml' && !state.intake.isBinary);
+  toolbars?.wireXmlTools();
+  toolbars?.setXmlToolsVisible(state.type?.id === 'xml' && !state.intake.isBinary);
+  toolbars?.wireTomlTools();
+  toolbars?.setTomlToolsVisible(state.type?.id === 'toml' && !state.intake.isBinary);
+
   const isTabular = state.type?.id === 'csv' && !state.intake.isBinary;
+  const isHtml = state.type?.id === 'html' && !state.intake.isBinary;
+  const editorSurfaces = (isTabular || isHtml) ? await loadEditorSurfaces() : editorSurfacesApi;
+  if (!isCurrent() || signal?.aborted) return false;
+  if (isTabular) editorSurfaces?.wireTableModeBtn();
   const tableModeBtn = document.getElementById('tableModeBtn');
   if (tableModeBtn) {
     tableModeBtn.hidden = !isTabular;
     tableModeBtn.classList.remove('active');
     tableModeBtn.setAttribute('aria-pressed', 'false');
   }
-  wireTextUtils();
   // Show text-utils only when no structured-type toolbar is active in raw mode.
   // Markdown co-exists (both bars show; markdown toolbar = first row, textutils = second row).
   // JSON/YAML/XML/CSV have always-on toolbars that would overlap textutils at top:0,
   // so hide textutils for those types. HTML toolbar only appears in WYSIWYG mode (not raw),
   // so HTML files are fine to show textutils in raw mode. CSV has table mode btn, not a toolbar.
   const hasAlwaysOnToolbar = ['json', 'yaml', 'xml'].includes(state.type?.id);
-  setTextUtilsVisible(!state.intake?.isBinary && !hasAlwaysOnToolbar);
-  wireEnvFormBtn();
+  toolbars?.wireTextUtils();
+  toolbars?.setTextUtilsVisible(!state.intake?.isBinary && !hasAlwaysOnToolbar);
   const filename = (state.intake?.filename || state.intake?.name || '').split('/').pop().toLowerCase();
   const isEnv = (state.type?.id === 'env' || filename.endsWith('.env')) && !state.intake.isBinary;
+  const isIni = state.type?.id === 'ini' && !state.intake.isBinary;
+  const needsForms = isEnv || isIni || ['toml', 'yaml'].includes(state.type?.id);
+  const forms = needsForms ? await loadFormEditors() : formEditorsApi;
+  if (!isCurrent() || signal?.aborted) return false;
+  if (isEnv) forms?.wireEnvFormBtn();
   const envFormBtn = document.getElementById('envFormBtn');
   if (envFormBtn) {
     envFormBtn.hidden = !isEnv;
     envFormBtn.classList.remove('active');
     envFormBtn.setAttribute('aria-pressed', 'false');
   }
-  wireIniFormBtn();
-  const isIni = state.type?.id === 'ini' && !state.intake.isBinary;
+  if (isIni) forms?.wireIniFormBtn();
   const iniFormBtn = document.getElementById('iniFormBtn');
   if (iniFormBtn) {
     iniFormBtn.hidden = !isIni;
     iniFormBtn.classList.remove('active');
     iniFormBtn.setAttribute('aria-pressed', 'false');
   }
-  wireTomlFormBtn();
+  if (state.type?.id === 'toml' && !state.intake.isBinary) forms?.wireTomlFormBtn();
   // Reset tomlFormBtn active state (visibility is inherited from #tomlTools parent)
   const tomlFormBtn = document.getElementById('tomlFormBtn');
   if (tomlFormBtn) {
     tomlFormBtn.classList.remove('active');
     tomlFormBtn.setAttribute('aria-pressed', 'false');
   }
-  wireYamlFormBtn();
+  if (state.type?.id === 'yaml' && !state.intake.isBinary) forms?.wireYamlFormBtn();
   // Reset yamlFormBtn active state (visibility is inherited from #yamlTools parent)
   const yamlFormBtn = document.getElementById('yamlFormBtn');
   if (yamlFormBtn) {
@@ -300,13 +364,12 @@ export async function buildRawView({ isCurrent = () => true, signal } = {}) {
   // HTML Visual button
   const htmlVisualBtn = document.getElementById('htmlVisualBtn');
   if (htmlVisualBtn) {
-    const isHtml = state.type?.id === 'html' && !state.intake.isBinary;
     htmlVisualBtn.hidden = !isHtml;
     htmlVisualBtn.classList.remove('active');
     htmlVisualBtn.setAttribute('aria-pressed', 'false');
     if (isHtml && !htmlVisualBtn.dataset.wired) {
       htmlVisualBtn.dataset.wired = '1';
-      htmlVisualBtn.addEventListener('click', () => toggleHtmlWysiwyg());
+      htmlVisualBtn.addEventListener('click', () => editorSurfacesApi?.toggleHtmlWysiwyg());
     }
   }
   syncRawModeButtons();
@@ -316,7 +379,8 @@ export async function buildRawView({ isCurrent = () => true, signal } = {}) {
   if (_autosaveBanner) { _autosaveBanner.hidden = true; $('rawPane')?.classList.remove('has-autosave'); }
   if (!state.intake?.isBinary) {
     const filename = state.intake?.filename || state.intake?.name;
-    const saved = getAutosave(filename);
+    const saved = await getAutosave(filename);
+    if (!isCurrent() || signal?.aborted) return false;
     if (saved && saved.text !== sourceTextOf(state.intake)) {
       showAutosaveBanner(saved);
     }
@@ -379,18 +443,18 @@ export async function onRawEdited(value) {
 // since the last edit. Used to guard against silently discarding progress.
 export function hasUnsavedWork() {
   if (state.rawview?.isDirty() && !state.downloadedSinceEdit) return true;
-  if (wysiwygMode && isWysiwygActive() && !state.downloadedSinceEdit &&
-      sourceTextFromParser(state.intake, getWysiwygValue()) !== (state.intake?.originalText ?? sourceTextOf(state.intake))) return true;
-  const htmlValue = getHtmlWysiwygValue();
+  if (wysiwygMode && wysiwygApi?.isWysiwygActive() && !state.downloadedSinceEdit &&
+      sourceTextFromParser(state.intake, wysiwygApi.getWysiwygValue()) !== (state.intake?.originalText ?? sourceTextOf(state.intake))) return true;
+  const htmlValue = editorSurfacesApi?.getHtmlWysiwygValue() ?? null;
   if (htmlValue != null && !state.downloadedSinceEdit &&
       sourceTextFromParser(state.intake, htmlValue) !== (state.intake?.originalText ?? sourceTextOf(state.intake))) return true;
   if (state.binaryEdit?.dirty && !state.downloadedSinceEdit) return true;
   // Table editor: dirty when current CSV differs from the original load
-  const tableValue = getTableEditorValue();
+  const tableValue = editorSurfacesApi?.getTableEditorValue() ?? null;
   if (tableValue != null && !state.downloadedSinceEdit &&
       sourceTextFromParser(state.intake, tableValue) !== (state.intake?.originalText ?? sourceTextOf(state.intake))) return true;
   // env/ini/toml/yaml form editor: dirty when the active form's text differs from the original load
-  const formValue = getActiveFormValue();
+  const formValue = formEditorsApi?.getActiveFormValue() ?? null;
   if (formValue != null && !state.downloadedSinceEdit &&
       sourceTextFromParser(state.intake, formValue) !== (state.intake?.originalText ?? sourceTextOf(state.intake))) return true;
   if (state.sessionEdits.size > 0) return true;
@@ -437,13 +501,13 @@ export async function takeScreenshot() {
 }
 
 export function currentEditableSource() {
-  const tableValue = getTableEditorValue();
+  const tableValue = editorSurfacesApi?.getTableEditorValue() ?? null;
   if (tableValue != null) return sourceTextFromParser(state.intake, tableValue);
-  const formValue = getActiveFormValue();
+  const formValue = formEditorsApi?.getActiveFormValue() ?? null;
   if (formValue != null) return sourceTextFromParser(state.intake, formValue);
-  const htmlValue = getHtmlWysiwygValue();
+  const htmlValue = editorSurfacesApi?.getHtmlWysiwygValue() ?? null;
   if (htmlValue != null) return sourceTextFromParser(state.intake, htmlValue);
-  if (wysiwygMode && isWysiwygActive()) return sourceTextFromParser(state.intake, getWysiwygValue());
+  if (wysiwygMode && wysiwygApi?.isWysiwygActive()) return sourceTextFromParser(state.intake, wysiwygApi.getWysiwygValue());
   return state.rawview ? state.rawview.getValue() : sourceTextOf(state.intake);
 }
 

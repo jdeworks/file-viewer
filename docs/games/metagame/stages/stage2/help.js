@@ -28,7 +28,7 @@ const SECTIONS = [
   ["Fire", "A firebolt lights its target's tile, and flames spread through * spore fields — chain a firebolt into a spore cluster to roast a whole pack (but mind your own footing)."],
   ["Shop", "Spend banked glyphs on permanent upgrades — they apply on your next run."],
   ["Heat", "In the shop you can toggle opt-in difficulty modifiers (more monsters, no potions, elite storm). Each active one multiplies the glyphs you bank — risk for reward. Once you've reached the Overflow, a mastery modifier unlocks: Lights Out shrinks your light radius for the whole run for the biggest multiplier of all."],
-  ["Boss", "It starts LOCKED. Open cipher.txt and read it to find the PASSAGE — that opens the boss. Then 'challenge boss'."]
+  ["Boss", "You can challenge it blind, but each exchange is slow and costs HP. Open cipher.txt and search it to find the PASSAGE — that turns the grind into a decisive clear."]
 ];
 
 export function buildHelpPanel({ onClose }) {

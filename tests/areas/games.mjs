@@ -623,6 +623,23 @@ export async function run(ctx) {
   if (!totalOnlyUnlocked) pass('Stage 1 tabs stay locked when only lifetime bits exceed 150'); else fail('Stage 1 tabs unlocked from totalBits alone');
   await page.click('.mg-s1-tap', { position: { x: 8, y: 8 } });
   await page.waitForSelector('.mg-s1-tab[data-tab="bits"]', { timeout: 4000 });
+  const stage1Progression = await page.$$eval('.mg-s1-tab', (tabs) => tabs.map((tab) => ({
+    id: tab.dataset.tab,
+    step: tab.dataset.step,
+    current: tab.getAttribute('aria-current'),
+    selected: tab.getAttribute('aria-selected'),
+    text: tab.textContent.trim(),
+  })));
+  if (stage1Progression.length > 0
+      && stage1Progression.every((tab) => tab.text.startsWith(`Step ${tab.step}`))
+      && stage1Progression[0].id === 'bits'
+      && stage1Progression[0].current === 'step'
+      && stage1Progression[0].selected === 'true'
+      && !stage1Progression.some((tab) => tab.id === 'managers' || tab.id === 'reset')) {
+    pass('Stage 1 presents unlocked systems as numbered progression steps and keeps future steps hidden');
+  } else {
+    fail('Stage 1 progression tabs unexpected: ' + JSON.stringify(stage1Progression));
+  }
   const bellLogHasStage1Message = await page.evaluate(() => {
     const save = JSON.parse(localStorage.getItem('fv:games:metagame:v3'));
     return (save.bell?.log || []).some((entry) => entry.stage === 1 && /^stage1\./.test(entry.id));
@@ -662,6 +679,27 @@ export async function run(ctx) {
   }));
   if (buyBtns.count > 0 && !buyBtns.anyNativeDisabled) pass('Stage 1 buy buttons stay clickable (no native disabled flicker)');
   else fail('Stage 1 buy buttons use native disabled: ' + JSON.stringify(buyBtns));
+  const affordableBuy = await page.$('.mg-s1-buybtn:not(.mg-buy-locked)');
+  if (!affordableBuy) {
+    fail('Stage 1 has no affordable purchase for the unlock persistence check');
+  } else {
+    const bitsBeforeSpend = await page.evaluate(() => JSON.parse(localStorage.getItem('fv:games:metagame:v3')).stageState[1].bits.m);
+    await affordableBuy.click();
+    await page.waitForFunction((before) => {
+      try { return JSON.parse(localStorage.getItem('fv:games:metagame:v3')).stageState[1].bits.m < before; } catch { return false; }
+    }, bitsBeforeSpend, { timeout: 4000 });
+    await page.click('.mg-v3-stage[data-stage="2"]');
+    await page.waitForSelector('.stage2-glyph-dungeon', { timeout: 4000 });
+    await page.click('.mg-v3-stage[data-stage="1"]');
+    await page.waitForSelector('.mg-s1-tab[data-tab="bits"]', { timeout: 4000 });
+    const persistedUnlock = await page.evaluate(() => {
+      const save = JSON.parse(localStorage.getItem('fv:games:metagame:v3'));
+      return save.stageState[1].tabsUnlocked === true
+        && Boolean(document.querySelector('.mg-s1-tab[data-tab="bits"]'));
+    });
+    if (persistedUnlock) pass('Stage 1 progression stays unlocked after spending bits and returning');
+    else fail('Stage 1 progression relocked after spending bits or returning');
+  }
   // Score is an absolute overlay so revealing it never reflows the play area (and shifts the button).
   const scorePos = await page.$eval('.mg-s1-hud', (el) => getComputedStyle(el).position).catch(() => null);
   if (scorePos === 'absolute') pass('Stage 1 score HUD is an absolute top-right overlay'); else fail('Stage 1 score HUD position: ' + scorePos);

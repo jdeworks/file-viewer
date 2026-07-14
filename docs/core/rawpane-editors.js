@@ -1,12 +1,16 @@
 // Alternate editor surfaces that replace Monaco in the #editor host: the HTML visual (WYSIWYG)
 // editor and the CSV/TSV table editor. Both freeze/hide Monaco while active and flush their value
-// back on exit. Extracted from rawpane.js for modularity. syncHasToolsClass + buildRawView are
-// imported from rawpane.js at call-time (safe cycle — only invoked inside handlers).
+// back on exit. The bundled controller injects its rebuild callback when this lazy module loads.
 import { state } from './state.js';
 import { HtmlWysiwygEditor } from '../types/html/wysiwyg-html.js';
 import { TableEditor } from '../types/text/csv/table-editor.js';
-import { syncHasToolsClass, buildRawView } from './rawpane.js';
 import { parserTextFromSource, sourceTextOf, withParserText } from './intake.js';
+import { syncHasToolsClass } from './rawpane-shared.js';
+
+let rebuildRawView = async () => {};
+export function initRawpaneEditors({ buildRawView }) {
+  rebuildRawView = buildRawView || rebuildRawView;
+}
 
 // ── HTML visual (WYSIWYG) editor ───────────────────────────────────────────────
 let htmlWysiwyg = null;
@@ -72,7 +76,7 @@ export async function toggleHtmlWysiwyg() {
     const editorEl = document.getElementById('editor');
     if (editorEl) editorEl.style.display = '';
     state.intake = withParserText(state.intake, html);
-    await buildRawView();
+    await rebuildRawView();
   }
 }
 

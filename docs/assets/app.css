@@ -249,6 +249,15 @@ body.fv-dragging .intake::after {
   width: 2px; height: 26px; border-radius: 2px; background: var(--bg); opacity: .6; }
 .split-divider::before { content: ""; position: absolute; inset: 0 -5px; }   /* wider grab area */
 .editor-host { position: absolute; inset: 0; }
+.editor-status { position: absolute; left: 0; right: 0; bottom: 0; height: 28px; z-index: 6;
+  display: flex; align-items: center; gap: 7px; padding: 0 8px; background: var(--bg-2);
+  border-top: 1px solid var(--border); color: var(--fg-2); font-size: 11px; }
+.editor-status label { font-weight: 600; }
+.editor-status select { min-width: 0; max-width: 180px; height: 22px; padding: 1px 5px;
+  border: 1px solid var(--border); border-radius: 4px; background: var(--bg); color: var(--fg); font-size: 11px; }
+.editor-indent-status { margin-left: auto; white-space: nowrap; }
+.editor-indent-status[data-temporary="1"] { color: var(--accent); }
+.raw-pane.has-editor-status .editor-host { bottom: 28px; }
 /* Two-file compare bar: an overlay strip at the top of the raw pane; the editor insets below it. */
 .compare-bar { position: absolute; top: 0; left: 0; right: 0; height: 30px; z-index: 5;
   display: flex; align-items: center; gap: 10px; padding: 0 10px; background: var(--bg-2);
@@ -349,6 +358,23 @@ body.fv-dragging .intake::after {
      Keep one row and let the extra buttons scroll horizontally instead. */
   flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; scrollbar-width: thin; }
 .md-tools-bar[hidden] { display: none; }
+.binary-tools-bar label { display: inline-flex; align-items: center; gap: 4px; flex: 0 0 auto; font-size: 11px; color: var(--fg-2); }
+.binary-tools-bar input { width: 88px; min-width: 0; height: 25px; padding: 2px 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg); color: var(--fg); font: 11px/1 ui-monospace, monospace; }
+.binary-tools-bar input[type="search"] { width: 112px; }
+.binary-tools-status { margin-left: auto; min-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--fg-2); font: 10px/1 ui-monospace, monospace; }
+.binary-inspector-dialog { width: min(760px, calc(100vw - 28px)); max-height: min(680px, calc(100vh - 28px)); padding: 0; overflow: auto; border: 1px solid var(--border); border-radius: 10px; background: var(--bg); color: var(--fg); box-shadow: 0 16px 50px rgb(0 0 0 / .28); }
+.binary-inspector-dialog::backdrop { background: rgb(0 0 0 / .42); }
+.binary-inspector-dialog header { position: sticky; top: 0; z-index: 1; display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-bottom: 1px solid var(--border); background: var(--bg-2); }
+.binary-inspector-dialog h2 { margin: 0; font-size: 16px; }
+.binary-inspector-dialog header button { border: 0; background: transparent; color: var(--fg-2); cursor: pointer; font-size: 16px; }
+.binary-summary { margin: 14px; color: var(--fg-2); }
+.binary-histogram { display: block; width: calc(100% - 28px); height: 180px; margin: 0 14px 16px; border: 1px solid var(--border); background: var(--bg-2); }
+.binary-inspector-dialog table { width: calc(100% - 28px); margin: 0 14px 16px; border-collapse: collapse; font-size: 12px; }
+.binary-inspector-dialog caption { padding: 6px 0; text-align: left; font-weight: 600; }
+.binary-inspector-dialog th, .binary-inspector-dialog td { padding: 5px 8px; border-bottom: 1px solid var(--border); text-align: left; }
+.binary-strings { margin: 0 14px 16px; padding-left: 34px; font-size: 12px; }
+.binary-strings li { padding: 4px 0; overflow-wrap: anywhere; }
+.binary-strings code { display: inline-block; width: 92px; color: var(--fg-2); }
 .md-btn { padding: 3px 7px; border: none; background: transparent; border-radius: 4px;
   cursor: pointer; font-size: 13px; color: var(--fg, #24292f); font-family: inherit;
   line-height: 1.4; white-space: nowrap; }
@@ -535,8 +561,17 @@ body.fv-dragging .intake::after {
 .drawer-head { display: flex; align-items: center; justify-content: space-between;
   padding: 12px 14px; border-bottom: 1px solid var(--border); }
 .drawer-head h2 { font-size: 15px; margin: 0; }
+.drawer-head-actions { display: flex; align-items: center; gap: 4px; }
+.settings-dock-btn[aria-pressed="true"] { color: var(--accent); background: var(--bg-3); }
 .drawer-body { padding: 12px 14px; overflow: auto; }
 .scrim { position: fixed; inset: 0; background: rgba(0,0,0,.35); z-index: 20; }
+
+@media (min-width: 761px) {
+  #app { --settings-dock-width: clamp(300px, 30vw, 380px); }
+  #app.settings-docked.settings-open .body { width: calc(100% - var(--settings-dock-width)); align-self: flex-start; }
+  #app.settings-docked #settingsDrawer { top: var(--topbar-h); height: calc(100dvh - var(--topbar-h));
+    width: var(--settings-dock-width); z-index: 15; box-shadow: none; }
+}
 
 /* Settings groups */
 .set-group { margin-bottom: 16px; }
@@ -659,7 +694,7 @@ body:has(.cache-modal-backdrop) .construction-badge { visibility: hidden; }
 .sbs-head { display: flex; align-items: center; gap: 10px; padding: 8px 14px; border-bottom: 1px solid var(--border); background: var(--bg-2); }
 .sbs-title { font-weight: 600; font-size: 14px; white-space: nowrap; }
 .sbs-close { background: var(--bg); border: 1px solid var(--border); color: var(--fg); border-radius: 8px; padding: 4px 12px; cursor: pointer; }
-/* Shared mode bar (Current/Raw/Preview/Diff) — one radio-style switch governing both panes. */
+/* Shared two-file mode bar — one radio-style switch governing both panes. */
 .sbs-mode { flex: 1; display: flex; justify-content: center; gap: 4px; min-width: 0; }
 .sbs-mode-btn { background: var(--bg); border: 1px solid var(--border); color: var(--fg);
   border-radius: 6px; padding: 3px 12px; font-size: 12px; cursor: pointer; line-height: 1.4; }
@@ -667,7 +702,7 @@ body:has(.cache-modal-backdrop) .construction-badge { visibility: hidden; }
 .sbs-mode-btn.active { background: var(--accent, #2563eb); border-color: var(--accent, #2563eb); color: #fff; }
 .sbs-mode-btn:disabled { opacity: .45; cursor: not-allowed; }
 .sbs-body { flex: 1; display: grid; grid-template-columns: 1fr 1fr; min-height: 0; }
-/* Diff mode: one full-width Monaco diff replaces the two panes. */
+/* Text diff mode: one full-width Monaco diff replaces the two panes. */
 .sbs-diff { flex: 1; position: relative; min-height: 0; }
 .sbs-diff .editor-host, .sbs-diff > div { position: absolute; inset: 0; }
 .sbs-pane { display: flex; flex-direction: column; min-width: 0; min-height: 0; border-right: 1px solid var(--border); }
@@ -691,12 +726,6 @@ body:has(.cache-modal-backdrop) .construction-badge { visibility: hidden; }
   border-radius: 6px; padding: 2px 7px; font-size: 11px; cursor: pointer; line-height: 1.4; }
 .sbs-tool:hover { border-color: var(--accent, #2563eb); }
 .sbs-tool-mode { font-weight: 600; }
-/* In-pane Split view: Monaco source + live preview share the pane 50/50. */
-.sbs-host.sbs-split { display: flex; }
-.sbs-host.sbs-split .sbs-source, .sbs-host.sbs-split .sbs-preview {
-  position: relative; inset: auto; flex: 1 1 0; min-width: 0; height: 100%; }
-.sbs-host.sbs-split .sbs-source { border-right: 1px solid var(--border); }
-.sbs-host.sbs-split .sbs-preview iframe { position: absolute; inset: 0; }
 @media (max-width: 760px) { .sbs-body { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; } .sbs-pane { border-right: 0; border-bottom: 1px solid var(--border); } }
 /* Missing-aware Merge mode (env/ini): grouped key comparison + transfer-to-combined controls. */
 .sbs-merge { flex: 1; min-height: 0; overflow: auto; background: var(--bg); }
@@ -868,6 +897,7 @@ body:has(.cache-modal-backdrop) .construction-badge { visibility: hidden; }
   .panes[data-tab="raw"] .preview-pane { display: none; }
   .panes[data-tab="preview"] .raw-pane { display: none; }
   .raw-pane { border-right: 0; }
+  .settings-dock-btn { display: none; }
 }
 
 /* ── Layered image viewer (ORA / PSD / XCF / KRA) ── */

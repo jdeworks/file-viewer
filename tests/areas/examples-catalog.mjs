@@ -1,7 +1,7 @@
 import { REGISTRY } from '../../docs/core/registry.js';
 
 export async function run(ctx) {
-  const { page, origin, pass, fail } = ctx;
+  const { page, origin, frameOf, openExample, pass, fail } = ctx;
   const loadExamplesGallery = async (selector = '.ex-folder-card') => {
     await page.click('#loadExamplesBtn');
     await page.waitForSelector(selector, { timeout: 10000 });
@@ -58,6 +58,40 @@ export async function run(ctx) {
   } else {
     pass('programming language samples indexed (' + requiredCodeSamples.length + ')');
   }
+  const malformedSamples = ['malformed.json', 'malformed.csv', 'malformed.xml'];
+  const malformedState = malformedSamples.filter((file) => {
+    const sample = byFile.get(file);
+    return !sample?.partial || !(sample.categories || []).includes('Malformed') || !sample.description;
+  });
+  if (!malformedState.length) pass('malformed recovery samples are explicit, described, and partial (3)');
+  else fail('malformed sample declarations: ' + malformedState.join(', '));
+  await openExample('malformed.json');
+  let malformedFrame = await frameOf('iframe.fv-preview-frame');
+  const malformedJsonText = await malformedFrame.locator('body').innerText();
+  await openExample('malformed.csv');
+  const malformedCsvText = await page.$eval('#previewHost', (host) => host.textContent || '');
+  await openExample('malformed.xml');
+  malformedFrame = await frameOf('iframe.fv-preview-frame');
+  const malformedXmlText = await malformedFrame.locator('body').innerText();
+  if (/Invalid JSON/.test(malformedJsonText) && /truncated or incomplete/.test(malformedJsonText)
+      && /6 rows/.test(malformedCsvText) && /4 cols/.test(malformedCsvText)
+      && /Recovered CSV with warnings/.test(malformedCsvText) && /inconsistent field counts/.test(malformedCsvText)
+      && /Invalid XML/.test(malformedXmlText) && /Raw view preserves/.test(malformedXmlText)) {
+    pass('malformed samples render bounded diagnostics or recovered structure');
+  }
+  else fail('malformed sample rendering: ' + JSON.stringify({ malformedJsonText, malformedCsvText, malformedXmlText }));
+  const lockedZip = byFile.get('sample-locked.zip');
+  if (lockedZip?.type === 'zip' && /password-protected.*locally unlockable/i.test(lockedZip.description || '')) pass('password-protected archive sample documents its local unlock path');
+  else fail('password-protected sample declaration: ' + JSON.stringify(lockedZip));
+  const lockedPdf = byFile.get('sample-password.pdf');
+  if (lockedPdf?.type === 'pdf' && /password.*viewer/i.test(lockedPdf.label + ' ' + (lockedPdf.description || ''))) pass('password-protected PDF sample documents its local unlock path');
+  else fail('password-protected PDF sample declaration: ' + JSON.stringify(lockedPdf));
+  const lockedSqlite = byFile.get('sample-sqlcipher.sqlite');
+  if (lockedSqlite?.type === 'sqlite' && /password.*viewer/i.test(lockedSqlite.label + ' ' + (lockedSqlite.description || ''))) pass('password-protected SQLite sample documents its local unlock path');
+  else fail('password-protected SQLite sample declaration: ' + JSON.stringify(lockedSqlite));
+  const themeSample = byFile.get('theme-showcase.html');
+  if (themeSample?.type === 'html' && (themeSample.categories || []).includes('Theme QA')) pass('theme contrast sample is indexed');
+  else fail('theme contrast sample declaration: ' + JSON.stringify(themeSample));
   const sourcedSamples = ['sample.epub', 'sample.mobi', 'sample.png'];
   const missingProvenance = sourcedSamples.filter((file) => {
     const ex = byFile.get(file);
@@ -199,6 +233,26 @@ export async function run(ctx) {
   } else {
     fail('XCF sample should be marked partial');
   }
+
+  await openExample('theme-showcase.html');
+  let themeFrame = await frameOf('iframe.fv-preview-frame');
+  await themeFrame.waitForSelector('h1');
+  const lightTheme = await themeFrame.evaluate(() => ({
+    dark: document.body.classList.contains('fv-dark'),
+    table: !!document.querySelector('table'),
+    button: !!document.querySelector('button'),
+  }));
+  await page.click('#themeBtn');
+  themeFrame = await frameOf('iframe.fv-preview-frame');
+  await themeFrame.waitForFunction(() => document.body.classList.contains('fv-dark'));
+  const darkTheme = await themeFrame.evaluate(() => ({
+    dark: document.body.classList.contains('fv-dark'),
+    scheme: getComputedStyle(document.documentElement).colorScheme,
+  }));
+  await page.click('#themeBtn');
+  if (!lightTheme.dark && lightTheme.table && lightTheme.button && darkTheme.dark && /dark/.test(darkTheme.scheme)) {
+    pass('theme contrast sample renders semantic surfaces in light and dark modes');
+  } else fail('theme contrast sample state: ' + JSON.stringify({ lightTheme, darkTheme }));
 
   // FV_SMOKE_SUBSET=1 (set by check.sh --fast when examples-catalog is a path-owned area): open a
   // DETERMINISTIC representative subset — the first sample (by file name) of each declared type —

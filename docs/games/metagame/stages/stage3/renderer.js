@@ -182,8 +182,8 @@ export function renderStage3(ctx) {
     const picto = board.puzzle.picto; // the 1-bit picture this snapshot resolved into (if any)
     const mult = 1 + 0.25 * (upgradeLevel(state, "throughput") + boonBonus(state, "throughput")); // Throughput upgrade + boons
     const corrBonus = 1 + 0.18 * corruptionForRun(state.run);  // harder/deeper snapshots pay more
-    // Rebalanced for the tightened ~13-solve body: a higher flat base keeps the Defrag shop reachable
-    // in a shorter run, and the steeper corruption bonus rewards the climb to the boss gate.
+    // The flat base keeps the Defrag shop reachable across the 20-snapshot body, while the steeper
+    // corruption bonus rewards the climb to the boss gate.
     const reward = Math.round((size * size + 12) * mult * corrBonus);
     state.registers += reward;
     state.run.solvedCount += 1;

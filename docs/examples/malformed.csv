@@ -1,0 +1,7 @@
+id,name,status
+1,"Ada Lovelace",active
+2,"Grace Hopper"
+3,"Katherine Johnson",active,unexpected-extra-column
+4,"Quoted
+newline",pending
+5,"unterminated quote,pending

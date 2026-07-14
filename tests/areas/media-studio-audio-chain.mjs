@@ -28,20 +28,27 @@ export async function runAudioChainChecks(ctx) {
   if (lufs.floorDb === -Infinity || lufs.floorDb < -100) pass('P8b: noise floor finds the silent window (−∞ for true silence)'); else fail('noise floor: ' + lufs.floorDb);
   if (Math.abs(lufs.head - 1) < 0.05) pass('P8b: edge-silence detects the 1 s leading gap'); else fail('head silence: ' + lufs.head);
 
-  // ── P8c/P8e: PURE ACX arg builder → mono/44.1k/192k + loudnorm + silenceremove ──
+  // ── P8c/P8e: PURE ACX arg builder → mono/44.1k/192k + honest spacing semantics ──
   const acxArgs = await page.evaluate(async () => {
     const { buildAcxExportArgs, buildAcxFilterChain, silenceRemoveFilter } = await import('./types/media/transcoder.js');
     return {
       args: buildAcxExportArgs('input.mp3', 'out.mp3').join(' '),
       chain: buildAcxFilterChain(),
+      explicitSpacing: buildAcxFilterChain({
+        silence: { thresholdDb: -50, minSilenceSec: 0.4 },
+        pad: { headSec: 0.75, tailSec: 2 },
+      }),
       silence: silenceRemoveFilter(),
     };
   });
   if (/-ac 1/.test(acxArgs.args) && /-ar 44100/.test(acxArgs.args) && /-c:a libmp3lame -b:a 192k/.test(acxArgs.args))
     pass('P8e: ACX arg builder forces mono / 44.1 kHz / MP3 192 k'); else fail('acx args: ' + acxArgs.args);
-  if (/loudnorm=I=-20:TP=-3:LRA=11/.test(acxArgs.chain) && /silenceremove=/.test(acxArgs.chain) && /apad=pad_dur=/.test(acxArgs.chain))
-    pass('P8c/P8e: ACX -af chain = loudnorm −20/−3 + silenceremove + room-tone pad'); else fail('acx chain: ' + acxArgs.chain);
-  if (/start_threshold=-50dB/.test(acxArgs.silence)) pass('P8c: silenceremove trims dead air (−50 dB threshold)'); else fail('silence: ' + acxArgs.silence);
+  if (/loudnorm=I=-20:TP=-3:LRA=11/.test(acxArgs.chain)
+    && !/silenceremove=|apad=/.test(acxArgs.chain))
+    pass('P8c/P8e: ACX-targeted chain preserves source room tone by default'); else fail('acx chain: ' + acxArgs.chain);
+  if (/silenceremove=/.test(acxArgs.explicitSpacing) && /apad=pad_dur=/.test(acxArgs.explicitSpacing)
+    && /stop_periods=1/.test(acxArgs.silence))
+    pass('P8c: optional edge spacing is explicit and does not collapse internal pauses'); else fail('spacing: ' + JSON.stringify(acxArgs));
 
   // Verify the ffmpeg `-af` chain the export will run, via the PURE builder (no ffmpeg load).
   const chain = await page.evaluate(async () => {

@@ -34,3 +34,46 @@ export function csvRowsToRecords(rows, hasHeader = true) {
     labels.map((label, columnIndex) => [label, row?.[columnIndex] == null ? '' : row[columnIndex]]),
   ));
 }
+
+function mostCommonWidth(rows) {
+  const counts = new Map();
+  for (const row of rows || []) {
+    const width = Array.isArray(row) ? row.length : 0;
+    counts.set(width, (counts.get(width) || 0) + 1);
+  }
+  return [...counts.entries()].sort((a, b) => b[1] - a[1] || b[0] - a[0])[0]?.[0] || 0;
+}
+
+// Papa Parse intentionally recovers ragged/malformed input. Turn that recovery into an explicit,
+// bounded explanation instead of silently presenting a rectangular-looking table.
+export function csvShapeDiagnostics(rows, parserErrors = [], hasHeader = true) {
+  if (!Array.isArray(rows)) return [];
+  const dataStart = hasHeader && rows.length ? 1 : 0;
+  const expected = hasHeader && Array.isArray(rows[0]) ? rows[0].length : mostCommonWidth(rows);
+  const ragged = [];
+  for (let index = dataStart; index < rows.length; index += 1) {
+    const width = Array.isArray(rows[index]) ? rows[index].length : 0;
+    if (width !== expected) ragged.push({ row: index + 1, width });
+  }
+
+  const diagnostics = [];
+  if (ragged.length) {
+    const sample = ragged.slice(0, 5).map((item) => `row ${item.row} has ${item.width}`).join(', ');
+    const more = ragged.length > 5 ? `, and ${ragged.length - 5} more` : '';
+    diagnostics.push(`${ragged.length} row${ragged.length === 1 ? '' : 's'} have inconsistent field counts (expected ${expected}; ${sample}${more}). Missing cells remain blank and extra cells remain visible.`);
+  }
+
+  const meaningful = (parserErrors || []).filter((error) => !['TooFewFields', 'TooManyFields'].includes(error?.code));
+  const seen = new Set();
+  for (const error of meaningful) {
+    const row = Number.isFinite(error?.row) ? `Row ${error.row + 1}: ` : '';
+    const message = error?.code === 'MissingQuotes'
+      ? `${row}unterminated quoted field; the parser recovered the remaining text.`
+      : `${row}${error?.message || error?.code || 'CSV parse issue; the parser recovered what it could.'}`;
+    if (seen.has(message)) continue;
+    seen.add(message);
+    diagnostics.push(message);
+    if (diagnostics.length >= 5) break;
+  }
+  return diagnostics;
+}

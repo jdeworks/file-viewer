@@ -10,6 +10,10 @@ import { render as renderNetcdf } from '../docs/types/binary/netcdf/renderer.js'
 import { parseMidi, render as renderMidi } from '../docs/types/binary/midi/renderer.js';
 import { parseCertificate } from '../docs/types/text/pem/asn1.js';
 import { render as renderPem } from '../docs/types/text/pem/renderer.js';
+import { xmlFailureDiagnostics } from '../docs/types/text/xml/renderer.js';
+import { pdfFailureDiagnostics, render as renderPdf } from '../docs/types/pdf/renderer.js';
+import { imageInputDiagnostics, render as renderImage } from '../docs/types/image/renderer.js';
+import { archiveFailureDiagnostics, render as renderZip } from '../docs/types/zip/renderer.js';
 
 const root = new URL('../', import.meta.url);
 const examples = new URL('../docs/examples/', import.meta.url);
@@ -171,5 +175,44 @@ const parsedNetcdf = parseNetcdfHeader(validNetcdf);
 assert.equal(parsedNetcdf.dimensions.length, 3);
 assert.equal(parsedNetcdf.variables.length, 5);
 assert.match(renderNetcdf({ bytes: validNetcdf, size: validNetcdf.length }).bodyHtml, /Variables \(5\)/);
+
+const xmlDiagnostics = xmlFailureDiagnostics({
+  text: '<?xml version="1.0" encoding="UTF-8"?><root><item></root',
+  encoding: 'UTF-16 LE',
+}, 'mismatched tag at line 1');
+assert.ok(xmlDiagnostics.some((message) => /truncated|incomplete/.test(message)));
+assert.ok(xmlDiagnostics.some((message) => /Unclosed <item>/.test(message)));
+assert.ok(xmlDiagnostics.some((message) => /declaration says UTF-8.*decoded.*UTF-16 LE/.test(message)));
+
+const cutPdf = textBytes('%PDF-1.7\n1 0 obj\n<<');
+const pdfDiagnostics = pdfFailureDiagnostics({ bytes: cutPdf, size: cutPdf.length, loadedBytes: cutPdf.length }, new Error('Invalid PDF structure'));
+assert.ok(pdfDiagnostics.some((message) => /%%EOF trailer is missing/.test(message)));
+assert.ok(pdfDiagnostics.some((message) => /PDF parser report/.test(message)));
+
+const partialImage = imageInputDiagnostics({ bytes: Uint8Array.from([0x89, 0x50]), loadedBytes: 2, size: 200, truncated: true });
+assert.match(partialImage.join(' '), /Only 2 of 200 bytes were loaded/);
+assert.match(partialImage.join(' '), /rendering and editing are disabled/);
+
+const partialZip = archiveFailureDiagnostics({
+  bytes: Uint8Array.from([0x50, 0x4b, 0x03, 0x04]),
+  loadedBytes: 4,
+  size: 400,
+  truncated: true,
+});
+assert.match(partialZip.join(' '), /ZIP indexes are stored at the end/);
+assert.doesNotMatch(partialZip.join(' '), /No ZIP local-file/);
+const malformedZip = archiveFailureDiagnostics({ bytes: textBytes('not a zip'), size: 9, loadedBytes: 9 }, new Error('bad central directory'));
+assert.match(malformedZip.join(' '), /No ZIP local-file/);
+assert.match(malformedZip.join(' '), /end-of-central-directory record is missing/);
+
+const partialPdfRender = await renderPdf({ bytes: cutPdf, loadedBytes: cutPdf.length, size: 200, truncated: true }, {});
+assert.match(partialPdfRender.bodyHtml, /Incomplete PDF input/);
+assert.match(partialPdfRender.bodyHtml, /cross-reference data is normally near the end/);
+const partialImageRender = await renderImage({ bytes: Uint8Array.from([0x89, 0x50]), loadedBytes: 2, size: 200, truncated: true }, {});
+assert.match(partialImageRender.bodyHtml, /Incomplete image input/);
+assert.match(partialImageRender.bodyHtml, /rendering and editing are disabled/);
+const partialZipRender = await renderZip({ bytes: Uint8Array.from([0x50, 0x4b, 0x03, 0x04]), loadedBytes: 4, size: 400, truncated: true }, {});
+assert.match(partialZipRender.bodyHtml, /Incomplete archive input/);
+assert.match(partialZipRender.bodyHtml, /ZIP indexes are stored at the end/);
 
 console.log('format parser hardening tests passed');

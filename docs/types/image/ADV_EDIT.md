@@ -12,7 +12,7 @@ The image editor has **two coexisting representations**, kept editable until you
 |---|---|---|
 | **View** | display + fit/zoom/pan | no |
 | **Edit** (pixel) | crop, resize, rotate/flip, filters, BG, expand, pencil/eraser/fill, export format | no |
-| **Adv. Edit** (vector) | text **objects** (drag, font/size/colour, **bg colour + opacity**, multiple, re-editable), shapes (rect/circle/ellipse/ring/wedge/arc/line/arrow/**polygon/star**), **per-object blend mode**, layers, groups, transform handles, multi-select, keyboard nudge/delete/duplicate, marquee select, snapping | **yes — lazy** |
+| **Adv. Edit** (composition) | re-editable text and shape objects; sanitized local image/sticker objects with crop/frame controls; gradient/local-pattern fills; per-object filters and base-aware blend modes; layers, groups, transforms, multi-select, keyboard actions, marquee selection, and snapping | **yes — lazy** |
 | **ASCII** | ASCII studio | no |
 
 Konva is **vendored** (`docs/vendor/konva/konva.min.js`, MIT, UMD → `window.Konva`) and **lazy-loaded on first entry to Adv Edit** via `loadGlobal`. View/Edit/ASCII on an image with no overlay never fetch it. Flagged **heavy** for the offline precache (opt-in).
@@ -22,12 +22,20 @@ Konva is **vendored** (`docs/vendor/konva/konva.min.js`, MIT, UMD → `window.Ko
 - Adv Edit → Edit/View: overlay **kept** (rendered, non-interactive — `setInteractive(false)`); pixel tools edit the base **under** it. It stays registered to the image across fit/zoom/pan via `relayout()` (a CSS scale on the container; object coords untouched). **Leaving Adv never bakes.**
 - **Geometry op in Edit with a non-empty overlay** (rotate/flip/crop/resize/expand): the overlay objects are **transformed by the same matrix** (kept editable, not baked). The op reports a natural-space affine (`geometry-affine.js` `affineForGeometry`) via the `onGeometry` hook; the renderer stashes it and, on the next img load (base re-encoded at its new size), calls `advController.applyGeometry(affine)`, which recomposes each object's transform `(naturalNew→stageNew) ∘ affine ∘ (stageOld→naturalOld) ∘ oldTransform` (Konva `Transform` multiply/decompose).
 - A pixel tool painting **onto** an object → pixels go **under** the overlay (text/shapes stay on top + editable); no flatten.
-- → **ASCII / export / download**: flatten a **copy** (base+overlay) via the wrapped `onBinaryEdit.getBytes`; editor keeps both models editable. ASCII feeds a flattened copy (overlay survives) — no warning needed.
+- → **ASCII / export / download**: flatten a **copy** (base+overlay) via the wrapped `onBinaryEdit.getBytes`; editor keeps both models editable. ASCII feeds a 1× flattened copy, while image export can explicitly choose 0.5×, 1×, 2×, or 3× pixels.
 
-**Key principle:** flatten for *output* is non-destructive (throwaway copy, computed on demand in `getBytes`). The only destructive flatten is the geometry-seam bake (and, later, pixel-painting over a vector object).
+**Key principle:** flatten for *output* is non-destructive (throwaway copy, computed on demand in `getBytes`). **Merge to image** is the explicit destructive operation; ordinary geometry transforms keep overlay objects editable.
 
 ## Undo/redo — ✅ unified
-Konva has **no built-in undo**; the pattern is *serialize the stage to JSON and snapshot*. Vector snapshots are folded into the existing `editor-core` undo stack → **one unified Ctrl+Z** across pixel + vector. Each history entry is `{blob, url, overlay}` where `overlay` is the stage JSON at that point. `editor-core` captures it via injected `overlayHooks.{snapshot,restore}` (the renderer wires them to `advController.serialize`/`restore`); the overlay pushes onto the SAME stack via injected `pushUndo` (snapped on `dragstart`/`transformstart`/add/delete/layer-op). Restoring `overlay:null` clears the overlay (undoing past the point it existed). Reuses the global keydown router (`edit-undo-key.js`).
+Konva has **no built-in undo**, so vector snapshots are folded into the existing `editor-core` stack → **one unified Ctrl+Z** across pixel + composition edits. Each history entry is `{blob, url, overlay}`, where `overlay` is the small versioned File Viewer document model rather than `Layer.toJSON()`. In-session snapshots omit repeated bitmap payloads and resolve asset IDs through the mounted controller; downloaded `.fv-overlay.json` documents embed only referenced sanitized bitmap data URLs. `overlayHooks.{snapshot,restore}` bridge that model into the shared history. Raw Layer/Stage JSON is accepted only as legacy migration input, and legacy image nodes without bitmap data are reported and omitted.
+
+## Local assets, filters, and blending
+
+- File and pasted-image inputs are decoded locally, repainted into a bounded PNG canvas (maximum 16 MB input and about 4 megapixels), and then used as a Konva image or pattern. Repainting strips metadata and active SVG content; SVG and remote asset URLs are deliberately unsupported.
+- Image objects retain semantic crop percentages plus frame stroke/rounding, so their viewport size and their source crop remain independently editable and portable.
+- Solid, linear-gradient, radial-gradient, and repeating local-pattern fills store renderer-independent descriptors. Runtime `HTMLImageElement`/canvas references never enter the document model.
+- Grayscale, invert, sepia, blur, brightness, and contrast are per-object Konva filters. Appearance/crop mutations clear and rebuild the affected cache before drawing, including descendant changes on a filtered label or group.
+- Normal-only output uses one fast overlay render. If any visible top-level object has a non-normal blend, flatten temporarily isolates each object and composites its canvas onto the accumulated raster with that object's `globalCompositeOperation`. Multiply/screen/etc. therefore see the raster base and all earlier objects, not a transparent intermediate layer.
 
 ## Connection points
 - **Dirty/`onBinaryEdit`** — vector edits also mark the doc dirty.
@@ -38,7 +46,10 @@ Konva has **no built-in undo**; the pattern is *serialize the stage to JSON and 
 `Konva.Label` = `Konva.Tag` (background: fill + opacity + corner radius) + `Konva.Text` (content/font/size/fill). So **bg colour + transparency** come free from the Tag. Multiple labels; click to select (Transformer handles); delete; Cancel never removes committed objects.
 
 ## Module layout
-- `adv-edit.js` — the Adv Edit mode: lazy Konva, stage over `.imgv-stage`, object CRUD + selection + transform, in-mode snapshot undo, `flatten(baseImg)→canvas`, `serialize()/deserialize()`, `destroy()`.
+- `adv-edit.js` — the Adv Edit mode: lazy Konva, stage over `.imgv-stage`, object CRUD + selection + transform, base-aware flattening, geometry registration, and lifecycle.
+- `adv-edit-document.js` — bounded versioned renderer-independent schema plus raw-Konva migration input.
+- `adv-edit-io.js` — document construction/rebuild, embedded-asset import/export, and Save/Load overlay UI.
+- `adv-edit-composition.js` — local bitmap sanitization/registry, crop/frame, fill/pattern, filter cache invalidation, and composition toolbar wiring.
 - `adv-edit-actions.js` — focused helpers for colour normalization, shape-size normalization, keyboard delete/duplicate/nudge/escape routing (`installAdvKeys`), node cloning/naming, and shape geometry reads/writes.
 - `adv-edit-controls.js` — `installObjectActions` (delete/duplicate/nudge/group/ungroup on the live selection) and `installShapeControls` (wires every toolbar button + per-shape property input).
 - `adv-edit-layers.js` — the Adv Edit layer panel: rows, type icons, rename, lock/unlock, duplicate, visibility, z-order, and row delete.

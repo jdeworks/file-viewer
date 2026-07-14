@@ -202,6 +202,12 @@ function autoRun(seed, finalAct = FINAL_BOSS_ACT) {
   assert.equal(v2.hp, 70, "starts at full HP");
   assert.equal(v2.relics.length, 2, "version grants one starting relic each");
   assert.equal(new Set(v2.relics).size, 2, "starting relics are distinct");
+  // Follow-up decision: prestige does NOT also seed currency or widen reward offers. Those proposed
+  // bonuses would cancel the cumulative lean-economy/fewer-options difficulty rules.
+  assert.equal(v2.handshakes, 0, "prestige grants no bonus starting handshakes");
+  assert.equal(v2.rewardChoicesMod, 0, "prestige grants no card-offer bonus");
+  const v10 = createRun({ seed: 1, version: 10 });
+  assert.equal(v10.rewardChoicesMod, -1, "the fewer-options rung remains load-bearing at version 10");
 }
 
 // ── prestige: permanent card upgrade (STARTING_DECK-sourced, never the live run.deck) ──────────────

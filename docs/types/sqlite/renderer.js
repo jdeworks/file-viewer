@@ -4,6 +4,13 @@
 // "Download modified DB" button appears after any write, letting users export the changed file.
 // Values come from the DB and are escaped before display.
 import { openDb, listTables, query } from './sqlitelib.js';
+import { showPasswordPrompt } from '../../core/password-prompt.js';
+import {
+  decryptSqlCipherV4,
+  isPlainSqlite,
+  isSqlCipherV4Candidate,
+  SqlCipherPasswordError,
+} from './sqlcipher.js';
 
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const ROW_LIMIT = 200;
@@ -56,12 +63,12 @@ function exportJson(columns, rows, filename) {
   downloadBlob(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }), filename);
 }
 
-export async function render(intake, _ctx) {
-  const host = document.createElement('div');
+async function renderDatabase(intake, suppliedHost = null, bytes = intake.bytes) {
+  const host = suppliedHost || document.createElement('div');
   host.className = 'sq-doc';
 
   let db, tables;
-  try { db = await openDb(intake.bytes); tables = listTables(db); }
+  try { db = await openDb(bytes); tables = listTables(db); }
   catch (e) { host.innerHTML = '<div class="json-error"><strong>Could not open database</strong><br>' + esc(e.message) + '</div>'; return { parentNode: host }; }
 
   host.innerHTML =
@@ -190,4 +197,58 @@ export async function render(intake, _ctx) {
   else resultEl.innerHTML = '<p class="sq-note">This database has no tables.</p>';
 
   return { parentNode: host, revoke: () => { try { db.close(); } catch {} } };
+}
+
+export async function render(intake, ctx = {}) {
+  if (isPlainSqlite(intake.bytes)) return renderDatabase(intake);
+
+  const host = document.createElement('div');
+  host.className = 'sq-doc';
+  if (!isSqlCipherV4Candidate(intake.bytes)) {
+    host.innerHTML = '<div class="json-error"><strong>Could not open database</strong><br>'
+      + 'The file is not a supported SQLite or SQLCipher v4 database image.</div>';
+    return { parentNode: host };
+  }
+
+  let disposed = false;
+  let mounted = null;
+  void (async () => {
+    let error = '';
+    while (!disposed && !ctx.signal?.aborted) {
+      const password = await showPasswordPrompt(host, {
+        filename: intake.filename,
+        hint: 'SQLCipher v4 defaults are supported. The password and database stay in this browser.',
+        error,
+        signal: ctx.signal,
+      });
+      if (password == null || disposed || ctx.signal?.aborted) {
+        if (!disposed && !ctx.signal?.aborted) {
+          host.innerHTML = '<div class="json-error"><strong>Database remains locked</strong><br>'
+            + 'Reopen the file to try another password.</div>';
+        }
+        return;
+      }
+      host.innerHTML = '<div class="sq-unlocking" role="status">Unlocking SQLCipher database locally…</div>';
+      try {
+        const decrypted = await decryptSqlCipherV4(intake.bytes, password, { signal: ctx.signal });
+        if (disposed || ctx.signal?.aborted) return;
+        mounted = await renderDatabase(intake, host, decrypted);
+        if (disposed) mounted?.revoke?.();
+        return;
+      } catch (caught) {
+        if (caught?.name === 'AbortError' || disposed || ctx.signal?.aborted) return;
+        error = caught instanceof SqlCipherPasswordError
+          ? caught.message
+          : 'Could not unlock this database: ' + (caught?.message || caught);
+      }
+    }
+  })();
+
+  return {
+    parentNode: host,
+    revoke: () => {
+      disposed = true;
+      mounted?.revoke?.();
+    },
+  };
 }

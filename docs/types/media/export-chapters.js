@@ -22,17 +22,17 @@ export function buildChapterZipControls(makeButton) {
 
   const chapterTitle = document.createElement('div');
   chapterTitle.className = 'media-export-chapter-title';
-  chapterTitle.textContent = 'Chapter ACX ZIP';
+  chapterTitle.textContent = 'Chapter ACX-targeted ZIP';
 
   const chapterDetail = document.createElement('div');
   chapterDetail.className = 'media-export-chapter-detail';
-  chapterDetail.textContent = 'Exports one ACX MP3 per chapter and packages them as a ZIP.';
+  chapterDetail.textContent = 'Exports one ACX-targeted MP3 per chapter and packages them as a ZIP. Existing edge room tone is preserved.';
 
   const chapterStatus = document.createElement('div');
   chapterStatus.className = 'media-export-chapter-status';
 
   chapterCopy.append(chapterTitle, chapterDetail);
-  const chapterBtn = makeButton('Export chapter ACX ZIP', 'media-ed-run media-export-chapter-run');
+  const chapterBtn = makeButton('Export chapter ACX-targeted ZIP', 'media-ed-run media-export-chapter-run');
   chapterWrap.append(chapterCopy, chapterBtn, chapterStatus);
 
   function sync(nextChapters) {
@@ -44,7 +44,7 @@ export function buildChapterZipControls(makeButton) {
     const ready = chaptersReady(list);
     chapterBtn.disabled = !ready;
     chapterStatus.textContent = ready
-      ? `${count} chapter${count === 1 ? '' : 's'} ready; output is mono 44.1 kHz MP3 192k CBR.`
+      ? `${count} chapter${count === 1 ? '' : 's'} ready; output is mono 44.1 kHz MP3 192k CBR. Run QC and listen before submission.`
       : 'Waiting for media duration before chapter ZIP export.';
   }
 

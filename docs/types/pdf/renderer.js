@@ -15,6 +15,34 @@ import { loadGlobal, vendor } from '../../core/script-loader.js';
 const MAX_PAGES = 50;
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
+function byteText(bytes, start, length) {
+  if (!(bytes instanceof Uint8Array) || start < 0 || start >= bytes.length) return '';
+  return String.fromCharCode(...bytes.subarray(start, Math.min(bytes.length, start + length)));
+}
+
+export function pdfFailureDiagnostics(intake, error = null) {
+  const bytes = intake?.bytes;
+  const diagnostics = [];
+  if (intake?.truncated || (Number.isFinite(intake?.size) && bytes?.length < intake.size)) {
+    diagnostics.push(`Only ${Number(intake.loadedBytes || bytes?.length || 0).toLocaleString()} of ${Number(intake.size || 0).toLocaleString()} bytes were loaded. PDF cross-reference data is normally near the end, so a prefix cannot be rendered reliably.`);
+  }
+
+  const head = byteText(bytes, 0, Math.min(1024, bytes?.length || 0));
+  if (!head.includes('%PDF-')) diagnostics.push('The required %PDF- header was not found in the first 1,024 bytes.');
+
+  if (!intake?.truncated && bytes?.length) {
+    const tailStart = Math.max(0, bytes.length - 4096);
+    if (!byteText(bytes, tailStart, bytes.length - tailStart).includes('%%EOF')) {
+      diagnostics.push('The %%EOF trailer is missing; the file may be truncated or was not completely written.');
+    }
+  }
+
+  const parserMessage = String(error?.message || error || '').replace(/\s+/g, ' ').trim();
+  if (parserMessage) diagnostics.push(`PDF parser report: ${parserMessage.slice(0, 300)}`);
+  diagnostics.push('The viewer did not modify or execute the PDF; the original bytes remain available for download.');
+  return [...new Set(diagnostics)];
+}
+
 // Rasterize any image file (PNG/JPEG/WebP/GIF/SVG) to PNG bytes via a canvas, so pdf-lib (which
 // embeds only PNG/JPEG) can place it. Pure in-browser; the image is never uploaded.
 function imageFileToPngBytes(file) {
@@ -37,6 +65,14 @@ function imageFileToPngBytes(file) {
 }
 
 export async function render(intake, ctx) {
+  if (intake.truncated || (Number.isFinite(intake.size) && intake.bytes?.length < intake.size)) {
+    const diagnostics = pdfFailureDiagnostics(intake);
+    return {
+      bodyHtml: '<div class="json-error"><strong>Incomplete PDF input</strong><ul>'
+        + diagnostics.map((message) => '<li>' + esc(message) + '</li>').join('') + '</ul></div>',
+      hadUnsafe: false,
+    };
+  }
   let scale = ctx?.settings?.pdfScale || 1.5;
   const ZOOM_STEP = 0.25, ZOOM_MIN = 0.5, ZOOM_MAX = 4;
   const host = document.createElement('div');
@@ -56,6 +92,7 @@ export async function render(intake, ctx) {
     + '</span>'
     + '<button class="pdf-spread" title="Two-page spread (book mode)">⊞ Spread</button>'
     + '<button class="pdf-edit" title="Edit pages">Edit</button>'
+    + '<button class="pdf-addblank" hidden title="Add a blank A4 page">+ Blank page</button>'
     + '<button class="pdf-addimg" hidden title="Add an image as a new page">+ Image page</button>'
     + '<button class="pdf-merge" hidden title="Append another PDF">+ Merge PDF</button>'
     + '<button class="pdf-watermark" hidden title="Add a text watermark to all pages">Watermark</button>'
@@ -144,8 +181,10 @@ export async function render(intake, ctx) {
         const password = await showPasswordPrompt(overlay, {
           filename: intake.filename || intake.name || 'document.pdf',
           hint,
+          signal: ctx?.signal,
         });
-        host.removeChild(overlay);
+        if (overlay.parentNode === host) host.removeChild(overlay);
+        if (ctx?.signal?.aborted) return;
         if (password === null) {
           // User cancelled — show a neutral note.
           pagesEl.innerHTML = '<p class="pdf-note" style="padding:20px;color:var(--fg-2,#888)">Password required to view this file.</p>';
@@ -220,6 +259,11 @@ export async function render(intake, ctx) {
     dirty = true;
     host.querySelector('.pdf-download').hidden = false;
     currentBytes = await editor.build();
+    ctx?.onBinaryEdit?.({
+      dirty: true,
+      mimeType: 'application/pdf',
+      getBytes: async () => currentBytes.slice(),
+    });
     updateChanges();
     await renderPages(currentBytes);
   }
@@ -227,6 +271,7 @@ export async function render(intake, ctx) {
   host.querySelector('.pdf-edit').addEventListener('click', async () => {
     editing = !editing;
     host.querySelector('.pdf-edit').classList.toggle('active', editing);
+    host.querySelector('.pdf-addblank').hidden = !editing;
     host.querySelector('.pdf-addimg').hidden = !editing;
     host.querySelector('.pdf-merge').hidden = !editing;
     host.querySelector('.pdf-watermark').hidden = !editing;
@@ -243,6 +288,7 @@ export async function render(intake, ctx) {
         infoEl.textContent = 'Editing unavailable: ' + esc(e.message);
         editing = false;
         host.querySelector('.pdf-edit').classList.remove('active');
+        host.querySelector('.pdf-addblank').hidden = true;
         host.querySelector('.pdf-addimg').hidden = true;
         host.querySelector('.pdf-merge').hidden = true;
         host.querySelector('.pdf-watermark').hidden = true;
@@ -324,6 +370,10 @@ export async function render(intake, ctx) {
   // Insert an image as a new page: pick any raster/SVG image, rasterize to PNG (pdf-lib embeds
   // PNG/JPEG only), append it as a page, then rebuild + re-render. All in-browser, no upload.
   const imgInput = host.querySelector('.pdf-imginput');
+  host.querySelector('.pdf-addblank').addEventListener('click', async () => {
+    if (!editor) return;
+    await applyEdit(() => editor.addBlank());
+  });
   host.querySelector('.pdf-addimg').addEventListener('click', () => { imgInput.value = ''; imgInput.click(); });
   imgInput.addEventListener('change', async (e) => {
     const file = e.target.files && e.target.files[0];
@@ -487,6 +537,25 @@ export async function render(intake, ctx) {
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   });
 
-  await renderPages(currentBytes);
+  // Mount the host before waiting for pdf.js. This is essential for encrypted documents: their
+  // password prompt lives inside the host and must be visible while initial rendering is paused.
+  // The request signal resolves an abandoned prompt and prevents a detached renderer leaking.
+  void renderPages(currentBytes).catch((error) => {
+    if (ctx?.signal?.aborted) return;
+    infoEl.textContent = 'Could not render PDF';
+    pagesEl.replaceChildren();
+    const failure = document.createElement('div');
+    failure.className = 'json-error pdf-failure';
+    const title = document.createElement('strong');
+    title.textContent = 'Malformed or unsupported PDF';
+    const list = document.createElement('ul');
+    for (const message of pdfFailureDiagnostics(intake, error)) {
+      const item = document.createElement('li');
+      item.textContent = message;
+      list.appendChild(item);
+    }
+    failure.append(title, list);
+    pagesEl.appendChild(failure);
+  });
   return { parentNode: host };
 }

@@ -15,8 +15,8 @@ const FROM_CH = { "#": FILLED, "@": COLOR_B, x: EMPTY, ".": UNKNOWN };
 // (whose solutions only ever use 0/1).
 export const fillColor = (v) => (v === FILLED ? FILLED : v === COLOR_B ? COLOR_B : EMPTY);
 
-// The body: corruption peaks at 8 (the boss gate) after BODY_SOLVES snapshots, and grid size reaches
-// 12 over the same span. BODY_SOLVES = 20 gives every mechanical tier a fair introduction-and-practice
+// The body: corruption peaks at 8 (the boss gate) after BODY_SOLVES snapshots, and mono grids reach
+// 20 before two-colour boards take over. BODY_SOLVES = 20 gives every tier a fair introduction/practice
 // window before the next layers on (with corruptionForRun = floor(solvedCount·8/20)):
 //   solves 0–4   corruption 0–1  pure tutorial nonograms (5 puzzles)
 //   solves 5–7   corruption 2    volatile cells, ALONE (3 puzzles to learn the fill-then-lock verb)

@@ -14,7 +14,7 @@ export function formatPresetName(preset) {
 
 export function describePresetTarget(preset) {
   const bits = [];
-  if (preset.acxChain) bits.push('ACX chain (trim + room-tone pad)');
+  if (preset.acxChain) bits.push('ACX-targeted chain (source edge spacing preserved)');
   bits.push(`container ${preset.container || 'source'}`);
   if (preset.channels) bits.push(preset.channels === 1 ? 'mono' : `${preset.channels} ch`);
   else bits.push('channels match source');
@@ -62,8 +62,6 @@ export function acxChainOptions(p) {
   return {
     lufs: p.lufsTarget,
     truePeak: p.truePeak,
-    silence: { thresholdDb: -50, minSilenceSec: 0.4 },
-    pad: { headSec: 0.75, tailSec: 2 },
   };
 }
 

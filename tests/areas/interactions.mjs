@@ -193,9 +193,64 @@ export async function run(ctx) {
   }
 
   await page.evaluate(() => {
+    window.__fv.state.rawview?.markClean?.();
     window.__fv.state.downloadedSinceEdit = true;
     window.__fv.state.sessionEdits.clear();
   });
+  await page.goto(origin, { waitUntil: 'load' });
+  await waitForFv();
+
+  // ── Concrete Monaco language + detected indentation ──
+  // Overrides are remembered per registry type AND extension, while inferred indentation stays
+  // a temporary model option instead of rewriting the saved editor defaults.
+  await page.evaluate(() => localStorage.removeItem('fv:editor-language:code:.py'));
+  const mainPyOpened = await openExample('main.py');
+  await page.waitForFunction(() => window.__fv.state.intake?.filename === 'main.py', null, { timeout: 12000 });
+  if (mainPyOpened) pass('editor language fixture: Python sample opens successfully');
+  else fail('editor language fixture: Python sample did not open');
+  await page.waitForSelector('#editorStatus:not([hidden]) #editorLanguageSelect', { timeout: 12000 });
+  const pythonEditor = await page.evaluate(() => ({
+    language: window.__fv.state.rawview.language(),
+    selected: document.getElementById('editorLanguageSelect').value,
+    autoLabel: document.getElementById('editorLanguageSelect').selectedOptions[0]?.textContent,
+    indent: window.__fv.state.rawview.indentation(),
+    configuredTabSize: window.__fv.state.settingsModel.values.tabSize,
+    indentText: document.getElementById('editorIndentStatus').textContent,
+    indentTitle: document.getElementById('editorIndentStatus').title,
+  }));
+  if (pythonEditor.language === 'python' && pythonEditor.selected === 'auto' && /Python/.test(pythonEditor.autoLabel || '')) {
+    pass('editor language control exposes the concrete detected Monaco grammar');
+  } else fail('detected editor language: ' + JSON.stringify(pythonEditor));
+  if (pythonEditor.indent?.insertSpaces && pythonEditor.indent.tabSize === 4
+      && pythonEditor.configuredTabSize === 2 && /4 spaces.*detected/i.test(pythonEditor.indentText)
+      && /temporary.*does not change/i.test(pythonEditor.indentTitle)) {
+    pass('editor respects detected indentation as an explained temporary override');
+  } else fail('detected editor indentation: ' + JSON.stringify(pythonEditor));
+
+  await page.selectOption('#editorLanguageSelect', 'javascript');
+  const rememberedPythonOverride = await page.evaluate(() => ({
+    language: window.__fv.state.rawview.language(),
+    saved: localStorage.getItem('fv:editor-language:code:.py'),
+  }));
+  if (rememberedPythonOverride.language === 'javascript' && rememberedPythonOverride.saved === 'javascript') {
+    pass('editor language override applies live and persists for the file extension');
+  } else fail('editor language persistence: ' + JSON.stringify(rememberedPythonOverride));
+  const appTsOpened = await openExample('app.ts');
+  await page.waitForFunction(() => window.__fv.state.intake?.filename === 'app.ts', null, { timeout: 12000 });
+  if (!appTsOpened) fail('editor language fixture: TypeScript sample did not open');
+  const typescriptUnaffected = await page.evaluate(() => window.__fv.state.rawview.language());
+  if (typescriptUnaffected === 'typescript') pass('language override stays scoped and does not affect another extension');
+  else fail('language override leaked to TypeScript: ' + typescriptUnaffected);
+  await openExample('main.py');
+  await page.waitForFunction(() => window.__fv.state.intake?.filename === 'main.py', null, { timeout: 12000 });
+  await page.waitForFunction(() => document.getElementById('editorLanguageSelect')?.value === 'javascript', null, { timeout: 8000 });
+  await page.selectOption('#editorLanguageSelect', 'auto');
+  const restoredPython = await page.evaluate(() => ({
+    language: window.__fv.state.rawview.language(),
+    saved: localStorage.getItem('fv:editor-language:code:.py'),
+  }));
+  if (restoredPython.language === 'python' && restoredPython.saved == null) pass('Auto restores detection and clears the language override');
+  else fail('editor language auto restore: ' + JSON.stringify(restoredPython));
 
   // ── import easteregg unlock ── typing the magic line into a file opens the arcade. ──
   await page.goto(origin, { waitUntil: 'load' });
@@ -365,6 +420,54 @@ export async function run(ctx) {
     pass('autosave Restore applies the current file’s save, not the first-seen one');
   else fail('autosave restore: welcome=' + JSON.stringify(restoredWelcome.slice(0, 60)) + ' sample=' + JSON.stringify(restoredSample.slice(0, 60)));
   await page.evaluate(() => { try { localStorage.removeItem('fv:autosave:welcome.md'); localStorage.removeItem('fv:autosave:sample.txt'); } catch {} });
+
+  // New recovery copies use compressed IndexedDB storage, allowing useful text files beyond the
+  // old 2 MB localStorage ceiling. Exercise the public module API and verify the stored record,
+  // while restoring the live editor state before continuing with the rest of this area.
+  const compressedAutosave = await page.evaluate(async () => {
+    const [{ state }, autosave] = await Promise.all([
+      import('/core/state.js'),
+      import('/core/autosave.js'),
+    ]);
+    const previousIntake = state.intake;
+    const previousRawview = state.rawview;
+    const filename = 'compressed-cache-test.txt';
+    const text = 'AUTOSAVE_COMPRESSED_MARKER\n'.repeat(140000); // comfortably over 2 MB
+    try {
+      state.intake = { filename, name: filename, isBinary: false };
+      state.rawview = { getValue: () => text };
+      const saved = await autosave.saveNow();
+      const recovered = await autosave.getAutosave(filename);
+      const record = await new Promise((resolve, reject) => {
+        const request = indexedDB.open('file-viewer-autosave', 1);
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => {
+          const db = request.result;
+          const get = db.transaction('entries', 'readonly').objectStore('entries').get('fv:autosave:' + filename);
+          get.onerror = () => reject(get.error);
+          get.onsuccess = () => { resolve(get.result); db.close(); };
+        };
+      });
+      await autosave.clearAutosave(filename);
+      return {
+        saved,
+        recovered: recovered?.text === text,
+        encoding: record?.encoding,
+        sourceBytes: record?.sourceBytes || 0,
+        storedBytes: record?.storedBytes || 0,
+      };
+    } finally {
+      state.intake = previousIntake;
+      state.rawview = previousRawview;
+    }
+  });
+  if (compressedAutosave.saved && compressedAutosave.recovered
+      && compressedAutosave.sourceBytes > 2 * 1024 * 1024
+      && (compressedAutosave.encoding !== 'gzip' || compressedAutosave.storedBytes < compressedAutosave.sourceBytes)) {
+    pass('autosave stores and restores compressed text beyond the old 2 MB limit');
+  } else {
+    fail('compressed autosave: ' + JSON.stringify(compressedAutosave));
+  }
 
   // ── Preview sizing quick modes ──
   await page.goto(origin, { waitUntil: 'load' });
@@ -553,13 +656,13 @@ export async function run(ctx) {
   }
 
   // ── Two-file Compare ("Compare with…") ── REPURPOSED: compare button shows the drop-target
-  //    picker; dropping/picking a file 2 opens the SIDE-BY-SIDE overlay at Current (NOT diff);
-  //    the comparison itself is the overlay's Diff mode (one Monaco diff inside the overlay).
+  //    picker; dropping/picking file 2 opens the two-file overlay at Choose views (not a diff);
+  //    the comparison itself is the overlay's Text diff mode (one Monaco diff).
   await page.goto(origin, { waitUntil: 'load' });
   await openExample('Welcome.md');
   await openExample('Sample.csv');
   await page.waitForSelector('#editor .monaco-editor', { timeout: 30000 });
-  // Forget any remembered overlay mode so the overlay opens at the default (Current), not diff.
+  // Forget any remembered overlay mode so the overlay opens at Choose views, not Text diff.
   await page.evaluate(() => { try { localStorage.removeItem('fv:sbs:mode'); } catch {} });
   const compareBtnShown = await page.$eval('#compareBtn', (e) => !e.closest('[hidden]'));
   if (compareBtnShown) pass('compare button available for an editable type'); else fail('compare button hidden for csv');
@@ -580,21 +683,21 @@ export async function run(ctx) {
   if (compareOverlayCount === 1 && compareTreeVisible && compareActiveName === 'sample.csv' && compareToastHidden)
     pass('two-file compare: real sidebar drag opens one overlay and preserves current file/sidebar');
   else fail('real compare drag state: overlays=' + compareOverlayCount + ' tree=' + compareTreeVisible + ' active=' + compareActiveName + ' toastHidden=' + compareToastHidden);
-  // The picker chrome hides once a file is chosen; the overlay opens at Current (NOT diff).
+  // The picker chrome hides once a file is chosen; the overlay opens at Choose views.
   await page.waitForFunction(() => document.getElementById('compareBar').hidden, null, { timeout: 4000 });
   const droppedNames = await page.$$eval('.sbs-overlay .sbs-fname', (els) => els.map((e) => e.textContent));
   const overlayMode0 = await page.evaluate(() => document.querySelector('.sbs-overlay').__sbsMode.current());
   const noDiffYet = await page.$('.sbs-overlay .monaco-diff-editor');
   if (overlayMode0 === 'current' && !noDiffYet && droppedNames.some((n) => /welcome\.md/i.test(n)) && droppedNames.some((n) => /sample\.csv/i.test(n)))
-    pass('two-file compare: overlay opens at Current with both files (not diff)');
+    pass('two-file compare: overlay opens at Choose views with both files (not a text diff)');
   else fail('compare overlay open state: mode=' + overlayMode0 + ' diff=' + !!noDiffYet + ' names=' + droppedNames.join(','));
-  // Click the Diff mode → ONE Monaco diff editor inside the overlay (current ↔ other).
+  // Click Text diff → ONE Monaco diff editor inside the overlay (current ↔ other).
   await page.click('.sbs-overlay .sbs-mode-btn[data-sbs-mode="diff"]');
   await page.waitForSelector('.sbs-overlay .monaco-diff-editor', { timeout: 12000 });
   const diffCount = await page.$$eval('.sbs-overlay .monaco-diff-editor', (els) => els.length);
   const panesHiddenInDiff = await page.$eval('.sbs-overlay .sbs-body', (e) => getComputedStyle(e).display === 'none');
-  if (diffCount === 1 && panesHiddenInDiff) pass('two-file compare: Diff mode shows exactly one Monaco diff and hides the panes'); else fail('diff mode: count=' + diffCount + ' panesHidden=' + panesHiddenInDiff);
-  // Diff mode must not corrupt the MAIN editor's edit-tracking (overlay is self-contained).
+  if (diffCount === 1 && panesHiddenInDiff) pass('two-file compare: Text diff shows exactly one Monaco diff and hides the panes'); else fail('diff mode: count=' + diffCount + ' panesHidden=' + panesHiddenInDiff);
+  // Text diff must not corrupt the main editor's edit-tracking (overlay is self-contained).
   const falseDirty = await page.evaluate(() => window.__fv.hasUnsavedWork());
   if (!falseDirty) pass('two-file compare: main edit-tracking untouched (overlay is self-contained)'); else fail('compare created false unsaved work');
   await page.click('.sbs-overlay .sbs-close');
@@ -676,8 +779,7 @@ export async function run(ctx) {
   await page.waitForSelector('#previewHost iframe.fv-preview-frame', { timeout: 15000 });
   const oldSbsBtnGone = await page.$('#sbsBtn');
   if (!oldSbsBtnGone) pass('side-by-side: obsolete toolbar button removed'); else fail('obsolete sbs toolbar button still present');
-  // Forget any remembered mode so the overlay opens at Current (the per-pane toggle tests below
-  // require Current mode, where each pane drives its own view).
+  // Forget any remembered mode so the overlay opens at Choose views, where each pane drives itself.
   await page.evaluate(() => { try { localStorage.removeItem('fv:sbs:mode'); } catch {} });
   await page.click('#compareBtn');
   await page.waitForFunction(() => !document.getElementById('compareBar').hidden, null, { timeout: 8000 });
@@ -686,21 +788,36 @@ export async function run(ctx) {
   const sbsPanes = await page.$$eval('.sbs-pane', (els) => els.length);
   const sbsNames = await page.$$eval('.sbs-fname', (els) => els.map((e) => e.textContent));
   if (sbsPanes === 2 && sbsNames.some((n) => /welcome\.md/i.test(n)) && sbsNames.some((n) => /sample\.csv/i.test(n))) pass('side-by-side: two named panes (current + picked)'); else fail('sbs panes=' + sbsPanes + ' names=' + sbsNames.join(','));
-  // Shared mode bar: Current · Raw · Preview · Diff, opening at Current.
-  const modeBtns = await page.$$eval('.sbs-overlay .sbs-mode-btn', (els) => els.map((e) => e.dataset.sbsMode));
+  // Shared mode bar uses result-oriented language and opens at Choose views.
+  const modeDefs = await page.$$eval('.sbs-overlay .sbs-mode-btn', (els) => els.map((e) => ({
+    id: e.dataset.sbsMode, label: e.textContent, title: e.title,
+  })));
+  const modeBtns = modeDefs.map((d) => d.id);
   const modeStart = await page.evaluate(() => document.querySelector('.sbs-overlay').__sbsMode.current());
-  if (['current', 'raw', 'preview', 'diff'].every((m) => modeBtns.includes(m)) && modeStart === 'current')
-    pass('side-by-side: shared mode bar has Current/Raw/Preview/Diff and opens at Current');
-  else fail('sbs mode bar: btns=' + modeBtns.join(',') + ' start=' + modeStart);
-  // In Current mode each pane shows its own Source/Preview/Split toggle.
+  const expectedModeLabels = { current: 'Choose views', raw: 'Sources', preview: 'Previews', diff: 'Text diff' };
+  const languageClear = Object.entries(expectedModeLabels).every(([id, label]) =>
+    modeDefs.some((d) => d.id === id && d.label === label && d.title.length > 20));
+  if (languageClear && modeStart === 'current')
+    pass('side-by-side: Choose views/Sources/Previews/Text diff labels explain the available layouts');
+  else fail('sbs mode bar: defs=' + JSON.stringify(modeDefs) + ' start=' + modeStart);
+  const compareTitle = await page.$eval('.sbs-title', (e) => e.textContent);
+  if (compareTitle === 'Compare two files') pass('side-by-side: overlay identifies the two-file comparison'); else fail('sbs title: ' + compareTitle);
+  // Choose views lets each pane select exactly one Source or Preview surface. There is no inner
+  // Split option, so two compared files can never turn into four competing panes.
   const togglesShownCurrent = await page.$eval('.sbs-pane:first-child .sbs-toggle[data-sbs-view="source"]', (e) => getComputedStyle(e).display !== 'none');
-  if (togglesShownCurrent) pass('side-by-side: Current mode shows the per-pane view toggle'); else fail('per-pane toggle hidden in Current');
+  const innerSplitCount = await page.$$eval('.sbs-pane .sbs-toggle[data-sbs-view="split"]', (els) => els.length);
+  if (togglesShownCurrent && innerSplitCount === 0) pass('side-by-side: Choose views offers Source/Preview only (no four-pane nested split)');
+  else fail('choose views controls: shown=' + togglesShownCurrent + ' innerSplits=' + innerSplitCount);
   // Both panes are editable text types → both default to a Monaco source editor.
   await page.waitForFunction(() => {
     const panes = document.querySelectorAll('.sbs-pane');
     return panes.length === 2 && [...panes].every((p) => p.querySelector('.sbs-source .monaco-editor'));
   }, null, { timeout: 20000 });
   pass('side-by-side: both panes mount an independent Monaco source editor');
+  const chooseViewSurfaceCount = await page.$$eval('.sbs-pane .sbs-source, .sbs-pane .sbs-preview', (els) =>
+    els.filter((e) => getComputedStyle(e).display !== 'none' && e.getClientRects().length > 0).length);
+  if (chooseViewSurfaceCount === 2) pass('side-by-side: Choose views renders exactly two visible file surfaces');
+  else fail('choose views visible surfaces=' + chooseViewSurfaceCount);
   // (a) An editable pane exposes a Monaco controller you can type into; getValue() reflects it.
   const sbsEdit = await page.evaluate(() => {
     const panes = document.querySelector('.sbs-overlay').__sbsPanes;
@@ -721,6 +838,10 @@ export async function run(ctx) {
     return src && prev && src.style.display === 'none' && prev.style.display !== 'none' && prev.childElementCount > 0;
   }, null, { timeout: 12000 });
   pass('side-by-side: Source/Preview toggle switches the pane view');
+  const mixedSurfaceCount = await page.$$eval('.sbs-pane .sbs-source, .sbs-pane .sbs-preview', (els) =>
+    els.filter((e) => getComputedStyle(e).display !== 'none' && e.getClientRects().length > 0).length);
+  if (mixedSurfaceCount === 2) pass('side-by-side: mixed Source/Preview selection still shows only two surfaces');
+  else fail('mixed views visible surfaces=' + mixedSurfaceCount);
   // (b2) Per-pane markdown toolbar: Bold acts ONLY on that pane (pane 0 = welcome.md), leaving
   //      the sibling text/csv pane untouched. Switch pane 0 back to Source first.
   await page.click('.sbs-pane:first-child .sbs-toggle[data-sbs-view="source"]');
@@ -751,16 +872,6 @@ export async function run(ctx) {
   });
   const sbsSort = await page.evaluate(() => document.querySelector('.sbs-overlay').__sbsPanes[1].rawview().getValue());
   if (sbsSort === 'apple\nbanana\ncherry') pass('side-by-side: text-utils pane Sort ↑ reorders that pane\'s lines'); else fail('sbs sort: ' + JSON.stringify(sbsSort));
-  // (b4) In-pane Split view shows BOTH a Monaco editor AND a live preview within one pane.
-  await page.click('.sbs-pane:first-child .sbs-toggle[data-sbs-view="split"]');
-  await page.waitForFunction(() => {
-    const host = document.querySelector('.sbs-pane:first-child .sbs-host');
-    if (!host.classList.contains('sbs-split')) return false;
-    const src = host.querySelector('.sbs-source'), prev = host.querySelector('.sbs-preview');
-    return src && prev && src.style.display !== 'none' && prev.style.display !== 'none'
-      && src.querySelector('.monaco-editor') && prev.childElementCount > 0;
-  }, null, { timeout: 12000 });
-  pass('side-by-side: Split view shows Monaco source + live preview together in one pane');
   // (c) Per-pane Download yields a download with the right filename.
   const [sbsDl] = await Promise.all([
     page.waitForEvent('download', { timeout: 8000 }),
@@ -768,8 +879,8 @@ export async function run(ctx) {
   ]);
   if (/sample\.csv$/.test(sbsDl.suggestedFilename())) pass('side-by-side: per-pane Download preserves filename (' + sbsDl.suggestedFilename() + ')'); else fail('sbs download name: ' + sbsDl.suggestedFilename());
 
-  // ── Shared mode bar: Raw / Preview / Diff govern BOTH panes ──
-  // (mode-a) Raw forces both panes to their Monaco source; per-pane toggle hidden; two SEPARATE
+  // ── Shared mode bar: Sources / Previews / Text diff govern both files ──
+  // (mode-a) Sources forces both panes to Monaco source; per-pane toggle hidden; two separate
   //          editors (no diff editor) → panes scroll independently.
   await page.click('.sbs-overlay .sbs-mode-btn[data-sbs-mode="raw"]');
   await page.waitForFunction(() => {
@@ -782,8 +893,8 @@ export async function run(ctx) {
   const rawTwoEditors = await page.$$eval('.sbs-pane .sbs-source .monaco-editor', (els) => els.length);
   const rawNoDiff = await page.$('.sbs-overlay .monaco-diff-editor');
   const rawToggleHidden = await page.$eval('.sbs-pane:first-child .sbs-toggle[data-sbs-view="source"]', (e) => getComputedStyle(e).display === 'none');
-  if (rawTwoEditors === 2 && !rawNoDiff && rawToggleHidden) pass('side-by-side: Raw mode forces both panes to source (two independent editors, no diff, per-pane toggle hidden)'); else fail('raw mode: editors=' + rawTwoEditors + ' diff=' + !!rawNoDiff + ' toggleHidden=' + rawToggleHidden);
-  // (mode-b) Preview forces both panes to their rendered preview.
+  if (rawTwoEditors === 2 && !rawNoDiff && rawToggleHidden) pass('side-by-side: Sources shows two independent editors and no diff'); else fail('sources mode: editors=' + rawTwoEditors + ' diff=' + !!rawNoDiff + ' toggleHidden=' + rawToggleHidden);
+  // (mode-b) Previews forces both panes to their rendered preview.
   await page.click('.sbs-overlay .sbs-mode-btn[data-sbs-mode="preview"]');
   await page.waitForFunction(() => {
     const panes = document.querySelectorAll('.sbs-pane');
@@ -792,17 +903,20 @@ export async function run(ctx) {
       return src.style.display === 'none' && prev.style.display !== 'none' && prev.childElementCount > 0;
     });
   }, null, { timeout: 15000 });
-  pass('side-by-side: Preview mode forces both panes to their rendered preview');
-  // (mode-c) Diff replaces the two panes with ONE Monaco diff; the panes are hidden.
+  const previewSurfaceCount = await page.$$eval('.sbs-pane .sbs-source, .sbs-pane .sbs-preview', (els) =>
+    els.filter((e) => getComputedStyle(e).display !== 'none' && e.getClientRects().length > 0).length);
+  if (previewSurfaceCount === 2) pass('side-by-side: Previews shows exactly two rendered previews');
+  else fail('previews visible surfaces=' + previewSurfaceCount);
+  // (mode-c) Text diff replaces the two panes with one Monaco diff; the panes are hidden.
   await page.click('.sbs-overlay .sbs-mode-btn[data-sbs-mode="diff"]');
   await page.waitForSelector('.sbs-overlay .monaco-diff-editor', { timeout: 12000 });
   const diffOne = await page.$$eval('.sbs-overlay .monaco-diff-editor', (els) => els.length);
   const bodyHidden = await page.$eval('.sbs-overlay .sbs-body', (e) => getComputedStyle(e).display === 'none');
-  if (diffOne === 1 && bodyHidden) pass('side-by-side: Diff mode shows exactly one Monaco diff and hides the two panes'); else fail('diff mode: count=' + diffOne + ' bodyHidden=' + bodyHidden);
+  if (diffOne === 1 && bodyHidden) pass('side-by-side: Text diff shows one Monaco diff and hides both file panes'); else fail('diff mode: count=' + diffOne + ' bodyHidden=' + bodyHidden);
   // fv:sbs:mode persists the last user choice.
   const modePersisted = await page.evaluate(() => { try { return localStorage.getItem('fv:sbs:mode'); } catch { return null; } });
   if (modePersisted === 'diff') pass('side-by-side: fv:sbs:mode persists the chosen mode'); else fail('fv:sbs:mode persist: ' + modePersisted);
-  // (mode-d) Diff → Current rebuilds the two panes (and disposes the diff editor).
+  // (mode-d) Text diff → Choose views restores the two panes and disposes the diff editor.
   await page.click('.sbs-overlay .sbs-mode-btn[data-sbs-mode="current"]');
   await page.waitForFunction(() => {
     const panes = document.querySelectorAll('.sbs-pane');
@@ -810,7 +924,7 @@ export async function run(ctx) {
     return panes.length === 2 && getComputedStyle(body).display !== 'none'
       && [...panes].every((p) => p.querySelector('.sbs-host')) && !document.querySelector('.sbs-overlay .monaco-diff-editor');
   }, null, { timeout: 12000 });
-  pass('side-by-side: switching Diff → Current rebuilds the two panes (diff disposed)');
+  pass('side-by-side: switching Text diff → Choose views restores two panes (diff disposed)');
 
   // (d) Closing disposes both panes and removes the overlay.
   await page.click('.sbs-close');

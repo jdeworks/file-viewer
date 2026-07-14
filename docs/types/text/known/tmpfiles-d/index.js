@@ -14,6 +14,7 @@ export default {
     const name = (intake.name || intake.filename || '').toLowerCase();
     if (/tmpfiles\.d\/[^/]+\.conf$/.test(name)) return true;
     const base = name.split('/').pop();
+    if (base === 'gitolite.conf') return false;
     if (base.endsWith('.conf') && looksLikeTmpfiles(intake.text)) return true;
     if (base.endsWith('.tmpfiles') || base.endsWith('.tmpfiles-d')) return true;
     return false;

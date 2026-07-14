@@ -61,6 +61,24 @@ export async function run(ctx) {
   if (offOrigin.length === offOriginBeforeExe) pass('ELF hashing and link rendering make zero off-origin requests');
   else fail('ELF render off-origin requests: ' + offOrigin.slice(offOriginBeforeExe).join(', '));
 
+  await page.context().setOffline(true);
+  await page.waitForFunction(() => navigator.onLine === false);
+  await page.$eval('#previewHost .exe-vt-link', (link) => link.click());
+  const offlineLookup = await page.$eval('#previewHost .exe-vt-status', (el) => el.textContent);
+  if (/Offline.*lookup unavailable.*no request was sent/i.test(offlineLookup)) pass('ELF VirusTotal lookup fails closed with explicit offline UI');
+  else fail('elf offline lookup status: ' + offlineLookup);
+  await page.context().setOffline(false);
+  await page.waitForFunction(() => navigator.onLine === true);
+  await page.$eval('#previewHost .exe-vt-link', (link) => {
+    link.addEventListener('click', (event) => event.preventDefault(), { capture: true, once: true });
+    link.click();
+  });
+  const onlineLookup = await page.$eval('#previewHost .exe-vt-status', (el) => el.textContent);
+  if (/check that tab.s connection or blocker.*does not retry or send the file/i.test(onlineLookup)) pass('ELF VirusTotal lookup explains external-tab errors and retry behavior');
+  else fail('elf online lookup status: ' + onlineLookup);
+  if (offOrigin.length === offOriginBeforeExe) pass('ELF offline/error UI makes zero off-origin requests');
+  else fail('ELF offline/error UI off-origin requests: ' + offOrigin.slice(offOriginBeforeExe).join(', '));
+
   await page.evaluate(async () => {
     window.__fv.state.intake.truncated = true;
     window.__fv.state.intake.size = 70 * 1024 * 1024;

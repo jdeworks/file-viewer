@@ -201,6 +201,22 @@ export async function run(ctx) {
     pass('URL inspector highlights OAuth, JWT, decoded JSON, and fragment');
   else fail('oauth url render: ' + oauthText.replace(/\s+/g, ' ').slice(0, 220));
 
+  const expiredJwt = 'eyJhbGciOiJub25lIn0.eyJzdWIiOiIxMjMiLCJleHAiOjF9.sig';
+  const secureUrl = 'https://bit.ly/example?utm_source=newsletter&api_key=supersecret&id_token=' + expiredJwt;
+  const secureFrame = await openTextFile('security.url', secureUrl);
+  await secureFrame.waitForSelector('.ui-security-row', { timeout: 8000 });
+  const secureText = await secureFrame.$eval('body', (e) => e.textContent);
+  const secureState = await secureFrame.$eval('body', (body) => ({
+    raw: body.querySelector('.ui-raw-box')?.textContent || '',
+    hidden: !body.querySelector('.ui-secret-value')?.open,
+    sensitive: body.querySelectorAll('.ui-sensitive-row').length,
+  }));
+  if (/Shortened URL/.test(secureText) && /Campaign source/.test(secureText) && /Sensitive/.test(secureText)
+    && /Expired/.test(secureText) && /signature is not verified/.test(secureText)
+    && !secureState.raw.includes('supersecret') && secureState.hidden && secureState.sensitive === 2) {
+    pass('URL security context is local-only: shortener/tracking labels, hidden secrets, and unverified JWT expiry');
+  } else fail('secure URL inspection: ' + JSON.stringify({ secureState, text: secureText.replace(/\s+/g, ' ').slice(0, 300) }));
+
   const multiFrame = await openTextFile('links.url', [
     'https://one.example/a?x=1',
     'https://two.example/b?y=2',

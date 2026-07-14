@@ -3,6 +3,8 @@
 // (ctx.allowScripts), the raw document renders as the iframe srcdoc so its scripts run —
 // still in sandbox="allow-scripts" only (no allow-same-origin), so it cannot reach the parent.
 import { loadGlobal, vendor } from '../../core/script-loader.js';
+import { dependencyCoverage, rewriteLocalDependencies } from './local-resources.js';
+import { loadRemotePreset, remotePreset, remotePresetStatus } from './remote-presets.js';
 
 // Heuristic: does the source contain executable script (tags, inline handlers, js: urls)?
 const SCRIPT_RE = /<script[\s>]|\son\w+\s*=|javascript:/i;
@@ -16,6 +18,70 @@ function applyInjectHead(html, injectHead) {
   if (html.includes('</head>')) return html.replace('</head>', tags + '\n</head>');
   if (html.includes('</body>')) return html.replace('</body>', tags + '\n</body>');
   return tags + '\n' + html;
+}
+
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, (char) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  })[char]);
+}
+
+function prependToBody(html, addition) {
+  if (!addition) return html;
+  if (/<body(?:\s[^>]*)?>/i.test(html)) {
+    return html.replace(/<body(?:\s[^>]*)?>/i, (tag) => tag + '\n' + addition);
+  }
+  return addition + '\n' + html;
+}
+
+function shortList(values, limit = 4) {
+  const list = [...new Set(values || [])];
+  const shown = list.slice(0, limit).map((value) => '<code>' + escapeHtml(value) + '</code>');
+  if (list.length > limit) shown.push('and ' + (list.length - limit) + ' more');
+  return shown.join(', ');
+}
+
+function dependencyReport({ report, coverage, preset, status, presetLoad, presetError, cacheEnabled, trusted }) {
+  const rows = [];
+  if (report.resolved.length) {
+    rows.push('<span class="fv-html-deps-ok">Local:</span> resolved ' + report.resolved.length
+      + ' folder asset' + (report.resolved.length === 1 ? '' : 's') + '.');
+  }
+  if (report.missing.length) {
+    rows.push('<span class="fv-html-deps-warn">Missing local:</span> ' + shortList(report.missing)
+      + '. Missing references are blocked instead of falling through to the app origin.');
+  }
+  if (report.remote.length) {
+    rows.push('<span class="fv-html-deps-warn">External:</span> ' + shortList(report.remote)
+      + (trusted ? '. Raw-document trust is active.' : '. These references stay blocked in the safe preview.'));
+  }
+  if (coverage.likelyMissing) {
+    rows.push('<span class="fv-html-deps-warn">Styles may be missing:</span> only '
+      + coverage.matched + ' of ' + coverage.classCount
+      + ' class names appear in loaded CSS. Choose a dependency preset or add trusted custom head content in Settings.');
+  }
+  if (preset) {
+    const cacheText = status?.cacheAvailable
+      ? (status.cached + '/' + status.total + ' resource' + (status.total === 1 ? '' : 's') + ' cached')
+      : 'dependency cache unavailable';
+    if (presetLoad) {
+      const source = presetLoad.usedCache ? 'cache' : 'network';
+      rows.push('<span class="fv-html-deps-ok">' + escapeHtml(preset.label) + ' loaded</span> from '
+        + source + ' (' + cacheText + ').');
+    } else {
+      const error = presetError
+        ? '<span class="fv-html-deps-warn">Could not load:</span> ' + escapeHtml(presetError) + ' '
+        : '';
+      const label = presetError ? 'Retry ' + preset.label : 'Load ' + preset.label;
+      rows.push(error + '<button type="button" class="fv-html-deps-load" data-fv-action="html-load-remote" data-fv-value="'
+        + escapeHtml(preset.id) + '">' + escapeHtml(label) + '</button> <span class="fv-html-deps-note">'
+        + escapeHtml(preset.note) + ' ' + cacheText + '; caching ' + (cacheEnabled ? 'enabled' : 'disabled')
+        + '. No request occurs until you press Load and confirm.</span>');
+    }
+  }
+  if (!rows.length) return '';
+  return '<aside class="fv-html-deps" aria-label="HTML dependency diagnostics"><strong>HTML dependencies</strong><ul>'
+    + rows.map((row) => '<li>' + row + '</li>').join('') + '</ul></aside>';
 }
 
 function isLocalResourceUrl(value) {
@@ -172,12 +238,69 @@ function neutralizeRemoteResources(html) {
 export async function render(intake, ctx) {
   const raw = intake.text || '';
   const injectHead = (ctx?.settings?.htmlInjectHead || '').trim();
-  if (ctx?.allowScripts) {
-    // Script-enabled path: inject user tags into the live document before it runs. This is an
-    // explicit, user-confirmed opt-in (WP07) — the raw document (including any off-origin
-    // references or scripts it contains) is trusted once the user picks this mode.
-    return { fullDoc: applyInjectHead(raw, injectHead), ranScripts: true, containsScripts: containsScripts(raw) };
+  const settings = ctx?.settings || {};
+  const configuredPreset = remotePreset(settings.htmlDependencyPreset);
+  const cacheEnabled = settings.htmlCacheRemotePreset !== false;
+  let status = configuredPreset ? await remotePresetStatus(configuredPreset.id) : null;
+  let presetLoad = null;
+  let presetError = '';
+  if (configuredPreset && ctx?.remotePresetAllowed === configuredPreset.id) {
+    try {
+      presetLoad = await loadRemotePreset(configuredPreset.id, { cacheEnabled, signal: ctx?.signal });
+      status = await remotePresetStatus(configuredPreset.id);
+    } catch (error) {
+      if (ctx?.signal?.aborted) throw error;
+      presetError = error?.message || 'Unknown dependency error.';
+    }
   }
+
+  // Custom head additions go through the same resolver and sanitizer as source markup. Inline CSS
+  // therefore works immediately; remote/script additions cannot bypass either consent gate.
+  const source = applyInjectHead(raw, injectHead);
+  const local = await rewriteLocalDependencies(source, ctx?.folder);
+  const revoke = () => {
+    local.revoke();
+    presetLoad?.revoke();
+  };
+  // If this request is superseded while DOMPurify is loading, its blob URLs still need cleanup.
+  ctx?.onCleanup?.(revoke);
+  const coverage = dependencyCoverage(local.html, local.report.cssTexts);
+  const banner = dependencyReport({
+    report: local.report,
+    coverage,
+    preset: configuredPreset,
+    status,
+    presetLoad,
+    presetError,
+    cacheEnabled,
+    trusted: !!ctx?.allowScripts,
+  });
+  const presetInfo = configuredPreset ? {
+    ...configuredPreset,
+    status,
+    cacheEnabled,
+    error: presetError,
+  } : null;
+  const scriptContent = containsScripts(source);
+  const requiresTrust = local.report.remote.length > 0;
+
+  if (ctx?.allowScripts) {
+    // Script-enabled path: the source and custom head are live only after the separate raw-document
+    // trust confirmation. Folder dependencies are still local blob URLs; preset resources retain
+    // their own Load + off-origin confirmation.
+    let fullDoc = local.html;
+    if (presetLoad?.extraHead) fullDoc = applyInjectHead(fullDoc, presetLoad.extraHead);
+    fullDoc = prependToBody(fullDoc, banner);
+    return {
+      fullDoc,
+      ranScripts: true,
+      containsScripts: scriptContent,
+      requiresTrust,
+      remotePreset: presetInfo,
+      revoke,
+    };
+  }
+
   const DOMPurify = await loadGlobal(vendor('dompurify/purify.min.js'), 'DOMPurify');
   DOMPurify.removed = [];
   // FORBID_TAGS/FORBID_ATTR cover every DOMPurify-default-allowed vector that can trigger a live
@@ -187,14 +310,21 @@ export async function render(intake, ctx) {
   // style="" and <img src> stay allowed — this type's documented "layout, styles, images work"
   // capability — but any off-origin reference inside them is neutralized below (DOMPurify itself
   // doesn't understand CSS, so it can't strip a url() for us).
-  const clean = DOMPurify.sanitize(raw, {
+  const clean = DOMPurify.sanitize(local.html, {
     ADD_ATTR: ['target'],
     ALLOWED_URI_REGEXP: HTML_ALLOWED_URI,
     FORBID_TAGS: ['script', 'iframe', 'object', 'embed', 'video', 'audio', 'source', 'track', 'form', 'meta', 'base', 'link'],
     FORBID_ATTR: ['background', 'poster', 'srcset', 'onerror', 'onload', 'onclick'],
   });
   const resources = neutralizeRemoteResources(clean);
-  // Sanitized path: append user-configured tags after sanitization (user trusts their own settings).
-  const injected = applyInjectHead(resources.html, injectHead);
-  return { bodyHtml: injected, containsScripts: containsScripts(raw), hadUnsafe: DOMPurify.removed.length > 0 || resources.blocked };
+  return {
+    bodyHtml: banner + resources.html,
+    extraHead: presetLoad?.extraHead || '',
+    ranScripts: !!presetLoad?.hasScripts,
+    containsScripts: scriptContent,
+    requiresTrust,
+    remotePreset: presetInfo,
+    hadUnsafe: DOMPurify.removed.length > 0 || resources.blocked,
+    revoke,
+  };
 }

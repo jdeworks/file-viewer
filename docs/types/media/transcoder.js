@@ -8,7 +8,7 @@
 // Exports:
 //   loadFfmpeg(onProgress?)  → ffmpeg instance
 //   transcode(intake, kind, onProgress)  → blob URL  (Phase 1 / format-convert)
-//   runOperation(ff, opId, params, intake)  → { url, filename, bytes }  (Phase 2 editor)
+//   runOperation(ff, opId, params, intake)  → { url, filename, bytes, blob, mime }  (Phase 2 editor)
 
 import { loadGlobal, vendor } from '../../core/script-loader.js';
 import { buildAcxChapterExportArgs } from './audio-filters.js';
@@ -137,7 +137,7 @@ export async function transcode(intake, kind, onProgress) {
 //   params   — operation-specific object (see below)
 //   intake   — file descriptor {filename, file, bytes}
 //
-// Returns: { url: blobUrl, filename: string, bytes: number }
+// Returns: { url: blobUrl, filename: string, bytes: number, blob: Blob, mime: string }
 // Caller is responsible for URL.revokeObjectURL(url) when done.
 
 const MIME = OP_MIME;
@@ -181,10 +181,13 @@ export async function runOperation(ff, opId, params, intake) {
     const result = ff.FS('readFile', plan.outputName);
     const ext = plan.outputName.split('.').pop();
     const mime = MIME[ext] || 'application/octet-stream';
+    const blob = new Blob([result.buffer], { type: mime });
     return {
-      url: URL.createObjectURL(new Blob([result.buffer], { type: mime })),
+      url: URL.createObjectURL(blob),
       filename: plan.outBase + '.' + ext,
       bytes: result.byteLength,
+      blob,
+      mime,
     };
   } finally {
     try { ff.FS('unlink', inputName); } catch { /* ignore */ }

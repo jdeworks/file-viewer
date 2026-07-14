@@ -171,12 +171,47 @@ function lookupHtml(sha256, truncated) {
       <a class="exe-vt-link" href="${href}" target="_blank" rel="noopener noreferrer">Look up on VirusTotal ↗</a>
       <p class="exe-vt-note">Opening VirusTotal sends the SHA-256 hash, not the file contents, to VirusTotal.</p>
       <p class="exe-vt-terms">VirusTotal’s free search is for non-commercial use.</p>
+      <p class="exe-vt-status" role="status" aria-live="polite"></p>
     </div>`;
   }
   const message = truncated
     ? 'VirusTotal lookup unavailable: only part of this file was loaded, so a full-file SHA-256 cannot be calculated.'
     : 'VirusTotal lookup unavailable: SHA-256 is unavailable in this browser.';
   return `<p class="exe-vt-unavailable" role="note">${message}</p>`;
+}
+
+function wireVirusTotalLookup(parentNode) {
+  const link = parentNode?.querySelector('.exe-vt-link');
+  const status = parentNode?.querySelector('.exe-vt-status');
+  if (!link || !status) return null;
+
+  const isOffline = () => typeof navigator !== 'undefined' && navigator.onLine === false;
+  const syncAvailability = () => {
+    if (isOffline()) {
+      link.setAttribute('aria-disabled', 'true');
+      status.textContent = 'Offline — lookup unavailable; no request was sent.';
+    } else {
+      link.removeAttribute('aria-disabled');
+      if (/^Offline/.test(status.textContent)) status.textContent = '';
+    }
+  };
+  const onClick = (event) => {
+    if (isOffline()) {
+      event.preventDefault();
+      status.textContent = 'Offline — lookup unavailable; no request was sent.';
+      return;
+    }
+    status.textContent = 'Opening in a new tab. If it does not load, check that tab’s connection or blocker; the viewer does not retry or send the file.';
+  };
+  link.addEventListener('click', onClick);
+  globalThis.addEventListener?.('online', syncAvailability);
+  globalThis.addEventListener?.('offline', syncAvailability);
+  syncAvailability();
+  return () => {
+    link.removeEventListener('click', onClick);
+    globalThis.removeEventListener?.('online', syncAvailability);
+    globalThis.removeEventListener?.('offline', syncAvailability);
+  };
 }
 
 function result(bodyHtml, sha256) {
@@ -196,7 +231,8 @@ function result(bodyHtml, sha256) {
     link.textContent = 'Look up on VirusTotal ↗';
     staticLink.replaceWith(link);
   }
-  return { parentNode, bodyHtml };
+  const destroy = wireVirusTotalLookup(parentNode);
+  return { parentNode, bodyHtml, ...(destroy ? { destroy } : {}) };
 }
 
 export async function render(intake, { cryptoSubtle = globalThis.crypto?.subtle } = {}) {

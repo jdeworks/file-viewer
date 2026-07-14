@@ -1,4 +1,5 @@
 import { META_KEYS, advancedFact, securityFact, textFact } from './metadata-helpers.js';
+import { assessContentRisk } from './content-signature.js';
 
 function extensionOf(filename = '') {
   const base = String(filename).split(/[\\/]/).pop() || '';
@@ -12,14 +13,15 @@ function filenameWarnings(filename = '') {
 }
 
 function filenameRisk(filename = '') {
-  const base = String(filename).split(/[\\/]/).pop() || '';
+  const path = String(filename);
+  const base = path.split(/[\\/]/).pop() || '';
   const warnings = [];
   let score = 0;
-  if (/[\u202a-\u202e\u2066-\u2069]/u.test(base)) {
+  if (/[\u202a-\u202e\u2066-\u2069]/u.test(path)) {
     warnings.push('Unicode direction controls can disguise the visible extension');
     score += 45;
   }
-  if (/[\u200b\u200c\u200d\ufeff]/u.test(base)) {
+  if (/[\u200b\u200c\u200d\ufeff]/u.test(path)) {
     warnings.push('Zero-width characters in filename may conceal true length or extension');
     score += 35;
   }
@@ -122,11 +124,30 @@ export function genericMetadata(intake) {
       securityFact('Filename warnings', risk.warnings.join(', '), META_KEYS.filenameWarnings),
     );
   }
+  const contentRisk = assessContentRisk(intake);
+  if (contentRisk.signature) {
+    rows.push(advancedFact('Detected content', contentRisk.signature.label, META_KEYS.detectedContent));
+  }
+  if (contentRisk.score) {
+    rows.push(
+      securityFact('Content risk', `${contentRisk.level} (${contentRisk.score}/100)`, META_KEYS.contentRisk),
+      securityFact('Content warnings', contentRisk.warnings.join(', '), META_KEYS.contentWarnings),
+    );
+  }
   if (Number.isFinite(intake.loadedBytes) && Number.isFinite(intake.size) && intake.loadedBytes < intake.size) {
     rows.push(advancedFact('Loaded bytes', `${intake.loadedBytes.toLocaleString()} of ${intake.size.toLocaleString()}`, META_KEYS.loadedBytes));
   }
   rows.push(advancedFact('Byte order mark', bomOf(intake.bytes), META_KEYS.bom));
   if (!intake.isBinary) {
+    if (intake.encoding) {
+      const source = intake.encodingSource && intake.encodingSource !== 'default'
+        ? ` (${intake.encodingSource})`
+        : '';
+      rows.push(advancedFact('Text encoding', intake.encoding + source, META_KEYS.encoding));
+    }
+    if (intake.encodingWarnings?.length) {
+      rows.push(securityFact('Encoding warnings', intake.encodingWarnings.join(' '), META_KEYS.encodingWarnings));
+    }
     const stats = textStats(intake.text || '');
     rows.push(
       textFact('Line endings', stats.endings.label, META_KEYS.lineEndings),
@@ -140,4 +161,54 @@ export function genericMetadata(intake) {
   return rows;
 }
 
-export const testExports = { extensionOf, filenameRisk, filenameWarnings, bomOf, lineEndingStats, textStats };
+function completeLocalBytes(intake) {
+  const bytes = intake?.bytes;
+  if (!(bytes instanceof Uint8Array)) return null;
+  if (intake.truncated || intake.streamed) return null;
+  if (Number.isFinite(intake.size) && intake.size > bytes.byteLength) return null;
+  if (Number.isFinite(intake.loadedBytes) && Number.isFinite(intake.size)
+      && intake.loadedBytes < intake.size) return null;
+  return bytes;
+}
+
+export async function localFingerprintMetadata(intake, { subtle = globalThis.crypto?.subtle } = {}) {
+  const bytes = completeLocalBytes(intake);
+  if (!bytes) {
+    return [advancedFact(
+      'SHA-256 (local)',
+      'Not calculated — the complete file is not loaded',
+      META_KEYS.sha256,
+      2,
+    )];
+  }
+  if (!subtle?.digest) {
+    return [advancedFact(
+      'SHA-256 (local)',
+      'Unavailable in this browser',
+      META_KEYS.sha256,
+      2,
+    )];
+  }
+  try {
+    const digest = new Uint8Array(await subtle.digest('SHA-256', bytes));
+    const hex = Array.from(digest, (byte) => byte.toString(16).padStart(2, '0')).join('');
+    return [advancedFact('SHA-256 (local)', hex, META_KEYS.sha256, 2)];
+  } catch {
+    return [advancedFact(
+      'SHA-256 (local)',
+      'Calculation failed in this browser',
+      META_KEYS.sha256,
+      2,
+    )];
+  }
+}
+
+export const testExports = {
+  extensionOf,
+  filenameRisk,
+  filenameWarnings,
+  bomOf,
+  lineEndingStats,
+  textStats,
+  completeLocalBytes,
+};

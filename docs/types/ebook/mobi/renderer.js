@@ -5,7 +5,9 @@
 // Markup lives in sibling .html templates (error) filled via core/template.js.
 import { loadGlobal, vendor } from '../../../core/script-loader.js';
 import { loadTemplate, fill, esc } from '../../../core/template.js';
+import { loadReaderPrefs, saveReaderPrefs } from '../../../core/reader-prefs.js';
 import { openMobi } from './mobilib.js';
+import { MOBI_READER_PREFS } from '../reader-prefs.js';
 
 const ERROR = new URL('./error.html', import.meta.url);
 
@@ -35,30 +37,40 @@ export async function render(intake, _ctx) {
   });
 
   // ── Host + toolbar ──
+  let prefs = loadReaderPrefs(MOBI_READER_PREFS);
   const host = document.createElement('div');
-  host.className = 'mobi-reader mk-size-normal mk-font-serif mk-theme-light mk-line-normal mk-margin-normal';
+  host.className = 'mobi-reader';
+
+  function applyPrefs() {
+    for (const [key, values] of Object.entries(MOBI_READER_PREFS.options)) {
+      for (const value of values) host.classList.toggle(`mk-${key}-${value}`, prefs[key] === value);
+    }
+  }
+  applyPrefs();
 
   const toolbar = document.createElement('div');
   toolbar.className = 'mobi-toolbar';
   toolbar.setAttribute('aria-label', 'Reader settings');
 
-  function mkGroup(label, opts) {
+  function mkGroup(key, label, opts) {
     const grp = document.createElement('div');
     grp.className = 'mobi-tb-group';
     const lbl = document.createElement('span');
     lbl.className = 'mobi-tb-label';
     lbl.textContent = label;
     grp.appendChild(lbl);
-    opts.forEach(([text, cls], i) => {
+    opts.forEach(([text, value, cls]) => {
       const btn = document.createElement('button');
       btn.type = 'button';
-      btn.className = 'mobi-tb-btn' + (i === 0 ? ' mk-active' : '');
+      btn.className = 'mobi-tb-btn' + (prefs[key] === value ? ' mk-active' : '');
       btn.textContent = text;
+      btn.title = text;
       btn.addEventListener('click', () => {
-        opts.forEach(([, c]) => host.classList.remove(c));
+        opts.forEach(([, , c]) => host.classList.remove(c));
         host.classList.add(cls);
         grp.querySelectorAll('.mobi-tb-btn').forEach((b) => b.classList.remove('mk-active'));
         btn.classList.add('mk-active');
+        prefs = saveReaderPrefs(MOBI_READER_PREFS, { ...prefs, [key]: value });
       });
       grp.appendChild(btn);
     });
@@ -66,11 +78,11 @@ export async function render(intake, _ctx) {
   }
 
   toolbar.append(
-    mkGroup('Size',   [['A', 'mk-size-normal'], ['A+', 'mk-size-large']]),
-    mkGroup('Font',   [['Serif', 'mk-font-serif'], ['Sans', 'mk-font-sans']]),
-    mkGroup('Theme',  [['Light', 'mk-theme-light'], ['Sepia', 'mk-theme-sepia'], ['Dark', 'mk-theme-dark']]),
-    mkGroup('Line',   [['Normal', 'mk-line-normal'], ['Loose', 'mk-line-loose']]),
-    mkGroup('Margin', [['Normal', 'mk-margin-normal'], ['Wide', 'mk-margin-wide']]),
+    mkGroup('size', 'Size',   [['A', 'normal', 'mk-size-normal'], ['A+', 'large', 'mk-size-large']]),
+    mkGroup('font', 'Font',   [['Serif', 'serif', 'mk-font-serif'], ['Sans', 'sans', 'mk-font-sans']]),
+    mkGroup('theme', 'Theme',  [['Light', 'light', 'mk-theme-light'], ['Sepia', 'sepia', 'mk-theme-sepia'], ['Dark', 'dark', 'mk-theme-dark']]),
+    mkGroup('line', 'Line',   [['Normal', 'normal', 'mk-line-normal'], ['Loose', 'loose', 'mk-line-loose']]),
+    mkGroup('margin', 'Margin', [['Normal', 'normal', 'mk-margin-normal'], ['Wide', 'wide', 'mk-margin-wide']]),
   );
 
   const book = document.createElement('div');

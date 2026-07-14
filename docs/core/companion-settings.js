@@ -7,7 +7,22 @@ import {
   detectCompanion, isEnabled as companionEnabled, setEnabled as setCompanionEnabled,
   getToken, setToken, getWatchedPaths, addWatchedPath, removeWatchedPath, pickFolder, getLogs, isMobileDevice,
 } from './companion.js';
-import { isCompanionAvailable, setCompanionAvailable, syncSaveBtn, showCompanionIndicator, updateConnButton } from './companion-ui.js';
+
+let companionUi = {
+  isCompanionAvailable: () => false,
+  setCompanionAvailable: () => {},
+  syncSaveBtn: () => {},
+  showCompanionIndicator: () => {},
+  updateConnButton: () => {},
+};
+export function initCompanionSettings(api) {
+  companionUi = { ...companionUi, ...(api || {}) };
+}
+const isCompanionAvailable = () => companionUi.isCompanionAvailable();
+const setCompanionAvailable = (value) => companionUi.setCompanionAvailable(value);
+const syncSaveBtn = () => companionUi.syncSaveBtn();
+const showCompanionIndicator = () => companionUi.showCompanionIndicator();
+const updateConnButton = (connected) => companionUi.updateConnButton(connected);
 
 // Heuristic guard: flag watched folders that are a whole drive / system root / very large tree.
 // Watching one forces a recursive scan on every find/save and exposes a lot of files. Returns a

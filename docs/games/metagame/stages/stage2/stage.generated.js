@@ -2314,7 +2314,7 @@ var SECTIONS = [
   ["Fire", "A firebolt lights its target's tile, and flames spread through * spore fields — chain a firebolt into a spore cluster to roast a whole pack (but mind your own footing)."],
   ["Shop", "Spend banked glyphs on permanent upgrades — they apply on your next run."],
   ["Heat", "In the shop you can toggle opt-in difficulty modifiers (more monsters, no potions, elite storm). Each active one multiplies the glyphs you bank — risk for reward. Once you've reached the Overflow, a mastery modifier unlocks: Lights Out shrinks your light radius for the whole run for the biggest multiplier of all."],
-  ["Boss", "It starts LOCKED. Open cipher.txt and read it to find the PASSAGE — that opens the boss. Then 'challenge boss'."]
+  ["Boss", "You can challenge it blind, but each exchange is slow and costs HP. Open cipher.txt and search it to find the PASSAGE — that turns the grind into a decisive clear."]
 ];
 function buildHelpPanel({ onClose }) {
   const box = document.createElement("div");
@@ -3068,7 +3068,7 @@ function renderStage2({
     if (root.dataset.biome !== biome.id) root.dataset.biome = biome.id;
     const w = state.run.world;
     const darkNote = !state.run.boss.reached && isDarkAct(state.run.floor) ? w && w.torch > 0 ? ` — torch lit (${w.torch} steps)` : " — DARK: foes hide beyond your light; ghosts mark where you last saw them" : "";
-    setText(fields.objective, state.run.boss.reached ? lock.unlocked ? "the passage is open. challenge the boss." : "blocked. find PASSAGE in cipher.txt to open the way." : `${biome.name} — reach the stairs > (floor ${state.run.floor}/${MAX_FLOOR}). fight foes, grab weapons & glyphs.${darkNote}`);
+    setText(fields.objective, state.run.boss.reached ? lock.unlocked ? "the passage is mapped. challenge the boss." : "unmapped: challenge at real risk, or find PASSAGE in cipher.txt for a clean clear." : `${biome.name} — reach the stairs > (floor ${state.run.floor}/${MAX_FLOOR}). fight foes, grab weapons & glyphs.${darkNote}`);
     updateCompass();
     const sig = state.run.combatLog.slice(-4).join("\n");
     if (sig !== lastLogSig) {

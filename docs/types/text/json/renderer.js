@@ -195,8 +195,11 @@ export async function render(intake, ctx) {
     parsed = parseJsonLike(source, '');
   } catch (err) {
     const errorHtml = '<div class="json-error"><strong>Invalid JSON</strong><br>' + esc(err.message) + '</div>';
+    const diagnostics = Array.isArray(err.jsonDiagnostics) && err.jsonDiagnostics.length
+      ? '<div class="json-warning">' + err.jsonDiagnostics.map(esc).join(' ') + '</div>'
+      : '';
     return {
-      bodyHtml: errorHtml + duplicateJsonWarningHtml(duplicateReport, { malformed: true }),
+      bodyHtml: errorHtml + diagnostics + duplicateJsonWarningHtml(duplicateReport, { malformed: true }),
       hadUnsafe: false,
     };
   }

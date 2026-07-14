@@ -146,6 +146,31 @@ export async function runAudioMixerAndPlaylist(ctx) {
     await page.waitForFunction(() => document.querySelectorAll('#previewHost .media-mode-panel[data-mode="mix"] .al-track').length >= 2, null, { timeout: 6000 });
     const lane2Count = await page.$$eval('#previewHost .media-mode-panel[data-mode="mix"] .al-track', (els) => els.length);
     if (lane2Count >= 2) pass('audio mixer: a second lane can be added (generator tone)'); else fail('mixer lanes after add: ' + lane2Count);
+    const laneMove = await page.evaluate(() => {
+      const root = document.querySelector('#previewHost .media-mode-panel[data-mode="mix"] .mmx-audio-multi');
+      const api = root?.__mediaMixerMulti;
+      const before = api?.getProject();
+      const selectedId = before?.selection?.primary?.id;
+      const selected = before?.elements?.find((element) => element.id === selectedId);
+      const targetLane = before?.lanes?.find((lane) => lane.id !== selected?.laneId);
+      const select = root?.querySelector('.mmx-selection-lane');
+      if (!selected || !targetLane || !select) return null;
+      const previousLaneId = selected.laneId;
+      select.value = targetLane.id;
+      select.dispatchEvent(new Event('change', { bubbles: true }));
+      const after = api.getProject();
+      return {
+        movedLaneId: after.elements.find((element) => element.id === selectedId)?.laneId,
+        targetLaneId: targetLane.id,
+        oldLaneElements: after.elements.filter((element) => element.laneId === previousLaneId).length,
+        targetLaneElements: after.elements.filter((element) => element.laneId === targetLane.id).length,
+        oldLaneDomClips: root.querySelector(`.al-track[data-lane-id="${previousLaneId}"]`)?.querySelectorAll('.al-clip').length,
+      };
+    });
+    if (laneMove && laneMove.movedLaneId === laneMove.targetLaneId && laneMove.oldLaneElements === 0
+      && laneMove.targetLaneElements === 2 && laneMove.oldLaneDomClips === 0)
+      pass('audio mixer: selected clips move between compatible lanes and the vacated lane clears');
+    else fail('audio mixer lane move: ' + JSON.stringify(laneMove));
     // Zoom: zooming in widens the lane canvas; Fit resets it. (10× zoom guarantees content overflows any viewport.)
     const w0 = await page.$eval('#previewHost .media-mode-panel[data-mode="mix"] .al-canvas', (c) => parseInt(c.style.width, 10) || c.clientWidth);
     for (let i = 0; i < 10; i++) await page.click('#previewHost .media-mode-panel[data-mode="mix"] .mmx-mix-zoom-in');
@@ -163,6 +188,20 @@ export async function runAudioMixerAndPlaylist(ctx) {
     ]);
     const wavName = wavDownload.suggestedFilename();
     if (/\.wav$/.test(wavName)) pass('audio mixer: mixdown → WAV downloaded (' + wavName + ')'); else fail('mixer WAV download name: ' + wavName);
+    await page.waitForSelector('#previewHost .media-mode-panel[data-mode="mix"] .mmx-mix-working-copy .media-working-copy', { timeout: 5000 });
+    await page.click('#previewHost .media-mode-panel[data-mode="mix"] .mmx-mix-working-copy .media-working-copy');
+    const workingCopy = await page.evaluate(async () => {
+      const edit = window.__fv.state.binaryEdit;
+      const bytes = edit?.getBytes ? await edit.getBytes() : null;
+      const signature = bytes ? String.fromCharCode(...bytes.slice(0, 4)) : '';
+      const result = { dirty: !!edit?.dirty, mime: edit?.mimeType || '', signature };
+      window.__fv.state.binaryEdit = null;
+      window.__fv.state.downloadedSinceEdit = true;
+      return result;
+    });
+    if (workingCopy.dirty && workingCopy.mime === 'audio/wav' && workingCopy.signature === 'RIFF')
+      pass('audio mixer: same-format mixdown explicitly becomes a Companion-ready working copy');
+    else fail('mixer working copy: ' + JSON.stringify(workingCopy));
     await page.selectOption('#previewHost .media-mode-panel[data-mode="mix"] .mmx-mix-format', 'mp3');
     const [mp3Download] = await Promise.all([
       page.waitForEvent('download', { timeout: 30000 }),
@@ -170,6 +209,9 @@ export async function runAudioMixerAndPlaylist(ctx) {
     ]);
     const mp3Name = mp3Download.suggestedFilename();
     if (/\.mp3$/.test(mp3Name)) pass('audio mixer: offline mixdown → MP3 downloaded (' + mp3Name + ')'); else fail('mixer MP3 download name: ' + mp3Name);
+    const convertedOverwrite = await page.$('#previewHost .media-mode-panel[data-mode="mix"] .mmx-mix-working-copy .media-working-copy');
+    if (!convertedOverwrite) pass('audio mixer: converted MP3 cannot be offered as an overwrite for a WAV source');
+    else fail('audio mixer exposed incompatible overwrite action');
     const fullscreenState = await page.evaluate(async () => {
       const root = document.querySelector('#previewHost .media-mode-panel[data-mode="mix"] .mmx-audio-multi');
       const button = root.querySelector('.mmx-mix-fullscreen');

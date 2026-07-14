@@ -1,0 +1,23 @@
+data_dir: /var/lib/vector
+
+sources:
+  application_logs:
+    type: file
+    include:
+      - /var/log/apps/*.json
+    read_from: beginning
+
+transforms:
+  normalize:
+    type: remap
+    inputs: [application_logs]
+    source: |
+      .service = string!(.service)
+      .environment = "demo"
+
+sinks:
+  console:
+    type: console
+    inputs: [normalize]
+    encoding:
+      codec: json

@@ -5,6 +5,13 @@ const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&':
 
 const OAUTH_PARAMS = new Set(['code', 'state', 'error', 'access_token', 'refresh_token', 'token_type', 'id_token']);
 const JWT_RE = /^ey[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/;
+const SENSITIVE_PARAMS = /^(?:api[_-]?key|access[_-]?token|refresh[_-]?token|id[_-]?token|token|password|passwd|pass|secret|client[_-]?secret|credential|authorization|auth|code)$/i;
+const TRACKING_PARAMS = new Map([
+  ['utm_source', 'Campaign source'], ['utm_medium', 'Campaign medium'], ['utm_campaign', 'Campaign name'],
+  ['utm_term', 'Campaign term'], ['utm_content', 'Campaign content'], ['gclid', 'Google click ID'],
+  ['fbclid', 'Meta click ID'], ['msclkid', 'Microsoft click ID'], ['ref', 'Referral tag'], ['source', 'Source tag'],
+]);
+const SHORTENERS = new Set(['bit.ly', 't.co', 'tinyurl.com', 'goo.gl', 'ow.ly', 'buff.ly', 'is.gd', 'cutt.ly', 'rebrand.ly']);
 
 function b64urlDecode(s) {
   const pad = s.length % 4 === 0 ? '' : '='.repeat(4 - (s.length % 4));
@@ -40,22 +47,57 @@ function renderJwt(val) {
   let rows = '';
   if (header) rows += `<tr><td class="ui-label">Header</td><td><code>${esc(JSON.stringify(header, null, 2))}</code></td></tr>`;
   if (payload) rows += `<tr><td class="ui-label">Payload</td><td><code>${esc(JSON.stringify(payload, null, 2))}</code></td></tr>`;
+  if (payload && Number.isFinite(Number(payload.exp))) {
+    const expires = Number(payload.exp) * 1000;
+    const date = new Date(expires);
+    if (Number.isFinite(date.getTime())) {
+      const expired = expires <= Date.now();
+      rows += `<tr><td class="ui-label">Expiry claim</td><td><span class="ui-badge ${expired ? 'ui-badge-danger' : 'ui-badge-safe'}">${expired ? 'Expired' : 'Not expired'}</span> ${esc(date.toISOString())}</td></tr>`;
+    }
+  }
+  rows += '<tr><td class="ui-label">Verification</td><td><span class="ui-security-note">Decoded only — the signature is not verified.</span></td></tr>';
   return rows;
+}
+
+function isSensitiveParam(key) {
+  return SENSITIVE_PARAMS.test(String(key || ''));
+}
+
+function redactedUrl(raw) {
+  try {
+    const bare = raw.startsWith('?');
+    const parsed = new URL(bare ? 'https://x' + raw : raw);
+    let changed = false;
+    for (const key of [...parsed.searchParams.keys()]) {
+      if (!isSensitiveParam(key)) continue;
+      parsed.searchParams.set(key, '[hidden]'); changed = true;
+    }
+    if (!changed) return raw;
+    return bare ? parsed.search : parsed.toString();
+  } catch { return raw; }
 }
 
 function renderParams(params, rawSearch = '') {
   if (!params || [...params.entries()].length === 0) return '';
   const entries = [...params.entries()];
   let rows = `<tr><th colspan="2" class="ui-section-head">Query Parameters (${entries.length})</th></tr>`;
+  const sensitiveCount = entries.filter(([key]) => isSensitiveParam(key)).length;
+  if (sensitiveCount) rows += `<tr class="ui-security-row"><td colspan="2">⚠ ${sensitiveCount} sensitive-looking parameter${sensitiveCount === 1 ? ' is' : 's are'} hidden by default. Reveal only on this local device.</td></tr>`;
   const decodedNote = /(?:%[0-9a-f]{2}|\+)/i.test(rawSearch) ? ` <span class="ui-badge ui-badge-decoded">URL-decoded</span>` : '';
   for (const [k, v] of entries) {
     const isOAuth = OAUTH_PARAMS.has(k);
     const isJwt = JWT_RE.test(v);
+    const tracking = TRACKING_PARAMS.get(k.toLowerCase());
+    const sensitive = isSensitiveParam(k);
     let badge = '';
-    if (isOAuth) badge = ` <span class="ui-badge ui-badge-oauth">OAuth</span>`;
-    if (isJwt) badge = ` <span class="ui-badge ui-badge-jwt">JWT</span>`;
+    if (isOAuth) badge += ` <span class="ui-badge ui-badge-oauth">OAuth</span>`;
+    if (isJwt) badge += ` <span class="ui-badge ui-badge-jwt">JWT</span>`;
+    if (tracking) badge += ` <span class="ui-badge ui-badge-track">${esc(tracking)}</span>`;
+    if (sensitive) badge += ' <span class="ui-badge ui-badge-danger">Sensitive</span>';
 
-    let valueHtml = esc(v) + copyBtn(v);
+    let valueHtml = sensitive
+      ? `<details class="ui-secret-value"><summary>Hidden value</summary><code>${esc(v)}</code>${copyBtn(v)}</details>`
+      : esc(v) + copyBtn(v);
 
     // URL-encoded JSON: offer to pretty-print inline
     let decoded = v;
@@ -67,7 +109,7 @@ function renderParams(params, rawSearch = '') {
       } catch { /* not JSON */ }
     }
 
-    const rowClass = isOAuth ? ' class="ui-oauth-row"' : '';
+    const rowClass = sensitive ? ' class="ui-sensitive-row"' : isOAuth ? ' class="ui-oauth-row"' : '';
     rows += `<tr${rowClass}><td class="ui-key">${esc(k)}${badge}</td><td class="ui-val">${valueHtml}${decodedNote}</td></tr>`;
     if (isJwt) {
       const jwtRows = renderJwt(v);
@@ -149,6 +191,10 @@ function renderSingleUrl(raw) {
     <tr><td class="ui-label">Port</td><td>${esc(port)}</td></tr>
     <tr><td class="ui-label">Path</td><td>${esc(parsed.pathname)}${copyBtn(parsed.pathname)}</td></tr>`;
 
+  if (SHORTENERS.has(host.toLowerCase())) {
+    rows += '<tr class="ui-security-row"><td colspan="2">Shortened URL: the final destination is unknown. No network request was made.</td></tr>';
+  }
+
   for (let i = 0; i < pathParts.length; i++) {
     rows += `<tr><td class="ui-label ui-indent">path[${i}]</td><td>${esc(pathParts[i])}</td></tr>`;
   }
@@ -170,12 +216,12 @@ function renderMultiUrl(lines) {
   for (let i = 0; i < urls.length; i++) {
     let host = '';
     try { host = new URL(urls[i]).hostname; } catch {}
-    html += `<tr><td class="ui-label">${i + 1}</td><td class="ui-val">${esc(urls[i])}</td><td>${esc(host)}</td></tr>`;
+    html += `<tr><td class="ui-label">${i + 1}</td><td class="ui-val">${esc(redactedUrl(urls[i]))}</td><td>${esc(host)}</td></tr>`;
   }
   html += `</tbody></table>`;
   for (let i = 0; i < urls.length; i++) {
     html += `<details class="ui-url-item">
-      <summary><span class="ui-url-num">#${i + 1}</span> <span class="ui-url-raw">${esc(urls[i])}</span></summary>
+      <summary><span class="ui-url-num">#${i + 1}</span> <span class="ui-url-raw">${esc(redactedUrl(urls[i]))}</span></summary>
       <div class="ui-url-detail">${renderSingleUrl(urls[i]) || '<em>Could not parse</em>'}</div>
     </details>`;
   }
@@ -211,9 +257,21 @@ body.fv-dark .ui-section-head { background: #2d2d30; color: #9aa0a8; }
 .ui-badge-oauth { background: #e3f0ff; color: #2f6feb; }
 .ui-badge-jwt { background: #fff3cd; color: #664d00; }
 .ui-badge-decoded { background: #e7f8ec; color: #1a7f37; }
+.ui-badge-track { background: #ede9fe; color: #6d28d9; }
+.ui-badge-danger { background: #fee2e2; color: #b91c1c; }
+.ui-badge-safe { background: #dcfce7; color: #166534; }
 body.fv-dark .ui-badge-oauth { background: #0b1220; }
 body.fv-dark .ui-badge-jwt { background: #2d2400; color: #c8a000; }
 body.fv-dark .ui-badge-decoded { background: #09230f; color: #56d364; }
+body.fv-dark .ui-badge-track { background: #2e1065; color: #c4b5fd; }
+body.fv-dark .ui-badge-danger { background: #450a0a; color: #fca5a5; }
+body.fv-dark .ui-badge-safe { background: #052e16; color: #86efac; }
+.ui-security-row { background: #fff7ed; color: #9a3412; font-size: 12px; }
+.ui-sensitive-row { background: #fffaf0; }
+.ui-secret-value summary { cursor: pointer; color: #9a3412; font-family: system-ui, sans-serif; }
+.ui-security-note { color: #9a3412; }
+body.fv-dark .ui-security-row, body.fv-dark .ui-sensitive-row { background: #2b1608; color: #fdba74; }
+body.fv-dark .ui-secret-value summary, body.fv-dark .ui-security-note { color: #fdba74; }
 .ui-copy-btn { font-size: 10px; margin-left: 4px; cursor: pointer; border: none; background: transparent; color: #5b6470; padding: 0 2px; }
 .ui-copy-btn:hover { color: #2f6feb; }
 .ui-copy-all-btn { font-size: 12px; padding: 4px 10px; border: 1px solid #d8dce2; border-radius: 6px; background: #f4f5f7; cursor: pointer; color: #1a1d21; margin-top: 4px; }
@@ -241,7 +299,8 @@ export async function render(intake, _ctx) {
   const multiUrlCount = lines.filter((l) => /^https?:\/\//i.test(l.trim())).length;
 
   let mainHtml;
-  let rawDisplay = text.length > 400 ? text.slice(0, 400) + '…' : text;
+  const safeRaw = text.split(/\r?\n/).map(redactedUrl).join('\n');
+  let rawDisplay = safeRaw.length > 400 ? safeRaw.slice(0, 400) + '…' : safeRaw;
 
   if (multiUrlCount >= 3) {
     mainHtml = renderMultiUrl(lines);

@@ -2,6 +2,8 @@
 // window is available immediately; later pages are extracted as they approach the scroll viewport.
 // A bounded blob-URL cache revokes distant pages and all remaining URLs on teardown.
 import { COMIC_LIMITS, createComicPageCache, openComic, archiveKind } from './comiclib.js';
+import { loadReaderPrefs, saveReaderPrefs } from '../../../core/reader-prefs.js';
+import { COMIC_READER_PREFS } from '../reader-prefs.js';
 
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
@@ -41,10 +43,41 @@ export async function render(intake, ctx) {
 
   host.innerHTML =
     '<div class="comic-bar"><span class="comic-info"></span>'
-    + '<button class="comic-spread" title="Two-page spread (book mode)">⊞ Spread</button></div>'
+    + '<button class="comic-setting comic-spread" type="button" title="Single page or two-page spread"></button>'
+    + '<button class="comic-setting comic-fit" type="button" title="Fit pages to width or viewport"></button>'
+    + '<button class="comic-setting comic-direction" type="button" title="Page order in spread mode"></button></div>'
     + '<div class="comic-pages"></div>';
   const pagesEl = host.querySelector('.comic-pages');
   const infoEl = host.querySelector('.comic-info');
+  const spreadBtn = host.querySelector('.comic-spread');
+  const fitBtn = host.querySelector('.comic-fit');
+  const directionBtn = host.querySelector('.comic-direction');
+  let readerPrefs = loadReaderPrefs(COMIC_READER_PREFS);
+
+  function applyReaderPrefs() {
+    const spread = readerPrefs.layout === 'spread';
+    const fitPage = readerPrefs.fit === 'page';
+    const rtl = readerPrefs.direction === 'rtl';
+    host.classList.toggle('comic-spread-on', spread);
+    host.classList.toggle('comic-fit-page', fitPage);
+    host.classList.toggle('comic-rtl', rtl);
+    pagesEl.dir = rtl ? 'rtl' : 'ltr';
+    spreadBtn.classList.toggle('active', spread);
+    fitBtn.classList.toggle('active', fitPage);
+    directionBtn.classList.toggle('active', rtl);
+    spreadBtn.setAttribute('aria-pressed', String(spread));
+    fitBtn.setAttribute('aria-pressed', String(fitPage));
+    directionBtn.setAttribute('aria-pressed', String(rtl));
+    spreadBtn.textContent = spread ? '▣ Spread' : '▤ Single';
+    fitBtn.textContent = fitPage ? '↕ Fit page' : '↔ Fit width';
+    directionBtn.textContent = rtl ? '⇤ Right to left' : '⇥ Left to right';
+  }
+
+  function updateReaderPrefs(change) {
+    readerPrefs = saveReaderPrefs(COMIC_READER_PREFS, { ...readerPrefs, ...change });
+    applyReaderPrefs();
+  }
+  applyReaderPrefs();
   const totalPages = result.totalPages ?? pages.length;
   const failedPages = new Set();
   const pageViews = [];
@@ -166,10 +199,9 @@ export async function render(intake, ctx) {
     setTimeout(schedule, 0);
   }
 
-  host.querySelector('.comic-spread').addEventListener('click', (e) => {
-    const on = host.classList.toggle('comic-spread-on');
-    e.currentTarget.classList.toggle('active', on);
-  });
+  spreadBtn.addEventListener('click', () => updateReaderPrefs({ layout: readerPrefs.layout === 'spread' ? 'single' : 'spread' }));
+  fitBtn.addEventListener('click', () => updateReaderPrefs({ fit: readerPrefs.fit === 'page' ? 'width' : 'page' }));
+  directionBtn.addEventListener('click', () => updateReaderPrefs({ direction: readerPrefs.direction === 'rtl' ? 'ltr' : 'rtl' }));
 
   return {
     parentNode: host,

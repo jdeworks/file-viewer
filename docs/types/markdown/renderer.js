@@ -64,13 +64,17 @@ function blockedImageNotice(img, src) {
 
   const label = img.getAttribute('alt')?.trim() || src;
   if (img.closest('a[href]')) {
-    notice.append(label);
+    notice.append(label, ' (the surrounding link remains user-initiated; the image itself made no request)');
   } else {
+    notice.append(label, ' — ');
     const link = document.createElement('a');
     link.href = src;
-    link.textContent = label;
-    if (label !== src) link.title = src;
+    link.textContent = 'open remote source';
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    link.title = `Opens a new tab and requests ${src}`;
     notice.appendChild(link);
+    notice.append(' (requests this exact URL only after you click)');
   }
   return notice;
 }

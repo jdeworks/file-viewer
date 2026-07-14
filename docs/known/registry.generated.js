@@ -124,15 +124,6 @@ var plugin = {
 };
 var editorconfig_default = plugin;
 
-// ../../docs/types/text/xml/known/pom-xml/index.js
-var pom_xml_default = {
-  id: "pom-xml",
-  label: "pom.xml (Maven)",
-  match: (intake, baseType) => baseType.id === "xml" && /(^|\/)pom\.xml$/i.test(intake.filename || ""),
-  loadRenderer: () => import("../types/text/xml/known/pom-xml/render.js"),
-  loadMetadata: () => import("../types/text/xml/known/pom-xml/metadata.js")
-};
-
 // ../../docs/types/text/xml/known/sitemap/index.js
 var sitemap_default = {
   id: "sitemap-xml",
@@ -250,6 +241,8 @@ var k8s_manifest_default = {
   match: (intake, baseType) => {
     if (baseType.id !== "yaml" && baseType.id !== "docker-compose") return false;
     const text = intake.textSample || intake.text || "";
+    const name = (intake.filename || intake.name || "").replace(/\\/g, "/").split("/").pop().toLowerCase();
+    if (name === "cluster.yaml" || name === "cluster-config.yaml") return false;
     if (text.includes("cert-manager.io/")) return false;
     if (!/^apiVersion\s*:/m.test(text)) return false;
     if (!/^kind\s*:/m.test(text)) return false;
@@ -259,6 +252,7 @@ var k8s_manifest_default = {
     if (!apiMatch && !kindMatch) return false;
     const api = (apiMatch?.[1] || "").trim();
     const kind = (kindMatch?.[1] || "").trim();
+    if (kind === "StorageClass" || kind === "PriorityClass") return false;
     return K8S_API_VERSIONS.test(api) || K8S_KINDS.has(kind);
   },
   loadRenderer: () => import("../types/text/yaml/known/k8s-manifest/renderer.js"),
@@ -2272,7 +2266,11 @@ var moonrepo_default = {
   match: (intake, baseType) => {
     if (baseType.id !== "yaml" && baseType.id !== "docker-compose") return false;
     const path = (intake.filename || "").replace(/\\/g, "/");
-    return path.endsWith(".moon/workspace.yml") || path.endsWith(".moon/toolchain.yml");
+    if (path.endsWith(".moon/workspace.yml") || path.endsWith(".moon/toolchain.yml")) return true;
+    const name = path.split("/").pop().toLowerCase();
+    if (name !== "workspace.yml" && name !== "toolchain.yml") return false;
+    const text = intake.textSample || intake.text || "";
+    return /moonrepo\.dev\/schemas\/(?:workspace|toolchain)\.json/.test(text);
   },
   loadRenderer: () => import("../types/text/yaml/known/moonrepo/renderer.js"),
   about: {
@@ -2674,50 +2672,6 @@ var plugin27 = {
   }
 };
 var syslog_ng_default = plugin27;
-
-// ../../docs/types/text/known/haproxy-config/index.js
-var haproxy_config_default = {
-  id: "haproxy-config",
-  label: "HAProxy config",
-  // NOTE: this plugin's filename match ('haproxy.cfg'/'haproxy.conf') is identical to (a subset
-  // of) haproxy-cfg's, and haproxy-cfg is registered earlier in docs/known/registry.js's KNOWN
-  // array (first-match-wins), so under the current registry order this plugin never actually
-  // wins for a real file — it is fully shadowed/unreachable dead code. Kept behaviorally correct
-  // (rather than deleted) in case registry order ever changes.
-  match(intake) {
-    const n = (intake.filename || intake.name || "").split("/").pop().toLowerCase();
-    return n === "haproxy.cfg" || n === "haproxy.conf";
-  },
-  loadRenderer: () => import("../types/text/known/haproxy-config/renderer.js"),
-  about: {
-    description: "HAProxy load balancer configuration — global settings, defaults, frontends, and backends.",
-    usedFor: [{ label: "HAProxy", description: "High availability load balancer and proxy server", href: "http://www.haproxy.org/download/2.8/doc/configuration.txt" }]
-  }
-};
-
-// ../../docs/types/text/known/haproxy-conf/index.js
-var haproxy_conf_default = {
-  id: "haproxy-conf",
-  label: "HAProxy Config",
-  tags: ["haproxy", "load-balancer", "proxy", "config"],
-  // NOTE: this plugin's filename match is a strict subset of haproxy-cfg's, and haproxy-cfg is
-  // registered earlier in docs/known/registry.js's KNOWN array (first-match-wins), so under the
-  // current registry order this plugin never actually wins for real files — it is fully shadowed.
-  // Kept behaviorally correct (rather than deleted) in case registry order ever changes.
-  match(intake, baseType) {
-    const n = (intake.name || intake.filename || "").split("/").pop().toLowerCase();
-    if (n === "haproxy.cfg" || n === "haproxy.conf") return true;
-    if (baseType?.id !== "code") return false;
-    const t = intake.text || "";
-    if (!(/^frontend\b/m.test(t) && /^backend\b/m.test(t))) return false;
-    return /^\s*(bind|mode|balance|default_backend|acl)\s/m.test(t);
-  },
-  loadRenderer: () => import("../types/text/known/haproxy-conf/renderer.js"),
-  about: {
-    description: "HAProxy load balancer configuration — global settings, defaults, frontends, backends, and listen blocks.",
-    usedFor: [{ label: "HAProxy", description: "High availability load balancer and proxy server", href: "http://www.haproxy.org/download/2.8/doc/configuration.txt" }]
-  }
-};
 
 // ../../docs/types/text/known/haproxy-cfg/index.js
 var plugin28 = {
@@ -3344,10 +3298,7 @@ var dune_build_default = {
   label: "Dune Build",
   match(intake) {
     const n = (intake.name || intake.filename || "").split("/").pop().toLowerCase();
-    const text = intake.textSample || intake.text || "";
-    if (n === "dune-project" || n === "dune") return true;
-    if (text.includes("(lang dune") || text.includes("(library") && text.includes("(name")) return true;
-    return false;
+    return n === "dune-project" || n === "dune" || n === "dune-workspace";
   },
   loadRenderer: () => import("../types/text/known/dune-build/renderer.js"),
   about: {
@@ -5606,25 +5557,6 @@ var build_zig_zon_default = {
   }
 };
 
-// ../../docs/types/text/known/zig-zon/index.js
-var zig_zon_default = {
-  id: "zig-zon",
-  label: "Zig Package Manifest",
-  match(intake) {
-    const n = (intake.name || intake.filename || "").split("/").pop().toLowerCase();
-    if (n === "build.zig.zon") return true;
-    const text = intake.textSample || intake.text || "";
-    if (text.includes(".name =") && text.includes(".version =") && text.includes(".dependencies")) return true;
-    if (text.includes(".url =") && text.includes(".hash =") && n.endsWith(".zon")) return true;
-    return false;
-  },
-  loadRenderer: () => import("../types/text/known/zig-zon/renderer.js"),
-  about: {
-    description: "Zig build.zig.zon package manifest — name, version, and dependencies in ZON format.",
-    tags: ["zig", "zon", "package", "manifest", "build"]
-  }
-};
-
 // ../../docs/types/text/known/cartfile/index.js
 var cartfile_default = {
   id: "cartfile",
@@ -6397,26 +6329,6 @@ var shard_yml_default = {
   }
 };
 
-// ../../docs/types/text/yaml/known/crystal-shard/index.js
-var crystal_shard_default = {
-  id: "crystal-shard",
-  label: "Crystal Shard",
-  match(intake) {
-    const n = (intake.name || intake.filename || "").split("/").pop().toLowerCase();
-    if (n !== "shard.yml" && n !== "shard.lock") return false;
-    const text = intake.textSample || intake.text || "";
-    if (text.includes("crystal:") || text.includes("dependencies:") && text.includes("github:")) return true;
-    if (n === "shard.lock" && text.includes("version:") && text.includes("git:")) return true;
-    if (text.match(/^name:\s*\S+/m) && text.includes("authors:") && text.includes("version:")) return true;
-    return false;
-  },
-  loadRenderer: () => import("../types/text/yaml/known/crystal-shard/renderer.js"),
-  about: {
-    description: "Crystal language shard.yml package manifest — dependencies, version, and build targets.",
-    tags: ["crystal", "shard", "package", "manifest"]
-  }
-};
-
 // ../../docs/types/text/json/known/tauri-conf/index.js
 var tauri_conf_default = {
   id: "tauri-conf",
@@ -7179,25 +7091,6 @@ var sshd_config_default = {
   }
 };
 
-// ../../docs/types/text/known/ssh-config/index.js
-var ssh_config_default = {
-  id: "ssh-client-config",
-  label: "SSH Client Config",
-  match(intake, baseType) {
-    if (baseType && baseType.id === "ssh-config") return false;
-    const fullPath = intake.name || intake.filename || "";
-    const n = fullPath.split("/").pop().toLowerCase();
-    if (n === "ssh_config") return true;
-    if (n === "config" && fullPath.includes(".ssh/")) return true;
-    return false;
-  },
-  loadRenderer: () => import("../types/text/known/ssh-config/renderer.js"),
-  about: {
-    description: "SSH client configuration — host aliases, connection settings, key paths, and proxy configuration.",
-    usedFor: [{ label: "ssh_config", description: "OpenSSH client configuration file", href: "https://man.openbsd.org/ssh_config.5" }]
-  }
-};
-
 // ../../docs/types/text/known/ssh-known-hosts/index.js
 var ssh_known_hosts_default = {
   id: "ssh-known-hosts",
@@ -7215,26 +7108,6 @@ var ssh_known_hosts_default = {
   about: {
     description: "SSH known hosts file — stores fingerprints of trusted SSH server host keys to prevent MITM attacks.",
     usedBy: [{ label: "OpenSSH", description: "SSH client known hosts database", href: "https://man.openbsd.org/ssh_known_hosts.5" }]
-  }
-};
-
-// ../../docs/types/text/json/known/mcp-config/index.js
-var mcp_config_default = {
-  id: "mcp-config",
-  label: "MCP Config",
-  match(intake, baseType) {
-    if (!baseType || baseType.id !== "json") return false;
-    const n = (intake.filename || "").split("/").pop().toLowerCase();
-    if (["claude_desktop_config.json", "mcp.json", ".mcp.json", "mcp_servers.json", "claude.json"].includes(n)) return true;
-    return intake.parsed != null && typeof intake.parsed === "object" && "mcpServers" in intake.parsed;
-  },
-  loadRenderer: () => import("../types/text/json/known/mcp-config/renderer.js"),
-  about: {
-    description: "MCP (Model Context Protocol) server configuration — tool servers, transports, and environment configuration for AI assistants.",
-    usedFor: [
-      { label: "claude_desktop_config.json", description: "Claude Desktop MCP configuration", href: "https://modelcontextprotocol.io/quickstart/user" },
-      { label: "mcp.json", description: "MCP server configuration file", href: "https://modelcontextprotocol.io/" }
-    ]
   }
 };
 
@@ -7454,20 +7327,6 @@ var dprint_default = {
     usedFor: [
       { label: "Code formatting", description: "Fast pluggable code formatter supporting TypeScript, JSON, Markdown, TOML, and more", href: "https://dprint.dev/config/" }
     ]
-  }
-};
-
-// ../../docs/types/text/known/opa-policy/index.js
-var opa_policy_default = {
-  id: "opa-policy",
-  label: "OPA Policy",
-  match: (intake) => {
-    return (intake.filename || "").toLowerCase().endsWith(".rego");
-  },
-  loadRenderer: () => import("../types/text/known/opa-policy/renderer.js"),
-  about: {
-    description: "Open Policy Agent (OPA) Rego policy files define authorization logic using rules, functions, and data queries.",
-    usedFor: [{ label: "OPA Policy Language", description: "Write allow/deny rules and helper functions for fine-grained authorization using the Rego policy language.", href: "https://www.openpolicyagent.org/docs/latest/policy-language/" }]
   }
 };
 
@@ -8866,35 +8725,6 @@ var postman_collection_default = {
   }
 };
 
-// ../../docs/types/text/json/known/har/index.js
-var har_default = {
-  id: "har",
-  label: "HTTP Archive (HAR)",
-  match(intake, baseType) {
-    if (!baseType || baseType.id !== "json") return false;
-    const obj = intake.parsed ?? null;
-    if (obj && obj.log && Array.isArray(obj.log.entries)) return true;
-    const t = intake.textSample || intake.text || "";
-    if (t.includes('"log"') && t.includes('"entries"')) {
-      try {
-        const parsed = JSON.parse(intake.text || "{}");
-        return !!(parsed.log && Array.isArray(parsed.log.entries));
-      } catch {
-        return false;
-      }
-    }
-    return false;
-  },
-  loadRenderer: () => import("../types/text/json/known/har/renderer.js"),
-  about: {
-    description: "Browser network traffic capture — all HTTP requests, timings, headers, and response sizes from a page load or session.",
-    usedFor: [
-      { label: "Chrome DevTools", description: "Export from Network tab → Save all as HAR with content", href: "https://developer.chrome.com/docs/devtools/network/reference/" },
-      { label: "Firefox DevTools", description: "Network tab → Save All As HAR", href: "https://firefox-source-docs.mozilla.org/devtools-user/network_monitor/" }
-    ]
-  }
-};
-
 // ../../docs/types/text/json/known/avro-schema/index.js
 var avro_schema_default = {
   id: "avro-schema",
@@ -9598,25 +9428,6 @@ var dhcpd_conf_default = {
   }
 };
 
-// ../../docs/types/text/known/netdata-conf/index.js
-var netdata_conf_default = {
-  id: "netdata-conf",
-  label: "Netdata Config",
-  match(intake) {
-    const n = (intake.name || intake.filename || "").split("/").pop().toLowerCase();
-    const text = intake.textSample || intake.text || "";
-    if (n === "netdata.conf") return true;
-    if (text.includes("[global]") && text.includes("memory mode") && (text.includes("history") || text.includes("update every"))) return true;
-    if (text.includes("[health]") && text.includes("[backend]") && text.includes("[plugins]")) return true;
-    return false;
-  },
-  loadRenderer: () => import("../types/text/known/netdata-conf/renderer.js"),
-  about: {
-    description: "Netdata monitoring configuration — controls data collection intervals, retention, health checks, and streaming/export settings.",
-    usedFor: [{ label: "Netdata", description: "Real-time infrastructure monitoring with thousands of built-in metrics", href: "https://www.netdata.cloud/" }]
-  }
-};
-
 // ../../docs/types/text/known/yarnrc/index.js
 var yarnrc_default = {
   id: "yarnrc",
@@ -10039,6 +9850,7 @@ var rclone_conf_default = {
   match(intake) {
     const n = (intake.name || intake.filename || "").split("/").pop().toLowerCase();
     if (n === "frpc.toml" || n === "listmonk-config.toml") return false;
+    if (n === "radicale.conf") return false;
     if (n === "rclone.conf") return true;
     const text = intake.textSample || intake.text || "";
     if (text.match(/^\[[\w-]+\]/m) && text.includes("type = ")) return true;
@@ -10512,24 +10324,6 @@ var plugin75 = {
 };
 var harbor_default = plugin75;
 
-// ../../docs/types/text/yaml/known/harbor-config/index.js
-var harbor_config_default = {
-  id: "harbor-config",
-  label: "Harbor Config",
-  match(intake) {
-    const n = (intake.name || intake.filename || "").split("/").pop().toLowerCase();
-    const nameMatch = n === "harbor.yml" || n === "harbor.yaml";
-    const cfg = intake.parsed || {};
-    const contentMatch = !!cfg.hostname && cfg.harbor_admin_password !== void 0;
-    return nameMatch || contentMatch;
-  },
-  loadRenderer: () => import("../types/text/yaml/known/harbor-config/renderer.js"),
-  about: {
-    description: "Harbor container registry YAML configuration — server, TLS, admin, database, storage, Redis, Trivy, logging, and proxy settings.",
-    tags: ["harbor", "container", "registry", "docker", "self-hosted", "devops"]
-  }
-};
-
 // ../../docs/types/text/yaml/known/garden-io/index.js
 var plugin76 = {
   id: "garden-io",
@@ -10896,6 +10690,7 @@ var nushell_config_default = {
   match(intake) {
     const n = (intake.name || intake.filename || "").split("/").pop().toLowerCase();
     if (n === "config.nu" || n === "env.nu" || n === "login.nu") return true;
+    if (!n.endsWith(".nu")) return false;
     const text = intake.textSample || intake.text || "";
     if (text.includes("$env.config") || text.includes("use std") || text.includes("let-env")) return true;
     return false;
@@ -11075,21 +10870,6 @@ var bookstack_config_default = {
   about: {
     description: "BookStack self-hosted wiki/documentation platform environment config (Laravel-based) — app, database, mail, auth, cache, and storage settings.",
     tags: ["bookstack", "wiki", "knowledge-base", "laravel", "env", "self-hosted"]
-  }
-};
-
-// ../../docs/types/text/known/bookstack-env/index.js
-var bookstack_env_default = {
-  id: "bookstack-env",
-  label: "BookStack Config",
-  match(intake) {
-    const n = (intake.name || intake.filename || "").split("/").pop().toLowerCase();
-    return n === "bookstack.env";
-  },
-  loadRenderer: () => import("../types/text/known/bookstack-env/renderer.js"),
-  about: {
-    description: "BookStack wiki/knowledge-base Laravel .env — application, database, email, cache, and storage settings.",
-    tags: ["bookstack", "wiki", "knowledge-base", "laravel", "env"]
   }
 };
 
@@ -11673,23 +11453,6 @@ var act_runner_config_default = {
   about: {
     description: "Gitea Act Runner configuration — the GitHub Actions-compatible CI runner for Gitea. Controls log level, runner capacity, labels, cache, container networking, and host workdir settings.",
     usedFor: [{ label: "Gitea CI", description: "Act Runner for Gitea GitHub Actions-compatible pipelines", href: "https://gitea.com/gitea/act_runner" }]
-  }
-};
-
-// ../../docs/types/text/known/vaultwarden-config/index.js
-var vaultwarden_config_default = {
-  id: "vaultwarden-config",
-  label: "Vaultwarden Config",
-  match(intake) {
-    const n = (intake.name || intake.filename || "").split("/").pop().toLowerCase();
-    if (n === "vaultwarden.env") return true;
-    const text = intake.text || "";
-    return text.includes("ADMIN_TOKEN") && text.includes("SIGNUPS_ALLOWED");
-  },
-  loadRenderer: () => import("../types/text/known/vaultwarden-config/renderer.js"),
-  about: {
-    description: "Vaultwarden (self-hosted Bitwarden) environment configuration — server, admin, database, attachments, SMTP, push notifications, and security settings.",
-    usedFor: [{ label: "Self-hosted passwords", description: "Vaultwarden Bitwarden-compatible self-hosted server", href: "https://github.com/dani-garcia/vaultwarden" }]
   }
 };
 
@@ -14117,15 +13880,7 @@ var plugin156 = {
   tags: ["gleam", "functional", "erlang", "beam"],
   match(intake) {
     const name = (intake.name || intake.filename || "").toLowerCase();
-    if (name.endsWith(".gleam")) return true;
-    const text = intake.text || "";
-    const hits = [
-      /^import\s+/m.test(text),
-      /^pub\s+fn\s+\w+/m.test(text),
-      /^type\s+\w+/m.test(text),
-      /^pub\s+type\s+\w+/m.test(text)
-    ].filter(Boolean).length;
-    return hits >= 2;
+    return name.endsWith(".gleam");
   },
   loadRenderer: () => import("../types/text/known/gleam-lang/renderer.js"),
   about: {
@@ -14145,15 +13900,7 @@ var plugin157 = {
   tags: ["odin", "systems", "native", "c-alternative"],
   match(intake) {
     const name = (intake.name || intake.filename || "").toLowerCase();
-    if (name.endsWith(".odin")) return true;
-    const text = intake.text || "";
-    const hits = [
-      /^package\s+\w+/m.test(text),
-      /^import\s+/m.test(text),
-      /\bproc\s+\w+/m.test(text),
-      /\bstruct\s*\{/.test(text)
-    ].filter(Boolean).length;
-    return hits >= 3;
+    return name.endsWith(".odin");
   },
   loadRenderer: () => import("../types/text/known/odin-lang/renderer.js"),
   about: {
@@ -14728,15 +14475,7 @@ var plugin176 = {
   tags: ["elvish", "elv", "shell", "script"],
   match(intake) {
     const name = (intake.name || intake.filename || "").split("/").pop().toLowerCase();
-    if (name.endsWith(".elv")) return true;
-    const text = intake.textSample || intake.text || "";
-    const hits = [
-      /^fn\s+\w+/m.test(text),
-      /^var\s+\w+/m.test(text),
-      /^use\s+\S+/m.test(text),
-      /^set\s+\w+/m.test(text)
-    ].filter(Boolean).length;
-    return hits >= 2;
+    return name.endsWith(".elv");
   },
   loadRenderer: () => import("../types/text/known/elvish-script/renderer.js"),
   about: {
@@ -15536,6 +15275,7 @@ var tmpfiles_d_default = {
     const name = (intake.name || intake.filename || "").toLowerCase();
     if (/tmpfiles\.d\/[^/]+\.conf$/.test(name)) return true;
     const base = name.split("/").pop();
+    if (base === "gitolite.conf") return false;
     if (base.endsWith(".conf") && looksLikeTmpfiles(intake.text)) return true;
     if (base.endsWith(".tmpfiles") || base.endsWith(".tmpfiles-d")) return true;
     return false;
@@ -16385,7 +16125,6 @@ var KNOWN = [
   editorconfig_default,
   ant_build_default,
   maven_pom_default,
-  pom_xml_default,
   build_gradle_default,
   pipfile_default,
   openapi_default,
@@ -16537,8 +16276,6 @@ var KNOWN = [
   plugin24,
   plugin25,
   plugin28,
-  haproxy_config_default,
-  haproxy_conf_default,
   squid_conf_default,
   varnish_vcl_default,
   moon_default,
@@ -16732,7 +16469,6 @@ var KNOWN = [
   android_manifest_default,
   app_config_default,
   build_zig_zon_default,
-  zig_zon_default,
   cartfile_default,
   electron_builder_default,
   elm_json_default,
@@ -16778,7 +16514,6 @@ var KNOWN = [
   kibana_default,
   clickhouse_config_default,
   shard_yml_default,
-  crystal_shard_default,
   tauri_conf_default,
   traefik_config_default,
   plugin53,
@@ -16838,13 +16573,11 @@ var KNOWN = [
   hosts_file_default,
   resolv_conf_default,
   sshd_config_default,
-  ssh_config_default,
   ssh_known_hosts_default,
   sudoers_default,
   nfs_exports_default,
   fstab_default,
   crypttab_default,
-  mcp_config_default,
   sysctl_conf_default,
   modprobe_conf_default,
   jetbrains_workspace_default,
@@ -16873,7 +16606,6 @@ var KNOWN = [
   puma_config_default,
   woodpecker_ci_default,
   codefresh_config_default,
-  opa_policy_default,
   falco_rules_default,
   falco_config_default,
   kyverno_policy_default,
@@ -16933,7 +16665,6 @@ var KNOWN = [
   wandb_config_default,
   mintlify_default,
   postman_collection_default,
-  har_default,
   avro_schema_default,
   bruno_default,
   insomnia_default,
@@ -16968,7 +16699,6 @@ var KNOWN = [
   pihole_setupvars_default,
   dhcpd_conf_default,
   netdata_config_default,
-  netdata_conf_default,
   yarnrc_default,
   hyprland_conf_default,
   lxc_config_default,
@@ -17016,7 +16746,6 @@ var KNOWN = [
   benthos_default,
   test_kitchen_default,
   harbor_default,
-  harbor_config_default,
   garden_io_default,
   stryker_default,
   volta_default,
@@ -17051,7 +16780,6 @@ var KNOWN = [
   photoprism_config_default,
   paperless_conf_default,
   bookstack_config_default,
-  bookstack_env_default,
   mattermost_config_default,
   filebrowser_config_default,
   netbox_config_default,
@@ -17088,7 +16816,6 @@ var KNOWN = [
   rallly_config_default,
   woodpecker_agent_config_default,
   act_runner_config_default,
-  vaultwarden_config_default,
   keycloak_config_default,
   minio_config_default,
   drone_config_default,

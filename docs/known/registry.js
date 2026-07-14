@@ -29,7 +29,6 @@ import composerJson from '../types/text/json/known/composer-json/index.js';
 import gemfile from '../types/text/known/gemfile/index.js';
 import codeowners from '../types/text/known/codeowners/index.js';
 import editorconfig from '../types/text/known/editorconfig/index.js';
-import pomXml from '../types/text/xml/known/pom-xml/index.js';
 import sitemapXml from '../types/text/xml/known/sitemap/index.js';
 import mavenPom from '../types/text/xml/known/maven-pom/index.js';
 import antBuild from '../types/text/xml/known/ant-build/index.js';
@@ -193,8 +192,6 @@ import { plugin as proftpdConf } from '../types/text/known/proftpd-conf/index.js
 import rsyslogConf from '../types/text/known/rsyslog-conf/index.js';
 import netplan from '../types/text/yaml/known/netplan/index.js';
 import syslogNg from '../types/text/known/syslog-ng/index.js';
-import haproxyConfig from '../types/text/known/haproxy-config/index.js';
-import haproxyConf from '../types/text/known/haproxy-conf/index.js';
 import { plugin as haproxyCfg } from '../types/text/known/haproxy-cfg/index.js';
 import squidConf from '../types/text/known/squid-conf/index.js';
 import varnishVcl from '../types/text/known/varnish-vcl/index.js';
@@ -379,7 +376,6 @@ import veleroConfig from '../types/text/yaml/known/velero-config/index.js';
 import androidManifest from '../types/text/xml/known/android-manifest/index.js';
 import appConfig from '../types/text/xml/known/app-config/index.js';
 import buildZigZon from '../types/text/known/build-zig-zon/index.js';
-import zigZon from '../types/text/known/zig-zon/index.js';
 import cartfile from '../types/text/known/cartfile/index.js';
 import electronBuilder from '../types/text/yaml/known/electron-builder/index.js';
 import elmJson from '../types/text/json/known/elm-json/index.js';
@@ -426,7 +422,6 @@ import pgbouncerIni from '../types/text/known/pgbouncer-ini/index.js';
 import pgbackrestConf from '../types/text/known/pgbackrest-conf/index.js';
 import patroniConfig from '../types/text/yaml/known/patroni-config/index.js';
 import shardYml from '../types/text/yaml/known/shard-yml/index.js';
-import crystalShard from '../types/text/yaml/known/crystal-shard/index.js';
 import tauriConf from '../types/text/json/known/tauri-conf/index.js';
 import traefikConfig from '../types/text/yaml/known/traefik-config/index.js';
 import { plugin as traefikConf } from '../types/text/known/traefik-conf/index.js';
@@ -474,9 +469,7 @@ import rdpConfig from '../types/text/known/rdp-config/index.js';
 import hostsFile from '../types/text/known/hosts-file/index.js';
 import resolvConf from '../types/text/known/resolv-conf/index.js';
 import sshdConfig from '../types/text/known/sshd-config/index.js';
-import sshClientConfig from '../types/text/known/ssh-config/index.js';
 import sshKnownHosts from '../types/text/known/ssh-known-hosts/index.js';
-import mcpConfig from '../types/text/json/known/mcp-config/index.js';
 import sudoers from '../types/text/known/sudoers/index.js';
 import nfsExports from '../types/text/known/nfs-exports/index.js';
 import samTemplate from '../types/text/yaml/known/sam-template/index.js';
@@ -489,7 +482,6 @@ import podfileLock from '../types/text/known/podfile-lock/index.js';
 import xcodeScheme from '../types/text/xml/known/xcode-scheme/index.js';
 import easJson from '../types/text/json/known/eas-json/index.js';
 import dprintConfig from '../types/text/json/known/dprint/index.js';
-import opaPolicy from '../types/text/known/opa-policy/index.js';
 import falcoRules from '../types/text/yaml/known/falco-rules/index.js';
 import falcoConfig from '../types/text/yaml/known/falco-config/index.js';
 import borgmaticConfig from '../types/text/yaml/known/borgmatic-config/index.js';
@@ -568,7 +560,6 @@ import dagsterConfig from '../types/text/yaml/known/dagster-config/index.js';
 import wandbConfig from '../types/text/ini/known/wandb-config/index.js';
 import mintlify from '../types/text/json/known/mintlify/index.js';
 import postmanCollection from '../types/text/json/known/postman-collection/index.js';
-import harKnown from '../types/text/json/known/har/index.js';
 import avroSchema from '../types/text/json/known/avro-schema/index.js';
 import brunoWorkspace from '../types/text/json/known/bruno/index.js';
 import insomnia from '../types/text/yaml/known/insomnia/index.js';
@@ -605,7 +596,6 @@ import namedConf from '../types/text/known/named-conf/index.js';
 import unboundConf from '../types/text/known/unbound-conf/index.js';
 import piholeSetupvars from '../types/text/known/pihole-setupvars/index.js';
 import dhcpdConf from '../types/text/known/dhcpd-conf/index.js';
-import netdataConf from '../types/text/known/netdata-conf/index.js';
 import yarnrc from '../types/text/known/yarnrc/index.js';
 import hyprlandConf from '../types/text/known/hyprland-conf/index.js';
 import lxcConfig from '../types/text/known/lxc-config/index.js';
@@ -653,7 +643,6 @@ import { plugin as releaseIt } from '../types/text/yaml/known/release-it/index.j
 import benthos from '../types/text/yaml/known/benthos/index.js';
 import testKitchen from '../types/text/yaml/known/test-kitchen/index.js';
 import harbor from '../types/text/yaml/known/harbor/index.js';
-import harborConfig from '../types/text/yaml/known/harbor-config/index.js';
 import gardenIo from '../types/text/yaml/known/garden-io/index.js';
 import stryker from '../types/text/json/known/stryker/index.js';
 import volta from '../types/text/json/known/volta/index.js';
@@ -687,7 +676,6 @@ import immichConfig from '../types/text/known/immich-config/index.js';
 import photoprismConfig from '../types/text/yaml/known/photoprism-config/index.js';
 import paperlessConf from '../types/text/known/paperless-conf/index.js';
 import bookstackConfig from '../types/text/known/bookstack-config/index.js';
-import bookstackEnv from '../types/text/known/bookstack-env/index.js';
 import mattermostConfig from '../types/text/json/known/mattermost-config/index.js';
 import filebrowserConfig from '../types/text/json/known/filebrowser-config/index.js';
 import netboxConfig from '../types/text/known/netbox-config/index.js';
@@ -724,7 +712,6 @@ import calComConfig from '../types/text/known/cal-com-config/index.js';
 import ralllyConfig from '../types/text/known/rallly-config/index.js';
 import woodpeckerAgentConfig from '../types/text/known/woodpecker-agent-config/index.js';
 import actRunnerConfig from '../types/text/yaml/known/act-runner-config/index.js';
-import vaultwardenConfig from '../types/text/known/vaultwarden-config/index.js';
 import keycloakConfig from '../types/text/known/keycloak-config/index.js';
 import minioConfig from '../types/text/known/minio-config/index.js';
 import droneConfig from '../types/text/known/drone-config/index.js';
@@ -937,7 +924,7 @@ export const KNOWN = [glslShader, hlslShader, restructuredtext, orgMode, liquidT
   xdgDesktopEntry, isabelleThy, alloyLang, coqLang,
   flatpakManifest, snapcraftYaml, smtlib, promela,
   haskellLang, zigLang, elixirLang, pugTemplate, ejsTemplate, ocamlLang, fsharpLang, clojureLang, elmLang, kotlinLang, scalaLang, nimLang, dartLang, groovyLang, crystalLang, juliaLang, rLang, luaLang, purescriptLang, swiftLang, erlangSource, tclLang, schemeLang, racketLang, fortranLang, rubyLang, perlLang, phpLang, powershellLang, solidityLang, vhdlLang, arduinoSketch, cobolLang, gleamLang, odinLang, haxeLang, adaLang, prologLang, asmLang, objcLang, dLang, ponyLang, wrenLang, mojoLang, janetLang, plistConfig, steamAcf, securityTxt, humansTxt, jsonnet, cueLang, nixExpr, azureBicep, kdlDoc, mermaidDiagram, plantuml, regoPolicy, asciidoc, capnp, flatbuffers, dhallConfig, wgslShader, packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
-  requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, antBuild, mavenPom, pomXml,
+  requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, antBuild, mavenPom,
   buildGradle, pipfile, openapi, githubActions, k8sRbac, k8sNetworkPolicy, k8sHpa, k8sIngress, k8sManifest, pubspec, pubspecLock, netlifyToml, vercelJson, sitemapXml,
   pyprojectToml, npmrc, renovate, prettierrc, turbo, dependabot,
   eslint, jest, jestConfig, stylelint, babelrc, babel, commitlint, lefthook,
@@ -960,7 +947,7 @@ export const KNOWN = [glslShader, hlslShader, restructuredtext, orgMode, liquidT
   appveyor, rubocop, rubocopTodo, taskfile, mkdocsYml,
   rush, markdownlintJson, markdownlintYaml, clangFormat, clangTidy, moonrepo,
   brewfile, license, ansibleCfg, ansibleHosts, makepkgConf, gemspec, typos, cargoDeny, cargoConfig, rustfmtToml, clippyToml, rustToolchain,
-  htaccess, htpasswd, robotsTxt, nginxConf, apacheConf, lighttpdConf, vsftpdConf, proftpdConf, haproxyCfg, haproxyConfig, haproxyConf, squidConf, varnishVcl, moonYml, vagrantfile, berksfile, caddyfile, renderYaml, railwayJson, appJson,
+  htaccess, htpasswd, robotsTxt, nginxConf, apacheConf, lighttpdConf, vsftpdConf, proftpdConf, haproxyCfg, squidConf, varnishVcl, moonYml, vagrantfile, berksfile, caddyfile, renderYaml, railwayJson, appJson,
   rsyslogConf, netplan, syslogNg,
   crowdinYml, matchfile, appfile, rubyVersion, rspecConfig, sorbetConfig, bundlerAuditConfig, standardrbConfig, pythonVersion, earthfile, gitmodules, gitconfig, tfvars,
   podfile, fastfile, snapfile,
@@ -999,11 +986,11 @@ export const KNOWN = [glslShader, hlslShader, restructuredtext, orgMode, liquidT
   shadowCljs, projectClj, depsEdn,
   atlantis, spaceliftConfig, kamalConfig, prefectConfig, checkov, terraformDocs, infracost,
   opencostConfig, crossplaneConfig, kedaConfig, veleroConfig,
-  androidManifest, appConfig, buildZigZon, zigZon, cartfile,
+  androidManifest, appConfig, buildZigZon, cartfile,
   electronBuilder, elmJson, externalSecrets, fluentBit, logstashConf, fluentdConf, graylogConf, lokiConfig, promtailConfig, tempoConfig, mimirConfig, cortexConfig, grafanaAlloy, forgeConfig,
   gleamToml, goWork, grafanaIni, podmanQuadlet, growthbook,
   jekyllConfig, juliaProject, juliaManifest, kongConfig, apisixConfig, envoyConfig, launchSettings, appSettings,
-  nimble, packagesConfig, podspec, redisConf, redisSentinel, mongodConf, myCnf, postgresqlConf, odooConf, pgbouncerIni, pgbackrestConf, patroniConfig, cassandraConfig, elasticsearchConfig, kibana, clickhouseConfig, shardYml, crystalShard,
+  nimble, packagesConfig, podspec, redisConf, redisSentinel, mongodConf, myCnf, postgresqlConf, odooConf, pgbouncerIni, pgbackrestConf, patroniConfig, cassandraConfig, elasticsearchConfig, kibana, clickhouseConfig, shardYml,
   tauriConf, traefikConfig, traefikConf, unleashConfig, vaultHcl, nomadJob, consulConfig,
   vectorToml, vectorConfig, keepalivedConf, corosyncConf, wailsJson, webConfig, xcconfig,
   bitbucketPipelines, tektonPipeline, argoCdApp, fluxKustomization, fluxHelmRelease, dockerStack,
@@ -1016,15 +1003,14 @@ export const KNOWN = [glslShader, hlslShader, restructuredtext, orgMode, liquidT
   samTemplate, cfnTemplate, cdkJson, awsSamConfig, releasePleaseConfig,
   analysisOptions, podfileLock, xcodeScheme, easJson, dprintConfig,
   rdpConfig,
-  hostsFile, resolvConf, sshdConfig, sshClientConfig, sshKnownHosts, sudoers, nfsExports, fstab, crypttab,
-  mcpConfig,
+  hostsFile, resolvConf, sshdConfig, sshKnownHosts, sudoers, nfsExports, fstab, crypttab,
   sysctlConf, modprobeConf,
   jetbrainsWorkspace, neovimConfig, vimConfig, alacrittyConf, kittyConf, starshipConfig, emacsConfig, tmuxConf, nushellConfig, screenrc, i3Config, swayConfig, dunstrc, polybarConf, waybarConfig, nanorc,
   devboxJson, protoConfig, aquaConfig, pixiConfig,
   djangoSettings, springProfiles, railsCredentials, pumaConfig,
   woodpeckerCi,
   codefreshConfig,
-  opaPolicy, falcoRules, falcoConfig, kyvernoPolicy, gatekeeperConfig,
+  falcoRules, falcoConfig, kyvernoPolicy, gatekeeperConfig,
   harnessPipeline,
   actrc, actConfig,
   pulsarConf,
@@ -1041,7 +1027,7 @@ export const KNOWN = [glslShader, hlslShader, restructuredtext, orgMode, liquidT
   nixDaemonConf, nixFlake, nixConfig,
   mavenSettings, pgHba,
   dvcPipeline, hydraConfig, mlflowProject, meltanoConfig, dagsterConfig, wandbConfig,
-  mintlify, postmanCollection, harKnown, avroSchema, brunoWorkspace, insomnia, openapiGenerator, graphqlSchema,
+  mintlify, postmanCollection, avroSchema, brunoWorkspace, insomnia, openapiGenerator, graphqlSchema,
   systemdUnit, openrcInit, crontab,
   clusterConfig, certManager,
   iptablesRules, udevRules, grubConf, nftablesRules, ufwConf,
@@ -1049,7 +1035,7 @@ export const KNOWN = [glslShader, hlslShader, restructuredtext, orgMode, liquidT
   corefile, containerdConfig,
   bindZone, postfixMain, postfixConf, dovecotConf, nagiosConf, zabbixConf, eximConf, chronyConf,
   namedConf, unboundConf, piholeSetupvars, dhcpdConf,
-  netdataConfig, netdataConf, yarnrc,
+  netdataConfig, yarnrc,
   hyprlandConf, lxcConfig,
   muttrc, footConfig,
   rofiConfig, makoConf,
@@ -1073,7 +1059,7 @@ export const KNOWN = [glslShader, hlslShader, restructuredtext, orgMode, liquidT
   ansibleLint, molecule,
   helmfile, releaseIt,
   benthos, testKitchen,
-  harbor, harborConfig, gardenIo,
+  harbor, gardenIo,
   stryker, volta, windsurfrules, airflowCfg,
   registriesConf, storageConf,
   asyncapi, telegraf,
@@ -1088,7 +1074,7 @@ export const KNOWN = [glslShader, hlslShader, restructuredtext, orgMode, liquidT
   crowdsecConfig, crowdsecAcquis,
   homerConfig, uptimeKumaConfig,
   photoprismConfig, paperlessConf,
-  bookstackConfig, bookstackEnv, mattermostConfig, filebrowserConfig,
+  bookstackConfig, mattermostConfig, filebrowserConfig,
   netboxConfig, vaultwardenEnv,
   ntfyConfig, wakapiConfig,
   outlineConfig, linkdingConfig,
@@ -1105,7 +1091,7 @@ export const KNOWN = [glslShader, hlslShader, restructuredtext, orgMode, liquidT
   komgaConfig, coderConfig,
   calComConfig, ralllyConfig,
   woodpeckerAgentConfig,
-  actRunnerConfig, vaultwardenConfig,
+  actRunnerConfig,
   keycloakConfig,
   minioConfig,
   droneConfig,

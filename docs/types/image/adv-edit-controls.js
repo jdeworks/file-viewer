@@ -80,6 +80,7 @@ export function installShapeControls(ctx) {
     $, tb, addText, addShape,
     deleteSelection, groupSelection, ungroupSelection, pointEdit, precision,
     getSelected, primary, isLabel, textNodeOf, layer, markDirty, snap, tr, refreshLayers, syncToolbar,
+    refreshComposition = () => {},
   } = ctx;
   const sel = () => getSelected();
 
@@ -96,7 +97,7 @@ export function installShapeControls(ctx) {
     addShape(next);
   });
   $('.imgv-adv-del').addEventListener('click', deleteSelection);
-  $('.imgv-adv-fill').addEventListener('input', () => { sel().forEach((n) => (isLabel(n) ? textNodeOf(n) : n).fill($('.imgv-adv-fill').value)); layer.draw(); markDirty(); });
+  $('.imgv-adv-fill').addEventListener('input', () => { sel().forEach((n) => (isLabel(n) ? textNodeOf(n) : n).fill($('.imgv-adv-fill').value)); refreshComposition(sel()); layer.draw(); markDirty(); });
   $('.imgv-adv-stroke').addEventListener('input', () => { sel().filter((n) => !isLabel(n)).forEach((n) => n.stroke($('.imgv-adv-stroke').value)); layer.draw(); markDirty(); });
   $('.imgv-adv-strokew').addEventListener('input', () => { sel().filter((n) => !isLabel(n)).forEach((n) => n.strokeWidth(parseInt($('.imgv-adv-strokew').value, 10) || 0)); layer.draw(); markDirty(); });
   $('.imgv-adv-dash').addEventListener('change', () => { sel().filter((n) => !isLabel(n)).forEach((n) => n.dash?.($('.imgv-adv-dash').value ? $('.imgv-adv-dash').value.split(',').map(Number) : [])); layer.draw(); markDirty(); });
@@ -106,14 +107,14 @@ export function installShapeControls(ctx) {
   $('.imgv-adv-x').addEventListener('change', () => { const n = primary(); if (n) { n.x(parseFloat($('.imgv-adv-x').value) || 0); layer.draw(); refreshLayers(); markDirty(); } });
   $('.imgv-adv-y').addEventListener('change', () => { const n = primary(); if (n) { n.y(parseFloat($('.imgv-adv-y').value) || 0); layer.draw(); refreshLayers(); markDirty(); } });
   $('.imgv-adv-rot').addEventListener('change', () => { sel().forEach((n) => n.rotation(parseFloat($('.imgv-adv-rot').value) || 0)); layer.draw(); markDirty(); });
-  function applySizeInputs() { const w = parseFloat($('.imgv-adv-w').value) || 1, h = parseFloat($('.imgv-adv-h').value) || 1; sel().forEach((n) => writeSize(n, w, h)); layer.draw(); markDirty(); syncToolbar(); }
+  function applySizeInputs() { const w = parseFloat($('.imgv-adv-w').value) || 1, h = parseFloat($('.imgv-adv-h').value) || 1; sel().forEach((n) => writeSize(n, w, h)); refreshComposition(sel()); layer.draw(); markDirty(); syncToolbar(); }
   $('.imgv-adv-w').addEventListener('change', applySizeInputs);
   $('.imgv-adv-h').addEventListener('change', applySizeInputs);
   $('.imgv-adv-corner').addEventListener('input', () => { sel().filter((n) => n.getClassName?.() === 'Rect').forEach((n) => n.cornerRadius(parseInt($('.imgv-adv-corner').value, 10) || 0)); layer.draw(); markDirty(); });
   $('.imgv-adv-sides').addEventListener('change', () => { sel().filter((n) => n.getClassName?.() === 'RegularPolygon').forEach((n) => n.sides(Math.max(3, parseInt($('.imgv-adv-sides').value, 10) || 5))); layer.draw(); refreshLayers(); markDirty(); });
   $('.imgv-adv-points').addEventListener('change', () => { sel().filter((n) => n.getClassName?.() === 'Star').forEach((n) => n.numPoints(Math.max(3, parseInt($('.imgv-adv-points').value, 10) || 5))); layer.draw(); markDirty(); });
   $('.imgv-adv-inner').addEventListener('change', () => { sel().filter((n) => ['Star', 'Ring', 'Arc'].includes(n.getClassName?.())).forEach((n) => n.innerRadius(Math.max(1, parseInt($('.imgv-adv-inner').value, 10) || 1))); layer.draw(); markDirty(); });
-  $('.imgv-adv-radius').addEventListener('change', () => { sel().forEach((n) => { const v = Math.max(1, parseInt($('.imgv-adv-radius').value, 10) || 1); if (['Circle', 'Wedge', 'RegularPolygon'].includes(n.getClassName?.())) n.radius(v); }); layer.draw(); markDirty(); });
+  $('.imgv-adv-radius').addEventListener('change', () => { sel().forEach((n) => { const v = Math.max(1, parseInt($('.imgv-adv-radius').value, 10) || 1); if (['Circle', 'Wedge', 'RegularPolygon'].includes(n.getClassName?.())) n.radius(v); }); refreshComposition(sel()); layer.draw(); markDirty(); });
   $('.imgv-adv-angle').addEventListener('change', () => { sel().forEach((n) => { if (['Ring', 'Wedge', 'Arc'].includes(n.getClassName?.())) n.angle(Math.max(1, Math.min(360, parseInt($('.imgv-adv-angle').value, 10) || 1))); }); layer.draw(); markDirty(); });
   $('.imgv-adv-head').addEventListener('change', () => { sel().filter((n) => n.getClassName?.() === 'Arrow').forEach((n) => { const v = Math.max(1, parseInt($('.imgv-adv-head').value, 10) || 1); n.pointerLength(v); n.pointerWidth(v); }); layer.draw(); markDirty(); });
   $('.imgv-adv-headstart').addEventListener('change', () => { sel().filter((n) => n.getClassName?.() === 'Arrow').forEach((n) => n.pointerAtBeginning($('.imgv-adv-headstart').checked)); layer.draw(); markDirty(); });
@@ -124,7 +125,7 @@ export function installShapeControls(ctx) {
   $('.imgv-adv-ratio').addEventListener('change', () => tr.keepRatio($('.imgv-adv-ratio').checked));
   $('.imgv-adv-center').addEventListener('change', () => tr.centeredScaling($('.imgv-adv-center').checked));
   $('.imgv-adv-flip').addEventListener('change', () => tr.flipEnabled($('.imgv-adv-flip').checked));
-  // Blend is overlay-object-relative; flatten draws the whole overlay over the base.
+  // Flatten isolates non-normal objects and applies this operation against the raster base too.
   $('.imgv-adv-blend').addEventListener('change', () => { if (sel().length) { snap(); sel().forEach((n) => n.globalCompositeOperation($('.imgv-adv-blend').value)); layer.draw(); markDirty(); } });
   $('.imgv-adv-front').addEventListener('click', () => { if (!sel().length) return; snap(); sel().forEach((n) => n.moveToTop()); tr.moveToTop(); layer.draw(); refreshLayers(); markDirty(); });
   $('.imgv-adv-back').addEventListener('click', () => { if (!sel().length) return; snap(); sel().forEach((n) => n.moveToBottom()); tr.moveToTop(); layer.draw(); refreshLayers(); markDirty(); });

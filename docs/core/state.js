@@ -19,6 +19,8 @@ export const state = {
   treeApi: null,         // folder tree controller (setActive)
   htmlAllowScripts: false,
   htmlAsked: false,
+  htmlRemotePresetAllowed: null, // preset id confirmed for this file; reset on every intake
+  renderFolderPath: null,        // target path while a folder file is rendering (before commit)
   known: null,           // matched known-file enhancement (Layer 3), or null
   forceBase: false,      // user toggled "show the plain view" -> bypass the enhancement
   folderEdits: new Map(),    // path -> edited text for files opened from a loaded folder

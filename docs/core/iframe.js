@@ -10,6 +10,7 @@
 // The bridge talks to the parent only via postMessage (works despite the cross-origin sandbox).
 import { DEFAULT_PREVIEW_MAX_WIDTH } from './settings-schema.js';
 import { loadGlobal, vendor } from './script-loader.js';
+import { loadReaderPrefs, saveReaderPrefs } from './reader-prefs.js';
 
 const BRIDGE = `
 (function(){
@@ -17,15 +18,38 @@ const BRIDGE = `
   // Magic selector: hover/click a [data-fv-src] element -> tell parent its source range.
   function srcEl(t){ while(t && t!==document.body){ if(t.dataset && t.dataset.fvSrc) return t; t=t.parentElement; } return null; }
   function openEl(t){ while(t && t!==document.body){ if(t.dataset && t.dataset.fvOpen!=null) return t; t=t.parentElement; } return null; }
+  function actionEl(t){ while(t && t!==document.body){ if(t.dataset && t.dataset.fvAction) return t; t=t.parentElement; } return null; }
+  function prefsRoot(){ return document.querySelector('[data-fv-reader-prefs]'); }
+  function collectPrefs(root){
+    var values={};
+    root.querySelectorAll('[data-fv-reader-pref]').forEach(function(input){
+      if(input.checked) values[input.dataset.fvReaderPref]=input.value;
+    });
+    return values;
+  }
+  function applyPrefs(root, values){
+    if(!values||typeof values!=='object') return;
+    root.querySelectorAll('[data-fv-reader-pref]').forEach(function(input){
+      if(Object.prototype.hasOwnProperty.call(values,input.dataset.fvReaderPref)){
+        input.checked=values[input.dataset.fvReaderPref]===input.value;
+      }
+    });
+  }
   document.addEventListener('mousemove', function(e){
     var el = srcEl(e.target); if(!el) return;
     send({type:'hover', src: el.dataset.fvSrc});
   });
   document.addEventListener('click', function(e){
+    var a = actionEl(e.target); if(a){ e.preventDefault(); send({type:'action', action:a.dataset.fvAction, value:a.dataset.fvValue||''}); return; }
     // Open-an-entry click (e.g. a file inside a zip) takes precedence over source-mapping.
     var o = openEl(e.target); if(o){ send({type:'open', name: o.dataset.fvOpen}); return; }
     var el = srcEl(e.target); if(!el) return;
     send({type:'select', src: el.dataset.fvSrc});
+  });
+  document.addEventListener('change', function(e){
+    var root=prefsRoot();
+    if(!root||!e.target.closest||!e.target.closest('[data-fv-reader-pref]')) return;
+    send({type:'readerPrefs', key:root.dataset.fvReaderPrefs, values:collectPrefs(root)});
   });
   // Scroll sync (preview -> parent), ratio based.
   var ticking=false;
@@ -45,6 +69,9 @@ const BRIDGE = `
       if(d.src){ var n=document.querySelector('[data-fv-src="'+CSS.escape(d.src)+'"]'); if(n){ n.classList.add('fv-hl'); n.scrollIntoView({block:'center',behavior:'smooth'}); } }
     } else if(d.type==='scrollTo'){
       var h=document.documentElement.scrollHeight-window.innerHeight; window.scrollTo(0, (d.ratio||0)*h);
+    } else if(d.type==='readerPrefs'){
+      var root=prefsRoot();
+      if(root&&d.key===root.dataset.fvReaderPrefs) applyPrefs(root,d.values);
     }
   });
   send({type:'ready'});
@@ -121,7 +148,7 @@ function injectBridge(doc) {
   return doc.includes('</body>') ? doc.replace('</body>', tag + '</body>') : doc + tag;
 }
 
-export function mountPreview(container, { bodyHtml, fullDoc, theme, allowScripts = false, extraHead = '', style = {}, onSelect, onHover, onScroll, onOpen }) {
+export function mountPreview(container, { bodyHtml, fullDoc, theme, allowScripts = false, extraHead = '', style = {}, readerPrefs = null, onSelect, onHover, onScroll, onOpen, onAction }) {
   container.innerHTML = '';
   const iframe = document.createElement('iframe');
   iframe.className = 'fv-preview-frame';
@@ -133,8 +160,11 @@ export function mountPreview(container, { bodyHtml, fullDoc, theme, allowScripts
   iframe.setAttribute('sandbox', 'allow-scripts');
   // fullDoc: render the user's whole document (scripts run in the sandbox). Otherwise wrap
   // the sanitized body fragment in our themed template.
-  iframe.srcdoc = fullDoc != null ? injectBridge(fullDoc) : buildSrcdoc({ bodyHtml, theme, extraHead, style });
-  container.appendChild(iframe);
+  let currentReaderPrefs = readerPrefs ? loadReaderPrefs(readerPrefs) : null;
+  const post = (msg) => iframe.contentWindow?.postMessage({ __fv: 1, ...msg }, '*');
+  const postReaderPrefs = () => {
+    if (readerPrefs && currentReaderPrefs) post({ type: 'readerPrefs', key: readerPrefs.key, values: currentReaderPrefs });
+  };
 
   function onMsg(e) {
     if (e.source !== iframe.contentWindow) return;
@@ -144,16 +174,25 @@ export function mountPreview(container, { bodyHtml, fullDoc, theme, allowScripts
     else if (d.type === 'hover') onHover?.(d.src);
     else if (d.type === 'scroll') onScroll?.(d.ratio);
     else if (d.type === 'open') onOpen?.(d.name);
+    else if (d.type === 'action') onAction?.(d.action, d.value);
+    else if (d.type === 'ready') postReaderPrefs();
+    else if (d.type === 'readerPrefs' && readerPrefs && d.key === readerPrefs.key) {
+      currentReaderPrefs = saveReaderPrefs(readerPrefs, d.values);
+      postReaderPrefs();
+    }
   }
   window.addEventListener('message', onMsg);
-
-  const post = (msg) => iframe.contentWindow?.postMessage({ __fv: 1, ...msg }, '*');
+  const onLoad = () => postReaderPrefs();
+  iframe.addEventListener('load', onLoad);
+  iframe.srcdoc = fullDoc != null ? injectBridge(fullDoc) : buildSrcdoc({ bodyHtml, theme, extraHead, style });
+  container.appendChild(iframe);
   return {
     iframe,
     highlight: (src) => post({ type: 'highlight', src }),
     scrollTo: (ratio) => post({ type: 'scrollTo', ratio }),
     destroy: () => {
       window.removeEventListener('message', onMsg);
+      iframe.removeEventListener('load', onLoad);
       container.innerHTML = '';
     },
   };

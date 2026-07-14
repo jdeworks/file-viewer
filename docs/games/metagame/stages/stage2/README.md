@@ -25,8 +25,9 @@ dungeon across three acts — the Warrens, the Cisterns & Emberworks, and the Ov
 ## Bosses
 
 Each act ends in a pink **Ω guardian** on the stairs; beat it to pass. The floor-9
-boss is **THE AMBIGUOUS EXPRESSION**, and it starts **locked**.
+boss is **THE AMBIGUOUS EXPRESSION**. You can grind through it blind, but the unread
+route is much slower and costs real HP each exchange.
 
-> **Un-cheat hint:** the boss won't even open until you've *read the room's note*.
-> There's a `cipher.txt` lying in the viewer — open it and **search it** for the word
-> it's protecting. Find the passage, and the boss gate lifts.
+> **Viewer-path hint:** there is a `cipher.txt` in the viewer. Open it and actually
+> **search it** for the protected word. Finding the passage turns the risky grind
+> into a decisive clean clear.

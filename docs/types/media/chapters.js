@@ -51,6 +51,32 @@ export function normalizeChapters(chapters, duration) {
   return out;
 }
 
+function vttTimestamp(seconds) {
+  const ms = Math.max(0, Math.round((Number(seconds) || 0) * 1000));
+  const hours = Math.floor(ms / 3600000);
+  const minutes = Math.floor((ms % 3600000) / 60000);
+  const secs = Math.floor((ms % 60000) / 1000);
+  const millis = ms % 1000;
+  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}.${String(millis).padStart(3, '0')}`;
+}
+
+export function serializeWebVttChapters(chapters, duration) {
+  const list = normalizeChapters(chapters, duration);
+  const lines = ['WEBVTT', ''];
+  for (const [index, chapter] of list.entries()) {
+    const end = Number.isFinite(Number(chapter.end))
+      ? Number(chapter.end)
+      : Math.max(Number(chapter.start) + 0.001, Number(duration) || Number(chapter.start) + 1);
+    lines.push(
+      String(index + 1),
+      `${vttTimestamp(chapter.start)} --> ${vttTimestamp(end)}`,
+      cleanTitle(chapter.title, `Chapter ${index + 1}`),
+      '',
+    );
+  }
+  return lines.join('\n');
+}
+
 function safeNamePart(value, fallback) {
   const text = String(value || '').replace(/\.[^.]+$/, '').trim() || fallback;
   const ascii = text.normalize('NFKD').replace(/[\u0300-\u036f]/g, '');

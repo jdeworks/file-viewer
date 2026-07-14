@@ -3,12 +3,16 @@
 // Monaco on exit. Extracted from rawpane.js for modularity; the four near-identical toggles are
 // collapsed into one parameterized helper (one config row per type).
 import { state } from './state.js';
-import { applyLayout } from './layout.js';
 import { EnvFormEditor } from '../types/text/env/form-editor.js';
 import { IniFormEditor } from '../types/text/ini/form-editor.js';
 import { TomlFormEditor } from '../types/text/toml/form-editor.js';
 import { YamlFormEditor } from '../types/text/yaml/form-editor.js';
 import { parserTextFromSource, sourceTextOf, withParserText } from './intake.js';
+
+let applyLayout = () => {};
+export function initRawpaneForms({ applyLayout: apply }) {
+  applyLayout = apply || applyLayout;
+}
 
 // Edit-tracking callback for the editors that report changes live (env, ini).
 function editTrack(newText) {

@@ -58,6 +58,7 @@ import {
   syncEditReadout,
   syncTransitionReadout,
 } from './mixer-video-source-ui.js';
+import { buildWorkingCopyButton } from '../media-working-copy.js';
 
 export function mountModularVideoSourceMixer(panel, intake, mediaEl = null, options = {}) {
   ensureMixerStyles();
@@ -73,6 +74,7 @@ export function mountModularVideoSourceMixer(panel, intake, mediaEl = null, opti
   let destroyed = false;
   let lastExportPlan = null;
   let lastProxyPlan = null;
+  let lastRenderedOutput = null;
   const runtime = { ffmpegEnabled: !!options.enableFfmpeg, ffmpegLoaded: !!options.ffmpegLoaded };
   const runtimeFiles = new Map();
   if (intake?.file) runtimeFiles.set(SOURCE_ASSET_ID, intake.file);
@@ -269,7 +271,10 @@ export function mountModularVideoSourceMixer(panel, intake, mediaEl = null, opti
     if (inspector) {
       const proxyPlan = lastProxyPlan || buildProxyPlan();
       if (proxyPlan.provenance.assets.length) inspector.append(renderVideoProxyPlanPanel(proxyPlan, runtime));
-      inspector.append(renderVideoExportPlanPanel(lastExportPlan || buildExportPlan(), runtime));
+      const exportStatus = renderVideoExportPlanPanel(lastExportPlan || buildExportPlan(), runtime);
+      const workingCopyButton = buildWorkingCopyButton(lastRenderedOutput, options.workingCopy, 'al-btn media-working-copy');
+      if (workingCopyButton) exportStatus.append(workingCopyButton);
+      inspector.append(exportStatus);
     }
   }
 
@@ -472,6 +477,7 @@ export function mountModularVideoSourceMixer(panel, intake, mediaEl = null, opti
       root.dataset.videoExportRunState = 'complete';
       root.dataset.lastVideoExportBytes = String(result.bytes);
       root.dataset.lastVideoExportFilename = result.filename;
+      lastRenderedOutput = result;
       downloadBlob(result.blob, result.filename);
     } catch (error) {
       const { formatFfmpegError } = await import('../transcoder.js').catch(() => ({ formatFfmpegError: (err) => err?.message || String(err) }));

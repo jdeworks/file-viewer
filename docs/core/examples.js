@@ -233,7 +233,8 @@ function renderGallery(host, list, onPick) {
       b.className = 'ex-file-btn';
       const info = exampleInfo(ex);
       const typeForInfo = info.typeId ? { id: info.typeId, label: info.typeLabel } : null;
-      const baseTip = sampleDescription(ex, getTypeInfo(typeForInfo));
+      const knownForInfo = ex.knownFile ? { id: ex.knownFile, label: ex.label } : null;
+      const baseTip = sampleDescription(ex, getTypeInfo(typeForInfo, knownForInfo));
       const tip = [baseTip, provenanceText(ex)].filter(Boolean).join('\n');
       const toolLinks = toolsFor(ex);
       const toolSearch = toolLinks.flatMap((tool) => [tool.label, tool.description || '', tool.href]).join(' ');
@@ -353,11 +354,17 @@ function renderGallery(host, list, onPick) {
 
       for (const ex of items) {
         const fname = ex.file.split('/').pop();
+        const info = exampleInfo(ex);
+        const typeForInfo = info.typeId ? { id: info.typeId, label: info.typeLabel } : null;
+        const knownForInfo = ex.knownFile ? { id: ex.knownFile, label: ex.label } : null;
+        const tip = [sampleDescription(ex, getTypeInfo(typeForInfo, knownForInfo)), provenanceText(ex)]
+          .filter(Boolean).join('\n');
         const btn = document.createElement('button');
         btn.className = 'ex-known-btn';
         btn.textContent = fname;
-        btn.title = ex.description || fname;
-        btn.dataset.search = fname.toLowerCase();
+        btn.title = tip;
+        btn.setAttribute('aria-label', tip);
+        btn.dataset.search = [fname, ex.label, info.typeLabel, tip].join(' ').toLowerCase();
         btn.onclick = async () => {
           const r = await fetch('examples/' + ex.file);
           const buf = new Uint8Array(await r.arrayBuffer());

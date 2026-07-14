@@ -7,14 +7,14 @@
 //
 // ACX spec (see STUDIO_AUDIOBOOK_QC.md §2):
 //   RMS −23…−18 dB · sample peak ≤ −3 dBFS · noise floor ≤ −60 dBFS ·
-//   44.1 kHz · mono · head 0.5–1 s · tail 1–5 s.
+//   44.1 kHz · consistent mono OR stereo · MP3 ≥192 kbps CBR · ≤5 s edge spacing.
 
 import { integratedLufs } from './loudness.js';
 
 const dbfs = (lin) => (lin > 0 ? 20 * Math.log10(lin) : -Infinity);
 
-// Mono mix-down (average of channels) for the level/noise-floor scan. ACX is mono,
-// and measuring on the mix is the right basis for the RMS/peak/floor checks.
+// Mix-down (average of channels) for a stable level/noise-floor scan. ACX accepts
+// mono and stereo, while the per-title consistency check must happen across files.
 function monoMix(channels) {
   if (channels.length === 1) return channels[0];
   const n = channels[0].length;
@@ -79,7 +79,7 @@ export function estimatedTruePeak(mono, oversample = 4) {
 
 // Noise floor: the RMS (dBFS) of the QUIETEST sustained window. Slides a `winSec`
 // window (default 0.5 s, 50 % hop) and returns the minimum windowed RMS — this is the
-// #1 ACX rejection metric. Returns { db, atSec }.
+// sustained quiet-window metric. Returns { db, atSec }.
 export function noiseFloor(mono, fs, winSec = 0.5) {
   const win = Math.max(1, Math.round(winSec * fs));
   if (mono.length < win) return { db: integratedRms(mono), atSec: 0 };
@@ -120,9 +120,10 @@ export function analyzeMetrics(channels, fs, meta = {}) {
     noiseFloorAt: nf.atSec,
     headSilence: edges.head,
     tailSilence: edges.tail,
-    sampleRate: meta.sampleRate || fs,
-    channels: meta.channels || channels.length,
+    sampleRate: meta.sourceSampleRate || meta.encoding?.sampleRate || meta.sampleRate || fs,
+    channels: meta.sourceChannels || meta.encoding?.channels || meta.channels || channels.length,
     duration: meta.duration || (mono.length / fs),
+    encoding: meta.encoding || null,
   };
 }
 
@@ -132,7 +133,7 @@ const f1 = (n) => (isFinite(n) ? n.toFixed(1) : '—');
 
 export function evaluateAcx(m) {
   const rows = [];
-  const add = (key, label, status, value, fix) => rows.push({ key, label, status, value, fix });
+  const add = (key, label, status, value, fix, required = true) => rows.push({ key, label, status, value, fix, required });
 
   // RMS −23…−18; warn within 1 dB of the edge.
   const rmsStatus = (m.rms >= -23 && m.rms <= -18) ? 'pass'
@@ -144,7 +145,7 @@ export function evaluateAcx(m) {
   const lufsStatus = (m.lufs >= -21 && m.lufs <= -19) ? 'pass'
     : ((m.lufs >= -23 && m.lufs <= -18) ? 'warn' : 'fail');
   add('lufs', 'Integrated LUFS', lufsStatus, f1(m.lufs) + ' LUFS',
-    'Export target is −20 LUFS via loudnorm; ACX acceptance still uses the RMS row.');
+    'Guidance only: the export targets −20 LUFS, while ACX acceptance uses the RMS row.', false);
 
   // Peak ≤ −3 dBFS.
   add('peak', 'Sample peak level', m.peak <= -3 ? 'pass' : (m.peak <= -2 ? 'warn' : 'fail'),
@@ -154,7 +155,7 @@ export function evaluateAcx(m) {
   // remains labelled as an estimate because the browser path is not a certified meter.
   const tp = Number.isFinite(m.truePeak) ? m.truePeak : m.peak;
   add('truePeak', 'Estimated true peak', tp <= -3 ? 'pass' : (tp <= -2 ? 'warn' : 'fail'),
-    f1(tp) + ' dBTP', 'Estimated 4× oversampled peak should be ≤ −3 dBTP — export loudnorm/limiting targets TP −3.');
+    f1(tp) + ' dBTP', 'Guidance only: this 4× browser estimate is not ACX’s sample-peak metric.', false);
 
   // Noise floor ≤ −60 dBFS — the #1 rejection reason.
   add('noise', 'Noise floor', m.noiseFloor <= -60 ? 'pass' : (m.noiseFloor <= -55 ? 'warn' : 'fail'),
@@ -164,27 +165,41 @@ export function evaluateAcx(m) {
   add('sr', 'Sample rate', m.sampleRate === 44100 ? 'pass' : 'fail',
     (m.sampleRate / 1000) + ' kHz', 'ACX requires 44.1 kHz — the export resamples (-ar 44100).');
 
-  // Mono.
-  add('ch', 'Channels', m.channels === 1 ? 'pass' : 'fail',
+  // ACX accepts either mono or stereo, but every file in one production must be consistent.
+  add('ch', 'Channels', (m.channels === 1 || m.channels === 2) ? 'pass' : 'fail',
     m.channels === 1 ? 'mono' : (m.channels === 2 ? 'stereo' : m.channels + ' ch'),
-    'ACX requires mono — the export down-mixes (-ac 1).');
+    'Use mono or stereo consistently across the whole production; this single-file check cannot compare the other chapters.');
 
-  // Head silence 0.5–1 s.
-  add('head', 'Head silence', (m.headSilence >= 0.5 && m.headSilence <= 1) ? 'pass'
-    : (m.headSilence >= 0.3 && m.headSilence <= 1.5 ? 'warn' : 'fail'),
-    f1(m.headSilence) + ' s', 'ACX wants 0.5–1 s of room tone at the head — the export pads/trims it.');
+  const encoding = m.encoding || {};
+  const isMp3 = encoding.container === 'mp3';
+  add('format', 'Submission format', isMp3 ? 'pass' : 'fail',
+    isMp3 ? 'MP3' : (encoding.codec || encoding.container || 'unknown'),
+    'ACX submission files must be MP3. WAV and other sources are valid working masters, not upload files.');
+  const bitrateReady = isMp3 && encoding.bitrateKbps >= 192 && encoding.cbr === true;
+  const bitrateUnknown = isMp3 && encoding.bitrateKbps >= 192 && encoding.cbr == null;
+  add('bitrate', 'MP3 bitrate mode', bitrateReady ? 'pass' : (bitrateUnknown ? 'warn' : 'fail'),
+    isMp3
+      ? `${encoding.bitrateKbps || 'unknown'} kbps · ${encoding.cbr === true ? 'CBR' : (encoding.cbr === false ? 'VBR' : 'mode unknown')}`
+      : 'not MP3',
+    'ACX requires 192 kbps or higher constant-bit-rate MP3; export with the ACX-targeted preset.');
 
-  // Tail silence 1–5 s.
-  add('tail', 'Tail silence', (m.tailSilence >= 1 && m.tailSilence <= 5) ? 'pass'
-    : (m.tailSilence >= 0.5 && m.tailSilence <= 6 ? 'warn' : 'fail'),
-    f1(m.tailSilence) + ' s', 'ACX wants 1–5 s of room tone at the tail — the export pads it.');
+  // The current ACX help page recommends 1–5 s at both edges and rejects >5 s.
+  // Amplitude analysis can measure quiet spacing, but cannot prove that it is room tone.
+  add('head', 'Quiet head spacing', (m.headSilence >= 1 && m.headSilence <= 5) ? 'pass'
+    : (m.headSilence > 0 && m.headSilence <= 5 ? 'warn' : 'fail'),
+    f1(m.headSilence) + ' s', 'Keep no more than 5 s at the head; 1–5 s is recommended. Listen to confirm it is clean room tone, not digital silence.');
+
+  add('tail', 'Quiet tail spacing', (m.tailSilence >= 1 && m.tailSilence <= 5) ? 'pass'
+    : (m.tailSilence > 0 && m.tailSilence <= 5 ? 'warn' : 'fail'),
+    f1(m.tailSilence) + ' s', 'Keep no more than 5 s at the tail; 1–5 s is recommended. Listen to confirm it is clean room tone, not digital silence.');
 
   return rows;
 }
 
 // Overall verdict: 'pass' (all green), 'warn' (no fails, some amber), or 'fail'.
 export function acxVerdict(rows) {
-  if (rows.some((r) => r.status === 'fail')) return 'fail';
-  if (rows.some((r) => r.status === 'warn')) return 'warn';
+  const required = rows.filter((row) => row.required !== false);
+  if (required.some((r) => r.status === 'fail')) return 'fail';
+  if (required.some((r) => r.status === 'warn')) return 'warn';
   return 'pass';
 }

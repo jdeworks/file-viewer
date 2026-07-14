@@ -4,19 +4,17 @@
 // (loadIntake) and the unsaved-work guard (confirmDiscard) live in app.js and are injected via
 // initFolder() so this module never imports app.js back (no circular dependency).
 import { state, $, isMobile, toast, escapeHtml } from './state.js';
-import { findGitDir, isGitInternal, openRepo } from './git.js';
-import { renderRepoView } from './repoview.js';
+import { findGitDir, isGitInternal } from './git-detect.js';
 import { buildTree, renderTree } from './filetree.js';
 import { FILE_LOAD_FEEDBACK_BYTES, intakeFromFile, withSourceText } from './intake.js';
-import { exportFolderZip } from './folder-export.js';
 import { downloadBlob } from './exports.js';
-import { repackZipWithDeletions } from './repack.js';
 import { addFolderRoot, captureActiveSidebarRoot, renderSidebarRoots } from './sidebar-roots.js';
 
 // Injected core-flow callbacks (set once by app.js init()).
 let loadIntake = () => {};
 let confirmDiscard = () => true;
 let onFolderFileOpened = null; // optional callback(node) called after a tree file opens
+let recoverFolderFile = null;  // optional stale-picker snapshot recovery (Companion-linked roots)
 let onTreeDelete = null;       // optional callback({path,isFolder,name}) for per-row delete-on-disk
 let onTreeReveal = null;       // optional callback({path,isFolder,name}) for per-row reveal-in-folder
 let viewerActionsPromise = null;
@@ -28,6 +26,7 @@ export function initFolder(deps) {
   loadIntake = deps.loadIntake;
   confirmDiscard = deps.confirmDiscard;
   onFolderFileOpened = deps.onFolderFileOpened || null;
+  recoverFolderFile = deps.recoverFolderFile || null;
   onTreeDelete = deps.onTreeDelete || null;
   onTreeReveal = deps.onTreeReveal || null;
 }
@@ -35,8 +34,43 @@ export function initFolder(deps) {
 // Track whether the one-time move disclaimer toast has been shown this folder session.
 let _moveNoticed = false;
 let _repoViewToken = 0;
+let _folderSearchIndex = null;
+let _contentSearchToken = 0;
+let createFolderSearchIndex = null;
+
+async function loadFolderSearchFactory() {
+  if (!createFolderSearchIndex) {
+    ({ createFolderSearchIndex } = await import('./folder-search-index.js'));
+  }
+  return createFolderSearchIndex;
+}
 
 const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve));
+
+function ensureActiveSearchIndex() {
+  const root = state.sidebarRoots?.find((entry) => entry.id === state.activeSidebarRootId);
+  if (!root || root.kind !== 'folder' || root.git) {
+    _folderSearchIndex?.cancel();
+    _folderSearchIndex = null;
+    state.folderSearchIndex = null;
+    return null;
+  }
+  if (_folderSearchIndex !== root.searchIndex) {
+    _folderSearchIndex?.cancel();
+    _folderSearchIndex = null;
+  }
+  if (!root.searchIndex || root.searchIndex.info.cancelled) {
+    if (!createFolderSearchIndex) {
+      void loadFolderSearchFactory().then(() => ensureActiveSearchIndex());
+      return null;
+    }
+    root.searchIndex = createFolderSearchIndex(root.treeEntries || []);
+    void root.searchIndex.done;
+  }
+  _folderSearchIndex = root.searchIndex;
+  state.folderSearchIndex = _folderSearchIndex.info;
+  return _folderSearchIndex;
+}
 
 export function showFolderLoading(message, { progress = null, detail = '' } = {}) {
   const notice = $('ftNotice');
@@ -86,6 +120,10 @@ export async function loadFolder(entries, { repoWalkLimit, openPath, openFolders
   if (state.companionOperationToken || state.sidebarNavigationPending) return null;
   if (!confirmDiscard()) return null;          // explicit abort: callers must not resolve/link it
   captureActiveSidebarRoot();
+  _folderSearchIndex?.cancel();
+  _folderSearchIndex = null;
+  state.folderSearchIndex = null;
+  _contentSearchToken++;
   // A .git dir makes this a repository: hide git internals from the tree, surface a
   // branch/commit browser, and default to it instead of opening a file.
   const git = findGitDir(entries);
@@ -167,6 +205,15 @@ export async function loadFolder(entries, { repoWalkLimit, openPath, openFolders
   } finally {
     hideFolderLoading();
   }
+  if (!git) {
+    const createSearchIndex = await loadFolderSearchFactory();
+    folderRoot.searchIndex = createSearchIndex(display);
+    if (state.activeSidebarRootId === folderRoot.id) {
+      _folderSearchIndex = folderRoot.searchIndex;
+      state.folderSearchIndex = _folderSearchIndex.info;
+    }
+    void folderRoot.searchIndex.done;
+  }
   return folderRoot;
 }
 
@@ -195,6 +242,10 @@ export async function openRepoView({ auto = false, walkLimit } = {}) {
   const panel = $('repoPanel'); panel.hidden = false;
   panel.innerHTML = '<p class="repo-hint">Reading repository…</p>';
   try {
+    const [{ openRepo }, { renderRepoView }] = await Promise.all([
+      import('./git.js'),
+      import('./repoview.js'),
+    ]);
     if (!state.repoHandle) state.repoHandle = await openRepo(state.repoEntries);
     if (token !== _repoViewToken || (auto && state.currentFolderPath)) return;
     if (!state.repoHandle) { panel.innerHTML = '<p class="repo-hint">Not a git repository.</p>'; return; }
@@ -225,6 +276,7 @@ async function openTreeFile(node, {
   skipFolderFlush = false, sidebarNavigationToken = null,
 } = {}) {
   const showReadNotice = !state.folderEdits.has(node.path) && node.file?.size >= FILE_LOAD_FEEDBACK_BYTES;
+  const previousRenderPath = state.renderFolderPath;
   try {
     _repoViewToken++;
     if (!skipFolderFlush) flushFolderEdit(); // sidebar root switching captured the old edit already
@@ -236,10 +288,25 @@ async function openTreeFile(node, {
       });
       await nextFrame();
     }
-    const originalIntake = await intakeFromFile(node.file);
+    let originalIntake;
+    try {
+      originalIntake = await intakeFromFile(node.file);
+    } catch (error) {
+      const recovered = recoverFolderFile ? await recoverFolderFile(node, error).catch(() => null) : null;
+      if (!recovered) throw error;
+      node.file = recovered;
+      const activeRoot = state.sidebarRoots?.find((root) => root.id === state.activeSidebarRootId);
+      const storedEntry = activeRoot?.treeEntries?.find((entry) => entry.path === node.path);
+      if (storedEntry) storedEntry.file = recovered;
+      originalIntake = await intakeFromFile(recovered);
+    }
     const intake = stashed != null ? withSourceText(originalIntake, stashed) : originalIntake;
     state._skipDiscardGuard = true;    // folder edits are preserved in folderEdits — no discard prompt
     state._skipSidebarRoot = true;
+    // loadIntake intentionally clears currentFolderPath until the activation commits. Give
+    // renderers the path being opened during that window so relative HTML dependencies resolve
+    // against the right folder rather than the previously active file.
+    state.renderFolderPath = node.path;
     const loaded = await loadIntake(intake, { sidebarNavigationToken });
     if (loaded === false) return false;
     state.currentFolderPath = node.path;   // mark this as a folder file (loadIntake cleared it)
@@ -247,9 +314,12 @@ async function openTreeFile(node, {
     if (isMobile()) setTree(false);    // collapse the overlay after picking on phones
     return true;
   } catch (err) {
-    toast('Could not open ' + node.path);
+    const detail = err?.message ? ': ' + err.message : '';
+    console.warn('Could not open folder entry', node.path, err);
+    toast('Could not open ' + node.path + detail);
     return false;
   } finally {
+    state.renderFolderPath = previousRenderPath;
     if (showReadNotice) hideFolderLoading();
   }
 }
@@ -268,6 +338,8 @@ const CONTENT_SEARCH_MAX = 2 * 1024 * 1024;   // skip files larger than this for
 
 export function onTreeSearchInput() {
   if (!state.treeApi) return;
+  _contentSearchToken++;
+  ensureActiveSearchIndex();
   const q = $('ftSearchInput').value.trim().toLowerCase();
   if (!q) { state.treeApi.clearFilter(); $('ftSearchCount').textContent = ''; return; }
   const shown = state.treeApi.filter((path) => path.toLowerCase().includes(q));
@@ -281,6 +353,8 @@ export async function searchTreeContents() {
   const q = $('ftSearchInput').value.trim();
   if (!q) { state.treeApi.clearFilter(); $('ftSearchCount').textContent = ''; return; }
   const ql = q.toLowerCase();
+  const token = ++_contentSearchToken;
+  const searchIndex = ensureActiveSearchIndex();
   $('ftSearchCount').textContent = 'searching…';
   const matched = new Set();
   // The append-only sidebar renders a folder entry as "<root label>/<inner path>", while
@@ -292,19 +366,30 @@ export async function searchTreeContents() {
     matched.add(path);
     if (activeRoot && activeRoot.kind !== 'file') matched.add(activeRoot.label + '/' + path);
   };
-  for (const e of state.treeEntries) {
+  const entries = state.treeEntries;
+  for (let i = 0; i < entries.length; i++) {
+    if (token !== _contentSearchToken || $('ftSearchInput').value.trim() !== q) return;
+    const e = entries[i];
     if (e.path.toLowerCase().includes(ql)) { addMatchedPath(e.path); continue; }   // filename match
     if (e.file.size > CONTENT_SEARCH_MAX) continue;
     try {
-      const text = await e.file.text();
+      const text = searchIndex
+        ? await searchIndex.read(e)
+        : await e.file.text();
+      if (text == null) continue;
       if (text.includes('\0')) continue;                  // looks binary
       if (text.toLowerCase().includes(ql)) {
         addMatchedPath(e.path);
-        const line = text.split(/\r?\n/).find((entry) => entry.includes(q));
+        const line = text.split(/\r?\n/).find((entry) => entry.toLowerCase().includes(ql));
         viewerActions().then(({ recordStage2SearchResult }) => recordStage2SearchResult({ file: e.path, query: q, result: line && line.trim() }));
       }
     } catch { /* unreadable — skip */ }
+    if (i && i % 40 === 0) {
+      $('ftSearchCount').textContent = 'searching… ' + i.toLocaleString() + '/' + entries.length.toLocaleString();
+      await nextFrame();
+    }
   }
+  if (token !== _contentSearchToken) return;
   const shown = state.treeApi.filter((path) => matched.has(path));
   $('ftSearchCount').textContent = shown + ' file' + (shown === 1 ? '' : 's') + ' (name + contents)';
 }
@@ -319,6 +404,7 @@ export async function exportFolder(changedOnly) {
   if (changedOnly && state.folderEdits.size === 0 && state.folderMoves.size === 0) { toast('No edited files or moves to export yet.'); return; }
   try {
     toast('Building .zip…', 1500);
+    const { exportFolderZip } = await import('./folder-export.js');
     const { blob, count } = await exportFolderZip(entries, state.folderEdits, { changedOnly, moves: state.folderMoves });
     const base = ($('ftRoot').textContent || 'folder').replace(/[^\w.-]+/g, '_');
     downloadBlob(blob, base + (changedOnly ? '-changed' : '') + '.zip');
@@ -338,6 +424,7 @@ async function repackArchive() {
   if (textEdits.size === 0 && binaryEdits.size === 0 && deletions.size === 0) { toast('No edits or deletions to export yet.'); return; }
   try {
     toast('Repacking archive…', 1500);
+    const { repackZipWithDeletions } = await import('./repack.js');
     const blob = await repackZipWithDeletions(state.archiveIntake, { textEdits, binaryEdits, deletions });
     const base = ($('ftRoot').textContent || 'archive').replace(/[^\w.-]+/g, '_');
     downloadBlob(blob, 'edited-' + base);
@@ -356,6 +443,7 @@ export function folderContext() {
   const files = (state.treeEntries || []).map((e) => ({ file: e.file, path: e.path }));
   return {
     files,
+    currentPath: state.renderFolderPath || state.currentFolderPath || null,
     open: async (file) => {
       const node = files.find((f) => f.file === file);
       if (!node) return;

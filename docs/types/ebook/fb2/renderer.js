@@ -4,22 +4,23 @@
 // sandboxed preview iframe — exactly like the Markdown path. Section nesting becomes heading
 // levels so the structure reads naturally.
 import { loadGlobal, vendor } from '../../../core/script-loader.js';
+import { FB2_READER_PREFS } from '../reader-prefs.js';
 
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 function readerShell(content) {
-  return '<div class="ebook-reader fb2-reader">'
-    + '<input class="ebook-choice ebook-size-normal" id="fb2-size-normal" name="fb2-size" type="radio" checked>'
-    + '<input class="ebook-choice ebook-size-large" id="fb2-size-large" name="fb2-size" type="radio">'
-    + '<input class="ebook-choice ebook-font-serif" id="fb2-font-serif" name="fb2-font" type="radio" checked>'
-    + '<input class="ebook-choice ebook-font-sans" id="fb2-font-sans" name="fb2-font" type="radio">'
-    + '<input class="ebook-choice ebook-theme-light" id="fb2-theme-light" name="fb2-theme" type="radio" checked>'
-    + '<input class="ebook-choice ebook-theme-sepia" id="fb2-theme-sepia" name="fb2-theme" type="radio">'
-    + '<input class="ebook-choice ebook-theme-dark" id="fb2-theme-dark" name="fb2-theme" type="radio">'
-    + '<input class="ebook-choice ebook-line-normal" id="fb2-line-normal" name="fb2-line" type="radio" checked>'
-    + '<input class="ebook-choice ebook-line-loose" id="fb2-line-loose" name="fb2-line" type="radio">'
-    + '<input class="ebook-choice ebook-margin-normal" id="fb2-margin-normal" name="fb2-margin" type="radio" checked>'
-    + '<input class="ebook-choice ebook-margin-wide" id="fb2-margin-wide" name="fb2-margin" type="radio">'
+  return '<div class="ebook-reader fb2-reader" data-fv-reader-prefs="' + FB2_READER_PREFS.key + '">'
+    + '<input class="ebook-choice ebook-size-normal" id="fb2-size-normal" name="fb2-size" type="radio" value="normal" data-fv-reader-pref="size" checked>'
+    + '<input class="ebook-choice ebook-size-large" id="fb2-size-large" name="fb2-size" type="radio" value="large" data-fv-reader-pref="size">'
+    + '<input class="ebook-choice ebook-font-serif" id="fb2-font-serif" name="fb2-font" type="radio" value="serif" data-fv-reader-pref="font" checked>'
+    + '<input class="ebook-choice ebook-font-sans" id="fb2-font-sans" name="fb2-font" type="radio" value="sans" data-fv-reader-pref="font">'
+    + '<input class="ebook-choice ebook-theme-light" id="fb2-theme-light" name="fb2-theme" type="radio" value="light" data-fv-reader-pref="theme" checked>'
+    + '<input class="ebook-choice ebook-theme-sepia" id="fb2-theme-sepia" name="fb2-theme" type="radio" value="sepia" data-fv-reader-pref="theme">'
+    + '<input class="ebook-choice ebook-theme-dark" id="fb2-theme-dark" name="fb2-theme" type="radio" value="dark" data-fv-reader-pref="theme">'
+    + '<input class="ebook-choice ebook-line-normal" id="fb2-line-normal" name="fb2-line" type="radio" value="normal" data-fv-reader-pref="line" checked>'
+    + '<input class="ebook-choice ebook-line-loose" id="fb2-line-loose" name="fb2-line" type="radio" value="loose" data-fv-reader-pref="line">'
+    + '<input class="ebook-choice ebook-margin-normal" id="fb2-margin-normal" name="fb2-margin" type="radio" value="normal" data-fv-reader-pref="margin" checked>'
+    + '<input class="ebook-choice ebook-margin-wide" id="fb2-margin-wide" name="fb2-margin" type="radio" value="wide" data-fv-reader-pref="margin">'
     + '<div class="ebook-controls" aria-label="Reader settings">'
     + '<label for="fb2-size-normal">A</label><label for="fb2-size-large">A+</label>'
     + '<label for="fb2-font-serif">Serif</label><label for="fb2-font-sans">Sans</label>'
@@ -113,5 +114,5 @@ export async function render(intake, _ctx) {
     FORBID_TAGS: ['script', 'style'],
     FORBID_ATTR: ['onerror', 'onload', 'onclick'],
   });
-  return { bodyHtml: readerShell(clean), hadUnsafe: DOMPurify.removed.length > 0 };
+  return { bodyHtml: readerShell(clean), hadUnsafe: DOMPurify.removed.length > 0, readerPrefs: FB2_READER_PREFS };
 }

@@ -41,6 +41,7 @@ import {
 import { buildChapterZipControls, chaptersReady, chapterZipFilename } from './export-chapters.js';
 import { buildExportProgress } from './export-progress.js';
 import { renderStageCompare, summarizeMasteringStages } from './mastering-stages.js';
+import { buildWorkingCopyButton } from './media-working-copy.js';
 
 function mkBtn(text, cls) {
   const b = document.createElement('button');
@@ -304,8 +305,10 @@ export function buildExportPanel(intake, mediaEl, kind, options = {}) {
     progress.setRunning(running);
   }
 
-  function showResult(url, filename, sizeBytes) {
-    progress.showResult(url, filename, sizeBytes);
+  function showResult(result) {
+    progress.showResult(result.url, result.filename, result.bytes, {
+      action: buildWorkingCopyButton(result, options.workingCopy),
+    });
   }
 
   function syncChapterExport() {
@@ -348,7 +351,7 @@ export function buildExportPanel(intake, mediaEl, kind, options = {}) {
         }, intake);
       }
       blobUrls.push(result.url);
-      showResult(result.url, result.filename, result.bytes);
+      showResult(result);
     } catch (err) {
       showError(formatFfmpegError(err));
     } finally {
@@ -376,7 +379,7 @@ export function buildExportPanel(intake, mediaEl, kind, options = {}) {
       const result = await runOperation(ff, 'subtitleBurn', { secondary: subtitleBurnFile }, intake);
       blobUrls.push(result.url);
       if (subtitleBurnStatus) subtitleBurnStatus.textContent = 'Burn-in complete.';
-      showResult(result.url, result.filename, result.bytes);
+      showResult(result);
     } catch (err) {
       if (subtitleBurnStatus) subtitleBurnStatus.textContent = 'Burn-in failed.';
       showError(formatFfmpegError(err));
@@ -423,7 +426,13 @@ export function buildExportPanel(intake, mediaEl, kind, options = {}) {
       });
       const url = URL.createObjectURL(blob);
       blobUrls.push(url);
-      showResult(url, chapterZipFilename(intake.filename), blob.size);
+      showResult({
+        url,
+        filename: chapterZipFilename(intake.filename),
+        bytes: blob.size,
+        blob,
+        mime: 'application/zip',
+      });
     } catch (err) {
       showError(formatFfmpegError(err));
     } finally {

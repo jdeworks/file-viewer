@@ -8,8 +8,11 @@ export default {
     // it's handled by the dedicated moon-yml plugin (docs/types/text/yaml/known/moon),
     // which is registered later in docs/known/registry.js and would otherwise be
     // permanently shadowed by this plugin's broader match.
-    return path.endsWith('.moon/workspace.yml') ||
-           path.endsWith('.moon/toolchain.yml');
+    if (path.endsWith('.moon/workspace.yml') || path.endsWith('.moon/toolchain.yml')) return true;
+    const name = path.split('/').pop().toLowerCase();
+    if (name !== 'workspace.yml' && name !== 'toolchain.yml') return false;
+    const text = intake.textSample || intake.text || '';
+    return /moonrepo\.dev\/schemas\/(?:workspace|toolchain)\.json/.test(text);
   },
   loadRenderer: () => import('./renderer.js'),
   about: {

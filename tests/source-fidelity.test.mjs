@@ -59,4 +59,32 @@ assert.equal(binary.text, null);
 assert.equal(binary.sourceText, null);
 assert.equal(binary.originalText, null);
 
-console.log('source fidelity: immutable bytes/original text and exact working BOM/CRLF/Unicode verified');
+const utf16le = intakeFromBytes(
+  Uint8Array.from([0xff, 0xfe, 0x41, 0x00, 0x0a, 0x00]),
+  'utf16.txt',
+  'text/plain; charset=utf-8',
+);
+assert.equal(utf16le.isBinary, false, 'UTF-16 BOM bypasses the generic NUL/binary heuristic');
+assert.equal(utf16le.sourceText, '\ufeffA\n');
+assert.equal(utf16le.text, 'A\n');
+assert.equal(utf16le.encoding, 'UTF-16 LE');
+assert.equal(utf16le.encodingSource, 'BOM');
+assert.match(utf16le.encodingWarnings.join(' '), /MIME charset says UTF-8/);
+
+const inferredUtf16be = intakeFromBytes(
+  Uint8Array.from([0x00, 0x41, 0x00, 0x42, 0x00, 0x43, 0x00, 0x44]),
+  'legacy.txt',
+  'text/plain',
+);
+assert.equal(inferredUtf16be.isBinary, false);
+assert.equal(inferredUtf16be.text, 'ABCD');
+assert.equal(inferredUtf16be.encoding, 'UTF-16 BE');
+assert.equal(inferredUtf16be.encodingSource, 'byte pattern');
+assert.match(inferredUtf16be.encodingWarnings.join(' '), /inferred from alternating NUL bytes/);
+
+const malformedUtf8 = intakeFromBytes(Uint8Array.from([0x66, 0x6f, 0x80, 0x6f]), 'bad.txt', 'text/plain');
+assert.equal(malformedUtf8.isBinary, false);
+assert.equal(malformedUtf8.hadDecodingErrors, true);
+assert.match(malformedUtf8.encodingWarnings.join(' '), /Invalid UTF-8 byte sequence/);
+
+console.log('source fidelity: immutable source plus BOM/UTF-16/encoding diagnostics verified');

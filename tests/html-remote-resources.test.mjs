@@ -17,12 +17,16 @@ await new Promise((resolve) => sentinel.listen(0, '127.0.0.1', resolve));
 const remote = `http://127.0.0.1:${sentinel.address().port}`;
 
 const ctx = await createHarness();
-const { page, origin, frameOf, waitForFv } = ctx;
+const { page, origin, frameOf, waitForFv, offOrigin } = ctx;
 let allowScripts = false;
 let blobUrl = null;
+const dialogMessages = [];
 
 try {
-  page.on('dialog', (dialog) => allowScripts ? dialog.accept() : dialog.dismiss());
+  page.on('dialog', (dialog) => {
+    dialogMessages.push(dialog.message());
+    return allowScripts ? dialog.accept() : dialog.dismiss();
+  });
   await page.goto(origin, { waitUntil: 'load' });
   await waitForFv();
   blobUrl = await page.evaluate(() => URL.createObjectURL(new Blob(['local image'], { type: 'image/png' })));
@@ -81,6 +85,51 @@ try {
   assert.ok(safeCss.includes('favicon.svg'), 'relative CSS resource is preserved');
   assert.ok(!safeCss.includes(remote), 'remote CSS references are neutralized');
 
+  // Folder HTML resolves relative CSS/JS/images from the loaded in-memory folder. CSS and images
+  // survive the safe sanitizer as blob URLs; local JavaScript still uses the ordinary script gate.
+  const folderHtml = `<!doctype html><html><head>
+    <link rel="stylesheet" href="styles/site.css">
+  </head><body>
+    <div id="local-card" class="card utility-one utility-two utility-three utility-four utility-five utility-six utility-seven utility-eight">Local dependencies</div>
+    <img id="local-image" src="img/pixel.svg"><img id="missing-image" src="img/missing.svg">
+    <script src="scripts/app.js"><\/script>
+  </body></html>`;
+  await page.evaluate(async (source) => {
+    await window.__fv.loadFolder([
+      { path: 'site/index.html', file: new File([source], 'index.html', { type: 'text/html' }) },
+      { path: 'site/styles/site.css', file: new File([
+        '@import "theme.css"; .card{color:rgb(12, 34, 56);background-image:url("../img/pixel.svg")}',
+      ], 'site.css', { type: 'text/css' }) },
+      { path: 'site/styles/theme.css', file: new File(['.utility-one{font-weight:700}'], 'theme.css', { type: 'text/css' }) },
+      { path: 'site/scripts/app.js', file: new File(['document.body.dataset.localScript="ran"'], 'app.js', { type: 'text/javascript' }) },
+      { path: 'site/img/pixel.svg', file: new File([
+        '<svg xmlns="http://www.w3.org/2000/svg" width="2" height="2"><rect width="2" height="2" fill="green"/></svg>',
+      ], 'pixel.svg', { type: 'image/svg+xml' }) },
+    ]);
+  }, folderHtml);
+  const folderFrame = await frameOf('iframe.fv-preview-frame');
+  await folderFrame.waitForSelector('#local-card');
+  assert.equal(await folderFrame.locator('#local-card').evaluate((element) => getComputedStyle(element).color), 'rgb(12, 34, 56)');
+  assert.equal(await folderFrame.locator('#local-card').evaluate((element) => getComputedStyle(element).fontWeight), '700');
+  assert.match(await folderFrame.locator('#local-image').getAttribute('src'), /^blob:/);
+  assert.equal(await folderFrame.locator('#missing-image').getAttribute('src'), 'data:,');
+  assert.equal(await folderFrame.locator('body').getAttribute('data-local-script'), null);
+  const dependencyText = await folderFrame.locator('.fv-html-deps').textContent();
+  assert.match(dependencyText, /resolved \d+ folder assets/i);
+  assert.match(dependencyText, /missing local/i);
+
+  // Accepting the existing raw-document trust gate makes the already-rewired local script live;
+  // it still runs in sandbox=allow-scripts with no parent/file access.
+  allowScripts = true;
+  await page.evaluate(async () => {
+    window.__fv.state.htmlAllowScripts = false;
+    window.__fv.state.htmlAsked = false;
+    await window.__fv.rerenderPreview();
+  });
+  const trustedFolderFrame = await frameOf('iframe.fv-preview-frame');
+  await trustedFolderFrame.waitForSelector('body[data-local-script="ran"]');
+  assert.equal(await page.getAttribute('iframe.fv-preview-frame', 'sandbox'), 'allow-scripts');
+
   // The raw full-document path is a separately disclosed, explicit trust mode. Prove its network
   // behavior remains opt-in and the iframe still lacks allow-same-origin.
   sentinelRequests.length = 0;
@@ -95,6 +144,44 @@ try {
   assert.ok(sentinelRequests.includes('/explicit.png'), 'explicit script-enabled HTML may load its declared remote resources');
   assert.equal(await page.getAttribute('iframe.fv-preview-frame', 'sandbox'), 'allow-scripts');
   assert.equal(await trustedFrame.locator('body').getAttribute('data-ran'), '1');
+  assert.match(dialogMessages.find((message) => /Raw mode can request/.test(message)) || '', /images, stylesheets, fonts, media, frames, form targets/);
+  assert.match(dialogMessages.find((message) => /Raw mode can request/.test(message)) || '', /fetch or WebSocket/);
+
+  // A remote preset is network-silent when selected. Seed the dedicated cache with a deterministic
+  // Tailwind stand-in, then prove the separate iframe button + confirmation loads that cached code
+  // without contacting jsDelivr (and without weakening the sandbox).
+  const tailwindUrl = 'https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4';
+  await page.evaluate(async ({ source, url }) => {
+    const cache = await caches.open('fv-html-dependencies-v1');
+    await cache.put(url, new Response(source, { headers: { 'content-type': 'text/javascript' } }));
+    await window.__fv.openBlobFile(new Blob([
+      '<!doctype html><main class="mx-auto p-4 text-lg">Preset test</main>',
+    ], { type: 'text/html' }), 'preset.html', { mime: 'text/html' });
+  }, { source: 'document.documentElement.dataset.fvTailwindPreset="cached"', url: tailwindUrl });
+  const beforePreset = offOrigin.length;
+  await page.click('#settingsBtn');
+  await page.waitForSelector('#set-htmlDependencyPreset', { state: 'attached' });
+  await page.locator('#set-htmlDependencyPreset').evaluate((element) => { element.closest('details').open = true; });
+  await page.selectOption('#set-htmlDependencyPreset', 'tailwind');
+  const presetFrame = await frameOf('iframe.fv-preview-frame');
+  await presetFrame.waitForSelector('[data-fv-action="html-load-remote"]');
+  await page.waitForTimeout(250);
+  assert.equal(offOrigin.length, beforePreset, 'selecting a remote preset must make no request');
+  assert.match(await presetFrame.locator('.fv-html-deps').textContent(), /1\/1 resource cached/i);
+  await page.evaluate(() => {
+    document.getElementById('settingsDrawer').hidden = true;
+    document.getElementById('scrim').hidden = true;
+  });
+  await presetFrame.locator('[data-fv-action="html-load-remote"]').click();
+  await page.waitForFunction(() => window.__fv.state.htmlRemotePresetAllowed === 'tailwind');
+  const loadedPresetFrame = await frameOf('iframe.fv-preview-frame');
+  await loadedPresetFrame.waitForSelector('html[data-fv-tailwind-preset="cached"]');
+  await page.waitForTimeout(250);
+  assert.equal(offOrigin.length, beforePreset, 'cached preset load must make no off-origin request');
+  assert.equal(await page.getAttribute('iframe.fv-preview-frame', 'sandbox'), 'allow-scripts');
+  const presetDisclosure = dialogMessages.find((message) => /Load Tailwind Play CDN/.test(message)) || '';
+  assert.match(presetDisclosure, /no network request/i);
+  assert.match(presetDisclosure, /SCRIPT https:\/\/cdn\.jsdelivr\.net\/npm\/@tailwindcss\/browser@4/);
 
   console.log('html remote-resource privacy test passed');
 } catch (error) {

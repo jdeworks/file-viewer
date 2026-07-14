@@ -27,6 +27,21 @@
     ]
   },
   {
+    "label": "Password-protected PDF (password: viewer)",
+    "file": "sample-password.pdf",
+    "mime": "application/pdf",
+    "type": "pdf",
+    "category": "Documents",
+    "categories": [
+      "Documents",
+      "Secrets"
+    ],
+    "description": "RC4-128 protected PDF used to exercise the local incorrect-password and unlock flow; use password ‘viewer’. No document bytes or password leave the browser.",
+    "source": "Generated locally from docs/examples/sample.pdf with scripts/gen-sample-encrypted-pdf.py",
+    "license": "CC0-1.0",
+    "attribution": "File Viewer contributors"
+  },
+  {
     "label": "Sample.txt",
     "file": "sample.txt",
     "mime": "text/plain",
@@ -134,6 +149,22 @@
     "categories": [
       "Data"
     ]
+  },
+  {
+    "label": "Password-protected SQLCipher SQLite (password: viewer)",
+    "file": "sample-sqlcipher.sqlite",
+    "mime": "application/x-sqlite3",
+    "type": "sqlite",
+    "binary": true,
+    "category": "Data",
+    "categories": [
+      "Data",
+      "Secrets"
+    ],
+    "description": "SQLCipher v4-default database used to exercise the local incorrect-password and unlock flow; use password ‘viewer’. Custom SQLCipher profiles are reported as unsupported.",
+    "source": "Generated locally with scripts/gen-sample-sqlcipher.py",
+    "license": "CC0-1.0",
+    "attribution": "File Viewer contributors"
   },
   {
     "label": "File Viewer Demo Map (MBTiles)",
@@ -303,7 +334,8 @@
     "categories": [
       "Config"
     ],
-    "enhanced": true
+    "enhanced": true,
+    "knownFile": "package-json"
   },
   {
     "label": "tsconfig.json",
@@ -313,7 +345,8 @@
     "categories": [
       "Config"
     ],
-    "enhanced": true
+    "enhanced": true,
+    "knownFile": "tsconfig"
   },
   {
     "label": "Cargo.toml",
@@ -323,7 +356,8 @@
     "categories": [
       "Config"
     ],
-    "enhanced": true
+    "enhanced": true,
+    "knownFile": "cargo-toml"
   },
   {
     "label": "Dockerfile",
@@ -333,7 +367,8 @@
     "categories": [
       "Config"
     ],
-    "enhanced": true
+    "enhanced": true,
+    "knownFile": "dockerfile"
   },
   {
     "label": "docker-compose.yml",
@@ -343,7 +378,8 @@
     "categories": [
       "Config"
     ],
-    "enhanced": true
+    "enhanced": true,
+    "knownFile": "docker-compose"
   },
   {
     "label": ".gitignore",
@@ -362,7 +398,8 @@
     "categories": [
       "Config"
     ],
-    "enhanced": true
+    "enhanced": true,
+    "knownFile": "gitattributes"
   },
   {
     "label": ".mailmap",
@@ -431,7 +468,8 @@
     "categories": [
       "Config"
     ],
-    "enhanced": true
+    "enhanced": true,
+    "knownFile": "requirements-txt"
   },
   {
     "label": "go.mod",
@@ -441,7 +479,8 @@
     "categories": [
       "Config"
     ],
-    "enhanced": true
+    "enhanced": true,
+    "knownFile": "go-mod"
   },
   {
     "label": "composer.json",
@@ -451,7 +490,8 @@
     "categories": [
       "Config"
     ],
-    "enhanced": true
+    "enhanced": true,
+    "knownFile": "composer-json"
   },
   {
     "label": "Gemfile",
@@ -487,7 +527,8 @@
       "Build"
     ],
     "enhanced": true,
-    "description": "Apache Ant build file for MyApp: 5 targets (init, compile, test, package, clean), 6 properties."
+    "description": "Apache Ant build file for MyApp: 5 targets (init, compile, test, package, clean), 6 properties.",
+    "knownFile": "ant-build"
   },
   {
     "label": "Pipfile",
@@ -497,7 +538,8 @@
     "categories": [
       "Config"
     ],
-    "enhanced": true
+    "enhanced": true,
+    "knownFile": "pipfile"
   },
   {
     "label": "openapi.yaml",
@@ -507,7 +549,8 @@
     "categories": [
       "Config"
     ],
-    "enhanced": true
+    "enhanced": true,
+    "knownFile": "openapi"
   },
   {
     "label": "CODEOWNERS",
@@ -517,7 +560,8 @@
     "categories": [
       "Config"
     ],
-    "enhanced": true
+    "enhanced": true,
+    "knownFile": "codeowners"
   },
   {
     "label": ".editorconfig",
@@ -787,7 +831,8 @@
     ],
     "type": "code",
     "description": "SQL schema and grouped aggregate query.",
-    "knownFile": "sql-query"
+    "knownFile": "sql-query",
+    "enhanced": true
   },
   {
     "label": "styles.css",
@@ -1003,7 +1048,8 @@
     ],
     "type": "code",
     "enhanced": true,
-    "description": "Bazel BUILD file with py_library, py_binary, and py_test targets."
+    "description": "Bazel BUILD file with py_library, py_binary, and py_test targets.",
+    "knownFile": "bazel"
   },
   {
     "label": ".bazelrc",
@@ -1015,7 +1061,8 @@
     ],
     "type": "code",
     "enhanced": true,
-    "description": "Bazel RC configuration with build, test, and remote execution flags."
+    "description": "Bazel RC configuration with build, test, and remote execution flags.",
+    "knownFile": "bazelrc"
   },
   {
     "label": "build.ninja",
@@ -1027,7 +1074,8 @@
     ],
     "type": "code",
     "enhanced": true,
-    "description": "Ninja build file with compile rules, object targets, and link step."
+    "description": "Ninja build file with compile rules, object targets, and link step.",
+    "knownFile": "ninja-build"
   },
   {
     "label": "infra.tf",
@@ -1333,10 +1381,10 @@
       "Image",
       "Media"
     ],
-    "description": "JPEG XL sample — decoded in-browser via a lazily-loaded wasm decoder (browsers have no native JXL support).",
-    "source": "https://jpegxl.info/resources/jpeg-xl-test-page.html",
-    "license": "JPEG XL community sample; see source",
-    "attribution": "JPEG XL community test page"
+    "description": "JPEG XL grayscale conformance bitstream — decoded in-browser via a lazily-loaded wasm decoder.",
+    "source": "https://github.com/libjxl/conformance/blob/4bf053529c7cefd2951be453475bb3dccc7e7be8/testcases/grayscale/input.jxl",
+    "license": "BSD-3-Clause",
+    "attribution": "Copyright JPEG XL Project Authors; libjxl conformance test corpus"
   },
   {
     "label": "sample.heic",
@@ -1459,6 +1507,21 @@
       "Media"
     ],
     "description": "Short MP3 audio sample for native audio playback and ID3 metadata checks."
+  },
+  {
+    "label": "ACX QC reference.mp3",
+    "file": "acx-qc-reference.mp3",
+    "mime": "audio/mpeg",
+    "type": "media",
+    "category": "Media",
+    "categories": [
+      "Media",
+      "Testing"
+    ],
+    "description": "Deterministic 44.1 kHz mono 192 kbps CBR MP3 with measured ACX-range RMS, peak, noise floor, and edge spacing for real-byte QC regression coverage.",
+    "source": "Generated locally with scripts/gen-media-qc-fixture.py",
+    "license": "CC0-1.0",
+    "attribution": "File Viewer contributors"
   },
   {
     "label": "Sample.ogg",
@@ -1665,10 +1728,12 @@
     "label": "Locked.zip",
     "file": "sample-locked.zip",
     "mime": "application/zip",
+    "type": "zip",
     "category": "Archive & Binary",
     "categories": [
       "Archive & Binary"
-    ]
+    ],
+    "description": "Password-protected ZIP fixture with one locally unlockable ZipCrypto entry; the password path is covered without sending the archive anywhere."
   },
   {
     "label": "Sample.cbz",
@@ -1860,8 +1925,7 @@
     "category": "Text",
     "categories": [
       "Text"
-    ],
-    "enhanced": true
+    ]
   },
   {
     "label": "sample.img",
@@ -1993,9 +2057,7 @@
       "Config"
     ],
     "mime": "text/plain",
-    "enhanced": true,
-    "description": "SSH client config: named host aliases, HostName, User, Port, IdentityFile paths, ProxyJump chains, wildcard fallback.",
-    "knownFile": "ssh-config"
+    "description": "SSH client config: named host aliases, HostName, User, Port, IdentityFile paths, ProxyJump chains, wildcard fallback."
   },
   {
     "file": "ssh_config",
@@ -2006,9 +2068,7 @@
       "Network"
     ],
     "mime": "text/plain",
-    "enhanced": true,
-    "description": "SSH client config: named host aliases, HostName, User, Port, IdentityFile paths, ProxyJump chains, wildcard fallback.",
-    "knownFile": "ssh-client-config"
+    "description": "SSH client config: named host aliases, HostName, User, Port, IdentityFile paths, ProxyJump chains, wildcard fallback."
   },
   {
     "label": "sample.rdp",
@@ -2038,8 +2098,6 @@
       "Config"
     ],
     "mime": "application/json",
-    "enhanced": true,
-    "knownFile": "mcp-config",
     "description": "MCP server configuration: filesystem, search, GitHub, and HTTP transport servers with API key environment variables."
   },
   {
@@ -2652,7 +2710,8 @@
       "Code",
       "devops"
     ],
-    "enhanced": true
+    "enhanced": true,
+    "knownFile": "github-actions"
   },
   {
     "file": "sample-k8s.yaml",
@@ -2663,7 +2722,8 @@
       "Config",
       "devops"
     ],
-    "enhanced": true
+    "enhanced": true,
+    "knownFile": "k8s-manifest"
   },
   {
     "file": "pubspec.yaml",
@@ -2757,7 +2817,8 @@
     "categories": [
       "Config"
     ],
-    "knownFile": "prettierrc"
+    "knownFile": "prettierrc",
+    "enhanced": true
   },
   {
     "label": "turbo.json",
@@ -2806,7 +2867,8 @@
     "categories": [
       "Config"
     ],
-    "knownFile": "stylelint"
+    "knownFile": "stylelint",
+    "enhanced": true
   },
   {
     "label": "babel.config.json",
@@ -3146,7 +3208,8 @@
     "categories": [
       "Config"
     ],
-    "enhanced": true
+    "enhanced": true,
+    "knownFile": "angular"
   },
   {
     "label": "capacitor.config.json",
@@ -3156,7 +3219,8 @@
     "categories": [
       "Config"
     ],
-    "enhanced": true
+    "enhanced": true,
+    "knownFile": "capacitor"
   },
   {
     "label": ".nycrc.json",
@@ -3166,7 +3230,8 @@
     "categories": [
       "Config"
     ],
-    "enhanced": true
+    "enhanced": true,
+    "knownFile": "nycrc"
   },
   {
     "label": "devcontainer.json",
@@ -3176,7 +3241,8 @@
     "categories": [
       "Config"
     ],
-    "enhanced": true
+    "enhanced": true,
+    "knownFile": "devcontainer"
   },
   {
     "label": "knip.json",
@@ -3186,7 +3252,8 @@
     "categories": [
       "Config"
     ],
-    "enhanced": true
+    "enhanced": true,
+    "knownFile": "knip"
   },
   {
     "label": ".mocharc.json",
@@ -3196,7 +3263,8 @@
     "categories": [
       "Config"
     ],
-    "enhanced": true
+    "enhanced": true,
+    "knownFile": "mocha"
   },
   {
     "label": ".gitlab-ci.yml",
@@ -3206,7 +3274,8 @@
     "categories": [
       "Config"
     ],
-    "enhanced": true
+    "enhanced": true,
+    "knownFile": "gitlab-ci"
   },
   {
     "label": "pnpm-workspace.yaml",
@@ -3227,7 +3296,8 @@
     "categories": [
       "Config"
     ],
-    "enhanced": true
+    "enhanced": true,
+    "knownFile": "vitest"
   },
   {
     "label": "graphql.config.json",
@@ -3237,7 +3307,8 @@
     "categories": [
       "Config"
     ],
-    "enhanced": true
+    "enhanced": true,
+    "knownFile": "graphql-config"
   },
   {
     "label": "apollo.config.json",
@@ -3247,7 +3318,8 @@
     "categories": [
       "Config"
     ],
-    "enhanced": true
+    "enhanced": true,
+    "knownFile": "apollo"
   },
   {
     "label": "storybook.main.json (.storybook/main.json)",
@@ -3257,7 +3329,8 @@
     "categories": [
       "Config"
     ],
-    "enhanced": true
+    "enhanced": true,
+    "knownFile": "storybook"
   },
   {
     "label": ".drone.yml",
@@ -3270,7 +3343,7 @@
       "devops"
     ],
     "enhanced": true,
-    "knownFile": "drone-config"
+    "knownFile": "drone"
   },
   {
     "label": "buildkite.yml",
@@ -3282,7 +3355,8 @@
       "DevOps",
       "devops"
     ],
-    "enhanced": true
+    "enhanced": true,
+    "knownFile": "buildkite"
   },
   {
     "label": "skaffold.yaml",
@@ -3344,7 +3418,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Ansible playbook targeting web servers and database servers with task lists."
+    "description": "Ansible playbook targeting web servers and database servers with task lists.",
+    "knownFile": "ansible-playbook"
   },
   {
     "label": "Pulumi.yaml (Pulumi project)",
@@ -3356,7 +3431,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Pulumi cloud infrastructure project with Node.js runtime and config keys."
+    "description": "Pulumi cloud infrastructure project with Node.js runtime and config keys.",
+    "knownFile": "pulumi"
   },
   {
     "label": "packer.json (HashiCorp Packer)",
@@ -3368,7 +3444,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Packer machine image template with AWS EBS builder and shell provisioners."
+    "description": "Packer machine image template with AWS EBS builder and shell provisioners.",
+    "knownFile": "packer"
   },
   {
     "label": "ruff.toml (Ruff linter)",
@@ -3439,7 +3516,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "uv Python package manager configuration with Python version and index settings."
+    "description": "uv Python package manager configuration with Python version and index settings.",
+    "knownFile": "uv"
   },
   {
     "label": "values.yaml (Helm values)",
@@ -3463,7 +3541,8 @@
       "Config",
       "DevOps"
     ],
-    "enhanced": true
+    "enhanced": true,
+    "knownFile": "firebase"
   },
   {
     "label": "app.json (Expo)",
@@ -3473,7 +3552,8 @@
     "categories": [
       "Config"
     ],
-    "enhanced": true
+    "enhanced": true,
+    "knownFile": "expo"
   },
   {
     "label": "tailwind.config.json",
@@ -3483,7 +3563,8 @@
     "categories": [
       "Config"
     ],
-    "enhanced": true
+    "enhanced": true,
+    "knownFile": "tailwind"
   },
   {
     "label": "postcss.config.json",
@@ -3493,7 +3574,8 @@
     "categories": [
       "Config"
     ],
-    "enhanced": true
+    "enhanced": true,
+    "knownFile": "postcss"
   },
   {
     "label": ".huskyrc.json",
@@ -3503,7 +3585,8 @@
     "categories": [
       "Config"
     ],
-    "enhanced": true
+    "enhanced": true,
+    "knownFile": "husky"
   },
   {
     "label": ".lintstagedrc.json",
@@ -3513,7 +3596,8 @@
     "categories": [
       "Config"
     ],
-    "enhanced": true
+    "enhanced": true,
+    "knownFile": "lint-staged"
   },
   {
     "label": "nest-cli.json",
@@ -3523,7 +3607,8 @@
     "categories": [
       "Config"
     ],
-    "enhanced": true
+    "enhanced": true,
+    "knownFile": "nest-cli"
   },
   {
     "label": ".swcrc",
@@ -3533,7 +3618,8 @@
     "categories": [
       "Config"
     ],
-    "enhanced": true
+    "enhanced": true,
+    "knownFile": "swcrc"
   },
   {
     "label": "package-lock.json",
@@ -3543,7 +3629,8 @@
     "categories": [
       "Config"
     ],
-    "enhanced": true
+    "enhanced": true,
+    "knownFile": "package-lock"
   },
   {
     "label": "composer.lock",
@@ -3553,7 +3640,8 @@
     "categories": [
       "Config"
     ],
-    "enhanced": true
+    "enhanced": true,
+    "knownFile": "composer-lock"
   },
   {
     "label": "pnpm-lock.yaml",
@@ -3563,7 +3651,8 @@
     "categories": [
       "Config"
     ],
-    "enhanced": true
+    "enhanced": true,
+    "knownFile": "pnpm-lock"
   },
   {
     "label": "Cargo.lock",
@@ -3573,7 +3662,8 @@
     "categories": [
       "Config"
     ],
-    "enhanced": true
+    "enhanced": true,
+    "knownFile": "cargo-lock"
   },
   {
     "label": "poetry.lock",
@@ -3583,7 +3673,8 @@
     "categories": [
       "Config"
     ],
-    "enhanced": true
+    "enhanced": true,
+    "knownFile": "poetry-lock"
   },
   {
     "label": "go.sum",
@@ -3593,7 +3684,8 @@
     "categories": [
       "Config"
     ],
-    "enhanced": true
+    "enhanced": true,
+    "knownFile": "go-sum"
   },
   {
     "label": "Justfile",
@@ -3604,7 +3696,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Just command runner with build, test, fmt, and release recipes."
+    "description": "Just command runner with build, test, fmt, and release recipes.",
+    "knownFile": "justfile"
   },
   {
     "label": "Procfile",
@@ -3616,7 +3709,8 @@
       "DevOps"
     ],
     "enhanced": true,
-    "description": "Heroku/foreman Procfile defining web, worker, scheduler, and release processes."
+    "description": "Heroku/foreman Procfile defining web, worker, scheduler, and release processes.",
+    "knownFile": "procfile"
   },
   {
     "label": ".env.example (Env Template)",
@@ -3652,7 +3746,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "mise tool version manager configuration with tools, tasks, and env vars."
+    "description": "mise tool version manager configuration with tools, tasks, and env vars.",
+    "knownFile": "mise-config"
   },
   {
     "label": ".tool-versions",
@@ -3692,7 +3787,8 @@
     "categories": [
       "Config"
     ],
-    "enhanced": true
+    "enhanced": true,
+    "knownFile": "gemfile-lock"
   },
   {
     "label": "Podfile",
@@ -3715,7 +3811,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Fastlane Fastfile defining automation lanes for building, testing, and deploying mobile apps."
+    "description": "Fastlane Fastfile defining automation lanes for building, testing, and deploying mobile apps.",
+    "knownFile": "fastfile"
   },
   {
     "label": "Snapfile",
@@ -3726,7 +3823,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Fastlane Snapfile configuring screenshot devices, languages, and output settings."
+    "description": "Fastlane Snapfile configuring screenshot devices, languages, and output settings.",
+    "knownFile": "snapfile"
   },
   {
     "label": "supabase/config.toml",
@@ -3737,7 +3835,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Supabase project configuration defining database, API, auth, and storage settings."
+    "description": "Supabase project configuration defining database, API, auth, and storage settings.",
+    "knownFile": "supabase-config"
   },
   {
     "label": "_redirects",
@@ -3748,7 +3847,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Netlify _redirects file with URL redirect and rewrite rules."
+    "description": "Netlify _redirects file with URL redirect and rewrite rules.",
+    "knownFile": "redirects"
   },
   {
     "label": "sonar-project.properties",
@@ -3758,7 +3858,8 @@
     "categories": [
       "Config"
     ],
-    "enhanced": true
+    "enhanced": true,
+    "knownFile": "sonar"
   },
   {
     "label": "hatch.toml",
@@ -3768,7 +3869,8 @@
     "categories": [
       "Config"
     ],
-    "enhanced": true
+    "enhanced": true,
+    "knownFile": "hatch"
   },
   {
     "label": "appveyor.yml",
@@ -3778,7 +3880,8 @@
     "categories": [
       "Config"
     ],
-    "enhanced": true
+    "enhanced": true,
+    "knownFile": "appveyor"
   },
   {
     "label": ".rubocop.yml",
@@ -3836,7 +3939,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Google Cloud Build config: 4 build steps (npm install, test, docker build, push), E2_HIGHCPU_8 machine type."
+    "description": "Google Cloud Build config: 4 build steps (npm install, test, docker build, push), E2_HIGHCPU_8 machine type.",
+    "knownFile": "cloudbuild"
   },
   {
     "label": "app.yaml",
@@ -4033,7 +4137,7 @@
     ],
     "enhanced": true,
     "description": "HAProxy load balancer config: global settings, frontends, backends, listen blocks, and server pools with stats password masking.",
-    "knownFile": "haproxy-conf"
+    "knownFile": "haproxy-cfg"
   },
   {
     "label": "squid.conf",
@@ -4044,7 +4148,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Squid HTTP proxy config: ports, ACLs, access rules, cache directory, and DNS settings."
+    "description": "Squid HTTP proxy config: ports, ACLs, access rules, cache directory, and DNS settings.",
+    "knownFile": "squid-conf"
   },
   {
     "label": "moon.yml",
@@ -4153,7 +4258,8 @@
     "categories": [
       "Config"
     ],
-    "knownFile": "appfile"
+    "knownFile": "appfile",
+    "enhanced": true
   },
   {
     "label": ".ruby-version",
@@ -4198,7 +4304,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Rush monorepo configuration with project list."
+    "description": "Rush monorepo configuration with project list.",
+    "knownFile": "rush"
   },
   {
     "label": ".markdownlint.json",
@@ -4209,7 +4316,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Markdownlint rules configuration."
+    "description": "Markdownlint rules configuration.",
+    "knownFile": "markdownlint"
   },
   {
     "label": ".markdownlint.yml (Markdownlint YAML)",
@@ -4220,7 +4328,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Markdownlint YAML rules configuration with line length and element allow-lists."
+    "description": "Markdownlint YAML rules configuration with line length and element allow-lists.",
+    "knownFile": "markdownlint-yaml"
   },
   {
     "label": ".clang-format",
@@ -4267,7 +4376,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Git global configuration file."
+    "description": "Git global configuration file.",
+    "knownFile": "gitconfig"
   },
   {
     "label": "playwright.config.ts",
@@ -4278,7 +4388,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Playwright end-to-end test configuration."
+    "description": "Playwright end-to-end test configuration.",
+    "knownFile": "playwright-config"
   },
   {
     "label": "cypress.config.js",
@@ -4289,7 +4400,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Cypress end-to-end and component test configuration."
+    "description": "Cypress end-to-end and component test configuration.",
+    "knownFile": "cypress-config"
   },
   {
     "label": "vite.config.js",
@@ -4300,7 +4412,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Vite build configuration with React plugin, dev server port, and build target."
+    "description": "Vite build configuration with React plugin, dev server port, and build target.",
+    "knownFile": "vite-config"
   },
   {
     "label": "webpack.config.js",
@@ -4311,7 +4424,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Webpack bundler configuration with loaders, HtmlWebpackPlugin, and MiniCssExtractPlugin."
+    "description": "Webpack bundler configuration with loaders, HtmlWebpackPlugin, and MiniCssExtractPlugin.",
+    "knownFile": "webpack-config"
   },
   {
     "label": "rollup.config.js",
@@ -4322,7 +4436,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Rollup module bundler configuration with ESM and CJS outputs and TypeScript support."
+    "description": "Rollup module bundler configuration with ESM and CJS outputs and TypeScript support.",
+    "knownFile": "rollup-config"
   },
   {
     "label": "next.config.js",
@@ -4333,7 +4448,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Next.js configuration with App Router, image domains, i18n, and redirects."
+    "description": "Next.js configuration with App Router, image domains, i18n, and redirects.",
+    "knownFile": "next-config"
   },
   {
     "label": "Package.swift",
@@ -4344,7 +4460,8 @@
       "Code"
     ],
     "enhanced": true,
-    "description": "Swift Package Manager manifest with products, targets, and dependencies."
+    "description": "Swift Package Manager manifest with products, targets, and dependencies.",
+    "knownFile": "package-swift"
   },
   {
     "label": "mix.exs",
@@ -4367,7 +4484,8 @@
       "Code"
     ],
     "enhanced": true,
-    "description": "SBT build definition for a Scala 3 project with library dependencies."
+    "description": "SBT build definition for a Scala 3 project with library dependencies.",
+    "knownFile": "build-sbt"
   },
   {
     "name": ".scalafmt.conf",
@@ -4406,7 +4524,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "ReadTheDocs build configuration for documentation hosting."
+    "description": "ReadTheDocs build configuration for documentation hosting.",
+    "knownFile": "readthedocs"
   },
   {
     "label": "CITATION.cff",
@@ -4453,7 +4572,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "CodeRabbit AI code review configuration."
+    "description": "CodeRabbit AI code review configuration.",
+    "knownFile": "coderabbit"
   },
   {
     "label": "vcpkg.json",
@@ -4464,7 +4584,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "vcpkg C++ package manifest with dependencies, features, and overrides."
+    "description": "vcpkg C++ package manifest with dependencies, features, and overrides.",
+    "knownFile": "vcpkg"
   },
   {
     "label": "CMakePresets.json",
@@ -4475,7 +4596,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "CMake preset configuration with configure, build, test, and workflow presets."
+    "description": "CMake preset configuration with configure, build, test, and workflow presets.",
+    "knownFile": "cmake-presets"
   },
   {
     "label": "conanfile.txt",
@@ -4590,7 +4712,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Datadog agent config with tags, log collection, APM, and process agent settings."
+    "description": "Datadog agent config with tags, log collection, APM, and process agent settings.",
+    "knownFile": "datadog-config"
   },
   {
     "label": ".air.toml",
@@ -4601,7 +4724,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Air live-reload config for Go: build command, binary path, watch extensions (.go, .tpl, .html), exclude dirs, delay, and log settings."
+    "description": "Air live-reload config for Go: build command, binary path, watch extensions (.go, .tpl, .html), exclude dirs, delay, and log settings.",
+    "knownFile": "air-config"
   },
   {
     "label": ".spectral.yml",
@@ -4612,7 +4736,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Stoplight Spectral API linter config: extends spectral:oas and spectral:asyncapi, 8 custom rules (error/warn/off), 1 alias, 1 function."
+    "description": "Stoplight Spectral API linter config: extends spectral:oas and spectral:asyncapi, 8 custom rules (error/warn/off), 1 alias, 1 function.",
+    "knownFile": "spectral"
   },
   {
     "label": "Tiltfile",
@@ -4623,7 +4748,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Tilt Kubernetes dev-loop config: 2 Docker builds with live update, k8s YAML manifests, 3 k8s resources, 2 local tasks."
+    "description": "Tilt Kubernetes dev-loop config: 2 Docker builds with live update, k8s YAML manifests, 3 k8s resources, 2 local tasks.",
+    "knownFile": "tiltfile"
   },
   {
     "label": "meson.build",
@@ -4634,7 +4760,8 @@
       "Code"
     ],
     "enhanced": true,
-    "description": "Meson build definition: myapp 1.2.0 in C and C++, shared library, 2 executables, 4 dependencies, 3 subdirectories, 3 tests."
+    "description": "Meson build definition: myapp 1.2.0 in C and C++, shared library, 2 executables, 4 dependencies, 3 subdirectories, 3 tests.",
+    "knownFile": "meson-build"
   },
   {
     "label": ".goreleaser.yaml",
@@ -4669,7 +4796,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Buf Protobuf tool config v1: lint rules (MINIMAL), breaking detection (FILE), module and dependency settings."
+    "description": "Buf Protobuf tool config v1: lint rules (MINIMAL), breaking detection (FILE), module and dependency settings.",
+    "knownFile": "buf-config"
   },
   {
     "label": "heroku.yml",
@@ -4680,7 +4808,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Heroku deployment config: Docker builds for web and worker, release migration command, setup addons (PostgreSQL, Redis)."
+    "description": "Heroku deployment config: Docker builds for web and worker, release migration command, setup addons (PostgreSQL, Redis).",
+    "knownFile": "heroku"
   },
   {
     "label": "ionic.config.json",
@@ -4691,7 +4820,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Ionic framework project config: app name my-ionic-app, ID com.example.myionicapp, ionic-react type, Capacitor + Cordova integrations."
+    "description": "Ionic framework project config: app name my-ionic-app, ID com.example.myionicapp, ionic-react type, Capacitor + Cordova integrations.",
+    "knownFile": "ionic-config"
   },
   {
     "label": "metro.config.js",
@@ -4702,7 +4832,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Metro bundler config for React Native: SVG transformer, TypeScript source extensions, custom resolver, server on port 8081."
+    "description": "Metro bundler config for React Native: SVG transformer, TypeScript source extensions, custom resolver, server on port 8081.",
+    "knownFile": "metro-config"
   },
   {
     "label": "react-native.config.js",
@@ -4713,7 +4844,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "React Native CLI config: 3 native dependencies (vector-icons, camera, maps), iOS/Android platform dirs, font and image assets."
+    "description": "React Native CLI config: 3 native dependencies (vector-icons, camera, maps), iOS/Android platform dirs, font and image assets.",
+    "knownFile": "react-native-config"
   },
   {
     "label": "project.clj",
@@ -4724,7 +4856,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Leiningen project: my-clojure-app v0.3.1, Compojure/Ring web app, 7 dependencies including next.jdbc and PostgreSQL, lein-ring plugin, dev/test/uberjar profiles."
+    "description": "Leiningen project: my-clojure-app v0.3.1, Compojure/Ring web app, 7 dependencies including next.jdbc and PostgreSQL, lein-ring plugin, dev/test/uberjar profiles.",
+    "knownFile": "project-clj"
   },
   {
     "label": "deps.edn",
@@ -4735,7 +4868,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Clojure CLI deps.edn: reitit + ring web stack, next.jdbc with PostgreSQL, 4 aliases (dev nREPL, kaocha test runner, tools.build, clj-kondo lint)."
+    "description": "Clojure CLI deps.edn: reitit + ring web stack, next.jdbc with PostgreSQL, 4 aliases (dev nREPL, kaocha test runner, tools.build, clj-kondo lint).",
+    "knownFile": "deps-edn"
   },
   {
     "label": "shadow-cljs.edn",
@@ -4746,7 +4880,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Shadow-cljs config: Reagent + re-frame ClojureScript app, browser build target, dev HTTP server on port 3000, browser-test build."
+    "description": "Shadow-cljs config: Reagent + re-frame ClojureScript app, browser build target, dev HTTP server on port 3000, browser-test build.",
+    "knownFile": "shadow-cljs"
   },
   {
     "label": "sentry.properties",
@@ -4757,7 +4892,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Sentry SDK config for Android: DSN, production environment, native symbol upload enabled, performance monitoring at 20% sample rate."
+    "description": "Sentry SDK config for Android: DSN, production environment, native symbol upload enabled, performance monitoring at 20% sample rate.",
+    "knownFile": "sentry-props"
   },
   {
     "label": "otel-collector-config.yaml",
@@ -4768,7 +4904,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "OpenTelemetry Collector config: 4 receivers (otlp, prometheus, jaeger, zipkin), 3 processors (batch, memory_limiter, resourcedetection), 3 exporters, 3 service pipelines (traces, metrics, logs)."
+    "description": "OpenTelemetry Collector config: 4 receivers (otlp, prometheus, jaeger, zipkin), 3 processors (batch, memory_limiter, resourcedetection), 3 exporters, 3 service pipelines (traces, metrics, logs).",
+    "knownFile": "otel-collector"
   },
   {
     "label": "logback.xml",
@@ -4779,7 +4916,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Logback config: 3 appenders (CONSOLE, rolling FILE, ASYNC_FILE), root at INFO, DEBUG override for com.example.myapp, WARN for Spring and Hibernate."
+    "description": "Logback config: 3 appenders (CONSOLE, rolling FILE, ASYNC_FILE), root at INFO, DEBUG override for com.example.myapp, WARN for Spring and Hibernate.",
+    "knownFile": "logback"
   },
   {
     "label": "log4j2.xml",
@@ -4790,7 +4928,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Log4j2 config: Console and RollingFile appenders (async-wrapped), root at INFO, 5 named loggers including debug for com.example.myapp and Hibernate SQL."
+    "description": "Log4j2 config: Console and RollingFile appenders (async-wrapped), root at INFO, 5 named loggers including debug for com.example.myapp and Hibernate SQL.",
+    "knownFile": "log4j2"
   },
   {
     "label": "global.json",
@@ -4813,7 +4952,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Prisma schema: PostgreSQL datasource, Prisma Client generator with full-text search preview, User and Post models."
+    "description": "Prisma schema: PostgreSQL datasource, Prisma Client generator with full-text search preview, User and Post models.",
+    "knownFile": "prisma-schema"
   },
   {
     "label": "nuget.config",
@@ -4836,7 +4976,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "OpenSSF Scorecard config: policy and checks configuration for supply-chain security scoring."
+    "description": "OpenSSF Scorecard config: policy and checks configuration for supply-chain security scoring.",
+    "knownFile": "scorecard"
   },
   {
     "label": "socket.yml",
@@ -4847,7 +4988,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Socket Security config: version 2, issue type policies and alert settings for npm dependency security."
+    "description": "Socket Security config: version 2, issue type policies and alert settings for npm dependency security.",
+    "knownFile": "socket-security"
   },
   {
     "label": "trivy.yaml",
@@ -4870,7 +5012,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Snyk policy file: patches and ignores for known npm vulnerabilities with expiry dates."
+    "description": "Snyk policy file: patches and ignores for known npm vulnerabilities with expiry dates.",
+    "knownFile": "snyk-config"
   },
   {
     "label": "phpunit.xml",
@@ -4881,7 +5024,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "PHPUnit config: test suite definitions, bootstrap, coverage source paths, strict mode settings."
+    "description": "PHPUnit config: test suite definitions, bootstrap, coverage source paths, strict mode settings.",
+    "knownFile": "phpunit-config"
   },
   {
     "label": "phpstan.neon",
@@ -4892,7 +5036,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "PHPStan static analysis config: level 8, paths, strict-rules extension, excludes, and custom error ignores."
+    "description": "PHPStan static analysis config: level 8, paths, strict-rules extension, excludes, and custom error ignores.",
+    "knownFile": "phpstan"
   },
   {
     "label": ".php-cs-fixer.php",
@@ -4903,7 +5048,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "PHP CS Fixer config: PSR-12 rules, PHP 8.1 target, custom fixers for strict types and array syntax."
+    "description": "PHP CS Fixer config: PSR-12 rules, PHP 8.1 target, custom fixers for strict types and array syntax.",
+    "knownFile": "php-cs-fixer"
   },
   {
     "label": "php.ini",
@@ -4914,7 +5060,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "PHP runtime config: memory limit, execution timeout, upload limits, error reporting, session handling, and OPcache."
+    "description": "PHP runtime config: memory limit, execution timeout, upload limits, error reporting, session handling, and OPcache.",
+    "knownFile": "php-ini"
   },
   {
     "label": "psalm.xml",
@@ -4925,7 +5072,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Psalm static analysis config: errorLevel 3, PHP 8.1, project roots, stubs, plugins, forbidden functions, and issue handlers."
+    "description": "Psalm static analysis config: errorLevel 3, PHP 8.1, project roots, stubs, plugins, forbidden functions, and issue handlers.",
+    "knownFile": "psalm-config"
   },
   {
     "label": "phpunit.xml.dist (PHPUnit Config)",
@@ -4936,7 +5084,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "PHPUnit config: unit + integration test suites, coverage source paths, PHP ini settings, and extensions."
+    "description": "PHPUnit config: unit + integration test suites, coverage source paths, PHP ini settings, and extensions.",
+    "knownFile": "phpunit-config"
   },
   {
     "label": "rector.php (Rector Config)",
@@ -4947,7 +5096,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Rector automated PHP upgrade config: PHP 8.1 target, dead code removal, 5 rules with skip list."
+    "description": "Rector automated PHP upgrade config: PHP 8.1 target, dead code removal, 5 rules with skip list.",
+    "knownFile": "rector-config"
   },
   {
     "label": "behat.yml",
@@ -4958,7 +5108,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Behat BDD config: default suite with Mink contexts, Selenium2 driver, base URL, feature paths."
+    "description": "Behat BDD config: default suite with Mink contexts, Selenium2 driver, base URL, feature paths.",
+    "knownFile": "behat"
   },
   {
     "label": "google-services.json",
@@ -4969,7 +5120,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Firebase/Google Services for Android: project myapp-production, 1 app client (com.example.myapp), OAuth client, API key, App Invites service."
+    "description": "Firebase/Google Services for Android: project myapp-production, 1 app client (com.example.myapp), OAuth client, API key, App Invites service.",
+    "knownFile": "google-services"
   },
   {
     "label": "catalog-info.yaml",
@@ -4980,7 +5132,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Backstage catalog entity: Component order-service, production lifecycle, owned by team-commerce, dependsOn 2 resources, providesApis order-api."
+    "description": "Backstage catalog entity: Component order-service, production lifecycle, owned by team-commerce, dependsOn 2 resources, providesApis order-api.",
+    "knownFile": "catalog-info"
   },
   {
     "label": "Cartfile",
@@ -4991,7 +5144,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Carthage dependency file listing GitHub, git, and binary dependencies with version constraints for iOS/macOS."
+    "description": "Carthage dependency file listing GitHub, git, and binary dependencies with version constraints for iOS/macOS.",
+    "knownFile": "cartfile"
   },
   {
     "label": "Example.podspec",
@@ -5002,7 +5156,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "CocoaPods pod specification: MyAwesomePod v1.4.2, iOS 15 target, Alamofire/RxSwift/SnapKit dependencies."
+    "description": "CocoaPods pod specification: MyAwesomePod v1.4.2, iOS 15 target, Alamofire/RxSwift/SnapKit dependencies.",
+    "knownFile": "podspec"
   },
   {
     "label": "AndroidManifest.xml",
@@ -5013,7 +5168,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Android app manifest for com.example.myapp v3.1.0: 9 permissions including camera and location, 4 activities, 2 services."
+    "description": "Android app manifest for com.example.myapp v3.1.0: 9 permissions including camera and location, 4 activities, 2 services.",
+    "knownFile": "android-manifest"
   },
   {
     "label": "Release.xcconfig",
@@ -5024,7 +5180,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Xcode release build configuration: Swift 5.9, iOS 16 deployment target, manual code signing, optimizer flags."
+    "description": "Xcode release build configuration: Swift 5.9, iOS 16 deployment target, manual code signing, optimizer flags.",
+    "knownFile": "xcconfig"
   },
   {
     "label": "conf.py",
@@ -5035,7 +5192,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Sphinx documentation config: project metadata, extensions, and theme."
+    "description": "Sphinx documentation config: project metadata, extensions, and theme.",
+    "knownFile": "sphinx-conf"
   },
   {
     "label": "atlantis.yaml",
@@ -5070,7 +5228,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Checkov IaC security scanner: skip checks and directory config."
+    "description": "Checkov IaC security scanner: skip checks and directory config.",
+    "knownFile": "checkov"
   },
   {
     "label": ".terraform-docs.yml",
@@ -5081,7 +5240,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "terraform-docs: output format, sorting, and content settings."
+    "description": "terraform-docs: output format, sorting, and content settings.",
+    "knownFile": "terraform-docs"
   },
   {
     "label": "infracost.yml",
@@ -5092,7 +5252,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Infracost cloud cost estimation: projects and metadata settings."
+    "description": "Infracost cloud cost estimation: projects and metadata settings.",
+    "knownFile": "infracost"
   },
   {
     "label": "opencost.yaml",
@@ -5151,7 +5312,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Swift Package Manager resolved dependencies."
+    "description": "Swift Package Manager resolved dependencies.",
+    "knownFile": "package-resolved"
   },
   {
     "label": "app.csproj",
@@ -5198,7 +5360,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "NuGet package specification file."
+    "description": "NuGet package specification file.",
+    "knownFile": "nuspec"
   },
   {
     "label": "stack.yaml",
@@ -5209,7 +5372,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Haskell Stack project configuration."
+    "description": "Haskell Stack project configuration.",
+    "knownFile": "stack-yaml"
   },
   {
     "label": "example.cabal",
@@ -5220,7 +5384,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Haskell Cabal package description."
+    "description": "Haskell Cabal package description.",
+    "knownFile": "cabal"
   },
   {
     "label": "mypackage.opam",
@@ -5259,7 +5424,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Erlang rebar3 build config."
+    "description": "Erlang rebar3 build config.",
+    "knownFile": "rebar-config"
   },
   {
     "label": "sys.config",
@@ -5296,7 +5462,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Drizzle ORM configuration."
+    "description": "Drizzle ORM configuration.",
+    "knownFile": "drizzle-config"
   },
   {
     "label": "knexfile.js",
@@ -5307,7 +5474,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Knex.js database query builder configuration."
+    "description": "Knex.js database query builder configuration.",
+    "knownFile": "knexfile"
   },
   {
     "label": "alembic.ini",
@@ -5318,7 +5486,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Alembic database migration configuration."
+    "description": "Alembic database migration configuration.",
+    "knownFile": "alembic"
   },
   {
     "label": "flyway.conf",
@@ -5329,7 +5498,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Flyway database migration configuration."
+    "description": "Flyway database migration configuration.",
+    "knownFile": "flyway-conf"
   },
   {
     "label": "dbt_project.yml",
@@ -5380,7 +5550,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Docusaurus documentation site config: site title My Awesome Docs, URL, navbar with Docs/Blog/API/Changelog items, i18n locales, plugins."
+    "description": "Docusaurus documentation site config: site title My Awesome Docs, URL, navbar with Docs/Blog/API/Changelog items, i18n locales, plugins.",
+    "knownFile": "docusaurus-config"
   },
   {
     "label": "vitepress.config.ts",
@@ -5391,7 +5562,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "VitePress documentation site config: site title, nav items, sidebar sections, social links, Algolia search."
+    "description": "VitePress documentation site config: site title, nav items, sidebar sections, social links, Algolia search.",
+    "knownFile": "vitepress-config"
   },
   {
     "label": "Doxyfile",
@@ -5414,7 +5586,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Gradle wrapper properties: version and download URL."
+    "description": "Gradle wrapper properties: version and download URL.",
+    "knownFile": "gradle-wrapper"
   },
   {
     "label": "gradle.properties",
@@ -5425,7 +5598,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Gradle project properties: JVM heap config, daemon, parallel builds, configuration cache, Android settings, and project properties."
+    "description": "Gradle project properties: JVM heap config, daemon, parallel builds, configuration cache, Android settings, and project properties.",
+    "knownFile": "gradle-props"
   },
   {
     "label": ".cursorrules",
@@ -5436,7 +5610,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Cursor AI coding rules: TypeScript strict mode, React patterns, and code style guidelines."
+    "description": "Cursor AI coding rules: TypeScript strict mode, React patterns, and code style guidelines.",
+    "knownFile": "cursor-rules"
   },
   {
     "label": "CLAUDE.md",
@@ -5447,7 +5622,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Claude Code project instructions: architecture overview, build commands, and code conventions."
+    "description": "Claude Code project instructions: architecture overview, build commands, and code conventions.",
+    "knownFile": "claude-md"
   },
   {
     "label": "copilot-instructions.md",
@@ -5458,7 +5634,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "GitHub Copilot custom instructions: TypeScript strict mode, React hooks, zod validation, and testing."
+    "description": "GitHub Copilot custom instructions: TypeScript strict mode, React hooks, zod validation, and testing.",
+    "knownFile": "copilot-instructions"
   },
   {
     "label": "aider.conf.yml",
@@ -5469,7 +5646,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Aider AI config: claude-3-5-sonnet model, diff edit format, auto-commits, repo map, prompt caching."
+    "description": "Aider AI config: claude-3-5-sonnet model, diff edit format, auto-commits, repo map, prompt caching.",
+    "knownFile": "aider-conf"
   },
   {
     "label": "settings.gradle",
@@ -5492,7 +5670,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Spring Boot: inventory-service on port 8080, PostgreSQL, Redis, Actuator, security."
+    "description": "Spring Boot: inventory-service on port 8080, PostgreSQL, Redis, Actuator, security.",
+    "knownFile": "spring-app"
   },
   {
     "label": "application.yml",
@@ -5503,7 +5682,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Spring Boot YAML: order-service, port 8080, PostgreSQL, Redis, OAuth2, Prometheus."
+    "description": "Spring Boot YAML: order-service, port 8080, PostgreSQL, Redis, OAuth2, Prometheus.",
+    "knownFile": "spring-app-yml"
   },
   {
     "label": "astro.config.mjs",
@@ -5514,7 +5694,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Astro framework config: integrations, output mode, and build settings."
+    "description": "Astro framework config: integrations, output mode, and build settings.",
+    "knownFile": "astro-config"
   },
   {
     "label": "svelte.config.js",
@@ -5525,7 +5706,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "SvelteKit project config: adapter, paths, and prerender settings."
+    "description": "SvelteKit project config: adapter, paths, and prerender settings.",
+    "knownFile": "svelte-config"
   },
   {
     "label": "nuxt.config.ts",
@@ -5536,7 +5718,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Nuxt 3 config: modules, runtimeConfig, and build settings."
+    "description": "Nuxt 3 config: modules, runtimeConfig, and build settings.",
+    "knownFile": "nuxt-config"
   },
   {
     "label": "remix.config.js",
@@ -5547,7 +5730,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Remix framework config: app directory, server build, and future flags."
+    "description": "Remix framework config: app directory, server build, and future flags.",
+    "knownFile": "remix-config"
   },
   {
     "label": "grafana.ini",
@@ -5570,7 +5754,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Redis server config: bind, port, memory, persistence, and security."
+    "description": "Redis server config: bind, port, memory, persistence, and security.",
+    "knownFile": "redis-conf"
   },
   {
     "label": "kong.yaml",
@@ -5581,7 +5766,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Kong API gateway declarative config: services, routes, and plugins."
+    "description": "Kong API gateway declarative config: services, routes, and plugins.",
+    "knownFile": "kong-config"
   },
   {
     "label": "traefik.yml",
@@ -5604,7 +5790,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Apache APISIX API gateway config: deployment mode, plugins, and etcd settings."
+    "description": "Apache APISIX API gateway config: deployment mode, plugins, and etcd settings.",
+    "knownFile": "apisix-config"
   },
   {
     "label": "envoy.yaml",
@@ -5615,7 +5802,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Envoy proxy static config: node identity, listeners, routes, and clusters."
+    "description": "Envoy proxy static config: node identity, listeners, routes, and clusters.",
+    "knownFile": "envoy-config"
   },
   {
     "label": "tsup.config.ts",
@@ -5626,7 +5814,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "tsup bundler config: entry points, format, and DTS generation."
+    "description": "tsup bundler config: entry points, format, and DTS generation.",
+    "knownFile": "tsup-config"
   },
   {
     "label": "rspack.config.js",
@@ -5637,7 +5826,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Rspack (fast webpack-compatible) bundler config."
+    "description": "Rspack (fast webpack-compatible) bundler config.",
+    "knownFile": "rspack-config"
   },
   {
     "label": ".parcelrc",
@@ -5648,7 +5838,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Parcel bundler config: transformers, reporters, and namers."
+    "description": "Parcel bundler config: transformers, reporters, and namers.",
+    "knownFile": "parcelrc"
   },
   {
     "label": "bunfig.toml",
@@ -5659,7 +5850,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Bun JavaScript runtime config: test, install, and run settings."
+    "description": "Bun JavaScript runtime config: test, install, and run settings.",
+    "knownFile": "bunfig-toml"
   },
   {
     "label": "Project.toml",
@@ -5670,7 +5862,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Julia package manifest: name, UUID, version, dependencies."
+    "description": "Julia package manifest: name, UUID, version, dependencies.",
+    "knownFile": "julia-project"
   },
   {
     "label": "Manifest.toml",
@@ -5681,7 +5874,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Julia package lockfile: resolved dependency tree with versions and content hashes."
+    "description": "Julia package lockfile: resolved dependency tree with versions and content hashes.",
+    "knownFile": "julia-manifest"
   },
   {
     "label": "shard.yml",
@@ -5692,7 +5886,8 @@
       "Package"
     ],
     "enhanced": true,
-    "description": "Crystal language shard.yml package manifest — dependencies, version, and build targets."
+    "description": "Crystal language shard.yml package manifest — dependencies, version, and build targets.",
+    "knownFile": "shard-yml"
   },
   {
     "label": "go.work",
@@ -5703,7 +5898,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Go workspace file defining a multi-module workspace."
+    "description": "Go workspace file defining a multi-module workspace.",
+    "knownFile": "go-work"
   },
   {
     "label": "build.zig.zon",
@@ -5714,7 +5910,8 @@
       "Package"
     ],
     "enhanced": true,
-    "description": "Zig build.zig.zon package manifest — name, version, and dependencies in ZON format."
+    "description": "Zig build.zig.zon package manifest — name, version, and dependencies in ZON format.",
+    "knownFile": "build-zig-zon"
   },
   {
     "file": "wdio.conf.js",
@@ -5917,7 +6114,8 @@
       "Config"
     ],
     "description": "MongoDB server configuration: storage, networking, security, and logging.",
-    "enhanced": true
+    "enhanced": true,
+    "knownFile": "mongod-conf"
   },
   {
     "label": "my.cnf (MySQL)",
@@ -5928,7 +6126,8 @@
       "Config"
     ],
     "description": "MySQL server configuration: port, buffer sizes, networking, and character sets.",
-    "enhanced": true
+    "enhanced": true,
+    "knownFile": "my-cnf"
   },
   {
     "label": "packages.config (NuGet)",
@@ -5951,7 +6150,8 @@
       "Config"
     ],
     "description": "PostgreSQL server configuration: connections, memory, logging, and performance tuning.",
-    "enhanced": true
+    "enhanced": true,
+    "knownFile": "postgresql-conf"
   },
   {
     "label": "pgbouncer.ini",
@@ -5962,7 +6162,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "PgBouncer connection pooler config: transaction pool mode, 1000 max client connections, 2 databases, auth settings."
+    "description": "PgBouncer connection pooler config: transaction pool mode, 1000 max client connections, 2 databases, auth settings.",
+    "knownFile": "pgbouncer-ini"
   },
   {
     "name": "pgbackrest.conf",
@@ -6289,7 +6490,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Semgrep static analysis config: custom rules and rulesets for security and code quality scanning."
+    "description": "Semgrep static analysis config: custom rules and rulesets for security and code quality scanning.",
+    "knownFile": "semgrep-config"
   },
   {
     "label": ".codeclimate.yml",
@@ -6312,7 +6514,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Gitleaks secret scanning config: rules for detecting secrets in git repositories."
+    "description": "Gitleaks secret scanning config: rules for detecting secrets in git repositories.",
+    "knownFile": "gitleaks-config"
   },
   {
     "name": ".trufflehog.yaml",
@@ -6323,7 +6526,7 @@
     "categories": [
       "Security"
     ],
-    "knownFile": true,
+    "knownFile": "trufflehog-config",
     "enhanced": true,
     "description": "TruffleHog secrets scanning config: detectors, include/exclude paths, and scan settings."
   },
@@ -6336,7 +6539,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "OSV-Scanner config: vulnerability scanning config for open source dependencies."
+    "description": "OSV-Scanner config: vulnerability scanning config for open source dependencies.",
+    "knownFile": "osv-scanner"
   },
   {
     "label": "cloudformation.yaml (CloudFormation)",
@@ -6491,7 +6695,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Kubernetes RBAC Role manifest: rules for resource access in a namespace."
+    "description": "Kubernetes RBAC Role manifest: rules for resource access in a namespace.",
+    "knownFile": "k8s-rbac"
   },
   {
     "label": ".rspec",
@@ -7127,7 +7332,8 @@
       "DevOps",
       "devops"
     ],
-    "enhanced": true
+    "enhanced": true,
+    "knownFile": "woodpecker-ci"
   },
   {
     "label": "act config (.actrc)",
@@ -7151,7 +7357,7 @@
     ],
     "enhanced": true,
     "description": "OPA Rego authorization policy with allow/deny rules and helper functions.",
-    "knownFile": "opa-policy"
+    "knownFile": "rego-policy"
   },
   {
     "label": "falco_rules.yaml",
@@ -7210,7 +7416,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "ClickHouse server config: listen host/port, memory limits, logger, and access management."
+    "description": "ClickHouse server config: listen host/port, memory limits, logger, and access management.",
+    "knownFile": "clickhouse-config"
   },
   {
     "label": "cassandra.yaml",
@@ -7767,7 +7974,7 @@
     ],
     "enhanced": true,
     "description": "Authentik identity provider environment configuration",
-    "knownFile": true
+    "knownFile": "authentik-config"
   },
   {
     "label": "wg0.conf",
@@ -7778,7 +7985,8 @@
       "Config",
       "Network"
     ],
-    "knownFile": "wireguard-conf"
+    "knownFile": "wireguard-conf",
+    "enhanced": true
   },
   {
     "label": ".bashrc",
@@ -7789,7 +7997,8 @@
       "Config",
       "Shell"
     ],
-    "knownFile": "shell-rc"
+    "knownFile": "shell-rc",
+    "enhanced": true
   },
   {
     "label": "flake.nix",
@@ -7800,7 +8009,8 @@
       "Config",
       "Nix"
     ],
-    "knownFile": "nix-flake"
+    "knownFile": "nix-flake",
+    "enhanced": true
   },
   {
     "label": "hugo.toml",
@@ -7811,7 +8021,8 @@
       "Config",
       "Hugo"
     ],
-    "knownFile": "hugo-config"
+    "knownFile": "hugo-config",
+    "enhanced": true
   },
   {
     "label": "DESCRIPTION",
@@ -7822,7 +8033,8 @@
       "Config",
       "R"
     ],
-    "knownFile": "r-description"
+    "knownFile": "r-description",
+    "enhanced": true
   },
   {
     "label": ".Rprofile",
@@ -7833,7 +8045,8 @@
       "Config",
       "R"
     ],
-    "knownFile": "r-profile"
+    "knownFile": "r-profile",
+    "enhanced": true
   },
   {
     "label": "esbuild.config.mjs",
@@ -7845,7 +8058,8 @@
       "JavaScript",
       "Build"
     ],
-    "knownFile": "esbuild-config"
+    "knownFile": "esbuild-config",
+    "enhanced": true
   },
   {
     "label": "client.ovpn",
@@ -7856,7 +8070,8 @@
       "Config",
       "Network"
     ],
-    "knownFile": "openvpn-config"
+    "knownFile": "openvpn-config",
+    "enhanced": true
   },
   {
     "label": "settings.xml (Maven)",
@@ -7867,7 +8082,8 @@
       "Config",
       "Java"
     ],
-    "knownFile": "maven-settings"
+    "knownFile": "maven-settings",
+    "enhanced": true
   },
   {
     "label": "pg_hba.conf",
@@ -7878,7 +8094,8 @@
       "Config",
       "Database"
     ],
-    "knownFile": "pg-hba"
+    "knownFile": "pg-hba",
+    "enhanced": true
   },
   {
     "file": "ansible.cfg",
@@ -7902,7 +8119,8 @@
       "Config",
       "Ansible"
     ],
-    "knownFile": "ansible-hosts"
+    "knownFile": "ansible-hosts",
+    "enhanced": true
   },
   {
     "file": "supervisord.conf",
@@ -7969,7 +8187,8 @@
       "Config",
       "System"
     ],
-    "knownFile": "systemd-unit"
+    "knownFile": "systemd-unit",
+    "enhanced": true
   },
   {
     "file": "crontab",
@@ -7979,7 +8198,8 @@
       "Config",
       "System"
     ],
-    "knownFile": "crontab"
+    "knownFile": "crontab",
+    "enhanced": true
   },
   {
     "file": "cert-manager.yaml",
@@ -8008,7 +8228,8 @@
       "Config",
       "System"
     ],
-    "knownFile": "grub-conf"
+    "knownFile": "grub-conf",
+    "enhanced": true
   },
   {
     "name": "nftables.conf",
@@ -8019,7 +8240,8 @@
       "Config",
       "Network"
     ],
-    "knownFile": "nftables-rules"
+    "knownFile": "nftables-rules",
+    "enhanced": true
   },
   {
     "file": "ufw.conf",
@@ -8051,7 +8273,8 @@
       "Config",
       "Security"
     ],
-    "knownFile": "fail2ban-conf"
+    "knownFile": "fail2ban-conf",
+    "enhanced": true
   },
   {
     "file": "smb.conf",
@@ -8061,7 +8284,8 @@
       "Config",
       "Network"
     ],
-    "knownFile": "smb-conf"
+    "knownFile": "smb-conf",
+    "enhanced": true
   },
   {
     "file": "Corefile",
@@ -8071,7 +8295,8 @@
       "Config",
       "Kubernetes"
     ],
-    "knownFile": "corefile"
+    "knownFile": "corefile",
+    "enhanced": true
   },
   {
     "file": "containerd.toml",
@@ -8081,7 +8306,8 @@
       "Config",
       "Container"
     ],
-    "knownFile": "containerd-config"
+    "knownFile": "containerd-config",
+    "enhanced": true
   },
   {
     "file": "main.cf",
@@ -8091,7 +8317,8 @@
       "Config",
       "Mail"
     ],
-    "knownFile": "postfix-main"
+    "knownFile": "postfix-main",
+    "enhanced": true
   },
   {
     "file": "chrony.conf",
@@ -8101,7 +8328,8 @@
       "Config",
       "System"
     ],
-    "knownFile": "chrony-conf"
+    "knownFile": "chrony-conf",
+    "enhanced": true
   },
   {
     "file": "sudoers",
@@ -8111,7 +8339,8 @@
       "Config",
       "Security"
     ],
-    "knownFile": "sudoers"
+    "knownFile": "sudoers",
+    "enhanced": true
   },
   {
     "file": "exports",
@@ -8121,7 +8350,8 @@
       "Config",
       "Network"
     ],
-    "knownFile": "nfs-exports"
+    "knownFile": "nfs-exports",
+    "enhanced": true
   },
   {
     "file": "lighttpd.conf",
@@ -8228,7 +8458,8 @@
       "Package",
       "Perl"
     ],
-    "knownFile": "cpanfile"
+    "knownFile": "cpanfile",
+    "enhanced": true
   },
   {
     "file": "openssl.cnf",
@@ -8238,7 +8469,8 @@
       "Config",
       "Security"
     ],
-    "knownFile": "openssl-conf"
+    "knownFile": "openssl-conf",
+    "enhanced": true
   },
   {
     "file": "krb5.conf",
@@ -8248,7 +8480,8 @@
       "Config",
       "Security"
     ],
-    "knownFile": "krb5-conf"
+    "knownFile": "krb5-conf",
+    "enhanced": true
   },
   {
     "file": "gpg.conf",
@@ -8258,7 +8491,8 @@
       "Config",
       "Security"
     ],
-    "knownFile": "gpg-conf"
+    "knownFile": "gpg-conf",
+    "enhanced": true
   },
   {
     "file": "netdata.conf",
@@ -8271,7 +8505,7 @@
     ],
     "mime": "text/plain",
     "enhanced": true,
-    "knownFile": true,
+    "knownFile": "netdata-config",
     "description": "Netdata real-time monitoring agent configuration"
   },
   {
@@ -8438,7 +8672,8 @@
       "Terminal"
     ],
     "mime": "text/plain",
-    "knownFile": "tmux-conf"
+    "knownFile": "tmux-conf",
+    "enhanced": true
   },
   {
     "file": "config.nu",
@@ -8462,7 +8697,8 @@
       "Terminal"
     ],
     "mime": "text/plain",
-    "knownFile": "screenrc"
+    "knownFile": "screenrc",
+    "enhanced": true
   },
   {
     "file": ".muttrc",
@@ -8498,7 +8734,8 @@
       "Config"
     ],
     "mime": "text/plain",
-    "knownFile": "pulseaudio-conf"
+    "knownFile": "pulseaudio-conf",
+    "enhanced": true
   },
   {
     "file": "pipewire.conf",
@@ -8508,7 +8745,8 @@
       "Config"
     ],
     "mime": "text/plain",
-    "knownFile": "pipewire-conf"
+    "knownFile": "pipewire-conf",
+    "enhanced": true
   },
   {
     "file": "config.rasi",
@@ -8841,7 +9079,7 @@
     "mime": "text/plain",
     "enhanced": true,
     "description": "systemd-boot boot entry for Arch Linux: kernel path, microcode and initramfs images, and kernel command-line options with UUID root and quiet boot.",
-    "knownFile": "loader-conf"
+    "knownFile": "modprobe-conf"
   },
   {
     "label": "cmus.rc",
@@ -9712,7 +9950,7 @@
     ],
     "enhanced": true,
     "description": "Vaultwarden self-hosted Bitwarden environment configuration",
-    "knownFile": "vaultwarden-config"
+    "knownFile": "vaultwarden-env"
   },
   {
     "file": "woodpecker.yml",
@@ -9752,7 +9990,7 @@
     ],
     "enhanced": true,
     "description": "Headscale self-hosted Tailscale VPN control server configuration",
-    "knownFile": true
+    "knownFile": "headscale-config"
   },
   {
     "file": "ntfy-server.yml",
@@ -10192,7 +10430,7 @@
     ],
     "enhanced": true,
     "description": "Invidious self-hosted YouTube frontend configuration",
-    "knownFile": true
+    "knownFile": "invidious-config"
   },
   {
     "file": "sonar.properties",
@@ -10205,7 +10443,7 @@
     ],
     "enhanced": true,
     "description": "SonarQube code quality server configuration",
-    "knownFile": true
+    "knownFile": "sonarqube-config"
   },
   {
     "file": "concourse.env",
@@ -10218,7 +10456,7 @@
     ],
     "enhanced": true,
     "description": "Concourse CI server environment configuration",
-    "knownFile": true
+    "knownFile": "concourse-config"
   },
   {
     "file": "invoiceninja.env",
@@ -10245,7 +10483,7 @@
     ],
     "enhanced": true,
     "description": "Matrix Conduit self-hosted Matrix server configuration",
-    "knownFile": true
+    "knownFile": "conduit-config"
   },
   {
     "file": "zitadel.yaml",
@@ -10258,7 +10496,7 @@
     ],
     "enhanced": true,
     "description": "ZITADEL identity provider configuration",
-    "knownFile": true
+    "knownFile": "zitadel-config"
   },
   {
     "file": "dendrite.yaml",
@@ -10272,7 +10510,7 @@
     ],
     "enhanced": true,
     "description": "Matrix Dendrite server configuration",
-    "knownFile": true
+    "knownFile": "dendrite-config"
   },
   {
     "file": "watchtower.env",
@@ -10285,7 +10523,7 @@
     ],
     "enhanced": true,
     "description": "Watchtower automatic Docker container updater configuration",
-    "knownFile": true
+    "knownFile": "watchtower-config"
   },
   {
     "file": "diun.yaml",
@@ -10298,7 +10536,7 @@
     ],
     "enhanced": true,
     "description": "Diun Docker image update notifier configuration with watch schedule, Docker provider, Slack and mail notifications.",
-    "knownFile": true
+    "knownFile": "diun-config"
   },
   {
     "file": "changedetection.env",
@@ -10312,7 +10550,7 @@
     ],
     "enhanced": true,
     "description": "changedetection.io web page change monitoring configuration",
-    "knownFile": true
+    "knownFile": "changedetection-config"
   },
   {
     "file": "semaphore-config.json",
@@ -10325,7 +10563,7 @@
     ],
     "enhanced": true,
     "description": "Ansible Semaphore task runner configuration",
-    "knownFile": true
+    "knownFile": "semaphore-config"
   },
   {
     "file": "actual-config.json",
@@ -10339,7 +10577,7 @@
     ],
     "enhanced": true,
     "description": "Actual Budget personal finance server configuration",
-    "knownFile": true
+    "knownFile": "actual-budget-config"
   },
   {
     "file": "wallos.env",
@@ -10352,7 +10590,7 @@
     ],
     "enhanced": true,
     "description": "Wallos subscription tracker environment configuration",
-    "knownFile": true
+    "knownFile": "wallos-config"
   },
   {
     "file": "grist.env",
@@ -10366,7 +10604,7 @@
     ],
     "enhanced": true,
     "description": "Grist self-hosted spreadsheet database environment configuration",
-    "knownFile": true
+    "knownFile": "grist-config"
   },
   {
     "file": "open-webui.env",
@@ -10380,7 +10618,7 @@
     ],
     "enhanced": true,
     "description": "Open WebUI self-hosted AI chat interface environment configuration",
-    "knownFile": true
+    "knownFile": "open-webui-config"
   },
   {
     "file": "maybe.env",
@@ -10393,7 +10631,7 @@
     ],
     "enhanced": true,
     "description": "Maybe Finance self-hosted personal finance environment configuration",
-    "knownFile": true
+    "knownFile": "maybe-config"
   },
   {
     "file": "pocket-id.env",
@@ -10407,7 +10645,7 @@
     ],
     "enhanced": true,
     "description": "Pocket ID OIDC identity provider configuration",
-    "knownFile": true
+    "knownFile": "pocket-id-config"
   },
   {
     "file": "nzbget.conf",
@@ -10421,7 +10659,7 @@
     ],
     "enhanced": true,
     "description": "NZBGet Usenet downloader configuration",
-    "knownFile": true
+    "knownFile": "nzbget-config"
   },
   {
     "file": "sabnzbd.ini",
@@ -10435,7 +10673,7 @@
     ],
     "enhanced": true,
     "description": "SABnzbd Usenet downloader configuration",
-    "knownFile": true
+    "knownFile": "sabnzbd-config"
   },
   {
     "file": "joplin.env",
@@ -10477,7 +10715,7 @@
     ],
     "enhanced": true,
     "description": "Dozzle Docker log viewer configuration",
-    "knownFile": true
+    "knownFile": "dozzle-config"
   },
   {
     "file": "forgejo.ini",
@@ -10491,7 +10729,7 @@
     ],
     "enhanced": true,
     "description": "Forgejo self-hosted Git service configuration",
-    "knownFile": true
+    "knownFile": "forgejo-config"
   },
   {
     "file": "glances.conf",
@@ -10505,7 +10743,7 @@
     ],
     "enhanced": true,
     "description": "Glances cross-platform system monitoring tool configuration",
-    "knownFile": true
+    "knownFile": "glances-config"
   },
   {
     "file": "homarr.yaml",
@@ -10519,7 +10757,7 @@
     ],
     "enhanced": true,
     "description": "Homarr self-hosted application dashboard configuration",
-    "knownFile": true
+    "knownFile": "homarr-config"
   },
   {
     "file": "kavita-appsettings.json",
@@ -10533,7 +10771,7 @@
     ],
     "enhanced": true,
     "description": "Kavita self-hosted comic and book reader server configuration",
-    "knownFile": true
+    "knownFile": "kavita-config"
   },
   {
     "file": "tandoor.env",
@@ -10547,7 +10785,7 @@
     ],
     "enhanced": true,
     "description": "Tandoor self-hosted recipe manager configuration",
-    "knownFile": true
+    "knownFile": "tandoor-config"
   },
   {
     "file": "audiobookshelf.env",
@@ -10561,7 +10799,7 @@
     ],
     "enhanced": true,
     "description": "Audiobookshelf self-hosted audiobook and podcast server configuration",
-    "knownFile": true
+    "knownFile": "audiobookshelf-config"
   },
   {
     "file": "dashy.yml",
@@ -10575,7 +10813,7 @@
     ],
     "enhanced": true,
     "description": "Dashy self-hosted personal dashboard configuration",
-    "knownFile": true
+    "knownFile": "dashy-config"
   },
   {
     "file": "jellyseerr-settings.json",
@@ -10589,7 +10827,7 @@
     ],
     "enhanced": true,
     "description": "Jellyseerr media request manager configuration",
-    "knownFile": true
+    "knownFile": "jellyseerr-config"
   },
   {
     "file": "bazarr.yaml",
@@ -10603,7 +10841,7 @@
     ],
     "enhanced": true,
     "description": "Bazarr automatic subtitle downloader for Sonarr and Radarr configuration",
-    "knownFile": true
+    "knownFile": "bazarr-config"
   },
   {
     "file": "scrutiny.yaml",
@@ -10617,7 +10855,7 @@
     ],
     "enhanced": true,
     "description": "Scrutiny hard drive health monitoring dashboard configuration",
-    "knownFile": true
+    "knownFile": "scrutiny-config"
   },
   {
     "file": "overseerr-settings.json",
@@ -10631,7 +10869,7 @@
     ],
     "enhanced": true,
     "description": "Overseerr media request manager configuration (Plex-based)",
-    "knownFile": true
+    "knownFile": "overseerr-config"
   },
   {
     "file": "freshrss.env",
@@ -10645,7 +10883,7 @@
     ],
     "enhanced": true,
     "description": "FreshRSS self-hosted RSS feed aggregator configuration",
-    "knownFile": true
+    "knownFile": "freshrss-config"
   },
   {
     "file": "homepage-services.yaml",
@@ -10673,7 +10911,7 @@
     ],
     "enhanced": true,
     "description": "Wallabag self-hosted read-it-later application configuration",
-    "knownFile": true
+    "knownFile": "wallabag-config"
   },
   {
     "file": "linkwarden.env",
@@ -10687,7 +10925,7 @@
     ],
     "enhanced": true,
     "description": "Linkwarden self-hosted bookmark manager and link archiver configuration",
-    "knownFile": true
+    "knownFile": "linkwarden-config"
   },
   {
     "file": "archivebox.conf",
@@ -10701,7 +10939,7 @@
     ],
     "enhanced": true,
     "description": "ArchiveBox self-hosted web archiving configuration",
-    "knownFile": true
+    "knownFile": "archivebox-config"
   },
   {
     "file": "memos.env",
@@ -10715,7 +10953,7 @@
     ],
     "enhanced": true,
     "description": "Memos self-hosted lightweight note-taking server configuration",
-    "knownFile": true
+    "knownFile": "memos-config"
   },
   {
     "file": "wakapi.yaml",
@@ -10729,7 +10967,7 @@
     ],
     "enhanced": true,
     "description": "Wakapi self-hosted coding activity tracker (WakaTime-compatible) configuration",
-    "knownFile": true
+    "knownFile": "wakapi-config"
   },
   {
     "file": "hoarder.env",
@@ -13013,5 +13251,147 @@
     "enhanced": true,
     "description": "Lex/Flex lexical analyzer specification with token rules and scanner definitions",
     "knownFile": "lex-yacc"
+  },
+  {
+    "label": ".moon/workspace.yml",
+    "file": ".moon/workspace.yml",
+    "mime": "application/yaml",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Build"
+    ],
+    "enhanced": true,
+    "knownFile": "moonrepo",
+    "description": "Moonrepo workspace configuration with project globs, Git defaults, runner cache settings, and project relationship constraints."
+  },
+  {
+    "label": "phpunit.dist.xml",
+    "file": "phpunit.dist.xml",
+    "mime": "application/xml",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Testing"
+    ],
+    "enhanced": true,
+    "knownFile": "phpunit",
+    "description": "Legacy PHPUnit distribution config with two test suites, source coverage paths, bootstrap, cache, and test environment."
+  },
+  {
+    "label": "act.config",
+    "file": "act.config",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "CI/CD"
+    ],
+    "enhanced": true,
+    "knownFile": "act-config",
+    "description": "act runner flags for local GitHub Actions images, environment/secrets files, artifacts, architecture, and bind mounting."
+  },
+  {
+    "label": "metricbeat.yml",
+    "file": "metricbeat.yml",
+    "mime": "application/yaml",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Monitoring"
+    ],
+    "enhanced": true,
+    "knownFile": "beats-config",
+    "description": "Elastic Metricbeat system metrics pipeline with modules, metadata processors, Kibana setup, and Elasticsearch output."
+  },
+  {
+    "label": "shell.nix",
+    "file": "shell.nix",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Nix"
+    ],
+    "enhanced": true,
+    "knownFile": "nix-config",
+    "description": "Nix development shell with Node, Playwright, Python, and a deterministic local shell hook."
+  },
+  {
+    "label": "postfix.conf",
+    "file": "postfix.conf",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Mail"
+    ],
+    "enhanced": true,
+    "knownFile": "postfix-conf",
+    "description": "Postfix mail server configuration with relay, networks, destinations, TLS paths, and recipient restrictions."
+  },
+  {
+    "label": "vector.yaml",
+    "file": "vector.yaml",
+    "mime": "application/yaml",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Observability"
+    ],
+    "enhanced": true,
+    "knownFile": "vector-config",
+    "description": "Vector observability pipeline with file input, VRL normalization, and JSON console output."
+  },
+  {
+    "label": "Malformed JSON",
+    "file": "malformed.json",
+    "mime": "application/json",
+    "type": "json",
+    "category": "Data",
+    "categories": [
+      "Data",
+      "Malformed"
+    ],
+    "partial": true,
+    "description": "Deliberately truncated JSONC-like object with comments and trailing commas for parser recovery and diagnostic coverage."
+  },
+  {
+    "label": "Malformed CSV",
+    "file": "malformed.csv",
+    "mime": "text/csv",
+    "type": "csv",
+    "category": "Data",
+    "categories": [
+      "Data",
+      "Malformed"
+    ],
+    "partial": true,
+    "description": "Deliberately inconsistent CSV with short/long rows, a quoted newline, and an unterminated quote."
+  },
+  {
+    "label": "Malformed XML",
+    "file": "malformed.xml",
+    "mime": "application/xml",
+    "type": "xml",
+    "category": "Data",
+    "categories": [
+      "Data",
+      "Malformed"
+    ],
+    "partial": true,
+    "description": "Deliberately mismatched and truncated XML for safe parse-error and raw-source fallback coverage."
+  },
+  {
+    "label": "Theme contrast showcase",
+    "file": "theme-showcase.html",
+    "mime": "text/html",
+    "type": "html",
+    "category": "Documents",
+    "categories": [
+      "Documents",
+      "Theme QA"
+    ],
+    "description": "Self-contained semantic HTML fixture for checking headings, controls, borders, links, tables, and code contrast in both viewer themes."
   }
 ]

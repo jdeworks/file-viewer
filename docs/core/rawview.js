@@ -12,7 +12,7 @@ const exactModelValue = (model) => model.getValue(undefined, true);
 export async function createRawView(host, {
   originalText, currentText, language, theme, options = {},
   onChange, onCursor, onScroll, onContextMenu, onPaste, onMoveDiff, onCustomDiff,
-  signal, isCurrent,
+  signal, isCurrent, detectIndentation = false,
 }) {
   const monaco = await loadMonaco();
   if (signal?.aborted || (isCurrent && !isCurrent())) return null;
@@ -43,6 +43,11 @@ export async function createRawView(host, {
   // ignores them on editor construction/updateOptions, so the sidebar's "Tab size" / "Insert spaces
   // (vs tabs)" controls did nothing. Apply them to every model here instead. (settings audit 2026-07-13)
   let lastModelOpts = null;
+  let indentationState = {
+    tabSize: options?.tabSize ?? 2,
+    insertSpaces: options?.insertSpaces ?? true,
+    detected: false,
+  };
   const applyModelOptions = (opts) => {
     const mo = {};
     if (opts?.tabSize != null) mo.tabSize = opts.tabSize;
@@ -52,6 +57,7 @@ export async function createRawView(host, {
     originalModel.updateOptions(mo);
     modifiedModel.updateOptions(mo);
     compareModel?.updateOptions(mo);
+    indentationState = { ...indentationState, ...mo };
   };
 
   const std = monaco.editor.create(stdHost, {
@@ -59,11 +65,24 @@ export async function createRawView(host, {
     theme: theme === 'dark' ? 'vs-dark' : 'vs', ...options,
   });
   applyModelOptions(options);
+  if (detectIndentation) {
+    const hasIndentedContent = /^(?:\t+| {2,})\S/m.test(currentText);
+    modifiedModel.detectIndentation(options?.insertSpaces ?? true, options?.tabSize ?? 2);
+    const detectedOptions = modifiedModel.getOptions();
+    const detected = {
+      tabSize: detectedOptions.tabSize,
+      insertSpaces: detectedOptions.insertSpaces,
+    };
+    originalModel.updateOptions(detected);
+    lastModelOpts = detected;
+    indentationState = { ...detected, detected: hasIndentedContent };
+  }
   let diff = null;
   let mode = 'current';
   let decorations = [];
 
-  modifiedModel.onDidChangeContent(() => onChange?.(exactModelValue(modifiedModel)));
+  let suppressChange = false;
+  modifiedModel.onDidChangeContent(() => { if (!suppressChange) onChange?.(exactModelValue(modifiedModel)); });
   std.onDidChangeCursorPosition((e) => { if (mode !== 'diff' && mode !== 'movediff') onCursor?.(e.position.lineNumber); });
   std.onDidScrollChange(() => { if (mode !== 'diff' && mode !== 'movediff') onScroll?.(); });
   std.onContextMenu((e) => {
@@ -118,12 +137,18 @@ export async function createRawView(host, {
     }
   }
 
+  let currentLanguage = language;
   return {
     monaco, mode: () => mode,
     setMode,
     getValue: () => exactModelValue(modifiedModel),
     originalValue: () => exactModelValue(originalModel),
     setValue: (text) => modifiedModel.setValue(text),
+    replaceReadOnlyValue(text) {
+      suppressChange = true;
+      try { originalModel.setValue(text); modifiedModel.setValue(text); }
+      finally { suppressChange = false; }
+    },
     selectionText() {
       return modifiedModel.getValueInRange(std.getSelection());
     },
@@ -171,7 +196,9 @@ export async function createRawView(host, {
       const current = exactModelValue(modifiedModel);
       if (exactModelValue(originalModel) !== current) originalModel.setValue(current);
     },
-    setLanguage(lang) { monaco.editor.setModelLanguage(originalModel, lang); monaco.editor.setModelLanguage(modifiedModel, lang); if (compareModel) monaco.editor.setModelLanguage(compareModel, lang); },
+    language: () => currentLanguage,
+    indentation: () => ({ ...indentationState }),
+    setLanguage(lang) { currentLanguage = lang; monaco.editor.setModelLanguage(originalModel, lang); monaco.editor.setModelLanguage(modifiedModel, lang); if (compareModel) monaco.editor.setModelLanguage(compareModel, lang); },
     // Compare the current file against another file's text (current ↔ other). Switches to diff.
     setCompare(text, lang) {
       if (!compareModel) { compareModel = monaco.editor.createModel(text, lang || language); if (lastModelOpts) compareModel.updateOptions(lastModelOpts); }

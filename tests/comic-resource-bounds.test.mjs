@@ -8,10 +8,29 @@ import {
   comicFromZip,
   createComicPageCache,
 } from '../docs/types/ebook/comic/comiclib.js';
+import { loadReaderPrefs, normalizeReaderPrefs, saveReaderPrefs } from '../docs/core/reader-prefs.js';
+import { COMIC_READER_PREFS } from '../docs/types/ebook/reader-prefs.js';
 import { createHarness, finish } from './harness.mjs';
 
 const require = createRequire(import.meta.url);
 const JSZip = require('jszip');
+
+class MemoryStorage {
+  constructor() { this.values = new Map(); }
+  getItem(key) { return this.values.get(key) ?? null; }
+  setItem(key, value) { this.values.set(key, String(value)); }
+}
+
+const prefStorage = new MemoryStorage();
+assert.deepEqual(normalizeReaderPrefs(COMIC_READER_PREFS, { layout: 'spread', fit: 'bogus', extra: 'ignored' }), {
+  layout: 'spread', fit: 'width', direction: 'ltr',
+});
+assert.deepEqual(saveReaderPrefs(COMIC_READER_PREFS, { layout: 'spread', fit: 'page', direction: 'rtl' }, prefStorage), {
+  layout: 'spread', fit: 'page', direction: 'rtl',
+});
+assert.deepEqual(loadReaderPrefs(COMIC_READER_PREFS, prefStorage), {
+  layout: 'spread', fit: 'page', direction: 'rtl',
+});
 
 function fakeEntry(size, counter, actualSize = size) {
   return {
@@ -187,6 +206,7 @@ const { page, origin, waitForFv } = ctx;
 try {
   await page.goto(origin, { waitUntil: 'load' });
   await waitForFv();
+  await page.evaluate(() => localStorage.removeItem('fv:reader:prefs:comic'));
   await page.evaluate(async (data) => {
     const blob = new Blob([new Uint8Array(data)], { type: 'application/vnd.comicbook+zip' });
     await window.__fv.openBlobFile(blob, 'lazy.cbz', { mime: 'application/vnd.comicbook+zip' });
@@ -208,7 +228,25 @@ try {
     return Math.abs(first.top - second.top) < 5 && second.left > first.left;
   });
   assert.equal(spread, true);
-  await page.click('#previewHost .comic-spread');
+  await page.click('#previewHost .comic-fit');
+  await page.click('#previewHost .comic-direction');
+  await page.waitForFunction(() => {
+    const value = JSON.parse(localStorage.getItem('fv:reader:prefs:comic') || 'null');
+    return value?.layout === 'spread' && value?.fit === 'page' && value?.direction === 'rtl';
+  });
+  await page.evaluate(async (data) => {
+    const blob = new Blob([new Uint8Array(data)], { type: 'application/vnd.comicbook+zip' });
+    await window.__fv.openBlobFile(blob, 'lazy-again.cbz', { mime: 'application/vnd.comicbook+zip' });
+  }, [...generatedBytes]);
+  await page.waitForSelector('#previewHost .comic-page');
+  const restored = await page.$eval('#previewHost .comic-doc', (host) => ({
+    spread: host.classList.contains('comic-spread-on'),
+    fit: host.classList.contains('comic-fit-page'),
+    rtl: host.classList.contains('comic-rtl'),
+    dir: host.querySelector('.comic-pages')?.dir,
+    pressed: [...host.querySelectorAll('.comic-setting')].map((button) => button.getAttribute('aria-pressed')),
+  }));
+  assert.deepEqual(restored, { spread: true, fit: true, rtl: true, dir: 'rtl', pressed: ['true', 'true', 'true'] });
 
   await page.locator('#previewHost .comic-page-wrap').nth(10).scrollIntoViewIfNeeded();
   await page.waitForFunction(() => document.querySelectorAll('#previewHost .comic-page')[10]?.src.startsWith('blob:'));

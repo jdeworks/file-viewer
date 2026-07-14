@@ -1,5 +1,5 @@
 import { buildTree, renderTree } from './filetree.js';
-import { flushFolderEdit, setTree } from './folder.js';
+import { flushFolderEdit, hideFolderLoading, setTree, showFolderLoading } from './folder.js';
 import { withSourceText } from './intake.js';
 import { $, isMobile, state, toast } from './state.js';
 import { addArchiveRoot, captureActiveSidebarRoot } from './sidebar-roots.js';
@@ -64,6 +64,10 @@ export function mountArchiveTree(archive, openEntry, loadIntake, archiveIntake) 
         (state.binaryEdits = state.binaryEdits || new Map()).set(state.currentFolderPath, state.binaryEdit);
       }
       const stashed = state.folderEdits.get(node.path);
+      showFolderLoading('Extracting ' + node.path.split('/').pop() + '…', {
+        detail: node.file.size ? Math.ceil(node.file.size / 1024).toLocaleString() + ' KB' : '',
+      });
+      await new Promise((resolve) => requestAnimationFrame(resolve));
       const originalIntake = node.intake || await openEntry(node.path);
       if (originalIntake && !node.intake) node.intake = originalIntake;
       const intake = stashed != null && originalIntake
@@ -85,14 +89,17 @@ export function mountArchiveTree(archive, openEntry, loadIntake, archiveIntake) 
     } catch {
       toast('Could not open ' + node.path);
       return false;
+    } finally {
+      hideFolderLoading();
     }
   }
 
   state.archiveOpenNode = openArchiveNode;
   state.archiveDeletes = new Set();
-  state.treeApi = renderTree($('ftBody'), buildTree(entries), {
+  state.treeApi = renderTree($('ftBody'), buildTree(entries, { lazy: true }), {
     onOpen: openArchiveNode,
     onMove: null,
+    initialOpenDepth: 0,
   });
   archiveRoot = addArchiveRoot({
     label: rootName,

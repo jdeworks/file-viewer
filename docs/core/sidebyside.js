@@ -1,8 +1,9 @@
 // Side-by-side: edit two files at once in a full-screen overlay. Each pane is a SELF-CONTAINED
 // mini-editor (its own Monaco rawview + preview + download), built by sidebyside-pane.js — it never
 // touches global `state` editor fields or the sibling pane. A SHARED mode bar (sidebyside-mode.js)
-// governs both panes: Current (independent panes) · Raw · Preview · Diff (one full-width Monaco
-// diff). This module owns the overlay shell (head/close/Esc) + the open/close orchestration.
+// governs both panes: Choose views (independent Source/Preview choices) · Sources · Previews ·
+// Text diff (one full-width Monaco diff). This module owns the overlay shell (head/close/Esc) +
+// the open/close orchestration.
 import { state } from './state.js';
 import { buildPane } from './sidebyside-pane.js';
 import { initModeBar, rememberedMode } from './sidebyside-mode.js';
@@ -17,7 +18,7 @@ export async function openSideBySideWithIntake(intake2) {
   const overlay = document.createElement('div');
   overlay.className = 'sbs-overlay';
   overlay.innerHTML =
-    '<div class="sbs-head"><span class="sbs-title">Side by side</span><button class="sbs-close" aria-label="Close">✕</button></div>'
+    '<div class="sbs-head"><span class="sbs-title">Compare two files</span><button class="sbs-close" aria-label="Close comparison">✕</button></div>'
     + '<div class="sbs-body">'
     + '<div class="sbs-pane"><div class="sbs-name"></div><div class="sbs-host"></div></div>'
     + '<div class="sbs-pane"><div class="sbs-name"></div><div class="sbs-host"></div></div>'
@@ -30,7 +31,7 @@ export async function openSideBySideWithIntake(intake2) {
   await Promise.all(panes.map((p) => p.ready));
 
   // Shared mode bar lives in the head, next to the title. Opens at the remembered mode (default
-  // Current). The entry points never force Diff — the user reaches it by clicking the Diff mode.
+  // Choose views). Entry points never force Text diff — the user selects it explicitly.
   const head = overlay.querySelector('.sbs-head');
   const body = overlay.querySelector('.sbs-body');
   const modeBar = initModeBar(head, body, panes, { initialMode: rememberedMode() });

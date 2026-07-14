@@ -4738,6 +4738,62 @@ function applyDev(id, run, combatPlayer) {
   }
 }
 
+// ../../docs/games/metagame/stages/stage5/run-lifecycle.js
+function beginProtocolRun({
+  state,
+  ascensionLevel = 0,
+  mode = "standard",
+  seedText = null,
+  dailyKeyOverride = null
+}) {
+  state.meta.runsStarted = (state.meta.runsStarted || 0) + 1;
+  let seed;
+  let dailyKey = null;
+  if (mode === "daily") {
+    dailyKey = currentDailyKey(dailyKeyOverride);
+    seed = strHash(`daily:${dailyKey}`);
+  } else if (mode === "custom" && String(seedText || "").trim()) {
+    dailyKey = String(seedText).trim().slice(0, 40);
+    seed = strHash(`custom:${dailyKey}`);
+  } else {
+    mode = "standard";
+    seed = 1e3 + state.meta.runsStarted * 7919 + (state.meta.protocolVersion || 0) * 131;
+  }
+  state.run = createRun({
+    seed,
+    version: state.meta.protocolVersion || 0,
+    handshakes: 0,
+    ascension: ascensionLevel,
+    mode,
+    dailyKey,
+    finalAct: finalActForWins(state.meta.runsCleared || 0),
+    permanentUpgrades: state.meta.permanentUpgrades || []
+  });
+  state.ui.screen = "run";
+  return state.run;
+}
+function currentDailyKey(override = null) {
+  if (override) return String(override);
+  try {
+    return (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
+  } catch {
+    return "1970-01-01";
+  }
+}
+function recordProtocolScore(meta, run) {
+  if (!run) return 0;
+  const score = runScore(run);
+  meta.lastScore = score;
+  meta.lastMode = run.mode || "standard";
+  meta.lastSeedKey = run.dailyKey || null;
+  if (score > (meta.bestScore || 0)) meta.bestScore = score;
+  if (run.dailyKey) {
+    if (!meta.dailyBest || typeof meta.dailyBest !== "object") meta.dailyBest = {};
+    if (score > (meta.dailyBest[run.dailyKey] || 0)) meta.dailyBest[run.dailyKey] = score;
+  }
+  return score;
+}
+
 // ../../docs/games/metagame/stages/stage5/renderer.js
 var REFUSED_CONNECTION = "the-refused-connection";
 function renderStage5({ host, state, actions, achievements, bell, bts, viewer, save, orchestrator, onStageComplete }) {
@@ -4987,7 +5043,7 @@ function renderStage5({ host, state, actions, achievements, bell, bts, viewer, s
     pendingCardIndex = null;
     pendingFx = null;
     if (win && isFinalBoss) finalBossDefeated(run);
-    if (run.status === "dead" || run.status === "won") recordScore(run);
+    if (run.status === "dead" || run.status === "won") recordProtocolScore(state.meta, run);
   }
   function finalBossDefeated(run) {
     state.boss.defeated = true;
@@ -5015,7 +5071,7 @@ function renderStage5({ host, state, actions, achievements, bell, bts, viewer, s
       run.status = "won";
       run.trueEnding = true;
     } else run.status = "dead";
-    recordScore(run);
+    recordProtocolScore(state.meta, run);
     completeOnce({ stage: 5, defeated: true, reward: { handshakes: 80 }, btsPath: BTS_PATH });
   }
   function maybeRevealActs(run) {
@@ -5038,55 +5094,17 @@ function renderStage5({ host, state, actions, achievements, bell, bts, viewer, s
     if (index != null) state.meta.permanentUpgrades = [...state.meta.permanentUpgrades || [], index];
     commit();
   }
-  function beginRun({ mode = "standard", seedText = null } = {}) {
-    state.meta.runsStarted = (state.meta.runsStarted || 0) + 1;
-    let seed, dailyKey = null;
-    if (mode === "daily") {
-      dailyKey = currentDailyKey();
-      seed = strHash(`daily:${dailyKey}`);
-    } else if (mode === "custom" && String(seedText || "").trim()) {
-      dailyKey = String(seedText).trim().slice(0, 40);
-      seed = strHash(`custom:${dailyKey}`);
-    } else {
-      mode = "standard";
-      seed = 1e3 + state.meta.runsStarted * 7919 + (state.meta.protocolVersion || 0) * 131;
-    }
-    state.run = createRun({
-      seed,
-      version: state.meta.protocolVersion || 0,
-      handshakes: 0,
-      ascension: ascension ? ascension.level() : 0,
-      mode,
-      dailyKey,
-      // First-ever run (0 wins) ends at the act-4 story boss; ≥1 win restores the full six acts.
-      finalAct: finalActForWins(state.meta.runsCleared || 0),
-      permanentUpgrades: state.meta.permanentUpgrades || []
+  function beginRun(opts = {}) {
+    beginProtocolRun({
+      state,
+      ascensionLevel: ascension ? ascension.level() : 0,
+      dailyKeyOverride,
+      ...opts
     });
-    state.ui.screen = "run";
     if (combatRun) combatRun.reset();
     combat = null;
     pendingCardIndex = null;
     pendingFx = null;
-  }
-  function currentDailyKey() {
-    if (dailyKeyOverride) return dailyKeyOverride;
-    try {
-      return (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
-    } catch {
-      return "1970-01-01";
-    }
-  }
-  function recordScore(run) {
-    if (!run) return;
-    const score = runScore(run);
-    state.meta.lastScore = score;
-    state.meta.lastMode = run.mode || "standard";
-    state.meta.lastSeedKey = run.dailyKey || null;
-    if (score > (state.meta.bestScore || 0)) state.meta.bestScore = score;
-    if (run.dailyKey) {
-      if (!state.meta.dailyBest || typeof state.meta.dailyBest !== "object") state.meta.dailyBest = {};
-      if (score > (state.meta.dailyBest[run.dailyKey] || 0)) state.meta.dailyBest[run.dailyKey] = score;
-    }
   }
   function resolveEvent(run, choiceId) {
     const event = eventForNode(run);

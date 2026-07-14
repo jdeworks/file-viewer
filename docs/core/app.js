@@ -13,14 +13,14 @@ import { previewStyle } from './settings-schema.js';
 import { initLayout, layoutTopbar, toggleMoreMenu, closeMoreMenu, updateExportButton, closeExportMenu, toggleExportMenu, applyLayout, applyPreviewPaneWidth, initSplitDivider } from './layout.js';
 import { mapPreviewToRaw, syncScrollFromPreview } from './sync.js';
 import { initCompare, startCompare, onComparePicked, stopCompare, resetCompare, initCompareDropTarget } from './compare.js';
-import { initRawPane, buildRawView, onRawEdited, hasUnsavedWork, confirmDiscard, setRawMode, syncRawModeButtons, takeScreenshot, downloadCurrent, exitWysiwygForFeature } from './rawpane.js';
+import { initRawPane, buildRawView, onRawEdited, hasUnsavedWork, confirmDiscard, setRawMode, syncRawModeButtons, takeScreenshot, downloadCurrent, currentEditableSource, exitWysiwygForFeature } from './rawpane.js';
 import { initFolder, loadFolder, openRepoView, onTreeSearchInput, searchTreeContents, exportFolder, folderContext, setTree, initTreeResize, onTreeKey, showFolderLoading, hideFolderLoading } from './folder.js';
 import { clearArchiveTree, mountArchiveTree } from './archive-tree.js';
 import { $, isMobile, state, toast, themeIsDark, escapeHtml, debounce, activeRawviews } from './state.js';
-import { initCompanionUi, isCompanionAvailable, hasCompanionFolderRoot, setCompanionLinked, resetCompanionFolderRoot, resolveDroppedFolderRoot, activateCompanionSidebarRoot, absolutePathForFile, startWatching, syncSaveBtn, onSaveClick, onDeleteClick, renderCompanionSettings, detectCompanionOnStartup, tryAutoLink, deleteTreePath, revealTreePath, onConnButtonClick } from './companion-ui.js';
+import { initCompanionUi, isCompanionAvailable, setCompanionAvailable, hasCompanionFolderRoot, setCompanionLinked, resetCompanionFolderRoot, resolveDroppedFolderRoot, activateCompanionSidebarRoot, absolutePathForFile, startWatching, syncSaveBtn, onSaveClick, onDeleteClick, detectCompanionOnStartup, tryAutoLink, deleteTreePath, revealTreePath, recoverFolderFile, onConnButtonClick, showCompanionIndicator, updateConnButton } from './companion-lazy.js';
 import { initSessionTree, updateSessionTree, createNewFile, flushSessionEdit } from './session-tree.js';
 import { initViewerOpen, openExampleFile, openViewerFile, openBlobFile, searchViewerFile } from './viewer-open.js';
-import { initSidebarRoots, captureActiveSidebarRoot, removeActiveSidebarRoot, expandActiveFileRootToFolder } from './sidebar-roots.js';
+import { initSidebarRoots, captureActiveSidebarRoot, removeActiveSidebarRoot, expandActiveFileRootToFolder, renderSidebarRoots } from './sidebar-roots.js';
 import { installGlobalScreensaver } from './global-screensaver.js';
 import { rankLiteCandidates } from './detect-lite.js';
 import { createLatestRequestController } from './request-lifecycle.js';
@@ -40,8 +40,10 @@ function beginActivation(intake) {
 }
 
 function activationIsCurrent(activation) {
-  return activationRequests.isCurrent(activation)
-    && activation.snapshot.intake === state.intake;
+  // Intake objects are working-document snapshots: editing, form/WYSIWYG surfaces, and autosave
+  // restore replace them immutably while the same activation is still current. Generation—not
+  // object identity—is the authority for latest-request-wins file activation.
+  return activationRequests.isCurrent(activation);
 }
 
 function snapshotSettings(values) {
@@ -289,6 +291,7 @@ async function activateType(type, knownOverride = null, activation = null) {
   // On phones, default to Preview when a type has one — reading beats Monaco-on-glass.
   state.tab = both ? (isMobile() ? 'preview' : 'raw') : (canPreview && !canRaw ? 'preview' : 'raw');
   state.htmlAllowScripts = false; state.htmlAsked = false;   // re-ask per file
+  state.htmlRemotePresetAllowed = null;                      // remote consent is per file
 
   if (canRaw) {
     const built = await buildRawView({
@@ -335,6 +338,7 @@ async function renderPreview() {
     folder: folderContext(),
     htmlAllowScripts: state.htmlAllowScripts,
     htmlAsked: state.htmlAsked,
+    htmlRemotePresetAllowed: state.htmlRemotePresetAllowed,
     theme: themeIsDark() ? 'dark' : 'light',
   };
   const request = previewRequests.begin(snapshot);
@@ -374,7 +378,10 @@ async function renderPreview() {
       },
       toast: (...args) => { if (request.isCurrent()) toast(...args); },
     };
-    if (type.id === 'html') ctx.allowScripts = snapshot.htmlAllowScripts;
+    if (type.id === 'html') {
+      ctx.allowScripts = snapshot.htmlAllowScripts;
+      ctx.remotePresetAllowed = snapshot.htmlRemotePresetAllowed;
+    }
     rendered = await mod.render(intake, ctx);
     if (rendered?.revoke) request.registerCleanup(rendered.revoke);
     if (rendered?.destroy && rendered.destroy !== rendered.revoke) request.registerCleanup(rendered.destroy);
@@ -395,10 +402,13 @@ async function renderPreview() {
     return false;
   }
   // WP07 script gate: HTML with scripts is sanitized by default; ask once before running them.
-  if (type.id === 'html' && rendered.containsScripts && !snapshot.htmlAllowScripts && !snapshot.htmlAsked) {
+  if (type.id === 'html' && (rendered.containsScripts || rendered.requiresTrust) && !snapshot.htmlAllowScripts && !snapshot.htmlAsked) {
     if (!request.isCurrent()) return false;
     state.htmlAsked = true;
-    if (confirm('This HTML contains scripts. Run them in a sandboxed iframe?\n\nThey cannot access this page or your data, but only continue if you trust the source. Cancel to view it sanitized (scripts removed).')) {
+    const reason = rendered.requiresTrust
+      ? 'This HTML contains scripts or external CSS/JS dependencies.'
+      : 'This HTML contains scripts.';
+    if (confirm(reason + ' Run the raw document in a sandboxed iframe?\n\nRaw mode can request images, stylesheets, fonts, media, frames, form targets, and any URLs constructed by its JavaScript (for example fetch or WebSocket). Those requests may contact origins named or computed by the document. The iframe cannot access this page or your files, but continue only if you trust the source. Cancel keeps active content and remote dependencies blocked.')) {
       if (!request.isCurrent()) return false;
       state.htmlAllowScripts = true;
       request.dispose('HTML script choice changed');
@@ -441,14 +451,38 @@ async function renderPreview() {
     bodyHtml: rendered.bodyHtml,
     fullDoc: rendered.fullDoc,
     allowScripts: !!rendered.ranScripts,
+    extraHead: rendered.extraHead || '',
     theme: snapshot.theme,
     style: previewStyle(snapshot.settings),
+    readerPrefs: rendered.readerPrefs,
     onSelect: (src) => { if (request.isCurrent()) mapPreviewToRaw(src); },
     onHover: (src) => { if (request.isCurrent()) mapPreviewToRaw(src, false); },
     onScroll: (ratio) => { if (request.isCurrent()) syncScrollFromPreview(ratio); },
     onOpen: rendered.openEntry ? (name) => {
       if (request.isCurrent()) openInnerEntry(guardedOpenEntry(request, rendered.openEntry), name);
     } : undefined,
+    onAction: async (action, value) => {
+      if (!request.isCurrent() || type.id !== 'html' || action !== 'html-load-remote') return;
+      const preset = rendered.remotePreset;
+      if (!preset || preset.id !== value) return;
+      if (state.htmlRemotePresetAllowed !== value) {
+        const origins = [...new Set((preset.resources || []).map((resource) => {
+          try { return new URL(resource.url).origin; } catch { return resource.url; }
+        }))].join(', ');
+        const resources = (preset.resources || []).map((resource) => `${resource.type.toUpperCase()} ${resource.url}`).join('\n');
+        const cached = preset.cacheEnabled && preset.status?.cached === preset.status?.total && preset.status?.total > 0;
+        const source = cached
+          ? 'All resources are already in this app’s dependency cache, so this load makes no network request.'
+          : 'The browser will make CORS GET requests without credentials or a referrer to ' + origins + '.';
+        const cacheNote = preset.cacheEnabled
+          ? 'Successful responses may be kept in the dedicated HTML dependency cache.'
+          : 'Dependency caching is disabled in Settings.';
+        if (!confirm('Load ' + preset.label + ' for this file?\n\n' + source + '\nResources:\n' + resources + '\n' + cacheNote + '\nAny JavaScript runs only inside the sandboxed preview. No request is made unless you continue.')) return;
+        state.htmlRemotePresetAllowed = value;
+      }
+      request.dispose('HTML remote dependency choice changed');
+      await renderPreview();
+    },
   });
   request.registerCleanup(() => preview.destroy());
   state.preview = preview;
@@ -533,9 +567,51 @@ async function toggleEnhance() {
 
 /* ─────────────────────────── Settings (WP03) ─────────────────────────── */
 
-function openSettings() {
-  renderSettings($('settingsBody'), state.settingsModel, { onChange: onSettingsChange, toast });
-  renderCompanionSettings($('settingsBody'));
+async function openSettings() {
+  const body = $('settingsBody');
+  renderSettings(body, state.settingsModel, { onChange: onSettingsChange, toast });
+  try {
+    const module = await import('./companion-settings.js');
+    module.initCompanionSettings({
+      isCompanionAvailable,
+      setCompanionAvailable,
+      syncSaveBtn,
+      showCompanionIndicator,
+      updateConnButton,
+    });
+    if (body.isConnected) module.renderCompanionSettings(body);
+  } catch {
+    if (body.isConnected) toast('Companion settings could not be loaded.');
+  }
+}
+
+const SETTINGS_DOCK_KEY = 'fv:settings:docked';
+function settingsDocked() {
+  return !isMobile() && $('app')?.classList.contains('settings-docked');
+}
+function setSettingsDocked(on, { persist = true } = {}) {
+  const docked = !!on && !isMobile();
+  $('app')?.classList.toggle('settings-docked', docked);
+  const button = $('settingsDockBtn');
+  if (button) {
+    button.setAttribute('aria-pressed', String(docked));
+    button.title = docked ? 'Use settings as an overlay' : 'Dock settings beside the file';
+    button.setAttribute('aria-label', button.title);
+  }
+  if (persist) {
+    try { localStorage.setItem(SETTINGS_DOCK_KEY, on ? '1' : '0'); } catch { /* private mode */ }
+  }
+  if (!$('settingsDrawer')?.hidden) {
+    $('app')?.classList.add('settings-open');
+    $('scrim').hidden = docked;
+  }
+  if (state.type) applyLayout();
+  state.rawview?.layout?.();
+}
+function restoreSettingsDocking() {
+  let saved = false;
+  try { saved = localStorage.getItem(SETTINGS_DOCK_KEY) === '1'; } catch { /* private mode */ }
+  setSettingsDocked(saved, { persist: false });
 }
 
 // Re-apply settings after any change. Editor options apply live; the preview only
@@ -606,12 +682,16 @@ function applyReduceMotion(on) {
 
 /* ─────────────────────────── Drawers ─────────────────────────── */
 
-function openDrawer(id, build) {
-  build?.();
-  $(id).hidden = false; $('scrim').hidden = false;
+async function openDrawer(id, build) {
+  await build?.();
+  $(id).hidden = false;
+  if (id === 'settingsDrawer') $('app')?.classList.add('settings-open');
+  $('scrim').hidden = id === 'settingsDrawer' && settingsDocked();
 }
 function closeDrawers() {
   $('settingsDrawer').hidden = true; $('metaDrawer').hidden = true; $('scrim').hidden = true;
+  $('app')?.classList.remove('settings-open');
+  state.rawview?.layout?.();
 }
 
 // Type documentation opens as a centered modal dialog (not a side drawer).
@@ -647,7 +727,7 @@ const META_BTN_MSGS = [
 /* ─────────────────────────── Wire up ─────────────────────────── */
 
 function init() {
-  initCompanionUi({ loadIntake });
+  initCompanionUi({ loadIntake, currentEditableSource, layoutTopbar, renderSidebarRoots });
   initSessionTree({ loadIntake });
   initSidebarRoots({
     loadIntake,
@@ -661,6 +741,7 @@ function init() {
   // gets these via init — no circular import).
   initFolder({
     loadIntake, confirmDiscard,
+    recoverFolderFile,
     // Called after each folder-tree file opens so we can start watching its absolute disk path.
     onFolderFileOpened: (node) => {
       if (!isCompanionAvailable() || !hasCompanionFolderRoot()) return;
@@ -739,7 +820,9 @@ function init() {
     else if (activationIsCurrent(activation)) await renderPreview();
   });
   $('themeBtn').addEventListener('click', () => applyTheme(!themeIsDark()));
+  restoreSettingsDocking();
   $('settingsBtn').addEventListener('click', () => openDrawer('settingsDrawer', openSettings));
+  $('settingsDockBtn')?.addEventListener('click', () => setSettingsDocked(!settingsDocked()));
   $('typeHelpBtn').addEventListener('click', () => openTypeHelp());
   $('metaBtn').addEventListener('click', async () => {
     metaBtnClicks++;
@@ -798,7 +881,10 @@ function init() {
   });
 
   // Re-clamp the split pane width when the window resizes on desktop.
-  window.addEventListener('resize', debounce(() => { if (state.type) applyPreviewPaneWidth(); }, 100));
+  window.addEventListener('resize', debounce(() => {
+    restoreSettingsDocking();
+    if (state.type) applyPreviewPaneWidth();
+  }, 100));
 
   // Warn before leaving/closing the tab if there are unsaved, undownloaded edits.
   window.addEventListener('beforeunload', (e) => {

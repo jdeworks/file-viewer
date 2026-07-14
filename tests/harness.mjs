@@ -99,7 +99,7 @@ export function isAllowedHarnessUrl(raw, expectedOrigin) {
   return /^(?:data|blob):/i.test(raw) || isSameOriginUrl(raw, expectedOrigin);
 }
 
-export async function createHarness({ launchArgs = [] } = {}) {
+export async function createHarness({ launchArgs = [], contextOptions = {} } = {}) {
   // Establish this run's verdict ledger BEFORE anything can fail, and install the process-level
   // guards so a late/teardown rejection is attributed instead of silently flipping the exit code.
   const runState = { tearingDown: false };
@@ -132,7 +132,7 @@ export async function createHarness({ launchArgs = [] } = {}) {
   const browser = await chromium.launch({
     args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--js-flags=--expose-gc', ...launchArgs],
   });
-  const ctx = await browser.newContext({ viewport: { width: 1100, height: 800 } });
+  const ctx = await browser.newContext({ viewport: { width: 1100, height: 800 }, ...contextOptions });
   const page = await ctx.newPage();
   // Raise the default and navigation timeouts (30s) to 60s so that networkidle
   // waits on pages loading large vendor libs (abcjs 492 KB, sql.js WASM, etc.)
@@ -233,7 +233,7 @@ export async function createHarness({ launchArgs = [] } = {}) {
   // calling window.__fv directly in page.evaluate (app init is async, 'load' fires too early).
   const waitForFv = (pg) => (pg || page).waitForFunction(() => typeof window.__fv !== 'undefined', { timeout: 10000 });
 
-  return { browser, server, page, origin, ROOT, frameOf, pass, fail, consoleErrors, offOrigin, openExample, waitForFv };
+  return { browser, server, context: ctx, page, origin, ROOT, frameOf, pass, fail, consoleErrors, offOrigin, openExample, waitForFv };
 }
 
 export async function finish(ctx) {

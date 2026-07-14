@@ -1,4 +1,4 @@
-import { writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -23,6 +23,41 @@ export async function run(ctx) {
     return n;
   });
   if (painted > 100) pass('STL mesh rendered to canvas (' + painted + ' painted pixels)'); else fail('stl canvas painted pixels: ' + painted);
+  // Shared inspection tools: structured stats, axes, wireframe/normals, wheel zoom, and a
+  // two-click distance readout all live in meshview.js and therefore apply to every mesh format.
+  const meshTools = await page.$$eval('#previewHost .mv-wire, #previewHost .mv-normals, #previewHost .mv-measure, #previewHost .mv-stats, #previewHost .mv-axes',
+    (els) => els.map((el) => el.className));
+  if (meshTools.length === 5) pass('mesh inspector exposes wireframe, normals, measurement, stats, and XYZ axes');
+  else fail('mesh inspector controls: ' + JSON.stringify(meshTools));
+  await page.click('#previewHost .mv-stats');
+  const meshStats = await page.$eval('#previewHost .mv-stats-panel:not([hidden])', (el) => el.textContent);
+  if (/Triangles\s*8/.test(meshStats) && /Vertices/.test(meshStats) && /Bounds/.test(meshStats)) pass('mesh stats panel reports geometry and dimensions');
+  else fail('mesh stats: ' + meshStats.replace(/\s+/g, ' '));
+  const paintSignature = () => page.evaluate(() => {
+    const c = document.querySelector('#previewHost .stl-canvas');
+    const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+    let sum = 0; for (let i = 0; i < d.length; i += 16) sum = (sum + d[i] * 3 + d[i + 1] * 5 + d[i + 2] * 7 + d[i + 3]) >>> 0;
+    return sum;
+  });
+  const meshBasePaint = await paintSignature();
+  await page.click('#previewHost .mv-wire'); await page.waitForTimeout(120);
+  const wirePaint = await paintSignature();
+  await page.click('#previewHost .mv-normals'); await page.waitForTimeout(120);
+  const normalsPaint = await paintSignature();
+  if (wirePaint !== meshBasePaint && normalsPaint !== wirePaint) pass('wireframe and face-normal overlays repaint independently');
+  else fail('mesh overlay paint signatures: ' + JSON.stringify({ meshBasePaint, wirePaint, normalsPaint }));
+  const zoomBefore = await page.$eval('#previewHost .stl-canvas', (el) => Number(el.dataset.zoom));
+  await page.$eval('#previewHost .stl-canvas', (el) => el.dispatchEvent(new WheelEvent('wheel', { deltaY: -240, bubbles: true, cancelable: true })));
+  await page.waitForTimeout(120);
+  const zoomAfter = await page.$eval('#previewHost .stl-canvas', (el) => Number(el.dataset.zoom));
+  if (zoomAfter > zoomBefore) pass('mesh wheel zoom changes the bounded view scale'); else fail(`mesh zoom: ${zoomBefore} -> ${zoomAfter}`);
+  await page.click('#previewHost .mv-measure');
+  const meshBox = await page.$eval('#previewHost .stl-canvas', (el) => { const r = el.getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height }; });
+  await page.mouse.click(meshBox.x + meshBox.w / 2, meshBox.y + meshBox.h / 2);
+  await page.mouse.click(meshBox.x + meshBox.w / 2, meshBox.y + meshBox.h / 2);
+  const measureText = await page.$eval('#previewHost .mv-measure-readout', (el) => el.textContent);
+  if (/Distance:\s*[\d.,]+ model units/.test(measureText)) pass('mesh measurement resolves two picked vertices to a model-space distance');
+  else fail('mesh measurement: ' + measureText);
   // Mesh interconvert (loadExports): STL offers OBJ/PLY; an OBJ download actually fires.
   await page.click('#exportBtn');
   await page.waitForSelector('#exportMenu:not([hidden]) .export-item', { timeout: 5000 });
@@ -147,18 +182,27 @@ export async function run(ctx) {
   const exportOk = /newmtl fv_face_/.test(mtlText) && /usemtl fv_face_/.test(objText) && /Kd /.test(mtlText);
   if (exportOk) pass('colored OBJ export: per-face/region color emitted as newmtl/usemtl (synthetic material)'); else fail('obj export mtl/obj: ' + JSON.stringify({ mtlHead: mtlText.slice(0, 120), hasUsemtl: /usemtl fv_face_/.test(objText) }));
 
-  // ── 3MF manufacturing model ── ZIP package with model XML, metadata, materials, and thumbnail. ──
+  // ── 3MF manufacturing model ── package metadata plus interactive geometry in the shared mesh view. ──
   await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.3mf');
-  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
+  await page.waitForSelector('#previewHost .stl-canvas', { timeout: 30000 });
   const mf3Type = await page.$eval('#typeSelect', (s) => s.value);
   if (mf3Type === '3mf') pass('.3mf detected as 3D Manufacturing Format'); else fail('3mf type: ' + mf3Type);
-  const mf3f = await frameOf('iframe.fv-preview-frame');
-  await mf3f.waitForSelector('.mf3-doc .mf3-table tbody tr', { timeout: 8000 });
-  const mf3Text = await mf3f.$eval('.mf3-doc', (e) => e.textContent);
-  if (/Calibration Bracket/.test(mf3Text) && /File Viewer Samples/.test(mf3Text) && /Unit:\s*millimeter/.test(mf3Text) && /Bracket Body/.test(mf3Text) && /Support Feet/.test(mf3Text) && /Safety Orange/.test(mf3Text)) pass('3MF model metadata, objects, and materials parsed'); else fail('3mf doc: ' + mf3Text.replace(/\s+/g, ' ').slice(0, 220));
-  const hasThumb = await mf3f.$eval('.mf3-thumb', (img) => img.getAttribute('src').startsWith('data:image/png;base64,'));
-  if (hasThumb) pass('3MF thumbnail inlined as data URL'); else fail('3mf thumbnail missing data URL');
+  const mf3Info = await page.$eval('#previewHost .stl-info', (el) => el.textContent);
+  const mf3Painted = await page.evaluate(() => {
+    const c = document.querySelector('#previewHost .stl-canvas');
+    const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+    let n = 0; for (let i = 3; i < d.length; i += 4) if (d[i] !== 0) n++;
+    return n;
+  });
+  if (/4 triangles/.test(mf3Info) && /2 objects/.test(mf3Info) && mf3Painted > 100) pass('3MF triangle geometry renders interactively in the shared mesh viewer');
+  else fail('3mf mesh: ' + JSON.stringify({ mf3Info, mf3Painted }));
+  await page.click('#previewHost .mv-stats');
+  const mf3Stats = await page.$eval('#previewHost .mv-stats-panel:not([hidden])', (el) => el.textContent);
+  if (/Calibration Bracket/.test(mf3Stats) && /File Viewer Samples/.test(mf3Stats) && /Bracket Body/.test(mf3Stats)
+    && /Support Feet/.test(mf3Stats) && /Safety Orange/.test(mf3Stats) && /Thumbnail\s*embedded PNG/.test(mf3Stats)) {
+    pass('3MF stats surface all package metadata, objects, materials, and thumbnail presence');
+  } else fail('3mf stats: ' + mf3Stats.replace(/\s+/g, ' ').slice(0, 300));
   await page.click('#metaBtn');
   await page.waitForSelector('#metaBody .meta-row', { timeout: 6000 });
   const mf3Meta = await page.$eval('#metaBody', (e) => e.textContent);
@@ -979,6 +1023,135 @@ export async function run(ctx) {
   if (layerPolish.renamed && layerPolish.hadLock && layerPolish.duplicateRows === 7 && layerPolish.restoredRows === 5 && layerPolish.typeIcon)
     pass('Adv Edit: layer panel supports rename, lock/unlock, duplicate, type icons, and selected state');
   else fail('adv layer polish: ' + JSON.stringify(layerPolish));
+
+  // Phase-3 composition: local bitmap objects stay editable, crop/frame/filter state is live,
+  // shape fills accept gradients + sanitized local patterns, and the portable overlay file embeds
+  // only versioned model data + local bitmap assets. Loading that file must rebuild real objects.
+  const localOverlayImage = new URL('../../docs/examples/sample.png', import.meta.url).pathname;
+  await page.setInputFiles('#previewHost .imgv-adv-image-file', localOverlayImage);
+  await page.waitForFunction(() => [...document.querySelectorAll('#previewHost .imgv-adv-layers span[title="Double-click to rename"]')].some((node) => node.textContent === 'Image'), null, { timeout: 8000 }).catch(() => {});
+  await page.evaluate(() => {
+    const set = (selector, value, event = 'change') => {
+      const control = document.querySelector(selector); control.value = value;
+      control.dispatchEvent(new Event(event, { bubbles: true }));
+    };
+    set('#previewHost .imgv-adv-cropl', '12');
+    set('#previewHost .imgv-adv-cropt', '8');
+    set('#previewHost .imgv-adv-framew', '4');
+    set('#previewHost .imgv-adv-framecorner', '9');
+    set('#previewHost .imgv-adv-filter', 'grayscale');
+  });
+  await page.waitForTimeout(80);
+  const localObject = await page.evaluate(() => {
+    const image = window.Konva?.stages?.[0]?.find('.obj').find((node) => node.getClassName() === 'Image');
+    return {
+      cropLeft: image?.getAttr('cropLeft'), cropTop: image?.getAttr('cropTop'), cropX: Math.round(image?.cropX?.() || 0),
+      frame: image?.strokeWidth?.(), round: image?.cornerRadius?.(), filter: image?.getAttr('filterKind'),
+      cached: image?.isCached?.(), asset: !!image?.getAttr('assetId'), controls: getComputedStyle(document.querySelector('#previewHost .imgv-adv-cropl').closest('label')).display !== 'none',
+    };
+  });
+  if (localObject.cropLeft === 12 && localObject.cropTop === 8 && localObject.cropX > 0 && localObject.frame === 4 && localObject.round === 9 && localObject.filter === 'grayscale' && localObject.cached && localObject.asset && localObject.controls)
+    pass('Adv Edit: local image/sticker object has editable crop, frame, and cached per-object filter');
+  else fail('adv local image composition: ' + JSON.stringify(localObject));
+
+  await clickAdvRow('Polygon');
+  await page.selectOption('#previewHost .imgv-adv-fillkind', 'linear');
+  await page.evaluate(() => {
+    const color = document.querySelector('#previewHost .imgv-adv-fill2'); color.value = '#ff00aa'; color.dispatchEvent(new Event('input', { bubbles: true }));
+    const angle = document.querySelector('#previewHost .imgv-adv-fillangle'); angle.value = '35'; angle.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+  const gradientFill = await page.evaluate(() => {
+    const polygon = window.Konva?.stages?.[0]?.find('.obj').find((node) => node.getClassName() === 'RegularPolygon');
+    return { kind: polygon?.getAttr('fillKind'), priority: polygon?.fillPriority?.(), stops: polygon?.fillLinearGradientColorStops?.(), end: polygon?.fillLinearGradientEndPoint?.() };
+  });
+  if (gradientFill.kind === 'linear' && gradientFill.priority === 'linear-gradient' && gradientFill.stops?.[3] === '#ff00aa' && gradientFill.end?.x !== 0)
+    pass('Adv Edit: object-local linear/radial gradient fill descriptors render through Konva');
+  else fail('adv gradient fill: ' + JSON.stringify(gradientFill));
+  await page.setInputFiles('#previewHost .imgv-adv-pattern-file', localOverlayImage);
+  await page.waitForFunction(() => {
+    const polygon = window.Konva?.stages?.[0]?.find('.obj').find((node) => node.getClassName() === 'RegularPolygon');
+    return polygon?.fillPriority?.() === 'pattern' && !!polygon?.fillPatternImage?.();
+  }, null, { timeout: 8000 }).catch(() => {});
+  const patternFill = await page.evaluate(() => {
+    const polygon = window.Konva?.stages?.[0]?.find('.obj').find((node) => node.getClassName() === 'RegularPolygon');
+    return { kind: polygon?.getAttr('fillKind'), priority: polygon?.fillPriority?.(), asset: !!polygon?.getAttr('patternAssetId') };
+  });
+  if (patternFill.kind === 'pattern' && patternFill.priority === 'pattern' && patternFill.asset)
+    pass('Adv Edit: shape pattern fill embeds a sanitized local bitmap asset');
+  else fail('adv pattern fill: ' + JSON.stringify(patternFill));
+
+  const [overlayDownload] = await Promise.all([
+    page.waitForEvent('download', { timeout: 8000 }),
+    page.click('#previewHost .imgv-adv-save'),
+  ]);
+  const overlayPath = await overlayDownload.path();
+  const overlayJson = JSON.parse(readFileSync(overlayPath, 'utf8'));
+  const portableOverlay = overlayJson.format === 'file-viewer/image-overlay' && overlayJson.version === 1
+    && overlayJson.objects.some((object) => object.type === 'Image') && overlayJson.assets.length >= 2
+    && overlayJson.assets.every((asset) => /^data:image\/png;base64,/.test(asset.dataUrl));
+  if (portableOverlay) pass('Adv Edit: Save overlay emits versioned portable JSON with embedded local assets (not raw Konva JSON)');
+  else fail('adv overlay document: ' + JSON.stringify({ format: overlayJson.format, version: overlayJson.version, objects: overlayJson.objects?.length, assets: overlayJson.assets?.length }));
+  await page.setInputFiles('#previewHost .imgv-adv-load-file', overlayPath);
+  await page.waitForFunction(() => /Loaded overlay v1/.test(document.querySelector('#previewHost .imgv-adv-doc-status')?.textContent || ''), null, { timeout: 8000 }).catch(() => {});
+  const loadedOverlay = await page.evaluate(() => {
+    const stage = window.Konva?.stages?.[0];
+    const image = stage?.find('.obj').find((node) => node.getClassName() === 'Image');
+    const polygon = stage?.find('.obj').find((node) => node.getClassName() === 'RegularPolygon');
+    return { count: stage?.find('.obj').length, crop: image?.getAttr('cropLeft'), filter: image?.getAttr('filterKind'), imageReady: !!image?.image?.(), pattern: polygon?.fillPriority?.(), patternReady: !!polygon?.fillPatternImage?.() };
+  });
+  if (loadedOverlay.count === 5 && loadedOverlay.crop === 12 && loadedOverlay.filter === 'grayscale' && loadedOverlay.imageReady && loadedOverlay.pattern === 'pattern' && loadedOverlay.patternReady)
+    pass('Adv Edit: Load overlay rebuilds editable image/filter/pattern objects from the versioned document');
+  else fail('adv overlay reload: ' + JSON.stringify(loadedOverlay));
+  await clickAdvRow('Image');
+  await page.click('#previewHost .imgv-adv-del');
+
+  // Blend a fresh opaque rectangle over the already-composited base. A true base-aware multiply
+  // must produce underlying*fill/255; rendering the whole transparent overlay in one pass does not.
+  await page.click('#previewHost .imgv-adv-rect');
+  await page.evaluate(() => {
+    const set = (selector, value, event = 'change') => { const el = document.querySelector(selector); el.value = value; el.dispatchEvent(new Event(event, { bubbles: true })); };
+    set('#previewHost .imgv-adv-x', '4'); set('#previewHost .imgv-adv-y', '4');
+    set('#previewHost .imgv-adv-w', '24'); set('#previewHost .imgv-adv-h', '24');
+    set('#previewHost .imgv-adv-fill', '#808080', 'input'); set('#previewHost .imgv-adv-strokew', '0', 'input');
+  });
+  const blendPixels = await page.evaluate(async () => {
+    const stage = window.Konva?.stages?.[0];
+    const rect = stage?.find('.obj').filter((node) => node.getClassName() === 'Rect').at(-1);
+    async function raster(visible, blend) {
+      rect.visible(visible); rect.globalCompositeOperation(blend); stage.draw();
+      const payload = window.__fv.state.binaryEdit;
+      const bytes = await payload.getBytes();
+      const bitmap = await createImageBitmap(new Blob([bytes], { type: payload.mimeType }));
+      const canvas = document.createElement('canvas'); canvas.width = bitmap.width; canvas.height = bitmap.height;
+      const context = canvas.getContext('2d'); context.drawImage(bitmap, 0, 0); bitmap.close();
+      return { canvas, context };
+    }
+    const beneath = await raster(false, 'source-over');
+    const pixels = beneath.context.getImageData(0, 0, beneath.canvas.width, beneath.canvas.height).data;
+    let x = -1, y = -1;
+    for (let py = 1; py < beneath.canvas.height - 1 && x < 0; py += 1) {
+      for (let px = 1; px < beneath.canvas.width - 1; px += 1) {
+        const offset = (py * beneath.canvas.width + px) * 4;
+        if (pixels[offset + 3] > 250 && (pixels[offset] + pixels[offset + 1] + pixels[offset + 2]) > 30) { x = px; y = py; break; }
+      }
+    }
+    if (x < 0) return { under: [0, 0, 0, 0], normal: [], multiply: [], noOpaquePixel: true };
+    const stageX = x * stage.width() / beneath.canvas.width;
+    const stageY = y * stage.height() / beneath.canvas.height;
+    rect.setAttrs({ x: stageX - 3, y: stageY - 3, width: 7, height: 7 });
+    const pixel = (surface) => [...surface.context.getImageData(x, y, 1, 1).data];
+    const under = pixel(beneath);
+    const normal = pixel(await raster(true, 'source-over'));
+    const multiply = pixel(await raster(true, 'multiply'));
+    return { under, normal, multiply, x, y };
+  });
+  const multiplyExpected = blendPixels.under.slice(0, 3).map((channel) => Math.round(channel * 128 / 255));
+  const blendOk = blendPixels.normal.slice(0, 3).every((channel) => Math.abs(channel - 128) <= 2)
+    && blendPixels.multiply.slice(0, 3).every((channel, index) => Math.abs(channel - multiplyExpected[index]) <= 3);
+  if (blendOk) pass('Adv Edit: non-normal objects blend against the raster base and earlier objects during flatten');
+  else fail('adv base-aware blend: ' + JSON.stringify({ ...blendPixels, multiplyExpected }));
+  await page.click('#previewHost .imgv-adv-del');
+
   const precisionTools = await page.evaluate(async () => {
     const stage = window.Konva?.stages?.[0];
     const rows = () => [...document.querySelectorAll('#previewHost .imgv-adv-layers > div')];
@@ -1108,6 +1281,19 @@ export async function run(ctx) {
     };
   });
   if (advFlat.dirty && advFlat.len > 1000 && advFlat.sig === '137,80,78,71' && advFlat.stagePresent && !advFlat.barInteractive) pass('Adv Edit: overlay persists non-interactively; output flattens base+overlay (dirty PNG)'); else fail('adv persist: ' + JSON.stringify(advFlat));
+  await page.evaluate(() => { const scale = document.querySelector('#previewHost .imgv-export-scale'); scale.value = '2'; scale.dispatchEvent(new Event('change', { bubbles: true })); });
+  const scaledExport = await page.evaluate(async () => {
+    const image = document.querySelector('#previewHost .imgv-img');
+    const payload = window.__fv.state.binaryEdit;
+    const bytes = await payload.getBytes();
+    const bitmap = await createImageBitmap(new Blob([bytes], { type: payload.mimeType }));
+    const result = { width: bitmap.width, height: bitmap.height, expectedWidth: image.naturalWidth * 2, expectedHeight: image.naturalHeight * 2 };
+    bitmap.close(); return result;
+  });
+  await page.evaluate(() => { const scale = document.querySelector('#previewHost .imgv-export-scale'); scale.value = '1'; scale.dispatchEvent(new Event('change', { bubbles: true })); });
+  if (scaledExport.width === scaledExport.expectedWidth && scaledExport.height === scaledExport.expectedHeight)
+    pass('image export pixel-ratio control scales flattened base + editable overlay output');
+  else fail('image export pixel ratio: ' + JSON.stringify(scaledExport));
   // Geometry coord-transform: a rotate in Edit mode with a live overlay TRANSFORMS the
   // vector objects (they stay editable) instead of baking them. Re-enter Adv and confirm
   // the objects are still listed — a bake-first seam would have emptied the overlay.

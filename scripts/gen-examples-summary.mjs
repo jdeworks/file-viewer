@@ -81,7 +81,14 @@ const summary = examples.map((ex) => {
     enhanced: isEnhancedExample(ex),
     partial: isPartialExample(ex),
   };
-  if (ex.source && ex.license) out.sourced = true;
+  if (ex.description) out.description = ex.description;
+  if (ex.knownFile) out.knownFile = ex.knownFile;
+  if (ex.source && ex.license) {
+    out.sourced = true;
+    out.source = ex.source;
+    out.license = ex.license;
+    out.attribution = ex.attribution || '';
+  }
   if (Array.isArray(ex.tools) && ex.tools.length) out.tools = ex.tools;
   return out;
 });

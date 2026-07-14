@@ -11,8 +11,8 @@ corrupting memory grid, cell by cell, before the leak erases it.
   (they decay unless you **lock** them).
 - Solving banks currency: **registers** (reg) and **fragments** (frag), spent on
   **boons** that ease later boards.
-- The corruption ladder escalates each board. Keep restoring snapshots until
-  **corruption peaks (8)** — only then is the boss reachable.
+- The corruption ladder escalates over **20 restored snapshots**. Keep restoring
+  until **corruption peaks (8)** — only then is the boss reachable.
 
 ## Controls
 
@@ -27,7 +27,8 @@ corrupting memory grid, cell by cell, before the leak erases it.
 The boss demands a **restoration key** that is never stored anywhere — it lives only
 in the *difference* between three saved snapshots.
 
-> **Un-cheat hint:** three memory logs (`memory_v1`, `memory_v2`, `memory_v3`) exist
+> **Viewer-path hint:** three memory logs (`memory_v1`, `memory_v2`, `memory_v3`) exist
 > as real files. One chunk corrupts between each pair. Open them in the viewer and do
 > a genuine **three-way diff** — read the chunks in corruption order — to recover the
-> key. No single log read top-to-bottom gives the right answer.
+> key directly. Repeated blind attempts eventually leak it one character at a time,
+> but no single log read top-to-bottom gives the answer.

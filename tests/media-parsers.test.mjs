@@ -10,6 +10,7 @@ import {
   parseFfmetadataChapters,
   parseTextChapterLines,
   parseWebVttChapters,
+  serializeWebVttChapters,
 } from '../docs/types/media/chapters.js';
 import { buildAcxChapterExportArgs, buildAcxExportArgs, buildAcxFilterChain, buildAudioFilterChain, buildMasteringCleanupFilter } from '../docs/types/media/audio-filters.js';
 import { analyzeMetrics, estimatedTruePeak, evaluateAcx, samplePeak } from '../docs/types/media/qc.js';
@@ -605,6 +606,13 @@ function ctocFrame({ id = 'toc', children = [], title = 'Contents', flags = 0x03
     'chapters: filename helper supplies fallback chapter title',
   );
 
+  const vtt = serializeWebVttChapters([
+    { start: 0, title: 'Opening' },
+    { start: 1.25, title: 'Chapter One' },
+  ], 3);
+  assert.match(vtt, /^WEBVTT\n\n1\n00:00:00\.000 --> 00:00:01\.250\nOpening/m, 'chapters: edited markers serialize to deterministic WebVTT');
+  assert.match(vtt, /00:00:01\.250 --> 00:00:03\.000\nChapter One/, 'chapters: final WebVTT cue uses media duration');
+
   const vttChapters = parseWebVttChapters([
     'WEBVTT',
     '',
@@ -737,13 +745,18 @@ function ctocFrame({ id = 'toc', children = [], title = 'Contents', flags = 0x03
 
   const args = buildAcxExportArgs('in.mp3', 'out.mp3');
   const chain = buildAcxFilterChain();
+  const explicitSpacingChain = buildAcxFilterChain({
+    silence: { thresholdDb: -50, minSilenceSec: 0.4 },
+    pad: { headSec: 0.75, tailSec: 2 },
+  });
   const chainText = args.join(' ');
   assert.ok(/-ac\s+1/.test(chainText), 'acx args: include explicit mono channel');
   assert.ok(chainText.includes('-ar 44100'), 'acx args: include 44.1 kHz sample-rate');
   assert.ok(chainText.includes('-b:a 192k'), 'acx args: include 192 kbps bitrate');
   assert.ok(chain.includes('loudnorm=I=-20:TP=-3:LRA=11'), 'acx filter chain: includes loudnorm −20 / −3 defaults');
-  assert.ok(chain.includes('silenceremove='), 'acx filter chain: includes silenceremove');
-  assert.ok(chain.includes('apad=pad_dur='), 'acx filter chain: includes room-tone pad');
+  assert.ok(!chain.includes('silenceremove=') && !chain.includes('apad='), 'acx filter chain: preserves source room tone by default');
+  assert.ok(explicitSpacingChain.includes('silenceremove=') && explicitSpacingChain.includes('apad=pad_dur='), 'acx filter chain: edge trimming/digital-silence padding remain explicit generic options');
+  assert.ok(explicitSpacingChain.includes('stop_periods=1'), 'acx filter chain: optional edge trim does not collapse internal pauses');
 
   const chapterArgs = buildAcxChapterExportArgs('in.m4b', 'ch01.mp3', { start: 1.25, end: 13.75 }).join(' ');
   assert.ok(/^-ss 1\.25 -t 12\.5 -i in\.m4b/.test(chapterArgs), 'acx chapter args: seek and duration are range-scoped before input');
@@ -979,20 +992,21 @@ function ctocFrame({ id = 'toc', children = [], title = 'Contents', flags = 0x03
     channels: 1,
     headSilence: 0.75,
     tailSilence: 2,
+    encoding: { container: 'mp3', bitrateKbps: 192, cbr: true },
   };
 
   const pass = evaluateAcx(base);
   const passMap = new Map(pass.map((row) => [row.key, row]));
   assert.deepEqual(
     pass.map((row) => row.key),
-    ['rms', 'lufs', 'peak', 'truePeak', 'noise', 'sr', 'ch', 'head', 'tail'],
-    'evaluateAcx: row order separates RMS, LUFS, sample peak, and estimated true peak',
+    ['rms', 'lufs', 'peak', 'truePeak', 'noise', 'sr', 'ch', 'format', 'bitrate', 'head', 'tail'],
+    'evaluateAcx: row order separates measured levels, encoding, and edge spacing',
   );
   assert.equal(passMap.get('lufs').label, 'Integrated LUFS', 'evaluateAcx: LUFS row is distinct from RMS');
   assert.equal(passMap.get('truePeak').label, 'Estimated true peak', 'evaluateAcx: true peak row is labelled as estimated');
   assert.match(passMap.get('truePeak').value, /dBTP$/, 'evaluateAcx: true peak value uses dBTP');
-  assert.match(passMap.get('truePeak').fix, /Estimated 4× oversampled peak/, 'evaluateAcx: true peak copy is honest about estimate');
-  assert.match(passMap.get('truePeak').fix, /TP −3/, 'evaluateAcx: true peak copy names the export TP target');
+  assert.match(passMap.get('truePeak').fix, /4× browser estimate/, 'evaluateAcx: true peak copy is honest about estimate');
+  assert.match(passMap.get('truePeak').fix, /Guidance only/, 'evaluateAcx: true peak copy does not present guidance as an ACX rule');
   assert.equal(passMap.get('peak').status, 'pass', 'evaluateAcx: sample peak pass condition');
   assert.ok(!/true-peak/i.test(passMap.get('peak').fix), 'evaluateAcx: peak fix text does not mention true-peak');
   assert.equal(passMap.get('truePeak').status, 'pass', 'evaluateAcx: estimated true peak pass condition');

@@ -44,7 +44,7 @@ export function buildExportProgress() {
     progressMsg.textContent = message;
   }
 
-  function showResult(url, filename, sizeBytes) {
+  function showResult(url, filename, sizeBytes, { action = null } = {}) {
     clearResult();
     const msg = makeSpan('media-ed-done', `Done — ${(sizeBytes / 1048576).toFixed(1)} MB`);
     const dl = document.createElement('a');
@@ -53,6 +53,7 @@ export function buildExportProgress() {
     dl.className = 'media-tx-download';
     dl.textContent = 'Download ' + filename;
     resultArea.append(msg, dl);
+    if (action) resultArea.append(action);
     resultArea.hidden = false;
     dl.click();
   }

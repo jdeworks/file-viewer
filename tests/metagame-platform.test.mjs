@@ -46,6 +46,9 @@ import {
 } from '../docs/games/metagame/bts.js';
 import { createStageRegistry, registerStageModule, validateStageModule } from '../docs/games/metagame/registry.js';
 import { createViewerBridge } from '../docs/games/metagame/viewer-bridge.js';
+import { createTickLoop } from '../docs/games/metagame/stages/stage1/s1tick.js';
+import { defaultState as createStage1State } from '../docs/games/metagame/stages/stage1/state.js';
+import { stageByNumber } from '../docs/games/metagame/stages/stage1/stages.js';
 
 let failed = 0;
 const ok = (cond, msg) => { console.log((cond ? '✓ ' : '✗ ') + msg); if (!cond) failed++; };
@@ -277,6 +280,73 @@ function validStageModule(id = 2) {
   ok(bridge.searchViewerFile('/x.txt', 'PASSAGE').found, 'viewer bridge: falls back to compatible search method');
   ok(calls.length === 2 && calls[0][2].stage === 1, 'viewer bridge: forwards arguments');
   ok(createViewerBridge({}).openViewerFile('/missing') === false, 'viewer bridge: missing window.__fv is a safe no-op');
+}
+
+{
+  const state = createStage1State({ now: 1 });
+  state.tabsUnlocked = true;
+  const cfg = stageByNumber(1);
+  const host = { isConnected: true };
+  const grid = { isConnected: true };
+  const calls = {
+    save: 0,
+    managerTick: 0,
+    reveal: 0,
+    hud: 0,
+    shop: 0,
+    timed: 0,
+    stats: 0,
+    tabs: 0,
+    echo: 0,
+    teardown: 0,
+  };
+  const { tick } = createTickLoop({
+    host,
+    grid,
+    state,
+    cfg,
+    bell: null,
+    save: () => { calls.save++; },
+    timedTiers: cfg.tiers.filter((tier) => tier.type === 'timed'),
+    multTier: cfg.tiers.find((tier) => tier.id === 's1-mult'),
+    panelsEl: {},
+    managersController: {
+      runAutoFire: () => { calls.managerTick++; },
+      paint: () => {},
+    },
+    getActiveTab: () => 'bits',
+    reveal: () => { calls.reveal++; },
+    checkTabUnlock: () => {},
+    updateHud: () => { calls.hud++; },
+    updateEcho: () => { calls.echo++; },
+    renderTabs: () => { calls.tabs++; },
+    paintShop: () => { calls.shop++; },
+    paintTimed: () => { calls.timed++; },
+    paintStats: () => { calls.stats++; },
+    onTeardown: () => { calls.teardown++; },
+  });
+
+  globalThis.document = { hidden: false };
+  for (let i = 0; i < 100; i++) tick();
+  ok(calls.save === 10, 'stage 1 cadence: a 10 Hz loop persists at most once per second');
+  ok(calls.hud === 100 && calls.shop === 100 && calls.timed === 100 && calls.stats === 100,
+    'stage 1 cadence: visible repaint hooks run on the bounded 10 Hz tick only');
+
+  document.hidden = true;
+  for (let i = 0; i < 100; i++) tick();
+  ok(calls.save === 20 && calls.managerTick === 200 && state.ticks === 200,
+    'stage 1 low-power path: hidden sessions retain deterministic progress and bounded saves');
+  ok(calls.hud === 100 && calls.shop === 100 && calls.timed === 100 && calls.stats === 100 && calls.reveal === 100,
+    'stage 1 low-power path: hidden sessions suppress all paint callbacks');
+
+  document.hidden = false;
+  tick();
+  ok(calls.tabs === 1 && calls.echo === 1,
+    'stage 1 low-power path: returning performs one deferred progression/echo refresh');
+  host.isConnected = false;
+  tick();
+  ok(calls.teardown === 1, 'stage 1 lifecycle: leaving the stage tears down its tick loop');
+  delete globalThis.document;
 }
 
 console.log(failed ? `\nMETAGAME PLATFORM FAILED (${failed})` : '\nMETAGAME PLATFORM PASSED');

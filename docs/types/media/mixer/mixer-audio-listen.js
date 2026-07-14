@@ -35,6 +35,7 @@ export function buildMixerAudioListenSurface(mediaEl, intake, options = {}) {
   let pxPerSec = 0;          // 0 → "fit to width" until first render
   let chapters = Array.isArray(options.chapters) ? options.chapters : [];
   let onRegionSelect = typeof options.onRegionSelect === 'function' ? options.onRegionSelect : null;
+  let regionLoop = false;
   let destroyed = false;
   let rafId = 0;
   let drag = null;
@@ -69,11 +70,17 @@ export function buildMixerAudioListenSurface(mediaEl, intake, options = {}) {
   const zoomOut = h('button', 'al-btn al-zoom-out', { type: 'button', title: 'Zoom out', 'aria-label': 'Zoom out' }, '−');
   const zoomIn = h('button', 'al-btn al-zoom-in', { type: 'button', title: 'Zoom in', 'aria-label': 'Zoom in' }, '+');
   const fitBtn = h('button', 'al-btn al-fit', { type: 'button', title: 'Fit to width' }, 'Fit');
+  const loopBtn = h('button', 'al-btn al-region-loop', {
+    type: 'button',
+    title: 'Loop the current In–Out selection',
+    'aria-pressed': 'false',
+  }, 'Loop selection');
   const exportBtn = h('button', 'al-btn al-export', { type: 'button', title: 'Download project configuration as JSON (media files are not embedded)' }, 'Download project settings');
   const toolbar = h('div', 'al-toolbar', {}, [
     h('div', 'al-transport', {}, [stopBtn, playBtn, timeLabel]),
     h('div', 'al-spacer'),
     h('div', 'al-zoom', {}, [zoomOut, fitBtn, zoomIn]),
+    loopBtn,
     exportBtn,
   ]);
 
@@ -98,7 +105,7 @@ export function buildMixerAudioListenSurface(mediaEl, intake, options = {}) {
   const timeline = h('div', 'al-timeline', {}, [ruler, track]);
 
   const inspector = h('div', 'al-inspector');
-  const note = h('div', 'al-note', {}, 'Drag the clip to move it (prepend space before); drag its edges to trim; drag the top-corner knobs to fade. Click the track to seek. Enable Media Transcoding for ffmpeg render paths.');
+  const note = h('div', 'al-note', {}, 'Drag the clip to move it (prepend space before); drag its edges to set the In–Out selection; drag the top-corner knobs to fade. Loop selection repeats that region during playback. Enable Media Transcoding for ffmpeg render paths.');
 
   root.append(toolbar, errorBanner, timeline, inspector, note);
 
@@ -248,6 +255,15 @@ export function buildMixerAudioListenSurface(mediaEl, intake, options = {}) {
   zoomIn.addEventListener('click', () => { setZoomPxPerSec((pxPerSec || fitPxPerSec()) * 1.5); });
   zoomOut.addEventListener('click', () => { setZoomPxPerSec((pxPerSec || fitPxPerSec()) / 1.5); });
   fitBtn.addEventListener('click', () => { pxPerSec = 0; renderWaveform(); });
+  loopBtn.addEventListener('click', () => {
+    regionLoop = !regionLoop;
+    loopBtn.setAttribute('aria-pressed', regionLoop ? 'true' : 'false');
+    loopBtn.classList.toggle('active', regionLoop);
+    if (regionLoop && (mediaEl.currentTime < clipInSec() || mediaEl.currentTime >= clipOutSec())) {
+      mediaEl.currentTime = clipInSec();
+    }
+    reflectState();
+  });
   exportBtn.addEventListener('click', () => {
     const json = exportSettings();
     downloadProjectSettings(json, `${(intake?.filename || 'media').replace(/\.[^.]+$/, '')}.mixer.json`);
@@ -328,7 +344,13 @@ export function buildMixerAudioListenSurface(mediaEl, intake, options = {}) {
 
   // ── Media + lifecycle ─────────────────────────────────────────────────
   const onLoaded = () => { project = mergeDuration(project, mediaDuration(mediaEl) * 1000); syncAll(); };
-  const onMedia = () => { updateCursor(); };
+  const onMedia = (event) => {
+    if (event?.type === 'ended' && regionLoop) {
+      mediaEl.currentTime = clipInSec();
+      mediaEl.play().catch(() => {});
+    }
+    updateCursor();
+  };
   mediaEl.addEventListener('loadedmetadata', onLoaded);
   // Note: no 'volumechange' here — we drive mediaEl.volume ourselves via applyLiveVolume().
   ['play', 'pause', 'seeked', 'ended'].forEach((ev) => mediaEl.addEventListener(ev, onMedia));
@@ -366,6 +388,10 @@ export function buildMixerAudioListenSurface(mediaEl, intake, options = {}) {
 
   function loop() {
     if (destroyed) return;
+    if (regionLoop && !mediaEl.paused
+      && (mediaEl.currentTime >= clipOutSec() - 0.01 || mediaEl.currentTime < clipInSec())) {
+      mediaEl.currentTime = clipInSec();
+    }
     applyLiveVolume();
     if (!mediaEl.paused) renderWaveform(); else updateCursor();
     rafId = requestAnimationFrame(loop);
@@ -380,6 +406,7 @@ export function buildMixerAudioListenSurface(mediaEl, intake, options = {}) {
     root.dataset.mixerWaveformStatus = waveformStatus;
     root.dataset.mixerWaveformBuckets = String(waveformSummary?.buckets || (waveformSummary?.peak?.length ?? 0));
     root.dataset.mixerDurationSec = String(durationSec());
+    root.dataset.mixerRegionLoop = regionLoop ? 'true' : 'false';
   }
 
   function exportSettings() { const json = exportProjectSettingsJson(project); root.dataset.projectSettings = json; return json; }
@@ -391,6 +418,12 @@ export function buildMixerAudioListenSurface(mediaEl, intake, options = {}) {
     exportSettings,
     importSettings,
     zoomFactor: (f) => setZoomPxPerSec(fitPxPerSec() * Math.max(0.1, Number(f) || 1)),
+    setRegionLoop(value) {
+      regionLoop = !!value;
+      loopBtn.setAttribute('aria-pressed', regionLoop ? 'true' : 'false');
+      loopBtn.classList.toggle('active', regionLoop);
+      reflectState();
+    },
   };
 
   // Initial paint (deferred a tick so layout width is known).
@@ -416,6 +449,7 @@ export function buildMixerAudioListenSurface(mediaEl, intake, options = {}) {
         roomTone: !!el?.audio?.roomTone,
         durationSec: durationSec(),
         currentTime: Number(mediaEl.currentTime) || 0,
+        regionLoop,
       };
     },
     destroy() {
