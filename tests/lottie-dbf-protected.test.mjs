@@ -8,6 +8,18 @@ import { inspectProtectedData } from '../docs/types/binary/protected-data/parser
 import { detect as detectJson } from '../docs/types/text/json/detect.js';
 import { isLottieAnimation, matchesLottie, parseLottie } from '../docs/types/text/json/known/lottie/model.js';
 import { assignDroppedFiles, prepareAnimation, resolveAssetPath } from '../docs/types/text/json/known/lottie/assets.js';
+import {
+  LOTTIE_EXPORT_LIMITS,
+  authoredFrameCount,
+  authoredFramePositions,
+  frameFilename,
+  gifFrameSchedule,
+  outputDimensions,
+  rasterCacheKey,
+  stableCeil,
+  validateExportJob,
+} from '../docs/types/text/json/known/lottie/export-model.js';
+import { GIFEncoder } from '../docs/vendor/gifenc/gifenc.esm.js';
 
 const bytes = (path) => readFile(new URL(path, import.meta.url)).then((value) => new Uint8Array(value));
 const lottie = JSON.parse(await readFile(new URL('../docs/examples/sample-lottie.json', import.meta.url), 'utf8'));
@@ -101,6 +113,49 @@ const scrubbed = await prepareAnimation(networkFields);
 assert.equal('segments' in scrubbed.data, false);
 assert.equal('fPath' in scrubbed.data.fonts.list[0], false);
 assert.ok(scrubbed.warnings.some((warning) => /Expressions/.test(warning)));
+
+// Lottie raster exports preserve authored frames, while GIF scheduling samples by
+// requested FPS and distributes GIF centisecond ticks without cumulative drift.
+const summary = { width: 128, height: 128, fps: 30, inFrame: 0, outFrame: 60 };
+assert.equal(stableCeil(59.99999999999999), 60);
+assert.equal(stableCeil(60.0001), 61);
+assert.equal(authoredFrameCount(summary), 60);
+assert.deepEqual(authoredFramePositions({ ...summary, inFrame: 0.25, outFrame: 2.45 }).map((item) => item.relativeFrame), [0, 1, 2]);
+assert.equal(frameFilename(0, 60), 'frame-001.png');
+assert.equal(frameFilename(1999, 2000), 'frame-2000.png');
+assert.deepEqual(outputDimensions(summary, 125), { width: 160, height: 160 });
+assert.equal(rasterCacheKey({ scale: 100, backgroundMode: 'transparent', color: '#ABCDEF' }), '100:transparent:-');
+assert.equal(rasterCacheKey({ scale: 100, backgroundMode: 'solid', color: '#ABCDEF' }), '100:solid:#abcdef');
+for (const fps of [24, 30, 100]) {
+  const schedule = gifFrameSchedule(summary, fps);
+  assert.equal(schedule.length, 2 * fps);
+  assert.equal(schedule.reduce((sum, frame) => sum + frame.delayMs, 0), 2000);
+  assert.ok(schedule.every((frame) => frame.delayMs >= 10));
+}
+assert.ok(gifFrameSchedule(summary, 100).every((frame) => frame.delayMs === 10));
+const exactBudget = { width: 500, height: 500, fps: 30, inFrame: 0, outFrame: 2000 };
+assert.equal(validateExportJob(exactBudget, { action: 'split', scale: 100 }).ok, true);
+assert.equal(validateExportJob({ ...exactBudget, outFrame: 2000.01 }, { action: 'split', scale: 100 }).frameCount, 2001);
+assert.match(validateExportJob({ ...exactBudget, outFrame: 2000.01 }, { action: 'split', scale: 100 }).reason, /2,000/);
+assert.equal(validateExportJob({ ...summary, width: 4097, height: 1 }, { action: 'split', scale: 100 }).ok, false);
+assert.match(validateExportJob({ ...summary, outFrame: 100_000_000 }, { action: 'gif', scale: 10, fps: 100 }).reason, /frames/);
+assert.equal(LOTTIE_EXPORT_LIMITS.maxGeneratedBytes, 256 * 1024 * 1024);
+
+function onePixelGif(repeat) {
+  const encoder = GIFEncoder();
+  encoder.writeFrame(Uint8Array.of(0), 1, 1, {
+    palette: [[0, 0, 0], [255, 255, 255]], delay: 10, repeat,
+  });
+  encoder.finish();
+  return encoder.bytes();
+}
+const loopingGif = onePixelGif(0);
+const onceGif = onePixelGif(-1);
+const ascii = (value) => new TextDecoder('latin1').decode(value);
+assert.match(ascii(loopingGif), /NETSCAPE2\.0/);
+assert.doesNotMatch(ascii(onceGif), /NETSCAPE2\.0/);
+const gce = loopingGif.findIndex((value, index) => value === 0x21 && loopingGif[index + 1] === 0xf9);
+assert.equal(loopingGif[gce + 4] | (loopingGif[gce + 5] << 8), 1, '10 ms is encoded as one GIF centisecond');
 
 const playerSource = await readFile(new URL('../docs/vendor/lottie/lottie_light.min.js', import.meta.url), 'utf8');
 assert.doesNotMatch(playerSource, /\beval\s*\(|new\s+Function\s*\(|ExpressionManager/);

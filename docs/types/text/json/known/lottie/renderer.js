@@ -1,5 +1,6 @@
 import { vendor } from '../../../../../core/script-loader.js';
 import { assignDroppedFiles, prepareAnimation } from './assets.js';
+import { mountLottieExports } from './exports.js';
 import { lottieSummary, parseLottie } from './model.js';
 
 const CSS = `
@@ -8,11 +9,12 @@ const CSS = `
 .lottie-meta{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 12px}.lottie-chip{font-size:11px;border:1px solid var(--border,#d0d5dd);border-radius:999px;padding:3px 8px;background:var(--bg-2,#f7f8fa)}
 .lottie-stage{height:min(58vh,560px);min-height:280px;border:1px solid var(--border,#d0d5dd);border-radius:10px;overflow:hidden;background:repeating-conic-gradient(#f5f5f5 0 25%,#fff 0 50%) 50%/18px 18px;position:relative;outline:none}.lottie-stage:focus-visible{box-shadow:0 0 0 3px color-mix(in srgb,var(--accent,#2563eb) 35%,transparent);border-color:var(--accent,#2563eb)}
 .fv-dark .lottie-stage{background:repeating-conic-gradient(#24272b 0 25%,#1d2024 0 50%) 50%/18px 18px}.lottie-frame{display:block;border:0;width:100%;height:100%;background:transparent}
-.lottie-controls{display:grid;grid-template-columns:auto auto auto auto minmax(120px,1fr) auto;gap:8px;align-items:center;margin-top:10px}.lottie-controls button,.lottie-controls select{font:inherit;border:1px solid var(--border,#cfd4dc);border-radius:6px;background:var(--bg,#fff);color:inherit;padding:5px 9px}.lottie-controls button{cursor:pointer}.lottie-controls input[type=range]{width:100%}
+.lottie-controls{display:grid;grid-template-columns:auto auto auto auto minmax(120px,1fr) auto auto;gap:8px;align-items:center;margin-top:10px}.lottie-controls button,.lottie-controls select,.lottie-export-panel button,.lottie-export-panel select,.lottie-export-panel input{font:inherit;border:1px solid var(--border,#cfd4dc);border-radius:6px;background:var(--bg,#fff);color:inherit;padding:5px 9px}.lottie-controls button,.lottie-export-panel button{cursor:pointer}.lottie-controls button:disabled,.lottie-export-panel button:disabled{cursor:default;opacity:.55}.lottie-controls input[type=range]{width:100%}
 .lottie-mode{display:flex;gap:5px;align-items:center;font-size:12px;white-space:nowrap}.lottie-frame-label{font:12px ui-monospace,monospace;min-width:72px;text-align:right}.lottie-status{font-size:12px;color:var(--fg-2,#667085);min-height:18px;margin-top:5px}
+.lottie-export-panel{margin-top:8px;padding:10px;border:1px solid var(--border,#d0d5dd);border-radius:8px;background:var(--bg-2,#f7f8fa)}.lottie-export-settings,.lottie-export-actions{display:flex;align-items:end;gap:10px;flex-wrap:wrap}.lottie-export-actions{align-items:center;margin-top:9px}.lottie-export-field{display:flex;flex-direction:column;gap:3px;font-size:11px;color:var(--fg-2,#667085)}.lottie-export-field input,.lottie-export-field select{color:var(--fg,#202124)}.lottie-export-number{display:flex;align-items:center}.lottie-export-number input{width:78px;border-radius:6px 0 0 6px}.lottie-export-suffix{align-self:stretch;display:flex;align-items:center;padding:0 7px;border:1px solid var(--border,#cfd4dc);border-left:0;border-radius:0 6px 6px 0;color:var(--fg,#202124);background:var(--bg,#fff)}.lottie-export-fps{width:84px}.lottie-export-background-wrap{display:flex;gap:5px}.lottie-export-color{width:42px;padding:2px!important}.lottie-export-loop{font-size:12px;display:flex;align-items:center;min-height:31px}.lottie-export-loop input{margin:0 3px 0 0}.lottie-export-progress{width:min(100%,520px);height:8px;margin-top:9px}.lottie-export-status{font-size:12px;color:var(--fg-2,#667085);min-height:18px;margin-top:4px}.lottie-export-frames{display:flex;flex-direction:column;gap:5px;max-height:260px;overflow:auto;margin-top:9px}.lottie-export-frame{display:grid;grid-template-columns:42px minmax(110px,1fr) auto auto;align-items:center;gap:7px;font-size:12px}.lottie-export-frame img{width:40px;height:40px;object-fit:contain;border:1px solid var(--border,#d0d5dd);background:repeating-conic-gradient(#eee 0 25%,#fff 0 50%) 50%/10px 10px}.lottie-export-frame a{color:inherit}
 .lottie-messages{margin:10px 0;padding:0;list-style:none}.lottie-messages li{font-size:12px;padding:6px 9px;margin:4px 0;border-left:3px solid #d97706;background:#fff7ed}.fv-dark .lottie-messages li{background:#3b2a18}
 .lottie-assets{border:1px dashed var(--border,#98a2b3);border-radius:8px;padding:12px;margin-top:10px;text-align:center;font-size:12px}.lottie-assets.drag{border-color:#2563eb;background:#eff6ff}.fv-dark .lottie-assets.drag{background:#17223b}.lottie-assets button{font:inherit;margin-left:6px}.lottie-assets ul{text-align:left;margin:8px auto 0;max-width:640px}.lottie-error{padding:14px;border-left:3px solid #c62828;background:#ffebee}.fv-dark .lottie-error{background:#3b1f22}
-@media(max-width:700px){.lottie-doc{padding:9px}.lottie-stage{min-height:240px;height:48vh}.lottie-controls{grid-template-columns:auto auto 1fr auto}.lottie-mode{grid-column:1/3}.lottie-controls input[type=range]{grid-column:2/4}.lottie-frame-label{grid-column:4}}
+@media(max-width:700px){.lottie-doc{padding:9px}.lottie-stage{min-height:240px;height:48vh}.lottie-controls{grid-template-columns:auto auto 1fr auto}.lottie-mode{grid-column:1/3}.lottie-controls input[type=range]{grid-column:2/4}.lottie-frame-label{grid-column:4}.lottie-export-toggle{grid-column:1/-1}.lottie-export-settings{align-items:stretch}.lottie-export-field{flex:1 1 120px}.lottie-export-frame{grid-template-columns:42px 1fr auto}.lottie-export-frame a{display:none}}
 `;
 
 function attr(value) {
@@ -22,24 +24,79 @@ function attr(value) {
 function frameDocument(playerUrl) {
   const origin = new URL(playerUrl).origin;
   return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' ${attr(origin)}; style-src 'unsafe-inline'; img-src data:; font-src 'none'; media-src 'none'; connect-src 'none'; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none'">
-    <style>html,body,#animation{width:100%;height:100%;margin:0;overflow:hidden;background:transparent}svg{display:block}</style>
-    <script src="${attr(playerUrl)}"></script></head><body><div id="animation"></div><script>
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' ${attr(origin)}; style-src 'unsafe-inline'; img-src data: blob:; font-src 'none'; media-src 'none'; connect-src 'none'; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none'">
+    <style>html,body,#animation{width:100%;height:100%;margin:0;overflow:hidden;background:transparent}svg{display:block}#exportAnimation{position:fixed;left:-100000px;top:0;overflow:hidden;pointer-events:none}#exportCanvas{display:none}</style>
+    <script src="${attr(playerUrl)}"></script></head><body><div id="animation"></div><div id="exportAnimation"></div><canvas id="exportCanvas"></canvas><script>
     (function(){
-      var MARK='__fvLottie', animation=null, ip=0, interactionMode='once';
-      function send(type, extra){ parent.postMessage(Object.assign({__fvLottie:1,type:type},extra||{}),'*'); }
-      function destroy(){ if(animation){ try{animation.destroy();}catch(e){} animation=null; } document.getElementById('animation').textContent=''; }
+      var MARK='__fvLottie', animation=null, pristine=null, ip=0, interactionMode='once', exporter=null, exportState=null, exportBusy=false;
+      function copy(value){ return typeof structuredClone==='function'?structuredClone(value):JSON.parse(JSON.stringify(value)); }
+      function send(type, extra, transfer){ parent.postMessage(Object.assign({__fvLottie:1,type:type},extra||{}),'*',transfer||[]); }
+      function destroyPreview(){ if(animation){ try{animation.destroy();}catch(e){} animation=null; } document.getElementById('animation').textContent=''; }
+      function destroyExport(){ if(exporter){ try{exporter.destroy();}catch(e){} exporter=null; } exportState=null; exportBusy=false; document.getElementById('exportAnimation').textContent=''; }
+      function destroy(){ destroyExport(); destroyPreview(); pristine=null; }
       function setInteractionMode(value){ interactionMode=value||'once'; document.body.style.cursor=interactionMode==='click'?'pointer':'default'; }
+      function nextPaint(){ return new Promise(function(resolve){ requestAnimationFrame(function(){ resolve(); }); }); }
+      function canvasBlob(canvas){ return new Promise(function(resolve,reject){ canvas.toBlob(function(blob){ blob?resolve(blob):reject(new Error('PNG rasterization failed.')); },'image/png'); }); }
+      function imageFromBlob(blob){ return new Promise(function(resolve,reject){ var url=URL.createObjectURL(blob), image=new Image(); image.onload=function(){ URL.revokeObjectURL(url); resolve(image); }; image.onerror=function(){ URL.revokeObjectURL(url); reject(new Error('The generated SVG could not be decoded.')); }; image.src=url; }); }
+      async function startExport(msg){
+        if(!pristine) throw new Error('The animation is not ready for export.');
+        destroyExport();
+        var width=Math.floor(Number(msg.width)),height=Math.floor(Number(msg.height));
+        if(!(width>0&&height>0)) throw new Error('Invalid export dimensions.');
+        var container=document.getElementById('exportAnimation');
+        container.style.width=width+'px'; container.style.height=height+'px';
+        var canvas=document.getElementById('exportCanvas'); canvas.width=width; canvas.height=height;
+        exportState={jobId:msg.jobId,width:width,height:height,background:/^#[0-9a-f]{6}$/i.test(msg.background||'')?msg.background:''};
+        exporter=window.lottie.loadAnimation({container:container,renderer:'svg',loop:false,autoplay:false,animationData:copy(pristine),rendererSettings:{preserveAspectRatio:'xMidYMid meet',progressiveLoad:false}});
+        exporter.addEventListener('DOMLoaded',function(){
+          if(!exportState||exportState.jobId!==msg.jobId) return;
+          // lottie_light's initial paused DOM has identity transforms until it
+          // visits a different frame. Prime once so an export beginning at frame
+          // zero receives the authored position/scale instead of that placeholder.
+          if(exporter.totalFrames>0) exporter.goToAndStop(Math.min(1,Math.max(0.0001,exporter.totalFrames/2)),true);
+          exporter.goToAndStop(0,true); send('export-ready',{jobId:msg.jobId});
+        });
+        exporter.addEventListener('data_failed',function(){ send('export-error',{jobId:msg.jobId,message:'The export renderer could not decode this animation.'}); destroyExport(); });
+      }
+      async function captureExportFrame(msg){
+        if(!exportState||!exporter||exportState.jobId!==msg.jobId) throw new Error('The export job is no longer active.');
+        if(exportBusy) throw new Error('The previous frame is still being rasterized.');
+        exportBusy=true;
+        try{
+          exporter.goToAndStop(Math.max(0,Number(msg.relativeFrame)||0),true);
+          await nextPaint();
+          if(!exportState||exportState.jobId!==msg.jobId) throw new Error('The export job was cancelled.');
+          var source=document.querySelector('#exportAnimation svg');
+          if(!source) throw new Error('The export renderer produced no SVG frame.');
+          var clone=source.cloneNode(true);
+          clone.setAttribute('xmlns','http://www.w3.org/2000/svg'); clone.setAttribute('width',String(exportState.width)); clone.setAttribute('height',String(exportState.height));
+          var svgBlob=new Blob([new XMLSerializer().serializeToString(clone)],{type:'image/svg+xml'});
+          // Chromium does not consistently decode serialized SVG through
+          // createImageBitmap inside an opaque-origin iframe. A blob-backed Image
+          // stays inside the same sandbox/CSP and is reliable for SVG raster input.
+          var sourceImage=await imageFromBlob(svgBlob);
+          var canvas=document.getElementById('exportCanvas'),ctx=canvas.getContext('2d');
+          ctx.clearRect(0,0,canvas.width,canvas.height);
+          if(exportState.background){ ctx.fillStyle=exportState.background; ctx.fillRect(0,0,canvas.width,canvas.height); }
+          ctx.drawImage(sourceImage,0,0,canvas.width,canvas.height); sourceImage.close&&sourceImage.close();
+          if(typeof createImageBitmap==='function'){
+            var bitmap=await createImageBitmap(canvas);
+            send('export-frame',{jobId:msg.jobId,sequence:msg.sequence,width:canvas.width,height:canvas.height,bitmap:bitmap},[bitmap]);
+          }else{
+            send('export-frame',{jobId:msg.jobId,sequence:msg.sequence,width:canvas.width,height:canvas.height,blob:await canvasBlob(canvas)});
+          }
+        }finally{ exportBusy=false; }
+      }
       document.addEventListener('click',function(){ if(interactionMode==='click') send('interaction',{kind:'click'}); },true);
-      window.addEventListener('message',function(event){
+      window.addEventListener('message',async function(event){
         if(event.source!==parent) return;
         var msg=event.data;
         if(!msg||msg[MARK]!==1) return;
         try{
           if(msg.type==='load'){
-            destroy(); ip=Number(msg.ip)||0; setInteractionMode(msg.mode);
+            destroy(); ip=Number(msg.ip)||0; setInteractionMode(msg.mode); pristine=copy(msg.animationData);
             if(!window.lottie||typeof window.lottie.loadAnimation!=='function') throw new Error('The vendored Lottie player did not load.');
-            animation=window.lottie.loadAnimation({container:document.getElementById('animation'),renderer:'svg',loop:!!msg.loop,autoplay:!!msg.autoplay,animationData:msg.animationData,rendererSettings:{preserveAspectRatio:'xMidYMid meet',progressiveLoad:false}});
+            animation=window.lottie.loadAnimation({container:document.getElementById('animation'),renderer:'svg',loop:!!msg.loop,autoplay:!!msg.autoplay,animationData:copy(pristine),rendererSettings:{preserveAspectRatio:'xMidYMid meet',progressiveLoad:false}});
             animation.setSpeed(Number(msg.speed)||1);
             animation.addEventListener('DOMLoaded',function(){ if(!msg.autoplay) animation.goToAndStop(0,true); send('loaded',{frame:ip}); });
             animation.addEventListener('enterFrame',function(event){ send('frame',{frame:ip+(Number(event.currentTime)||0)}); });
@@ -52,8 +109,15 @@ function frameDocument(playerUrl) {
           else if(msg.type==='speed'&&animation) animation.setSpeed(Number(msg.value)||1);
           else if(msg.type==='loop'&&animation) animation.loop=!!msg.value;
           else if(msg.type==='mode') setInteractionMode(msg.value);
+          else if(msg.type==='export-start') await startExport(msg);
+          else if(msg.type==='export-frame') await captureExportFrame(msg);
+          else if(msg.type==='export-end'&&exportState&&exportState.jobId===msg.jobId) destroyExport();
           else if(msg.type==='destroy') destroy();
-        }catch(error){ send('error',{message:error&&error.message?error.message:String(error)}); }
+        }catch(error){
+          var message=error&&error.message?error.message:String(error);
+          if(/^export-/.test(msg.type||'')) send('export-error',{jobId:msg.jobId,sequence:msg.sequence,message:message});
+          else send('error',{message:message});
+        }
       });
       window.addEventListener('unload',destroy);
       send('ready',{available:!!(window.lottie&&window.lottie.loadAnimation)});
@@ -70,8 +134,34 @@ function createSandbox(slot, animationData, summary, { autoplay, loop, mode, onS
   iframe.setAttribute('sandbox', 'allow-scripts');
   const playerUrl = vendor('lottie/lottie_light.min.js');
   let ready = false;
+  let destroyed = false;
+  const pending = new Map();
   function post(message) {
     iframe.contentWindow?.postMessage({ __fvLottie: 1, ...message }, '*');
+  }
+  function request(message, responseType, timeoutMs = 120000) {
+    if (!ready || destroyed) return Promise.reject(new Error('The Lottie sandbox is not ready.'));
+    const key = `${responseType}:${message.jobId}:${message.sequence ?? ''}`;
+    return new Promise((resolve, reject) => {
+      const timer = setTimeout(() => {
+        pending.delete(key);
+        reject(new Error('The Lottie sandbox timed out while rendering a frame.'));
+      }, timeoutMs);
+      pending.set(key, { resolve, reject, timer, jobId: message.jobId });
+      post(message);
+    });
+  }
+  function settle(message) {
+    const key = `${message.type}:${message.jobId}:${message.sequence ?? ''}`;
+    const item = pending.get(key);
+    if (!item) return false;
+    pending.delete(key); clearTimeout(item.timer); item.resolve(message); return true;
+  }
+  function rejectJob(jobId, message) {
+    for (const [key, item] of pending) {
+      if (item.jobId !== jobId) continue;
+      pending.delete(key); clearTimeout(item.timer); item.reject(new Error(message));
+    }
   }
   function onMessage(event) {
     if (event.source !== iframe.contentWindow) return;
@@ -81,7 +171,9 @@ function createSandbox(slot, animationData, summary, { autoplay, loop, mode, onS
       ready = true;
       if (!message.available) { onError('The vendored Lottie player could not be initialized.'); return; }
       post({ type: 'load', animationData, ip: summary.inFrame, autoplay, loop, mode, speed: 1 });
-    } else if (message.type === 'error') onError(message.message || 'Lottie playback failed.');
+    } else if (message.type === 'export-error') rejectJob(message.jobId, message.message || 'Lottie frame export failed.');
+    else if (message.type === 'export-ready' || message.type === 'export-frame') settle(message);
+    else if (message.type === 'error') onError(message.message || 'Lottie playback failed.');
     else onState(message);
   }
   window.addEventListener('message', onMessage);
@@ -90,8 +182,19 @@ function createSandbox(slot, animationData, summary, { autoplay, loop, mode, onS
   return {
     iframe,
     command(type, extra = {}) { if (ready) post({ type, ...extra }); },
+    startExport(options) { return request({ type: 'export-start', ...options }, 'export-ready'); },
+    captureExportFrame(jobId, sequence, relativeFrame) {
+      return request({ type: 'export-frame', jobId, sequence, relativeFrame }, 'export-frame');
+    },
+    endExport(jobId) {
+      if (ready) post({ type: 'export-end', jobId });
+      rejectJob(jobId, 'The Lottie export was cancelled.');
+    },
     destroy() {
+      destroyed = true;
       if (ready) post({ type: 'destroy' });
+      for (const item of pending.values()) { clearTimeout(item.timer); item.reject(new Error('The Lottie sandbox was destroyed.')); }
+      pending.clear();
       window.removeEventListener('message', onMessage);
       iframe.remove();
     },
@@ -143,7 +246,7 @@ function buildHost(summary) {
   const choose = document.createElement('button'); choose.type = 'button'; choose.textContent = 'Choose assets';
   const input = document.createElement('input'); input.type = 'file'; input.multiple = true; input.hidden = true;
   const assetList = document.createElement('ul'); assetBox.append(assetText, choose, input, assetList); host.appendChild(assetBox);
-  return { host, messages, stage, mode, play, restart, speed, scrub, frameLabel, status, assetBox, assetText, choose, input, assetList };
+  return { host, messages, stage, controls, mode, play, restart, speed, scrub, frameLabel, status, assetBox, assetText, choose, input, assetList };
 }
 
 export async function render(intake, ctx = {}) {
@@ -167,6 +270,14 @@ export async function render(intake, ctx = {}) {
   let readyBase = '';
   let lastMissing = [];
   let refreshGeneration = 0;
+  const exportUi = mountLottieExports({
+    controls: ui.controls,
+    summary,
+    filename: intake.filename,
+    getPlayer: () => player,
+    getPlaybackMode: () => playbackMode,
+    openIntake: ctx.openIntake,
+  });
 
   function syncPlayLabel() {
     ui.play.textContent = playing ? 'Pause' : 'Play';
@@ -227,6 +338,7 @@ export async function render(intake, ctx = {}) {
   async function refresh() {
     if (destroyed) return;
     const generation = ++refreshGeneration;
+    exportUi.setReady(false);
     player?.destroy(); player = null;
     readyBase = ''; hoverEngaged = false;
     ui.stage.replaceChildren(); ui.messages.replaceChildren(); ui.assetList.replaceChildren();
@@ -257,11 +369,12 @@ export async function render(intake, ctx = {}) {
       autoplay,
       loop: playbackMode === 'loop',
       mode: playbackMode,
-      onError(message) { ui.status.textContent = 'Preview failed: ' + message; setPlaying(false); },
+      onError(message) { ui.status.textContent = 'Preview failed: ' + message; setPlaying(false); exportUi.setReady(false); },
       onState(message) {
         if (message.type === 'loaded') {
           readyBase = prepared.assetBytes ? `Ready — ${prepared.assetBytes.toLocaleString()} bytes of local image assets embedded.` : 'Ready — self-contained animation.';
           updateReadyStatus();
+          exportUi.setReady(true);
         }
         if (message.type === 'frame' && Number.isFinite(message.frame)) {
           syncFrame(message.frame);
@@ -322,7 +435,7 @@ export async function render(intake, ctx = {}) {
   ui.assetBox.addEventListener('drop', (event) => { event.preventDefault(); event.stopPropagation(); ui.assetBox.classList.remove('drag'); acceptFiles(event.dataTransfer?.files); });
 
   await refresh();
-  const destroy = () => { if (destroyed) return; destroyed = true; refreshGeneration += 1; player?.destroy(); player = null; };
+  const destroy = () => { if (destroyed) return; destroyed = true; refreshGeneration += 1; exportUi.destroy(); player?.destroy(); player = null; };
   ctx.onCleanup?.(destroy);
   return { parentNode: ui.host, destroy };
 }

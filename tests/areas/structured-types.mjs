@@ -1,5 +1,11 @@
+import { readFile } from 'node:fs/promises';
+import { createRequire } from 'node:module';
+import { decodeGifBuffers } from '../../docs/types/image/gif-decode.js';
 import { runJsonDuplicateFidelity } from './json-duplicate-fidelity.mjs';
 import { runExactSourceFidelity } from './exact-source-fidelity.mjs';
+
+const require = createRequire(import.meta.url);
+const JSZip = require('jszip');
 
 export async function run(ctx) {
   const { page, origin, frameOf, pass, fail, openExample } = ctx;
@@ -862,6 +868,19 @@ export async function run(ctx) {
   const loopWrapped = await page.waitForFunction(() => Number(document.querySelector('#previewHost .lottie-controls input[type="range"]')?.value) < 15, null, { timeout: 3500 }).then(() => true).catch(() => false);
   const loopLabel = await page.textContent('#previewHost .lottie-controls button');
   if (loopWrapped && loopLabel === 'Pause') pass('Loop mode repeats continuously'); else fail('Loop mode did not wrap: ' + JSON.stringify({ loopWrapped, loopLabel }));
+  await page.click('#previewHost .lottie-export-toggle');
+  const exportControls = await page.evaluate(() => ({
+    expanded: document.querySelector('#previewHost .lottie-export-toggle')?.getAttribute('aria-expanded'),
+    scale: document.querySelector('#previewHost .lottie-export-scale')?.value,
+    fps: document.querySelector('#previewHost .lottie-export-fps')?.value,
+    background: document.querySelector('#previewHost .lottie-export-background')?.value,
+    loop: document.querySelector('#previewHost .lottie-export-loop-check')?.checked,
+    splitDisabled: document.querySelector('#previewHost .lottie-export-split')?.disabled,
+  }));
+  if (exportControls.expanded === 'true' && exportControls.scale === '100' && exportControls.fps === '30'
+    && exportControls.background === 'transparent' && exportControls.loop && !exportControls.splitDisabled)
+    pass('Lottie export options initialize from source settings and current Loop mode');
+  else fail('Lottie export controls: ' + JSON.stringify(exportControls));
 
   await page.selectOption('#previewHost .lottie-mode-select', 'hover');
   await page.waitForFunction(() => Number(document.querySelector('#previewHost .lottie-controls input[type="range"]')?.value) < 0.1);
@@ -890,20 +909,148 @@ export async function run(ctx) {
   await page.waitForTimeout(180);
   const controlClickFrame = Number(await page.$eval('#previewHost .lottie-controls input[type="range"]', (el) => el.value));
   if (controlClickFrame < 0.1) pass('Clicks on Lottie controls do not activate Click mode'); else fail('Control click activated animation: ' + controlClickFrame);
+
+  // Raster exports use a separate hidden renderer: split all authored frames, reuse them
+  // for ZIP, resample only GIF FPS, and leave the visible Click-mode preview untouched.
+  const lottieWorkerUrls = [];
+  const onLottieWorker = (worker) => lottieWorkerUrls.push(worker.url());
+  page.on('worker', onLottieWorker);
+  await page.fill('#previewHost .lottie-export-scale', '10');
+  await page.locator('#previewHost .lottie-export-scale').evaluate((el) => el.dispatchEvent(new Event('change', { bubbles: true })));
+  await page.click('#previewHost .lottie-export-split');
+  await page.waitForFunction(() => /(PNG frames (added|shown)|Export failed)/.test(document.querySelector('#previewHost .lottie-export-status')?.textContent || ''), null, { timeout: 30000 });
+  const splitStatus = await page.textContent('#previewHost .lottie-export-status');
+  if (/Export failed/.test(splitStatus)) throw new Error(splitStatus);
+  const splitResult = await page.evaluate(async () => {
+    const state = window.__fv.state;
+    const root = state.sidebarRoots?.find((item) => item.id === state.activeSidebarRootId);
+    const intake = await root?.getChildIntake?.('frame-001.png');
+    const bytes = intake?.bytes;
+    let alpha = -1;
+    if (bytes) {
+      const bitmap = await createImageBitmap(new Blob([bytes], { type: 'image/png' }));
+      const canvas = document.createElement('canvas'); canvas.width = bitmap.width; canvas.height = bitmap.height;
+      const context = canvas.getContext('2d'); context.drawImage(bitmap, 0, 0); bitmap.close();
+      alpha = context.getImageData(0, 0, 1, 1).data[3];
+    }
+    const u32 = (offset) => bytes ? (((bytes[offset] << 24) >>> 0) + (bytes[offset + 1] << 16) + (bytes[offset + 2] << 8) + bytes[offset + 3]) : 0;
+    return {
+      count: root?.childEntries?.length || 0,
+      first: root?.childEntries?.[0]?.name || '',
+      signature: bytes ? [...bytes.slice(0, 8)] : [],
+      width: u32(16), height: u32(20), alpha,
+    };
+  });
+  if (splitResult.count === 60 && splitResult.first === 'frame-001.png'
+    && splitResult.signature.join(',') === '137,80,78,71,13,10,26,10'
+    && splitResult.width === 13 && splitResult.height === 13 && splitResult.alpha === 0)
+    pass('Lottie Split frames adds 60 transparent 13×13 PNG children to the sidebar');
+  else fail('Lottie split frames: ' + JSON.stringify(splitResult));
+
+  const [lottieZip] = await Promise.all([
+    page.waitForEvent('download', { timeout: 30000 }),
+    page.click('#previewHost .lottie-export-zip'),
+  ]);
+  const lottieZipBytes = await readFile(await lottieZip.path());
+  const lottieArchive = await JSZip.loadAsync(lottieZipBytes);
+  const lottieZipNames = Object.keys(lottieArchive.files).filter((name) => !lottieArchive.files[name].dir);
+  if (lottieZip.suggestedFilename() === 'sample-lottie-frames.zip' && lottieZipNames.length === 60
+    && lottieZipNames[0] === 'frame-001.png' && lottieZipNames.at(-1) === 'frame-060.png')
+    pass('Lottie Frames ZIP contains every authored PNG frame');
+  else fail('Lottie frames ZIP: ' + JSON.stringify({ name: lottieZip.suggestedFilename(), count: lottieZipNames.length, first: lottieZipNames[0], last: lottieZipNames.at(-1) }));
+
+  await page.fill('#previewHost .lottie-export-fps', '5');
+  await page.locator('#previewHost .lottie-export-fps').evaluate((el) => el.dispatchEvent(new Event('change', { bubbles: true })));
+  const [lottieGif] = await Promise.all([
+    page.waitForEvent('download', { timeout: 30000 }),
+    page.click('#previewHost .lottie-export-gif'),
+  ]);
+  const lottieGifBytes = new Uint8Array(await readFile(await lottieGif.path()));
+  const decodedLottieGif = await decodeGifBuffers(lottieGifBytes);
+  const lottieGifText = new TextDecoder('latin1').decode(lottieGifBytes);
+  if (lottieGif.suggestedFilename() === 'sample-lottie.gif' && decodedLottieGif.width === 13
+    && decodedLottieGif.height === 13 && decodedLottieGif.frames.length === 10
+    && decodedLottieGif.frames.reduce((sum, frame) => sum + frame.delayMs, 0) === 2000
+    && /NETSCAPE2\.0/.test(lottieGifText))
+    pass('Lottie GIF export resamples FPS, preserves duration, and applies Loop GIF');
+  else fail('Lottie GIF export: ' + JSON.stringify({ name: lottieGif.suggestedFilename(), width: decodedLottieGif.width, height: decodedLottieGif.height, frames: decodedLottieGif.frames.length, duration: decodedLottieGif.frames.reduce((sum, frame) => sum + frame.delayMs, 0), loop: /NETSCAPE2\.0/.test(lottieGifText) }));
+
+  await page.uncheck('#previewHost .lottie-export-loop-check');
+  await page.fill('#previewHost .lottie-export-fps', '1');
+  await page.selectOption('#previewHost .lottie-export-background', 'solid');
+  await page.$eval('#previewHost .lottie-export-color', (el) => { el.value = '#ff0000'; el.dispatchEvent(new Event('change', { bubbles: true })); });
+  const [onceGif] = await Promise.all([
+    page.waitForEvent('download', { timeout: 30000 }),
+    page.click('#previewHost .lottie-export-gif'),
+  ]);
+  const onceGifBytes = new Uint8Array(await readFile(await onceGif.path()));
+  const decodedOnceGif = await decodeGifBuffers(onceGifBytes);
+  if (!/NETSCAPE2\.0/.test(new TextDecoder('latin1').decode(onceGifBytes))
+    && decodedOnceGif.frames[0].rgba[0] > 240 && decodedOnceGif.frames[0].rgba[1] < 20 && decodedOnceGif.frames[0].rgba[2] < 20)
+    pass('Lottie GIF can export a solid background as a single non-looping pass');
+  else fail('Lottie non-looping solid GIF metadata or background is wrong');
+
+  await page.fill('#previewHost .lottie-export-fps', '100');
+  await page.click('#previewHost .lottie-export-gif');
+  await page.waitForSelector('#previewHost .lottie-export-cancel:not([hidden])');
+  await page.click('#previewHost .lottie-export-cancel');
+  await page.waitForFunction(() => /cancelled/i.test(document.querySelector('#previewHost .lottie-export-status')?.textContent || ''), null, { timeout: 5000 });
+  if (!await page.$eval('#previewHost .lottie-export-cancel', (el) => !el.hidden)) pass('Lottie export cancellation restores the controls');
+  else fail('Lottie export cancellation left the job busy');
+  page.off('worker', onLottieWorker);
+  if (lottieWorkerUrls.some((url) => /lottie\/export-worker\.js$/.test(url))) pass('Lottie raster and packaging work uses the dedicated local worker');
+  else fail('Lottie export worker was not created: ' + lottieWorkerUrls.join(', '));
+  const previewAfterExports = {
+    mode: await page.$eval('#previewHost .lottie-stage', (el) => el.dataset.playbackMode),
+    visibleSvg: await lottieFrame.$('#animation svg') !== null,
+    exportSvg: await lottieFrame.$('#exportAnimation svg') !== null,
+  };
+  if (previewAfterExports.mode === 'click' && previewAfterExports.visibleSvg && !previewAfterExports.exportSvg)
+    pass('Lottie exports leave the visible preview and Click mode intact');
+  else fail('Lottie preview after exports: ' + JSON.stringify(previewAfterExports));
+
   await page.click('#viewMode button[data-mode="raw"]');
   await page.click('#enhanceChip .ec-toggle');
   await page.click('#enhanceChip .ec-toggle');
   const preservedMode = await page.$eval('#panes', (el) => el.dataset.mode);
   if (preservedMode === 'raw') pass('Lottie enhancement toggle preserves chosen view mode'); else fail('Lottie mode reset to ' + preservedMode);
 
+  await page.evaluate(async () => {
+    const data = await fetch('examples/sample-lottie.json').then((response) => response.json());
+    data.op = 2001; data.layers[0].op = 2001;
+    await window.__fv.openBlobFile(new Blob([JSON.stringify(data)], { type: 'video/lottie+json' }), 'too-many-frames.lot', { mime: 'video/lottie+json' });
+  });
+  await page.waitForFunction(() => /Ready/.test(document.querySelector('#previewHost .lottie-status')?.textContent || ''), null, { timeout: 12000 });
+  await page.click('#previewHost .lottie-export-toggle');
+  await page.click('#previewHost .lottie-export-split');
+  await page.waitForFunction(() => /safe limit/i.test(document.querySelector('#previewHost .lottie-export-status')?.textContent || ''), null, { timeout: 3000 });
+  const limitResult = await page.evaluate(() => ({
+    status: document.querySelector('#previewHost .lottie-export-status')?.textContent || '',
+    splitDisabled: document.querySelector('#previewHost .lottie-export-split')?.disabled,
+    cancelVisible: !document.querySelector('#previewHost .lottie-export-cancel')?.hidden,
+  }));
+  if (/2,001 frames/.test(limitResult.status) && !limitResult.splitDisabled && !limitResult.cancelVisible)
+    pass('Lottie rejects an over-limit export before rasterization and restores controls');
+  else fail('Lottie limit handling: ' + JSON.stringify(limitResult));
+
   // Opening a referenced-asset file alone offers the local picker/drop route.
   await openExample('Lottie animation (external SVG asset)');
   await page.waitForSelector('#previewHost .lottie-assets:not([hidden])', { timeout: 10000 });
+  const unresolvedExportDisabled = await page.$eval('#previewHost .lottie-export-split', (el) => el.disabled);
+  if (unresolvedExportDisabled) pass('Lottie export stays disabled until referenced assets are resolved');
+  else fail('Lottie export enabled with unresolved assets');
   await page.setInputFiles('#previewHost .lottie-assets input[type="file"]', new URL('../../docs/examples/lottie-assets/blue-dot.svg', import.meta.url).pathname);
   await page.waitForSelector('#previewHost .lottie-frame', { timeout: 12000 });
   await page.waitForFunction(() => /Ready/.test(document.querySelector('#previewHost .lottie-status')?.textContent || ''), null, { timeout: 12000 });
   if (/local image assets embedded/.test(await page.textContent('#previewHost .lottie-status'))) pass('Lottie missing SVG asset can be supplied locally');
   else fail('Lottie local asset status missing');
+  await page.click('#previewHost .lottie-export-toggle');
+  await page.fill('#previewHost .lottie-export-scale', '10');
+  await page.click('#previewHost .lottie-export-split');
+  await page.waitForFunction(() => /(PNG frames (added|shown)|Export failed)/.test(document.querySelector('#previewHost .lottie-export-status')?.textContent || ''), null, { timeout: 30000 });
+  const assetExportStatus = await page.textContent('#previewHost .lottie-export-status');
+  if (/30 PNG frames (added|shown)/.test(assetExportStatus)) pass('Lottie raster export includes a supplied local SVG asset');
+  else fail('Lottie supplied-asset export: ' + assetExportStatus);
 
   // The same explicit reference resolves automatically when the animation and asset are loaded as a folder.
   await page.evaluate(async () => {

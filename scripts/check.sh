@@ -763,6 +763,9 @@ run_smoke_core() {
       docs/types/media/*|docs/assets/preview-media.css|docs/examples/acx-qc-reference.mp3|scripts/gen-media-qc-fixture.py|tests/media-parsers.test.mjs|tests/media-qc-fixture.test.mjs|tests/areas/media-studio.mjs|tests/areas/media-studio-*.mjs)
         add_smoke_area media-studio
         ;;
+      docs/types/text/json/known/lottie/*|tests/lottie-dbf-protected.test.mjs)
+        add_smoke_area structured-types
+        ;;
       tests/areas/media-3d.mjs|docs/types/3d/*|docs/types/image/*|docs/types/binary/midi/*|docs/types/binary/gamerom/*)
         add_smoke_area media-3d
         ;;
