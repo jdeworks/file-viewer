@@ -12,6 +12,7 @@ export default {
     screenshot: true,
   },
   syntaxLanguage: 'ini',
+  preferredMode: 'preview',
   loadRenderer: () => import('./renderer.js'),
   loadMetadata: () => import('./metadata.js'),
   loadExports: () => import('./exports.js'),

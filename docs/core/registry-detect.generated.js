@@ -2,6 +2,8 @@
 import { isCode } from '../types/text/code/langmap.js';
 import { mediaInfo } from '../types/media/medialib.js';
 import { parseRom } from '../types/binary/gamerom/headers.js';
+import { validateDbf } from '../types/binary/dbf/validate.js';
+import { inspectProtectedData } from '../types/binary/protected-data/parser.js';
 function hasExtension(intake,...exts){const name=(intake.filename||'').toLowerCase();return exts.some((e)=>name.endsWith('.'+e.toLowerCase().replace(/^\./,'')));}
 function mimeMatches(intake,...needles){const m=(intake.mimeType||'').toLowerCase();return needles.some((n)=>m.includes(n));}
 
@@ -707,7 +709,8 @@ return detect;
 const detect_json=(()=>{
 function detect(intake) {
   if (intake.isBinary) return 0;
-  if (hasExtension(intake, 'json', 'jsonc', 'geojson', 'json5')) return 0.96;
+  if (hasExtension(intake, 'json', 'jsonc', 'geojson', 'json5', 'lot')) return 0.96;
+  if (mimeMatches(intake, 'video/lottie+json')) return 0.97;
   if (mimeMatches(intake, 'json')) return 0.9;
   // Content: starts like JSON (cheap — no full parse in the detector).
   const t = (intake.textSample || '').trim();
@@ -1689,31 +1692,28 @@ function detect(intake) {
 return detect;
 })();
 
-const detect_dbf=(()=>{
-// dBASE/DBF version byte values:
-// 0x02 = dBASE II, 0x03 = dBASE III+, 0x04 = dBASE IV, 0x05 = dBASE V,
-// 0x7b = Visual Objects, 0x83 = dBASE III+ with memo, 0x8b = dBASE IV with memo,
-// 0xf5 = FoxPro with memo, 0x30 = Visual FoxPro, 0x31 = VFP with autoincrement,
-// 0x32 = VFP with varchar
-const KNOWN_VERSIONS = new Set([0x02, 0x03, 0x04, 0x05, 0x07, 0x30, 0x31, 0x32, 0x7b, 0x82, 0x83, 0x8b, 0x8e, 0xcb, 0xf5]);
+const detect_protected_data=(()=>{
+function detect(intake) {
+  if (!intake?.isBinary || !intake.bytes) return 0;
+  return inspectProtectedData(intake.bytes) ? 0.995 : 0;
+}
+return detect;
+})();
 
+const detect_dbf=(()=>{
 function detect(intake) {
   const { bytes: b } = intake;
   const isDbfExt = hasExtension(intake, 'dbf');
   const isDbfMime = mimeMatches(intake, 'dbf', 'dbase');
 
-  if (!b || b.length < 32) return isDbfExt || isDbfMime ? 0.6 : 0;
-
-  const version = b[0];
-  const knownVersion = KNOWN_VERSIONS.has(version);
-  // header size and record size must be reasonable
-  const headerSize = b[8] | (b[9] << 8);
-  const recordSize = b[10] | (b[11] << 8);
-  const structural = knownVersion && headerSize >= 32 && headerSize <= 65535 && recordSize >= 1 && recordSize <= 65535;
-
-  if (isDbfExt) return structural ? 0.97 : knownVersion ? 0.80 : 0.65;
-  if (isDbfMime) return structural ? 0.90 : knownVersion ? 0.70 : 0.55;
-  return structural ? 0.70 : 0;
+  if (!b || b.length < 12) return isDbfExt ? 0.6 : isDbfMime ? 0.5 : 0;
+  const result = validateDbf(intake);
+  if (result.valid) return isDbfExt ? 0.98 : isDbfMime ? 0.94 : 0.86;
+  // Extensions remain user-overridable diagnostics for damaged/unsupported DBFs, but bytes
+  // without a DBF name or MIME must pass the complete structural validator.
+  if (isDbfExt) return result.versionName ? 0.68 : 0.61;
+  if (isDbfMime) return result.versionName ? 0.61 : 0.54;
+  return 0;
 }
 return detect;
 })();
@@ -2702,4 +2702,4 @@ function detect(intake) {
 return detect;
 })();
 
-export const DETECTORS={"markdown":detect_markdown,"pdf":detect_pdf,"csv":detect_csv,"xlsx":detect_xlsx,"docx":detect_docx,"pptx":detect_pptx,"odf":detect_odf,"rtf":detect_rtf,"html":detect_html,"eml":detect_eml,"mbox":detect_mbox,"msg":detect_msg,"ics":detect_ics,"kubeconfig":detect_kubeconfig,"docker-compose":detect_docker_compose,"dockerfile":detect_dockerfile,"yaml":detect_yaml,"toml":detect_toml,"plist":detect_plist,"strings":detect_strings,"musicxml":detect_musicxml,"xml":detect_xml,"als":detect_als,"env":detect_env,"ini":detect_ini,"patch":detect_patch,"log":detect_log,"crash":detect_crash,"subtitle":detect_subtitle,"vcard":detect_vcard,"geo":detect_geo,"ipynb":detect_ipynb,"fb2":detect_fb2,"mobi":detect_mobi,"lrf":detect_lrf,"mcp-config":detect_mcp_config,"har":detect_har,"jsonl":detect_jsonl,"ofx":detect_ofx,"bio":detect_bio,"gff":detect_gff,"sarif":detect_sarif,"json":detect_json,"layered":detect_layered,"tiff":detect_tiff,"heif":detect_heif,"ico":detect_ico,"procreate":detect_procreate,"sketch":detect_sketch,"svg":detect_svg,"image":detect_image,"midi":detect_midi,"media":detect_media,"font":detect_font,"stl":detect_stl,"obj":detect_obj,"gltf":detect_gltf,"ply":detect_ply,"3mf":detect_3mf,"clip":detect_clip,"sqlite":detect_sqlite,"epub":detect_epub,"comic":detect_comic,"djvu":detect_djvu,"archive":detect_archive,"iwork":detect_iwork,"zip":detect_zip,"torrent":detect_torrent,"java-class":detect_java_class,"wasm":detect_wasm,"npy":detect_npy,"lnk":detect_lnk,"dmp":detect_dmp,"dxf":detect_dxf,"mcworld":detect_mcworld,"dicom":detect_dicom,"netcdf":detect_netcdf,"kmz":detect_kmz,"mbtiles":detect_mbtiles,"pdb":detect_pdb,"pcap":detect_pcap,"xyz":detect_xyz,"shapefile":detect_shapefile,"wad":detect_wad,"bsp":detect_bsp,"cbor":detect_cbor,"arrow":detect_arrow,"cif":detect_cif,"parquet":detect_parquet,"avro":detect_avro,"hdf5":detect_hdf5,"msgpack":detect_msgpack,"bson":detect_bson,"exr":detect_exr,"dbf":detect_dbf,"dwg":detect_dwg,"step":detect_step,"blend":detect_blend,"fbx":detect_fbx,"mat":detect_mat,"nifti":detect_nifti,"pyc":detect_pyc,"lmms":detect_lmms,"f3d":detect_f3d,"deb":detect_deb,"rpm":detect_rpm,"nupkg":detect_nupkg,"ipa":detect_ipa,"qif":detect_qif,"mt940":detect_mt940,"sdf":detect_sdf,"reg":detect_reg,"url":detect_url,"asciiart":detect_asciiart,"kicad":detect_kicad,"chat":detect_chat,"guitar-pro":detect_guitar_pro,"postscript":detect_postscript,"acf":detect_acf,"fits":detect_fits,"kml":detect_kml,"abc":detect_abc,"hl7":detect_hl7,"hydrogen":detect_hydrogen,"prproj":detect_prproj,"proto":detect_proto,"thrift":detect_thrift,"gcode":detect_gcode,"geojson":detect_geojson,"gitignore":detect_gitignore,"gitattributes":detect_gitattributes,"editorconfig":detect_editorconfig,"ssh-config":detect_ssh_config,"rdp":detect_rdp,"pem":detect_pem,"gamerom":detect_gamerom,"exe":detect_exe,"apk":detect_apk,"iso":detect_iso,"ruffle":detect_ruffle,"v86":detect_v86,"emulatorjs":detect_emulatorjs,"code":detect_code,"raw":detect_raw};
+export const DETECTORS={"markdown":detect_markdown,"pdf":detect_pdf,"csv":detect_csv,"xlsx":detect_xlsx,"docx":detect_docx,"pptx":detect_pptx,"odf":detect_odf,"rtf":detect_rtf,"html":detect_html,"eml":detect_eml,"mbox":detect_mbox,"msg":detect_msg,"ics":detect_ics,"kubeconfig":detect_kubeconfig,"docker-compose":detect_docker_compose,"dockerfile":detect_dockerfile,"yaml":detect_yaml,"toml":detect_toml,"plist":detect_plist,"strings":detect_strings,"musicxml":detect_musicxml,"xml":detect_xml,"als":detect_als,"env":detect_env,"ini":detect_ini,"patch":detect_patch,"log":detect_log,"crash":detect_crash,"subtitle":detect_subtitle,"vcard":detect_vcard,"geo":detect_geo,"ipynb":detect_ipynb,"fb2":detect_fb2,"mobi":detect_mobi,"lrf":detect_lrf,"mcp-config":detect_mcp_config,"har":detect_har,"jsonl":detect_jsonl,"ofx":detect_ofx,"bio":detect_bio,"gff":detect_gff,"sarif":detect_sarif,"json":detect_json,"layered":detect_layered,"tiff":detect_tiff,"heif":detect_heif,"ico":detect_ico,"procreate":detect_procreate,"sketch":detect_sketch,"svg":detect_svg,"image":detect_image,"midi":detect_midi,"media":detect_media,"font":detect_font,"stl":detect_stl,"obj":detect_obj,"gltf":detect_gltf,"ply":detect_ply,"3mf":detect_3mf,"clip":detect_clip,"sqlite":detect_sqlite,"epub":detect_epub,"comic":detect_comic,"djvu":detect_djvu,"archive":detect_archive,"iwork":detect_iwork,"zip":detect_zip,"torrent":detect_torrent,"java-class":detect_java_class,"wasm":detect_wasm,"npy":detect_npy,"lnk":detect_lnk,"dmp":detect_dmp,"dxf":detect_dxf,"mcworld":detect_mcworld,"dicom":detect_dicom,"netcdf":detect_netcdf,"kmz":detect_kmz,"mbtiles":detect_mbtiles,"pdb":detect_pdb,"pcap":detect_pcap,"xyz":detect_xyz,"shapefile":detect_shapefile,"wad":detect_wad,"bsp":detect_bsp,"cbor":detect_cbor,"arrow":detect_arrow,"cif":detect_cif,"parquet":detect_parquet,"avro":detect_avro,"hdf5":detect_hdf5,"msgpack":detect_msgpack,"bson":detect_bson,"exr":detect_exr,"protected-data":detect_protected_data,"dbf":detect_dbf,"dwg":detect_dwg,"step":detect_step,"blend":detect_blend,"fbx":detect_fbx,"mat":detect_mat,"nifti":detect_nifti,"pyc":detect_pyc,"lmms":detect_lmms,"f3d":detect_f3d,"deb":detect_deb,"rpm":detect_rpm,"nupkg":detect_nupkg,"ipa":detect_ipa,"qif":detect_qif,"mt940":detect_mt940,"sdf":detect_sdf,"reg":detect_reg,"url":detect_url,"asciiart":detect_asciiart,"kicad":detect_kicad,"chat":detect_chat,"guitar-pro":detect_guitar_pro,"postscript":detect_postscript,"acf":detect_acf,"fits":detect_fits,"kml":detect_kml,"abc":detect_abc,"hl7":detect_hl7,"hydrogen":detect_hydrogen,"prproj":detect_prproj,"proto":detect_proto,"thrift":detect_thrift,"gcode":detect_gcode,"geojson":detect_geojson,"gitignore":detect_gitignore,"gitattributes":detect_gitattributes,"editorconfig":detect_editorconfig,"ssh-config":detect_ssh_config,"rdp":detect_rdp,"pem":detect_pem,"gamerom":detect_gamerom,"exe":detect_exe,"apk":detect_apk,"iso":detect_iso,"ruffle":detect_ruffle,"v86":detect_v86,"emulatorjs":detect_emulatorjs,"code":detect_code,"raw":detect_raw};

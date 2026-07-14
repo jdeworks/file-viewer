@@ -1,7 +1,7 @@
 // INI / .env / .properties preview: parse into [section] -> key/value pairs and render grouped
-// key-value tables with secret masking, source jumps, and a collapsed redacted source preview.
+// key-value tables with secret masking. The top-level view switcher owns source access.
 import { esc } from '../../../core/template.js';
-import { ensureKnownUiStyle, issueList, maskedValue, sourceButton, sourcePreview, wireSourceLinks } from '../../../core/known-ui.js';
+import { ensureKnownUiStyle, issueList, maskedValue } from '../../../core/known-ui.js';
 
 const CSS = `
 .ini-preview{padding:12px 14px;font:13px/1.5 system-ui,sans-serif;color:var(--fg,#24292f)}
@@ -12,8 +12,6 @@ const CSS = `
 .ini-preview .kv-key{color:#6b7280;white-space:nowrap}
 .ini-preview .kv-val{color:inherit}
 .ini-preview .kv-val.masked{color:#6b7280;font-style:italic}
-.ini-src-key{color:#0550ae;font-weight:700}
-.ini-src-string{color:#0a7f38}
 `;
 
 export function parseIni(text) {
@@ -47,13 +45,13 @@ function collectIssues(sections) {
     for (const pair of section.pairs) {
       const id = `${scope}.${pair.key}`;
       if (seen.has(id)) {
-        issues.push({ severity: 'warning', label: 'duplicate key', line: pair.line, message: `${id} repeats a key from line ${seen.get(id)}.` });
+        issues.push({ severity: 'warning', label: 'duplicate key', message: `${id} on line ${pair.line} repeats a key from line ${seen.get(id)}.` });
       } else {
         seen.set(id, pair.line);
       }
       const masked = maskedValue(pair.key, pair.value);
       if (masked.masked) {
-        issues.push({ severity: 'warning', label: 'secret', line: pair.line, message: `${id} looks sensitive and is redacted in the preview.` });
+        issues.push({ severity: 'warning', label: 'secret', message: `${id} on line ${pair.line} looks sensitive and is redacted in the preview.` });
       }
     }
   }
@@ -70,39 +68,11 @@ function renderSections(sections) {
   return sections.map((section) => {
     const head = section.name ? `<h3>${esc(`[${section.name}]`)}</h3>` : '';
     const rows = section.pairs.map((pair) => `<tr>
-      <td class="kv-key">${sourceButton(pair.key, pair.line, 'Open key in source').outerHTML}</td>
+      <td class="kv-key">${esc(pair.key)}</td>
       <td>${renderValue(pair)}</td>
     </tr>`).join('');
     return `<div class="kv-section">${head}<table class="kv-table"><tbody>${rows}</tbody></table></div>`;
   }).join('');
-}
-
-function redactedSource(text, sections) {
-  const secretLines = new Map();
-  for (const section of sections) {
-    for (const pair of section.pairs) {
-      if (maskedValue(pair.key, pair.value).masked) secretLines.set(pair.line, pair.key);
-    }
-  }
-  if (!secretLines.size) return text || '';
-  return String(text || '').split(/\r?\n/).map((line, idx) => {
-    const key = secretLines.get(idx + 1);
-    if (!key) return line;
-    return line.replace(new RegExp(`(^\\s*${escapeRegExp(key)}\\s*[=:]\\s*).*$`), '$1[configured]');
-  }).join('\n');
-}
-
-function highlightIniLine(line) {
-  const raw = esc(line);
-  if (/^\s*[#;]/.test(line)) return raw;
-  if (/^\s*\[.+\]\s*$/.test(line)) return `<span class="ini-src-key">${raw}</span>`;
-  return raw
-    .replace(/^(\s*[^=:]+?)(\s*[=:])/, '<span class="ini-src-key">$1</span>$2')
-    .replace(/([=:]\s*)("[^"]*"|'[^']*')/, '$1<span class="ini-src-string">$2</span>');
-}
-
-function escapeRegExp(value) {
-  return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 export async function render(intake, _ctx) {
@@ -116,12 +86,5 @@ export async function render(intake, _ctx) {
   host.innerHTML = `<style>${CSS}</style>${bodyHtml}`;
   const review = issueList(collectIssues(sections), { title: 'INI Structure Review' });
   if (review) host.appendChild(review);
-  host.appendChild(sourcePreview(redactedSource(intake.text || '', sections), {
-    title: 'Redacted source',
-    collapsed: true,
-    idPrefix: 'ini-line',
-    highlighter: highlightIniLine,
-  }));
-  wireSourceLinks(host, { idPrefix: 'ini-line' });
   return { parentNode: host, bodyHtml, hadUnsafe: false };
 }

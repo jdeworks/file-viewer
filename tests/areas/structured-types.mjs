@@ -480,14 +480,12 @@ export async function run(ctx) {
   const iniSecs = await page.$$eval('#previewHost .ini-preview .kv-section h3', (els) => els.map((e) => e.textContent));
   const iniKeys = await page.$$eval('#previewHost .ini-preview .kv-key', (els) => els.map((e) => e.textContent));
   if (iniSecs.some((s) => /server/.test(s)) && iniKeys.includes('port')) pass('INI rendered as sectioned key-value tables'); else fail('ini secs=' + iniSecs.join(',') + ' keys=' + iniKeys.join(','));
-  const iniSourceCollapsed = await page.$eval('#previewHost .ini-preview .kf-source-details', (el) => !el.open);
-  if (iniSourceCollapsed) pass('INI redacted source starts collapsed'); else fail('ini source unexpectedly open');
-  await page.$eval('#previewHost .ini-preview .kf-source-link[data-source-line]', (e) => e.click());
-  await page.waitForFunction(() => {
-    const root = document.querySelector('#previewHost .ini-preview');
-    return root?.querySelector('.kf-source-details')?.open && root.querySelector('.kf-source-hit');
-  }, null, { timeout: 3000 });
-  pass('INI key links open redacted source');
+  const iniView = await page.evaluate(() => ({ mode: window.__fv.state.mode, paneMode: document.getElementById('panes')?.dataset.mode }));
+  if (iniView.mode === 'preview' && iniView.paneMode === 'preview') pass('INI starts in Preview mode'); else fail('ini default view: ' + JSON.stringify(iniView));
+  const iniEmbeddedSource = await page.$('#previewHost .ini-preview .kf-source-details');
+  if (!iniEmbeddedSource) pass('INI preview omits the duplicate redacted source'); else fail('ini preview still embeds redacted source');
+  const iniViewModes = await page.$eval('#viewMode', (el) => ({ hidden: el.hidden, modes: [...el.querySelectorAll('button')].map((button) => button.dataset.mode) }));
+  if (!iniViewModes.hidden && ['raw', 'split', 'preview'].every((mode) => iniViewModes.modes.includes(mode))) pass('INI keeps Raw, Split, and Preview modes available'); else fail('ini modes: ' + JSON.stringify(iniViewModes));
   await page.click('#metaBtn');
   await page.waitForSelector('#metaBody .meta-row', { timeout: 6000 });
   const iniMeta = await page.$eval('#metaBody', (e) => e.textContent);
@@ -821,4 +819,81 @@ export async function run(ctx) {
   const trimBtn = await page.$('[data-textutil="trim"]');
   const b64encBtn = await page.$('[data-textutil="b64encode"]');
   if (sortAscBtn && trimBtn && b64encBtn) pass('text utils toolbar has Sort ↑, Trim, and B64 ↑ buttons'); else fail('text utils buttons missing');
+
+  // ── Lottie JSON / .lot enhanced preview ──
+  await page.goto(origin, { waitUntil: 'load' });
+  await openExample('Lottie animation (.json)');
+  await page.waitForSelector('#previewHost .lottie-frame', { timeout: 15000 });
+  await page.waitForFunction(() => /Ready/.test(document.querySelector('#previewHost .lottie-status')?.textContent || ''), null, { timeout: 15000 });
+  const lottieInitial = await page.evaluate(() => ({
+    type: window.__fv.state.type?.id,
+    known: window.__fv.state.known?.id,
+    mode: window.__fv.state.mode,
+    sandbox: document.querySelector('#previewHost .lottie-frame')?.getAttribute('sandbox') || '',
+    chip: document.querySelector('#enhanceChip .ec-label')?.textContent || '',
+  }));
+  if (lottieInitial.type === 'json' && lottieInitial.known === 'lottie' && lottieInitial.mode === 'preview') pass('Lottie JSON opens in enhanced Preview mode');
+  else fail('Lottie activation: ' + JSON.stringify(lottieInitial));
+  if (lottieInitial.sandbox === 'allow-scripts' && !/allow-same-origin/.test(lottieInitial.sandbox)) pass('Lottie player uses opaque-origin script-only sandbox');
+  else fail('Lottie sandbox: ' + lottieInitial.sandbox);
+  const lottieFrame = await frameOf('#previewHost .lottie-frame');
+  await lottieFrame.waitForSelector('#animation svg', { timeout: 10000 });
+  const beforeFrame = Number(await page.$eval('#previewHost .lottie-controls input[type="range"]', (el) => el.value));
+  await page.waitForTimeout(350);
+  const afterFrame = Number(await page.$eval('#previewHost .lottie-controls input[type="range"]', (el) => el.value));
+  if (afterFrame !== beforeFrame) pass('Lottie animation advances frames'); else fail('Lottie frame did not advance: ' + beforeFrame);
+  await page.click('#previewHost .lottie-controls button');
+  await page.waitForTimeout(100); // let an already queued enterFrame message drain after pause
+  const pausedFrame = Number(await page.$eval('#previewHost .lottie-controls input[type="range"]', (el) => el.value));
+  await page.waitForTimeout(250);
+  const stillFrame = Number(await page.$eval('#previewHost .lottie-controls input[type="range"]', (el) => el.value));
+  if (Math.abs(stillFrame - pausedFrame) < 0.1) pass('Lottie Play/Pause control stops playback'); else fail('Lottie continued while paused');
+  await page.click('#viewMode button[data-mode="raw"]');
+  await page.click('#enhanceChip .ec-toggle');
+  await page.click('#enhanceChip .ec-toggle');
+  const preservedMode = await page.$eval('#panes', (el) => el.dataset.mode);
+  if (preservedMode === 'raw') pass('Lottie enhancement toggle preserves chosen view mode'); else fail('Lottie mode reset to ' + preservedMode);
+
+  // Opening a referenced-asset file alone offers the local picker/drop route.
+  await openExample('Lottie animation (external SVG asset)');
+  await page.waitForSelector('#previewHost .lottie-assets:not([hidden])', { timeout: 10000 });
+  await page.setInputFiles('#previewHost .lottie-assets input[type="file"]', new URL('../../docs/examples/lottie-assets/blue-dot.svg', import.meta.url).pathname);
+  await page.waitForSelector('#previewHost .lottie-frame', { timeout: 12000 });
+  await page.waitForFunction(() => /Ready/.test(document.querySelector('#previewHost .lottie-status')?.textContent || ''), null, { timeout: 12000 });
+  if (/local image assets embedded/.test(await page.textContent('#previewHost .lottie-status'))) pass('Lottie missing SVG asset can be supplied locally');
+  else fail('Lottie local asset status missing');
+
+  // The same explicit reference resolves automatically when the animation and asset are loaded as a folder.
+  await page.evaluate(async () => {
+    const [animation, svg] = await Promise.all([
+      fetch('examples/sample-lottie-external.lot').then((r) => r.text()),
+      fetch('examples/lottie-assets/blue-dot.svg').then((r) => r.text()),
+    ]);
+    await window.__fv.loadFolder([
+      { file: new File([animation], 'sample-lottie-external.lot', { type: 'video/lottie+json' }), path: 'demo/sample-lottie-external.lot' },
+      { file: new File([svg], 'blue-dot.svg', { type: 'image/svg+xml' }), path: 'demo/lottie-assets/blue-dot.svg' },
+    ]);
+  });
+  await page.waitForSelector('#previewHost .lottie-frame', { timeout: 12000 });
+  await page.waitForFunction(() => /local image assets embedded/.test(document.querySelector('#previewHost .lottie-status')?.textContent || ''), null, { timeout: 12000 });
+  pass('Lottie resolves an explicitly referenced sibling asset from folder context');
+
+  // Reduce Motion starts paused, expressions remain inert, and URL-bearing assets never request remotely.
+  await page.evaluate(async () => { window.__fv.state.settingsModel.values.reduceMotion = true; await window.__fv.rerenderPreview(); });
+  await page.waitForSelector('#previewHost .lottie-frame', { timeout: 10000 });
+  const reducedLabel = await page.textContent('#previewHost .lottie-controls button');
+  if (reducedLabel === 'Play') pass('Lottie honors Reduce Motion by starting paused'); else fail('Reduce Motion button: ' + reducedLabel);
+  const offOriginBefore = ctx.offOrigin.length;
+  await page.evaluate(async () => {
+    const data = await fetch('examples/sample-lottie.json').then((r) => r.json());
+    data.assets = [{ id: 'tracker', w: 1, h: 1, u: '', p: 'https://example.invalid/tracker.png', e: 0 }];
+    data.layers[0].ks.o.x = 'fetch("https://example.invalid/expression")';
+    await window.__fv.openBlobFile(new Blob([JSON.stringify(data)], { type: 'video/lottie+json' }), 'hostile.lot', { mime: 'video/lottie+json' });
+  });
+  await page.waitForSelector('#previewHost .lottie-error', { timeout: 10000 });
+  await page.waitForTimeout(250);
+  const hostileText = await page.textContent('#previewHost .lottie-doc');
+  if (/Expressions were detected but are disabled/.test(hostileText) && /remote/.test(hostileText)) pass('Lottie blocks remote assets and reports inert expressions');
+  else fail('Lottie hostile diagnostics: ' + hostileText.replace(/\s+/g, ' ').slice(0, 240));
+  if (ctx.offOrigin.length === offOriginBefore) pass('Lottie makes zero off-origin requests'); else fail('Lottie off-origin requests: ' + ctx.offOrigin.slice(offOriginBefore).join(', '));
 }

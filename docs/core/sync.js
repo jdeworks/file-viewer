@@ -23,17 +23,19 @@ export function mapRawToPreview(line) {
 /* ── Scroll sync ── */
 export function syncScrollFromRaw() {
   if (state.syncing || !state.preview || !state.settingsModel.values.syncScroll) return;
-  if (!state.rawview?.canSync()) return;
-  const { top, max } = state.rawview.scrollInfo();
+  const rawview = state.rawview;
+  if (typeof rawview?.canSync !== 'function' || !rawview.canSync()) return;
+  const { top, max } = rawview.scrollInfo();
   state.syncing = true;
   state.preview.scrollTo(max > 0 ? top / max : 0);
   requestAnimationFrame(() => (state.syncing = false));
 }
 export function syncScrollFromPreview(ratio) {
-  if (state.syncing || !state.rawview || !state.settingsModel.values.syncScroll) return;
-  if (!state.rawview.canSync()) return;
-  const { max } = state.rawview.scrollInfo();
+  if (state.syncing || !state.settingsModel.values.syncScroll) return;
+  const rawview = state.rawview;
+  if (typeof rawview?.canSync !== 'function' || !rawview.canSync()) return;
+  const { max } = rawview.scrollInfo();
   state.syncing = true;
-  state.rawview.setScrollTop(ratio * Math.max(0, max));
+  rawview.setScrollTop(ratio * Math.max(0, max));
   requestAnimationFrame(() => (state.syncing = false));
 }

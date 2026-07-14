@@ -5,6 +5,45 @@
 // imports rewritten relative to this file) — they are NOT inlined here.
 
 
+// ../../docs/types/text/json/known/lottie/model.js
+var MAX_MATCH_TEXT = 16 * 1024 * 1024;
+function finite(value) {
+  return typeof value === "number" && Number.isFinite(value);
+}
+function isLottieAnimation(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  if (typeof value.v !== "string" || !/^\d+(?:\.\d+){1,3}/.test(value.v)) return false;
+  if (!finite(value.fr) || value.fr <= 0 || value.fr > 1e3) return false;
+  if (!finite(value.ip) || !finite(value.op) || value.op <= value.ip || value.op - value.ip > 1e8) return false;
+  if (!finite(value.w) || !finite(value.h) || value.w <= 0 || value.h <= 0 || value.w > 1e6 || value.h > 1e6) return false;
+  if (!Array.isArray(value.layers) || value.layers.length === 0 || value.layers.length > 1e5) return false;
+  if (value.assets != null && !Array.isArray(value.assets)) return false;
+  return value.layers.some((layer) => layer && typeof layer === "object" && finite(layer.ty) && (layer.ks || Array.isArray(layer.shapes) || typeof layer.refId === "string" || layer.t));
+}
+function matchesLottie(intake, baseType) {
+  if (baseType?.id !== "json" || intake?.truncated) return false;
+  const text = intake?.sourceText ?? intake?.text ?? "";
+  if (!text || text.length > MAX_MATCH_TEXT) return false;
+  try {
+    return isLottieAnimation(JSON.parse(text));
+  } catch {
+    return false;
+  }
+}
+
+// ../../docs/types/text/json/known/lottie/index.js
+var lottie_default = {
+  id: "lottie",
+  label: "Lottie animation",
+  preferredMode: "preview",
+  match: matchesLottie,
+  loadRenderer: () => import("../types/text/json/known/lottie/renderer.js"),
+  about: {
+    description: "JSON-based vector animation with local, sandboxed playback controls.",
+    usedFor: [{ label: "Motion graphics", description: "Portable UI and illustration animations rendered from JSON.", href: "https://lottie.github.io/" }]
+  }
+};
+
 // ../../docs/types/text/json/known/package-json/index.js
 var package_json_default = {
   id: "package-json",
@@ -15968,6 +16007,7 @@ var promela_default = {
 
 // ../../docs/known/registry.js
 var KNOWN = [
+  lottie_default,
   glsl_shader_default,
   hlsl_shader_default,
   restructuredtext_default,

@@ -125,6 +125,7 @@ import hdf5Type from '../types/binary/hdf5/index.js';
 import msgpackType from '../types/binary/msgpack/index.js';
 import bsonType from '../types/binary/bson/index.js';
 import exrType from '../types/binary/exr/index.js';
+import protectedDataType from '../types/binary/protected-data/index.js';
 import dbfType from '../types/binary/dbf/index.js';
 import dwgType from '../types/binary/dwg/index.js';
 import stepType from '../types/text/step/index.js';
@@ -269,6 +270,7 @@ export const REGISTRY = [
   msgpackType,
   bsonType,
   exrType,
+  protectedDataType,
   dbfType,
   dwgType,
   stepType,

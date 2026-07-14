@@ -15,7 +15,7 @@ cd "$(dirname "$0")/.."
 VENDOR=docs/vendor
 # Subdirs this script owns. Each is wiped + recreated before its copy block (per-lib clean drops stale
 # files), leaving manually-vendored dirs/loose files elsewhere in docs/vendor/ untouched.
-MANAGED=(monaco pdfjs dompurify html2canvas markdown-it papaparse xlsx mammoth js-yaml jszip chartjs \
+MANAGED=(monaco pdfjs dompurify html2canvas markdown-it papaparse xlsx mammoth js-yaml jszip chartjs lottie \
          pptxviewjs sql.js pdf-lib libarchive ffmpeg ag-psd qrcodejs abcjs lamejs tesseract)
 for d in "${MANAGED[@]}"; do rm -rf "${VENDOR:?}/$d"; mkdir -p "$VENDOR/$d"; done
 
@@ -54,6 +54,10 @@ cp node_modules/js-yaml/dist/js-yaml.min.js "$VENDOR/js-yaml/js-yaml.min.js"
 cp node_modules/jszip/dist/jszip.min.js              "$VENDOR/jszip/jszip.min.js"
 cp node_modules/chart.js/dist/chart.umd.js           "$VENDOR/chartjs/chart.umd.js"
 cp node_modules/pptxviewjs/dist/PptxViewJS.min.js    "$VENDOR/pptxviewjs/PptxViewJS.min.js"
+
+# --- Lottie light (SVG renderer, no expression engine). Loaded only for recognized .json/.lot. ---
+cp node_modules/lottie-web/build/player/lottie_light.min.js "$VENDOR/lottie/lottie_light.min.js"
+cp node_modules/lottie-web/LICENSE.md                        "$VENDOR/lottie/LICENSE.md"
 
 # --- sql.js (SQLite compiled to WASM). JS loader + wasm binary; loaded only for .db/.sqlite. ---
 mkdir -p "$VENDOR/sql.js"

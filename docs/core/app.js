@@ -284,7 +284,11 @@ async function activateType(type, knownOverride = null, activation = null) {
   syncSaveBtn();
   $('tabbar').style.display = both && isMobile() ? 'flex' : 'none';
   $('screenshotBtn').hidden = !(type.capabilities.screenshot && canPreview);
-  const preferredMode = ['raw', 'split', 'preview'].includes(type.preferredMode) ? type.preferredMode : 'split';
+  // A content enhancement may have a more useful initial surface than its base type (Lottie is
+  // animation-first, while ordinary JSON is split). This runs only on activation; toggling the
+  // enhancement later preserves the mode the user selected.
+  const preferred = state.known?.preferredMode || type.preferredMode;
+  const preferredMode = ['raw', 'split', 'preview'].includes(preferred) ? preferred : 'split';
   state.mode = both ? preferredMode : (canPreview && !canRaw ? 'preview' : 'raw');
   state.rawMode = 'current';
   resetCompare();                              // a fresh file drops any active two-file comparison

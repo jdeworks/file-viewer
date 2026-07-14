@@ -319,6 +319,7 @@ FULL_UNIT_TESTS=(
   tests/docx-fidelity.test.mjs
   tests/pptx-notes-fidelity.test.mjs
   tests/json-duplicate-keys.test.mjs
+  tests/lottie-dbf-protected.test.mjs
   tests/source-fidelity.test.mjs
   tests/partial-support-notices.test.mjs
   tests/archivelib-paths.test.mjs
@@ -631,6 +632,9 @@ run_fast_unit_tests() {
         ;;
       tests/metadata-owned.test.mjs)
         add_unit_test tests/metadata-owned.test.mjs
+        ;;
+      tests/lottie-dbf-protected.test.mjs|docs/types/binary/dbf/*|docs/types/binary/protected-data/*|docs/types/text/json/known/lottie/*)
+        add_unit_test tests/lottie-dbf-protected.test.mjs
         ;;
       tests/*.test.mjs)
         require_full_units "$path is an unowned unit test"

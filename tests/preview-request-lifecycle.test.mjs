@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
 import { createLatestRequestController } from '../docs/core/request-lifecycle.js';
+import { state } from '../docs/core/state.js';
+import { syncScrollFromPreview, syncScrollFromRaw } from '../docs/core/sync.js';
 
 const cleanupErrors = [];
 const controller = createLatestRequestController({ onCleanupError: (error) => cleanupErrors.push(error.message) });
@@ -41,5 +43,15 @@ const third = controller.begin({ filename: 'third.txt' });
 assert.equal(controller.isCurrent(third), true);
 third.dispose();
 assert.equal(controller.isCurrent(third), false);
+
+// Alternate/transient text sources (for example the compressed-autosave probe) need not expose
+// Monaco's scroll API. A queued scroll callback must treat that as non-syncable, not throw.
+const previous = { rawview: state.rawview, preview: state.preview, settingsModel: state.settingsModel };
+state.rawview = { getValue: () => 'temporary source' };
+state.preview = {};
+state.settingsModel = { values: { syncScroll: true } };
+assert.doesNotThrow(syncScrollFromRaw);
+assert.doesNotThrow(() => syncScrollFromPreview(0.5));
+Object.assign(state, previous);
 
 console.log('preview request lifecycle: all assertions passed');

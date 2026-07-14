@@ -4222,7 +4222,7 @@
       "editCapability": "none",
       "exportCapability": "download",
       "testCoverage": "smoke+unit",
-      "sampleSource": "synthetic",
+      "sampleSource": "real-world",
       "fileExamplesSlug": "cbor",
       "securityLimitations": [],
       "knownParserGaps": [
@@ -4231,11 +4231,11 @@
         "BigInt (64-bit) values may lose precision above 2^53"
       ],
       "provenance": {
-        "sourced": 0,
+        "sourced": 1,
         "total": 1
       },
       "partialSamples": [],
-      "realWorldQuality": "catalog-fixture-set",
+      "realWorldQuality": "sourced-or-derived",
       "auditStatus": "validated"
     },
     "arrow": {
@@ -4541,6 +4541,42 @@
         "sample.exr"
       ],
       "realWorldQuality": "partial-fixture",
+      "auditStatus": "validated"
+    },
+    "protected-data": {
+      "label": "Windows Protected Data",
+      "support": "full",
+      "sampleFiles": [
+        "sample-protected-data.dat"
+      ],
+      "extensions": [],
+      "capabilities": {
+        "rawView": false,
+        "preview": true,
+        "diff": false,
+        "magicSelector": false,
+        "screenshot": false
+      },
+      "previewDepth": "metadata-only",
+      "metadataDepth": "rich",
+      "knownParserGaps": [
+        "Identification is limited to CNG/DPAPI-NG envelopes with the recognized Microsoft protection descriptor OIDs",
+        "Encrypted content is never decrypted or interpreted"
+      ],
+      "fileExamplesSlug": null,
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [
+        "Metadata only; native Windows decryption is deliberately unavailable"
+      ],
+      "testCoverage": "smoke+unit",
+      "sampleSource": "real-world",
+      "provenance": {
+        "sourced": 1,
+        "total": 1
+      },
+      "partialSamples": [],
+      "realWorldQuality": "sourced-or-derived",
       "auditStatus": "validated"
     },
     "dbf": {
@@ -34309,6 +34345,41 @@
       "partialSamples": [],
       "realWorldQuality": "catalog-fixture-set",
       "auditStatus": "validated"
+    },
+    "lottie": {
+      "label": "Lottie animation",
+      "baseType": "json",
+      "support": "supported",
+      "sampleFiles": [
+        "sample-lottie.json",
+        "sample-lottie.lot",
+        "sample-lottie-external.lot"
+      ],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "provenance": {
+        "sourced": 3,
+        "total": 3
+      },
+      "partialSamples": [],
+      "realWorldQuality": "sourced-or-derived",
+      "sampleSource": "real-world",
+      "metadataDepth": "basic",
+      "testCoverage": "smoke",
+      "auditStatus": "validated",
+      "previewDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": []
     }
   }
 }

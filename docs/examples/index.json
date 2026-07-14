@@ -2385,7 +2385,10 @@
     "categories": [
       "data",
       "binary"
-    ]
+    ],
+    "source": "Generated locally with scripts/gen-sample-dbf.mjs",
+    "license": "CC0-1.0",
+    "attribution": "File Viewer contributors"
   },
   {
     "file": "sample.arrow",
@@ -13393,5 +13396,60 @@
       "Theme QA"
     ],
     "description": "Self-contained semantic HTML fixture for checking headings, controls, borders, links, tables, and code contrast in both viewer themes."
+  },
+  {
+    "label": "Lottie animation (.json)",
+    "file": "sample-lottie.json",
+    "mime": "application/json",
+    "type": "json",
+    "category": "Data",
+    "categories": ["Data", "Animation"],
+    "enhanced": true,
+    "knownFile": "lottie",
+    "description": "Contributor-authored self-contained Lottie animation used for safe local playback coverage.",
+    "source": "Created for File Viewer",
+    "license": "CC0-1.0",
+    "attribution": "File Viewer contributors"
+  },
+  {
+    "label": "Lottie animation (.lot)",
+    "file": "sample-lottie.lot",
+    "mime": "video/lottie+json",
+    "type": "json",
+    "category": "Data",
+    "categories": ["Data", "Animation"],
+    "enhanced": true,
+    "knownFile": "lottie",
+    "description": "Contributor-authored standard .lot animation with no external assets.",
+    "source": "Created for File Viewer",
+    "license": "CC0-1.0",
+    "attribution": "File Viewer contributors"
+  },
+  {
+    "label": "Lottie animation (external SVG asset)",
+    "file": "sample-lottie-external.lot",
+    "mime": "video/lottie+json",
+    "type": "json",
+    "category": "Data",
+    "categories": ["Data", "Animation"],
+    "enhanced": true,
+    "knownFile": "lottie",
+    "description": "Contributor-authored Lottie fixture whose explicitly referenced SVG resolves from a loaded folder.",
+    "source": "Created for File Viewer",
+    "license": "CC0-1.0",
+    "attribution": "File Viewer contributors"
+  },
+  {
+    "label": "Windows protected-data envelope (synthetic)",
+    "file": "sample-protected-data.dat",
+    "mime": "application/octet-stream",
+    "type": "protected-data",
+    "binary": true,
+    "category": "Security",
+    "categories": ["Security", "Data"],
+    "description": "Synthetic metadata-only CNG/DPAPI-NG envelope fixture containing no secret or real key material.",
+    "source": "Generated locally with scripts/gen-sample-protected-data.mjs",
+    "license": "CC0-1.0",
+    "attribution": "File Viewer contributors"
   }
 ]

@@ -8,6 +8,7 @@
 //   {
 //     id: string,
 //     label: string,                       // shown in the "Enhanced summary: <label>" chip
+//     preferredMode?: 'raw'|'split'|'preview', // optional initial mode for this enhancement
 //     match(intake, baseType) => boolean,  // cheap; runs after the base type is detected
 //     loadRenderer() => Promise<{render}>, // render(intake, ctx) -> { parentNode } | { bodyHtml }
 //     loadDiffRenderer?() => Promise<{render}>,   // optional custom diff (overrides the type's)
@@ -17,6 +18,7 @@
 // Known-file plugins now live next to their base type: type-bound ones under
 // types/text/<basetype>/known/<id>/, and the filename-only / multi-type configs under the
 // shared types/text/known/<id>/. This registry stays the single import point.
+import lottie from '../types/text/json/known/lottie/index.js';
 import packageJson from '../types/text/json/known/package-json/index.js';
 import cargoToml from '../types/text/toml/known/cargo-toml/index.js';
 import tsconfig from '../types/text/json/known/tsconfig/index.js';
@@ -900,7 +902,7 @@ import flatpakManifest from '../types/text/known/flatpak-manifest/index.js';
 import snapcraftYaml from '../types/text/known/snapcraft-yaml/index.js';
 import smtlib from '../types/text/known/smtlib/index.js';
 import promela from '../types/text/known/promela/index.js';
-export const KNOWN = [glslShader, hlslShader, restructuredtext, orgMode, liquidTemplate, handlebarsTemplate, jinja2Template, mustacheTemplate, sparqlQuery, sqlQuery, turtleRdf, graphvizDot, verilog, xsltStylesheet, svelteComponent, nunjucks,
+export const KNOWN = [lottie, glslShader, hlslShader, restructuredtext, orgMode, liquidTemplate, handlebarsTemplate, jinja2Template, mustacheTemplate, sparqlQuery, sqlQuery, turtleRdf, graphvizDot, verilog, xsltStylesheet, svelteComponent, nunjucks,
   // Extension-specific language plugins — listed BEFORE broad content-heuristic matchers to avoid interception.
   // Within this block: more-specific (fewer heuristics) goes first to avoid false-positive interception.
   // forth-lang before factor-lang (factor uses VARIABLE/CONSTANT which forth also has)

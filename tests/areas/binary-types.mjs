@@ -834,4 +834,20 @@ export async function run(ctx) {
   if (v86TypeId === 'v86') pass('.img detected as v86 type'); else fail('img typeId: ' + v86TypeId);
   const v86Text = await page.$eval('#previewHost', (el) => el.textContent);
   if (/x86 Emulator \(v86\)/i.test(v86Text)) pass('v86 security dialog shown'); else fail('img dialog: ' + v86Text.slice(0, 200));
+
+  // ── Windows protected data — metadata only, never mistaken for DBF. ──
+  await page.goto(origin, { waitUntil: 'load' });
+  await openExample('Windows protected-data envelope (synthetic)');
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  const protectedFrame = await frameOf('iframe.fv-preview-frame');
+  await protectedFrame.waitForSelector('.badge-protected', { timeout: 8000 });
+  const protectedType = await page.$eval('#typeSelect', (select) => select.value);
+  const protectedText = await protectedFrame.$eval('body', (body) => body.textContent);
+  if (protectedType === 'protected-data') pass('protected .dat content detected independently of its extension');
+  else fail('protected .dat typeId: ' + protectedType);
+  if (/LOCAL=user/.test(protectedText) && /AES-256-GCM/.test(protectedText) && /not decrypted/i.test(protectedText))
+    pass('protected-data preview reports scope and algorithms without decryption');
+  else fail('protected-data preview: ' + protectedText.replace(/\s+/g, ' ').slice(0, 260));
+  if (!/Field Definitions|Last update/.test(protectedText)) pass('protected-data preview contains no invented DBF fields or date');
+  else fail('protected data leaked DBF presentation');
 }

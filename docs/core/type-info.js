@@ -131,6 +131,7 @@ const TYPE_INFO = {
   avro: ['Apache Avro', 'used for schema-described records, data serialization, and container files.', 'https://avro.apache.org/docs/current/specification/'],
   bson: ['BSON', 'used for a binary representation of JSON-like documents, notably by MongoDB.', 'https://bsonspec.org/spec.html'],
   dbf: ['dBase / DBF Database', 'used for fixed-record tabular data in dBase and shapefile attribute tables.', 'https://en.wikipedia.org/wiki/.dbf'],
+  'protected-data': ['Windows protected data', 'used for secrets encrypted to a Windows user, machine, or protection descriptor with CNG DPAPI.', 'https://learn.microsoft.com/windows/win32/seccng/cng-dpapi'],
   step: ['STEP CAD Exchange', 'used to exchange product-model and CAD geometry data using ISO 10303-21 text records.', 'https://en.wikipedia.org/wiki/ISO_10303-21'],
   blend: ['Blender scene', 'used to store Blender scenes, objects, materials, animation, and project state.', 'https://docs.blender.org/manual/en/latest/files/blend/open_save.html'],
   mat: ['MATLAB MAT-file', 'used to store MATLAB arrays, variables, structures, and scientific workspace data.', 'https://www.mathworks.com/help/matlab/import_export/mat-file-versions.html'],

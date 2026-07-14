@@ -98,10 +98,14 @@ async function writeDetectorBundle(entries) {
   const needsCode = detectors.some((entry) => entry.source.includes('isCode('));
   const needsMedia = detectors.some((entry) => entry.source.includes('mediaInfo('));
   const needsRom = detectors.some((entry) => entry.source.includes('parseRom('));
+  const needsDbf = detectors.some((entry) => entry.source.includes('validateDbf('));
+  const needsProtectedData = detectors.some((entry) => entry.source.includes('inspectProtectedData('));
   const imports = [
     needsCode ? "import { isCode } from '../types/text/code/langmap.js';" : '',
     needsMedia ? "import { mediaInfo } from '../types/media/medialib.js';" : '',
     needsRom ? "import { parseRom } from '../types/binary/gamerom/headers.js';" : '',
+    needsDbf ? "import { validateDbf } from '../types/binary/dbf/validate.js';" : '',
+    needsProtectedData ? "import { inspectProtectedData } from '../types/binary/protected-data/parser.js';" : '',
   ].filter(Boolean).join('\n');
   const blocks = detectors.map((entry) => `const ${detectorName(entry.type.id)}=(()=>{\n${entry.source}\nreturn detect;\n})();`).join('\n\n');
   const names = detectors.map((entry) => [entry.type.id, detectorName(entry.type.id)]);
