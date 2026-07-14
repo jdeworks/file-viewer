@@ -300,6 +300,6 @@ export async function run(ctx) {
 
   await page.goto(origin, { waitUntil: 'load' });
   await openExample('example.svg');
-  await page.waitForSelector('.svg-editor', { timeout: 12000 });
-  pass('SVG dual-pane editor mounted');
+  await page.waitForSelector('.svg-viewer', { timeout: 12000 });
+  pass('SVG visual preview mounted');
 }

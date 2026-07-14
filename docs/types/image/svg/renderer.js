@@ -1,11 +1,5 @@
-// SVG dual-pane renderer — Monaco editor (left) + live sandboxed-iframe preview (right).
-// Returned as { parentNode } so it mounts directly in the preview host (not the sandboxed
-// iframe).  The right pane uses an iframe with srcdoc so SVG script tags are isolated.
-// Script tags are also stripped from the srcdoc content for defence-in-depth.
-//
-// Falls back to a <textarea> if Monaco doesn't load (offline / slow network).
-
-import { loadMonaco } from '../../../core/monaco-loader.js';
+// SVG visual renderer. Source editing remains available through the app-level Raw and
+// Split modes; Preview itself contains only the sandboxed SVG surface and its controls.
 import { sanitizeSvg } from '../svg-sanitize.js';
 
 // Extract width × height from an SVG string (viewBox / width / height attributes).
@@ -50,7 +44,7 @@ export async function render(intake, _ctx) {
 
   // ── Container ────────────────────────────────────────────────────────────
   const host = document.createElement('div');
-  host.className = 'svg-editor';
+  host.className = 'svg-viewer';
 
   // ── Toolbar ──────────────────────────────────────────────────────────────
   const toolbar = document.createElement('div');
@@ -84,13 +78,6 @@ export async function render(intake, _ctx) {
   zoomLabel.appendChild(zoomSel);
   toolbar.append(dimBadge, copyBtn, zoomLabel);
 
-  // ── Split panes ───────────────────────────────────────────────────────────
-  const panes = document.createElement('div');
-  panes.className = 'svg-panes';
-
-  const editorPane = document.createElement('div');
-  editorPane.className = 'svg-editor-pane';
-
   const previewPane = document.createElement('div');
   previewPane.className = 'svg-preview-pane';
 
@@ -102,16 +89,7 @@ export async function render(intake, _ctx) {
   previewIframe.srcdoc = wrapForIframe(svgSource);
   previewPane.appendChild(previewIframe);
 
-  panes.append(editorPane, previewPane);
-  host.append(toolbar, panes);
-
-  // ── Update preview when content changes ───────────────────────────────────
-  function updatePreview(newSvg) {
-    previewIframe.srcdoc = wrapForIframe(newSvg);
-    const d = svgDimensions(newSvg);
-    if (d) { dimBadge.textContent = d + ' px'; dimBadge.hidden = false; }
-    else dimBadge.hidden = true;
-  }
+  host.append(toolbar, previewPane);
 
   // Apply zoom to the preview iframe via CSS transform
   function applyZoom(val) {
@@ -130,78 +108,9 @@ export async function render(intake, _ctx) {
   }
 
   zoomSel.addEventListener('change', () => applyZoom(zoomSel.value));
-
-  // ── Monaco editor (or textarea fallback) ──────────────────────────────────
-  let monacoInstance = null;
-
-  try {
-    const monaco = await loadMonaco();
-
-    const editorEl = document.createElement('div');
-    editorEl.style.cssText = 'position:absolute;inset:0;';
-    editorPane.style.position = 'relative';
-    editorPane.appendChild(editorEl);
-
-    // Follow the IN-APP theme toggle, not the OS. The app marks dark mode with
-    // `body.fv-dark` (parent-pane renderers) / `[data-theme="dark"]` on <html>.
-    const isAppDark = () => document.body.classList.contains('fv-dark') ||
-      document.documentElement.getAttribute('data-theme') === 'dark';
-
-    const model = monaco.editor.createModel(svgSource, 'xml');
-    monacoInstance = monaco.editor.create(editorEl, {
-      model,
-      automaticLayout: true,
-      theme: isAppDark() ? 'vs-dark' : 'vs',
-      minimap: { enabled: false },
-      lineNumbers: 'on',
-      wordWrap: 'off',
-      scrollBeyondLastLine: false,
-      fontSize: 13,
-    });
-
-    let updateTimer = null;
-    model.onDidChangeContent(() => {
-      clearTimeout(updateTimer);
-      updateTimer = setTimeout(() => updatePreview(model.getValue()), 300);
-    });
-
-    copyBtn.addEventListener('click', () => {
-      navigator.clipboard?.writeText(model.getValue()).catch(() => {});
-    });
-
-    // Dispose Monaco when removed from the DOM; also re-theme live when the user
-    // flips the in-app light/dark toggle (body.fv-dark / <html data-theme>).
-    let lastDark = isAppDark();
-    const observer = new MutationObserver(() => {
-      if (!host.isConnected) {
-        model.dispose();
-        monacoInstance.dispose();
-        themeObserver.disconnect();
-        observer.disconnect();
-        return;
-      }
-    });
-    observer.observe(document, { childList: true, subtree: true });
-    const themeObserver = new MutationObserver(() => {
-      const dark = isAppDark();
-      if (dark !== lastDark) { lastDark = dark; monaco.editor.setTheme(dark ? 'vs-dark' : 'vs'); }
-    });
-    themeObserver.observe(document.body, { attributes: true, attributeFilter: ['class'] });
-    themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
-
-  } catch (_err) {
-    // Monaco unavailable — use a plain textarea
-    const ta = document.createElement('textarea');
-    ta.className = 'svg-fallback-textarea';
-    ta.spellcheck = false;
-    ta.value = svgSource;
-    ta.addEventListener('input', () => updatePreview(ta.value));
-    editorPane.appendChild(ta);
-
-    copyBtn.addEventListener('click', () => {
-      navigator.clipboard?.writeText(ta.value).catch(() => {});
-    });
-  }
+  copyBtn.addEventListener('click', () => {
+    navigator.clipboard?.writeText(svgSource).catch(() => {});
+  });
 
   return { parentNode: host };
 }

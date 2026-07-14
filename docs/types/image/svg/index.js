@@ -6,14 +6,14 @@ export default {
   group: 'Image',
   detect,
   capabilities: {
-    rawView: true,       // Monaco editor for the SVG source
-    preview: true,       // Live sandboxed iframe preview
+    rawView: true,       // App-level Monaco editor for the SVG source
+    preview: true,       // Visual-only sandboxed iframe preview
     diff: true,          // Source diff between versions
     magicSelector: false,
     screenshot: true,
   },
   syntaxLanguage: 'xml',          // Monaco highlights SVG as XML
-  preferredMode: 'split',         // Default to side-by-side editor + preview
+  preferredMode: 'split',         // App-level source and visual preview side by side
   loadRenderer: () => import('./renderer.js'),
   loadMetadata: () => import('../metadata.js'),
   settingsUrl: new URL('./settings.default.json', import.meta.url),

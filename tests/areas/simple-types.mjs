@@ -579,36 +579,25 @@ export async function run(ctx) {
   const rtfColorInput = await page.$('#previewHost .rtf-tb-color');
   if (rtfColorInput) pass('RTF text color picker present'); else fail('rtf color picker missing');
 
-  // ── SVG dual-pane viewer ──
+  // ── SVG app-level split + visual-only preview ──
   await openExample('example.svg');
-  // SVG type: dual-pane (Monaco editor left, sandboxed iframe preview right) via parentNode
   const svgTypeId = await page.$eval('#typeSelect', (s) => s.value);
   if (svgTypeId === 'svg') pass('example.svg detected as SVG type'); else fail('svg typeId: ' + svgTypeId);
-  // The dual-pane container (.svg-editor) should be present in the preview host
-  const svgEditorContainer = await page.waitForSelector('.svg-editor', { timeout: 12000 });
-  if (svgEditorContainer) pass('SVG dual-pane container (.svg-editor) mounted in preview host'); else fail('SVG dual-pane container not found');
-  // The live preview iframe (srcdoc, sandbox=allow-same-origin) should be present
+  const svgMode = await page.$eval('#panes', (el) => el.dataset.mode);
+  if (svgMode === 'split') pass('SVG opens in app-level Split mode'); else fail('SVG opening mode: ' + svgMode);
+  await page.waitForSelector('#editor .monaco-editor', { timeout: 15000 });
+  pass('SVG source remains available in the app-level raw editor');
+  const svgViewer = await page.waitForSelector('#previewHost .svg-viewer', { timeout: 12000 });
+  if (svgViewer) pass('SVG visual-only viewer mounted in Preview'); else fail('SVG visual viewer not found');
   const svgPreviewIframe = await page.waitForSelector('.svg-preview-iframe', { timeout: 8000 });
   if (svgPreviewIframe) pass('SVG preview iframe (.svg-preview-iframe) present'); else fail('SVG preview iframe not found');
-  // The toolbar with Copy SVG button and dimensions badge should be present
   const svgToolbar = await page.$('.svg-toolbar');
   if (svgToolbar) pass('SVG toolbar present'); else fail('SVG toolbar not found');
-  // The SVG editor's Monaco theme must follow the IN-APP light/dark toggle
-  // (body.fv-dark / <html data-theme>), not the OS prefers-color-scheme. Flip to
-  // dark live → vs-dark; back to light → vs.
-  const hasSvgMonaco = await page.waitForSelector('#previewHost .monaco-editor', { timeout: 15000 }).then(() => true).catch(() => false);
-  if (hasSvgMonaco) {
-    const svgMonacoClass = () => page.$eval('#previewHost .monaco-editor', (el) => el.className).catch(() => '');
-    const svgLight = await svgMonacoClass();
-    await page.evaluate(() => { document.body.classList.add('fv-dark'); document.documentElement.setAttribute('data-theme', 'dark'); });
-    await page.waitForFunction(() => /vs-dark/.test(document.querySelector('#previewHost .monaco-editor')?.className || ''), null, { timeout: 4000 }).catch(() => {});
-    const svgDark = await svgMonacoClass();
-    await page.evaluate(() => { document.body.classList.remove('fv-dark'); document.documentElement.setAttribute('data-theme', 'light'); });
-    const relit = await page.waitForFunction(() => { const c = document.querySelector('#previewHost .monaco-editor')?.className || ''; return /\bvs\b/.test(c) && !/vs-dark/.test(c); }, null, { timeout: 4000 }).then(() => true).catch(() => false);
-    if (!/vs-dark/.test(svgLight) && /vs-dark/.test(svgDark) && relit) pass('SVG editor theme follows the in-app toggle (vs ↔ vs-dark), not the OS'); else fail('svg theme: ' + JSON.stringify({ svgLight, svgDark, relit }));
-  } else {
-    pass('SVG editor uses textarea fallback (CSS-themed) — Monaco theme test skipped');
-  }
+  const nestedSource = await page.$('#previewHost .monaco-editor, #previewHost textarea, #previewHost .svg-editor-pane');
+  if (!nestedSource) pass('SVG Preview contains no duplicate source editor'); else fail('SVG Preview still contains a source editor');
+  await page.click('#viewMode button[data-mode="preview"]');
+  const svgPreviewMode = await page.$eval('#panes', (el) => el.dataset.mode);
+  if (svgPreviewMode === 'preview' && await page.$('#previewHost .svg-viewer')) pass('SVG Preview-only mode remains visual-only'); else fail('SVG Preview-only mode did not remain visual-only');
 
   // ── Plain text: line count in metadata + preview word-wrap toggle ──
   await openExample('Sample.txt');

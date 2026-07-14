@@ -838,6 +838,8 @@ export async function run(ctx) {
   else fail('Lottie sandbox: ' + lottieInitial.sandbox);
   const lottieFrame = await frameOf('#previewHost .lottie-frame');
   await lottieFrame.waitForSelector('#animation svg', { timeout: 10000 });
+  const defaultPlaybackMode = await page.$eval('#previewHost .lottie-mode-select', (el) => el.value);
+  if (defaultPlaybackMode === 'once') pass('Lottie defaults to Play once mode'); else fail('Lottie default playback mode: ' + defaultPlaybackMode);
   const beforeFrame = Number(await page.$eval('#previewHost .lottie-controls input[type="range"]', (el) => el.value));
   await page.waitForTimeout(350);
   const afterFrame = Number(await page.$eval('#previewHost .lottie-controls input[type="range"]', (el) => el.value));
@@ -848,6 +850,46 @@ export async function run(ctx) {
   await page.waitForTimeout(250);
   const stillFrame = Number(await page.$eval('#previewHost .lottie-controls input[type="range"]', (el) => el.value));
   if (Math.abs(stillFrame - pausedFrame) < 0.1) pass('Lottie Play/Pause control stops playback'); else fail('Lottie continued while paused');
+  await page.click('#previewHost .lottie-controls button:nth-of-type(2)');
+  const onceCompleted = await page.waitForFunction(() => {
+    const controls = document.querySelector('#previewHost .lottie-controls');
+    return controls?.querySelector('button')?.textContent === 'Play' && Number(controls.querySelector('input[type="range"]')?.value) > 58;
+  }, null, { timeout: 5000 }).then(() => true).catch(() => false);
+  if (onceCompleted) pass('Play once stops on the final frame'); else fail('Play once did not complete and stop');
+
+  await page.selectOption('#previewHost .lottie-mode-select', 'loop');
+  await page.waitForFunction(() => Number(document.querySelector('#previewHost .lottie-controls input[type="range"]')?.value) > 40, null, { timeout: 4000 });
+  const loopWrapped = await page.waitForFunction(() => Number(document.querySelector('#previewHost .lottie-controls input[type="range"]')?.value) < 15, null, { timeout: 3500 }).then(() => true).catch(() => false);
+  const loopLabel = await page.textContent('#previewHost .lottie-controls button');
+  if (loopWrapped && loopLabel === 'Pause') pass('Loop mode repeats continuously'); else fail('Loop mode did not wrap: ' + JSON.stringify({ loopWrapped, loopLabel }));
+
+  await page.selectOption('#previewHost .lottie-mode-select', 'hover');
+  await page.waitForFunction(() => Number(document.querySelector('#previewHost .lottie-controls input[type="range"]')?.value) < 0.1);
+  const stageBox = await page.locator('#previewHost .lottie-stage').boundingBox();
+  await page.mouse.move(stageBox.x + stageBox.width / 2, stageBox.y + stageBox.height / 2);
+  await page.waitForFunction(() => Number(document.querySelector('#previewHost .lottie-controls input[type="range"]')?.value) > 2, null, { timeout: 2500 });
+  await page.mouse.move(1, 1);
+  const hoverReset = await page.waitForFunction(() => Number(document.querySelector('#previewHost .lottie-controls input[type="range"]')?.value) < 0.1, null, { timeout: 1500 }).then(() => true).catch(() => false);
+  if (hoverReset) pass('Hover mode plays on entry and resets on exit'); else fail('Hover mode did not reset');
+  await page.focus('#previewHost .lottie-stage');
+  await page.waitForFunction(() => Number(document.querySelector('#previewHost .lottie-controls input[type="range"]')?.value) > 2, null, { timeout: 2500 });
+  await page.focus('#previewHost .lottie-mode-select');
+  const focusReset = await page.waitForFunction(() => Number(document.querySelector('#previewHost .lottie-controls input[type="range"]')?.value) < 0.1, null, { timeout: 1500 }).then(() => true).catch(() => false);
+  if (focusReset) pass('Hover mode supports keyboard focus and resets on blur'); else fail('Hover focus mode did not reset');
+
+  await page.selectOption('#previewHost .lottie-mode-select', 'click');
+  await page.waitForFunction(() => Number(document.querySelector('#previewHost .lottie-controls input[type="range"]')?.value) < 0.1);
+  await lottieFrame.click('#animation');
+  await page.waitForFunction(() => Number(document.querySelector('#previewHost .lottie-controls input[type="range"]')?.value) > 8, null, { timeout: 2500 });
+  await lottieFrame.click('#animation');
+  await page.waitForTimeout(100);
+  const clickRestartFrame = Number(await page.$eval('#previewHost .lottie-controls input[type="range"]', (el) => el.value));
+  if (clickRestartFrame < 8) pass('Click mode restarts from frame 0 on every preview click'); else fail('Click mode did not restart: ' + clickRestartFrame);
+  await page.$eval('#previewHost .lottie-controls input[type="range"]', (el) => { el.value = el.min; el.dispatchEvent(new Event('input', { bubbles: true })); });
+  await page.click('#previewHost .lottie-frame-label');
+  await page.waitForTimeout(180);
+  const controlClickFrame = Number(await page.$eval('#previewHost .lottie-controls input[type="range"]', (el) => el.value));
+  if (controlClickFrame < 0.1) pass('Clicks on Lottie controls do not activate Click mode'); else fail('Control click activated animation: ' + controlClickFrame);
   await page.click('#viewMode button[data-mode="raw"]');
   await page.click('#enhanceChip .ec-toggle');
   await page.click('#enhanceChip .ec-toggle');
@@ -883,6 +925,21 @@ export async function run(ctx) {
   await page.waitForSelector('#previewHost .lottie-frame', { timeout: 10000 });
   const reducedLabel = await page.textContent('#previewHost .lottie-controls button');
   if (reducedLabel === 'Play') pass('Lottie honors Reduce Motion by starting paused'); else fail('Reduce Motion button: ' + reducedLabel);
+  await page.selectOption('#previewHost .lottie-mode-select', 'loop');
+  const reducedLoopBefore = Number(await page.$eval('#previewHost .lottie-controls input[type="range"]', (el) => el.value));
+  await page.waitForTimeout(250);
+  const reducedLoopAfter = Number(await page.$eval('#previewHost .lottie-controls input[type="range"]', (el) => el.value));
+  if (Math.abs(reducedLoopAfter - reducedLoopBefore) < 0.1) pass('Reduce Motion suppresses Loop autoplay'); else fail('Reduce Motion loop advanced');
+  await page.selectOption('#previewHost .lottie-mode-select', 'hover');
+  await page.$eval('#previewHost .lottie-stage', (el) => el.dispatchEvent(new PointerEvent('pointerenter')));
+  await page.waitForTimeout(250);
+  const reducedHoverFrame = Number(await page.$eval('#previewHost .lottie-controls input[type="range"]', (el) => el.value));
+  if (reducedHoverFrame < 0.1) pass('Reduce Motion suppresses Hover activation'); else fail('Reduce Motion hover advanced: ' + reducedHoverFrame);
+  await page.selectOption('#previewHost .lottie-mode-select', 'click');
+  const reducedFrame = await frameOf('#previewHost .lottie-frame');
+  await reducedFrame.click('#animation');
+  const reducedClickAdvanced = await page.waitForFunction(() => Number(document.querySelector('#previewHost .lottie-controls input[type="range"]')?.value) > 2, null, { timeout: 2500 }).then(() => true).catch(() => false);
+  if (reducedClickAdvanced) pass('Reduce Motion still allows explicit Click playback'); else fail('Reduce Motion blocked Click playback');
   const offOriginBefore = ctx.offOrigin.length;
   await page.evaluate(async () => {
     const data = await fetch('examples/sample-lottie.json').then((r) => r.json());
