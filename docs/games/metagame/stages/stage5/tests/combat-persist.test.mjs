@@ -70,24 +70,23 @@ function view(combat) {
 {
   const deck = ["SYN", "SYN", "SYN", "ACK", "ACK", "SEGMENT"];
   const c = createCombat({ deck, player, enemy: instantiateEnemy("the-refused-connection", 4), seed: 5 });
-  wireBossCombat(c, { locked: true, hpMult: 1 });
+  wireBossCombat(c, { hpMult: 1 });
   c.nodeId = "a4-l6-n0";
   const enemyHp0 = c.enemy.hp;
 
   const snap = snapshotCombat(c);
-  assert.ok(snap.boss && snap.boss.locked, "snapshot records the boss phase + locked state");
+  assert.ok(snap.boss && snap.boss.phase === 1, "snapshot records the boss phase state");
 
   const restored = restoreCombat(snap, { relics: relicsFor([]) });
   assert.equal(restored.bossPhase, 1, "restored boss phase");
-  assert.equal(restored.bossLocked, true, "restored boss lock");
+  assert.equal(restored.bossHpMult, 1, "restored boss HP multiplier");
   assert.equal(typeof restored.acceptance, "function", "acceptance hook re-attached");
   assert.equal(typeof restored.advancePhase, "function", "advancePhase hook re-attached");
 
-  // 2026-07-11 playtest fix: locked (ch9 unread) survives a restore as a difficulty cost (scaled-up
-  // HP), not a win/loss gate — a demand-satisfying Signal still lands real damage after restore.
+  // A demand-satisfying Signal still lands real damage after restore.
   const synIdx = restored.hand.indexOf("SYN");
   if (synIdx >= 0) { restored.player.energy = 3; playCard(restored, synIdx); }
-  assert.ok(restored.enemy.hp < enemyHp0, "a demand-satisfying Signal still lands damage after restore, even while locked");
+  assert.ok(restored.enemy.hp < enemyHp0, "a demand-satisfying Signal still lands damage after restore");
 }
 
 // ── run-state integration: checkpoint writes the 'combat' slot; reset clears it; siblings survive ───

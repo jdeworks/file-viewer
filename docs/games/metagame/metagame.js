@@ -1,15 +1,12 @@
 import { loadSave, persistSave, resetSave } from './save.js';
-import * as actions from './action-flags.js';
 import * as achievements from './achievements.js';
 import * as bell from './bell.js';
-import * as bts from './bts.js';
 import { createStageRegistry } from './registry.js';
-import { createViewerBridge } from './viewer-bridge.js';
 import { MANIFEST_FIELDS, listStageMetas, stageMetaFor, loadStage } from './stage-manifest.js';
 
 // Stages are loaded lazily (one stage's module graph at a time) rather than eagerly importing all
 // five up front. The registry starts empty and each stage module is registered the first time it's
-// loaded; the hub's all-stages views (nav, title, dev menu, bts) read the lightweight manifest.
+// loaded; the hub's all-stages views (nav, title, dev menu) read the lightweight manifest.
 const registry = createStageRegistry([]);
 const loadedStages = new Map();
 
@@ -51,26 +48,13 @@ function seedStageState(save, mod) {
   }
 }
 
-function createServices(getSave, persist, viewer) {
-  actions.bindActionSaveProvider(getSave, persist);
+function createServices(getSave, persist) {
   achievements.bindAchievementSaveProvider(getSave, persist);
   bell.bindBellSaveProvider(getSave, persist);
-  bts.bindBtsSaveProvider(getSave, persist, () => ({
-    getStageMeta: (stage) => registry.getStageMeta(stage) || stageMetaFor(stage),
-  }));
-  const off = actions.subscribeToActions((detail) => {
-    const record = achievements.unlockAchievementForAction(detail.stage, detail.action, detail);
-    if (record) bell.showBell(`${detail.stage}.${detail.action}`, record.title || record.id, { stage: detail.stage, detail });
-  });
   return {
-    actions,
     achievements,
     bell,
-    bts: {
-      ...bts,
-      open: (stage) => bts.openBts(stage, viewer),
-    },
-    destroy: off,
+    destroy() {},
   };
 }
 
@@ -78,12 +62,8 @@ export function mount(host, { onExit } = {}) {
   let saveData = loadSave();
   saveData = persistSave(saveData);
 
-  const viewer = createViewerBridge();
-  const persist = () => {
-    actions.mirrorActionsToSave(saveData);
-    saveData = persistSave(saveData);
-  };
-  const services = createServices(() => saveData, persist, viewer);
+  const persist = () => { saveData = persistSave(saveData); };
+  const services = createServices(() => saveData, persist);
 
   let mounted = null;
   let bossJumpSeq = 0;
@@ -191,13 +171,10 @@ export function mount(host, { onExit } = {}) {
       host: host.querySelector('.mg-v3-host'),
       state: saveData.stageState[mod.stageMeta.id],
       save: persist,
-      actions,
       achievements,
       bell: services.bell,
-      bts: services.bts,
       sfxEnabled: () => !saveData.global.sfxOff,
       orchestrator: { save: saveData, selectStage },
-      viewer,
       onExit,
       onStageComplete: () => completeStage(mod.stageMeta.id),
     });
@@ -252,11 +229,6 @@ export function mount(host, { onExit } = {}) {
     saveData.defeated = saveData.defeated.filter((id) => Number(id) !== n);
     saveData.currentStage = n;
 
-    const req = stageMetaFor(n)?.requiredAction;
-    if (req) {
-      const dot = req.indexOf('.');
-      actions.setAction(Number(req.slice(0, dot)), req.slice(dot + 1), { source: 'dev-boss-jump' });
-    }
     persist();
 
     const expectedRender = renderSeq + 1;

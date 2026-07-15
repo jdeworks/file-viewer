@@ -5,213 +5,6 @@
 // external (NOT inlined). The hub's stage-manifest.js LOADERS import THIS file.
 
 
-// ../../docs/games/metagame/stages/stage4/messages.js
-var ACTION_NAME = "recursion_blueprint_read";
-var REQUIRED_ACTION = "4.recursion_blueprint_read";
-var ACHIEVEMENT_ID = "stage4.recursion_blueprint_read";
-var ACHIEVEMENT_TEXT = "I looked deeper.";
-var BTS_PATH = "/docs/bts/fractal_bastion.bts";
-var RECURSION_BLUEPRINT_PATH = "/docs/examples/metagame/stage4/towers/upgrades/tier3_blueprints/recursion_points.json";
-var bellMessages = {
-  start: "the path repeats at every scale.",
-  unlock: "the recursion points are no longer guesses.",
-  // Shown once the blueprint is read but no tower yet covers a recursion point — teaches the
-  // second step of the two-step gate so the ladder doesn't dead-end on a congratulation.
-  needsCoverage: "the points are mapped, but nothing holds them. place a tower so its range covers a marked recursion point, then fight.",
-  covered: "a tower anchors the repeating point.",
-  defeated: "the loop reached its own beginning and stopped."
-};
-var lockedHintLadder = [
-  "the weak points are scattered and invisible — cover enough ground and you will find one eventually.",
-  "the weak points are not on the surface of the tower list.",
-  "follow the tower upgrade folders all the way down.",
-  "open towers/upgrades/tier3_blueprints/recursion_points.json for exact coordinates and a damage bonus."
-];
-
-// ../../docs/games/metagame/stages/stage4/content.js
-function recursionBlueprintContent(state) {
-  return `${JSON.stringify(recursionBlueprintData(state), null, 2)}
-`;
-}
-function recursionBlueprintData(state) {
-  return {
-    blueprint_id: "recursion_points",
-    name: "Recursion Point Targeting",
-    file: RECURSION_BLUEPRINT_PATH,
-    status: "UNLOCKED",
-    boss_vulnerability: {
-      boss: "The Infinite Loop",
-      rule: "Towers placed within radius of any persisted recursion point can damage the boss.",
-      point_set_id: state.recursion.pointSetId
-    },
-    note: "These coordinates are generated for this run and persisted in stage state. Do not target copied coordinates from another run.",
-    recursion_points: state.recursion.points.map((point) => ({ ...point }))
-  };
-}
-function isRecursionBlueprintPath(path) {
-  const normalized = String(path || "").replace(/\\/g, "/");
-  return normalized === RECURSION_BLUEPRINT_PATH || normalized.endsWith("/stage4/towers/upgrades/tier3_blueprints/recursion_points.json");
-}
-
-// ../../docs/games/metagame/stages/stage4/towers.js
-var TOWER_TYPES = {
-  // ── original six ──────────────────────────────────────────────────────────────────────────────
-  pulse_node: { glyph: "[P]", cost: 80, range: 3, fireRate: 1, damage: 20, damageType: "kinetic", role: "baseline single-target — cheap kinetic DPS, weak vs armor", ability: "emp_burst" },
-  scatter_array: { glyph: "[S]", cost: 150, range: 2, fireRate: 0.8, damage: 12, damageType: "kinetic", aoe: 2, role: "kinetic splash — clears swarms, falls off vs armor/shields", ability: "overcharge" },
-  null_spike: { glyph: "[N]", cost: 200, range: 4, fireRate: 0.5, damage: 40, damageType: "null", ignoresArmor: true, role: "null cannon — ignores armor AND shields, slow cadence", ability: "null_wave" },
-  attractor_field: { glyph: "[A]", cost: 120, range: 3, fireRate: 0, damage: 0, slow: 0.5, role: "support — slows everything in range (the original slow field)" },
-  resonance_hub: { glyph: "[H]", cost: 250, range: 5, fireRate: 0, damage: 0, adjacencyBonus: 0.3, role: "support — +30% damage to each adjacent tower" },
-  cycle_extractor: { glyph: "[E]", cost: 250, range: 0, fireRate: 0, damage: 0, incomePerWave: 25, role: "economy — pays Cycles every wave clear" },
-  // ── expanded roster (depth pass): each has a clear role + synergy ──────────────────────────────
-  // Crowd-control: stacks chill that ramps to a FULL FREEZE; arc chip damage also bleeds shields.
-  frost_lattice: { glyph: "[F]", cost: 140, range: 3, fireRate: 1.2, damage: 8, damageType: "arc", onHit: [{ kind: "chill", stacks: 22, ms: 1600 }], role: "control — chill→freeze; pairs with high-burst single-target", ability: "emp_burst" },
-  // Sustained thermal DoT: low hit, big burn — answers armor (thermal bypasses it) + fat HP pools.
-  thermal_loop: { glyph: "[T]", cost: 160, range: 3, fireRate: 1, damage: 6, damageType: "thermal", onHit: [{ kind: "burn", dps: 14, ms: 2500 }], role: "anti-armor DoT — burn melts armored/tanky lines", ability: "overcharge" },
-  // Arc chain: hits the 3 nearest enemies to its focus — the shield/swarm answer.
-  chain_resonator: { glyph: "[C]", cost: 190, range: 4, fireRate: 0.9, damage: 16, damageType: "arc", chain: 3, role: "arc chain (3 targets) — shreds shields + clustered swarms", ability: "emp_burst" },
-  // Anti-elite sniper: one huge null hit on the strongest target, long range, very slow cadence.
-  long_recursor: { glyph: "[L]", cost: 260, range: 7, fireRate: 0.35, damage: 130, damageType: "null", defaultTarget: "strongest", role: "anti-elite sniper — one big null hit, ignores armor/shield", ability: "overcharge" },
-  // Mortar: targets ANYWHERE on the board (range-independent) and splashes around its focus.
-  glyph_mortar: { glyph: "[M]", cost: 220, range: 99, fireRate: 0.5, damage: 26, damageType: "thermal", aoe: 3, global: true, role: "global mortar — splash anywhere; reaches leaks the front missed", ability: "overcharge" },
-  // Shred support: tiny damage, but strips armor so kinetic towers cut deep (MATCH enabler).
-  shatter_drill: { glyph: "[D]", cost: 150, range: 3, fireRate: 1.5, damage: 4, damageType: "kinetic", onHit: [{ kind: "shred", armor: 0.25, ms: 2200 }], role: "support — shred armor so kinetic towers land full damage", ability: "null_wave" },
-  // Gravity field: slows hard AND pulls enemies back along the path → clusters them for AoE/chain.
-  gravity_well: { glyph: "[G]", cost: 200, range: 3, fireRate: 0, damage: 0, slow: 0.4, pull: 0.6, role: "support — slow + pull-back; clusters for scatter/mortar/chain" },
-  // Economy v2: scaling per-wave income that grows as the campaign deepens (data-set later).
-  bank_node: { glyph: "[B]", cost: 300, range: 0, fireRate: 0, damage: 0, incomePerWave: 40, role: "economy v2 — bigger per-wave payout than the extractor" }
-};
-var TARGET_PRESETS = ["first", "strongest", "last"];
-var PRESET_LABELS = { first: "FIRST", strongest: "STRONG", last: "CYCLE" };
-function toPreset(mode) {
-  if (mode === "strongest") return "strongest";
-  if (mode === "last" || mode === "weakest") return "last";
-  return "first";
-}
-function presetLabel(mode) {
-  return PRESET_LABELS[toPreset(mode)] || "FIRST";
-}
-var TOWER_ABILITIES = {
-  emp_burst: { label: "EMP Burst", radius: 5, stunMs: 2e3, cooldownMs: 3e4 },
-  null_wave: { label: "Null Wave", stripMs: 5e3, cooldownMs: 6e4 },
-  overcharge: { label: "Overcharge", multiplier: 3, durationMs: 3e3, cooldownMs: 45e3 }
-};
-function towerUpgradeCost(type, fromLevel) {
-  const def = TOWER_TYPES[type];
-  if (!def) return Infinity;
-  if (fromLevel === 1) return def.cost * 2;
-  if (fromLevel === 2) return def.cost * 4;
-  return Infinity;
-}
-
-// ../../docs/games/metagame/stages/stage4/boss.js
-function hasRecursionBlueprint(actions) {
-  return Boolean(actions && typeof actions.hasAction === "function" && actions.hasAction(4, ACTION_NAME));
-}
-function getBossLockState({ actions, state }) {
-  const unlocked = hasRecursionBlueprint(actions);
-  const boss = state?.boss || {};
-  const coverage = getTowerCoverage(state);
-  const hintIndex = Math.min(Math.max(Number(boss.lockHintStep || 0), 0), lockedHintLadder.length - 1);
-  return {
-    unlocked,
-    defeated: Boolean(boss.defeated),
-    coveredPoints: coverage.covered.length,
-    totalPoints: coverage.total,
-    vulnerability: unlocked ? "mapped" : "unread",
-    defeatPossible: coverage.covered.length > 0,
-    hint: !unlocked ? coverage.covered.length > 0 ? "a strike is landing — keep covering ground blind, or read the blueprint for exact coordinates and a damage bonus." : lockedHintLadder[hintIndex] : coverage.covered.length > 0 ? bellMessages.unlock : bellMessages.needsCoverage
-  };
-}
-function applyRecursionBlueprintOpen({ state, actions, achievements, bell, path }) {
-  if (!isRecursionBlueprintPath(path)) return false;
-  actions?.setAction?.(4, ACTION_NAME, {
-    source: "file-tree",
-    file: "recursion_points.json",
-    path: "/stage4/towers/upgrades/tier3_blueprints/recursion_points.json",
-    pointSetId: state.recursion.pointSetId
-  });
-  achievements?.unlockAchievement?.(ACHIEVEMENT_ID, {
-    stage: 4,
-    title: ACHIEVEMENT_TEXT,
-    action: "4.recursion_blueprint_read",
-    pointSetId: state.recursion.pointSetId
-  });
-  notifyBell(bell, "stage4.recursion_blueprint_read", bellMessages.unlock);
-  pushLog(state, bellMessages.unlock);
-  return true;
-}
-function placeTower(state, { x, y, type = "pulse_node", targetMode }) {
-  const def = TOWER_TYPES[type];
-  if (!def) return { ok: false, reason: "type" };
-  const cost = def.cost || 0;
-  if (Number(state.cycles || 0) < cost) return { ok: false, reason: "cycles" };
-  const mode = toPreset(targetMode || def.defaultTarget || "first");
-  const tx = Math.trunc(Number(x));
-  const ty = Math.trunc(Number(y));
-  if (!Number.isFinite(tx) || !Number.isFinite(ty)) return { ok: false, reason: "position" };
-  const tower = {
-    // Position+type id, IDENTICAL to state.normalizeTower's scheme, so a tower's id survives a
-    // save/reload round-trip and upgrade/sell lookups never break (Round-3 Issue 5). One tower per cell.
-    id: `tower-${type}-${tx}-${ty}`,
-    type,
-    x: tx,
-    y: ty,
-    targetMode: mode
-  };
-  state.cycles -= cost;
-  state.towers.push(tower);
-  const coverage = getTowerCoverage(state);
-  pushLog(state, `${type} placed at ${tower.x},${tower.y}. ${coverage.covered.length}/${coverage.total} recursion points covered.`);
-  return { ok: true, tower, coverage };
-}
-function cycleTowerTarget(state, id) {
-  const tower = (state?.towers || []).find((t) => t.id === id);
-  if (!tower) return null;
-  const i = TARGET_PRESETS.indexOf(toPreset(tower.targetMode || "first"));
-  tower.targetMode = TARGET_PRESETS[(i + 1) % TARGET_PRESETS.length];
-  pushLog(state, `${tower.type} now targets ${tower.targetMode.toUpperCase()}.`);
-  return tower.targetMode;
-}
-function getTowerCoverage(state) {
-  const points = state?.recursion?.points || [];
-  const towers = state?.towers || [];
-  const covered = points.filter((point) => towers.some((tower) => distance(tower, point) <= Number(point.radius || 2)));
-  return {
-    total: points.length,
-    covered,
-    uncovered: points.filter((point) => !covered.includes(point))
-  };
-}
-function fightInfiniteLoop({ state, actions }) {
-  const lock = getBossLockState({ actions, state });
-  state.boss.reached = true;
-  state.boss.attempts = Number(state.boss.attempts || 0) + 1;
-  if (!lock.coveredPoints) {
-    state.boss.lockHintStep = Math.min(Number(state.boss.lockHintStep || 0) + 1, lockedHintLadder.length - 1);
-    pushLog(state, lock.unlocked ? "the blueprint is read, but no tower touches a recursion point." : "no strike lands — nothing placed touches a weak point yet.");
-    return { defeated: false, locked: false, damage: 0 };
-  }
-  const damage = lock.coveredPoints * (lock.unlocked ? 150 : 100);
-  state.boss.hp = Math.max(0, Number(state.boss.hp || 300) - damage);
-  if (state.boss.hp === 0) {
-    state.boss.defeated = true;
-    pushLog(state, bellMessages.defeated);
-  } else {
-    pushLog(state, `recursion damage landed: ${damage}.`);
-  }
-  return { defeated: state.boss.defeated, locked: false, damage };
-}
-function pushLog(state, line) {
-  state.log = [...state.log || [], line].slice(-8);
-}
-function distance(a, b) {
-  return Math.hypot(Number(a.x) - Number(b.x), Number(a.y) - Number(b.y));
-}
-function notifyBell(bell, id, text) {
-  if (bell && typeof bell.showBell === "function") bell.showBell(id, text, { stage: 4 });
-  else if (bell && typeof bell.push === "function") bell.push({ id, stage: 4, text });
-}
-
 // ../../docs/games/metagame/stages/stage4/lsystem.js
 var GRID = 40;
 var MARGIN = 2;
@@ -277,6 +70,56 @@ function expand(depth) {
     s = out;
   }
   return s;
+}
+
+// ../../docs/games/metagame/stages/stage4/towers.js
+var TOWER_TYPES = {
+  // ── original six ──────────────────────────────────────────────────────────────────────────────
+  pulse_node: { glyph: "[P]", cost: 80, range: 3, fireRate: 1, damage: 20, damageType: "kinetic", role: "baseline single-target — cheap kinetic DPS, weak vs armor", ability: "emp_burst" },
+  scatter_array: { glyph: "[S]", cost: 150, range: 2, fireRate: 0.8, damage: 12, damageType: "kinetic", aoe: 2, role: "kinetic splash — clears swarms, falls off vs armor/shields", ability: "overcharge" },
+  null_spike: { glyph: "[N]", cost: 200, range: 4, fireRate: 0.5, damage: 40, damageType: "null", ignoresArmor: true, role: "null cannon — ignores armor AND shields, slow cadence", ability: "null_wave" },
+  attractor_field: { glyph: "[A]", cost: 120, range: 3, fireRate: 0, damage: 0, slow: 0.5, role: "support — slows everything in range (the original slow field)" },
+  resonance_hub: { glyph: "[H]", cost: 250, range: 5, fireRate: 0, damage: 0, adjacencyBonus: 0.3, role: "support — +30% damage to each adjacent tower" },
+  cycle_extractor: { glyph: "[E]", cost: 250, range: 0, fireRate: 0, damage: 0, incomePerWave: 25, role: "economy — pays Cycles every wave clear" },
+  // ── expanded roster (depth pass): each has a clear role + synergy ──────────────────────────────
+  // Crowd-control: stacks chill that ramps to a FULL FREEZE; arc chip damage also bleeds shields.
+  frost_lattice: { glyph: "[F]", cost: 140, range: 3, fireRate: 1.2, damage: 8, damageType: "arc", onHit: [{ kind: "chill", stacks: 22, ms: 1600 }], role: "control — chill→freeze; pairs with high-burst single-target", ability: "emp_burst" },
+  // Sustained thermal DoT: low hit, big burn — answers armor (thermal bypasses it) + fat HP pools.
+  thermal_loop: { glyph: "[T]", cost: 160, range: 3, fireRate: 1, damage: 6, damageType: "thermal", onHit: [{ kind: "burn", dps: 14, ms: 2500 }], role: "anti-armor DoT — burn melts armored/tanky lines", ability: "overcharge" },
+  // Arc chain: hits the 3 nearest enemies to its focus — the shield/swarm answer.
+  chain_resonator: { glyph: "[C]", cost: 190, range: 4, fireRate: 0.9, damage: 16, damageType: "arc", chain: 3, role: "arc chain (3 targets) — shreds shields + clustered swarms", ability: "emp_burst" },
+  // Anti-elite sniper: one huge null hit on the strongest target, long range, very slow cadence.
+  long_recursor: { glyph: "[L]", cost: 260, range: 7, fireRate: 0.35, damage: 130, damageType: "null", defaultTarget: "strongest", role: "anti-elite sniper — one big null hit, ignores armor/shield", ability: "overcharge" },
+  // Mortar: targets ANYWHERE on the board (range-independent) and splashes around its focus.
+  glyph_mortar: { glyph: "[M]", cost: 220, range: 99, fireRate: 0.5, damage: 26, damageType: "thermal", aoe: 3, global: true, role: "global mortar — splash anywhere; reaches leaks the front missed", ability: "overcharge" },
+  // Shred support: tiny damage, but strips armor so kinetic towers cut deep (MATCH enabler).
+  shatter_drill: { glyph: "[D]", cost: 150, range: 3, fireRate: 1.5, damage: 4, damageType: "kinetic", onHit: [{ kind: "shred", armor: 0.25, ms: 2200 }], role: "support — shred armor so kinetic towers land full damage", ability: "null_wave" },
+  // Gravity field: slows hard AND pulls enemies back along the path → clusters them for AoE/chain.
+  gravity_well: { glyph: "[G]", cost: 200, range: 3, fireRate: 0, damage: 0, slow: 0.4, pull: 0.6, role: "support — slow + pull-back; clusters for scatter/mortar/chain" },
+  // Economy v2: scaling per-wave income that grows as the campaign deepens (data-set later).
+  bank_node: { glyph: "[B]", cost: 300, range: 0, fireRate: 0, damage: 0, incomePerWave: 40, role: "economy v2 — bigger per-wave payout than the extractor" }
+};
+var TARGET_PRESETS = ["first", "strongest", "last"];
+var PRESET_LABELS = { first: "FIRST", strongest: "STRONG", last: "CYCLE" };
+function toPreset(mode) {
+  if (mode === "strongest") return "strongest";
+  if (mode === "last" || mode === "weakest") return "last";
+  return "first";
+}
+function presetLabel(mode) {
+  return PRESET_LABELS[toPreset(mode)] || "FIRST";
+}
+var TOWER_ABILITIES = {
+  emp_burst: { label: "EMP Burst", radius: 5, stunMs: 2e3, cooldownMs: 3e4 },
+  null_wave: { label: "Null Wave", stripMs: 5e3, cooldownMs: 6e4 },
+  overcharge: { label: "Overcharge", multiplier: 3, durationMs: 3e3, cooldownMs: 45e3 }
+};
+function towerUpgradeCost(type, fromLevel) {
+  const def = TOWER_TYPES[type];
+  if (!def) return Infinity;
+  if (fromLevel === 1) return def.cost * 2;
+  if (fromLevel === 2) return def.cost * 4;
+  return Infinity;
 }
 
 // ../../docs/games/metagame/stages/stage4/board.js
@@ -735,14 +578,14 @@ function castAbility(state, tower, id, ability, def, now, dist3) {
     const hit = (state.enemies || []).filter((e) => dist3(tower, e) <= ability.radius);
     if (!hit.length) return false;
     for (const e of hit) applyStatus(e, "stun", { ms: ability.stunMs });
-    pushLog2(state, `${def.glyph || "[?]"} EMP Burst — ${hit.length} stunned.`);
+    pushLog(state, `${def.glyph || "[?]"} EMP Burst — ${hit.length} stunned.`);
     return true;
   }
   if (id === "null_wave") {
     const hit = (state.enemies || []).filter((e) => dist3(tower, e) <= (def.range || 0) && (e.armor || 0) > 0);
     if (!hit.length) return false;
     for (const e of hit) applyStatus(e, "shred", { armor: 1, ms: ability.stripMs });
-    pushLog2(state, `${def.glyph || "[?]"} Null Wave — armor stripped from ${hit.length}.`);
+    pushLog(state, `${def.glyph || "[?]"} Null Wave — armor stripped from ${hit.length}.`);
     return true;
   }
   if (id === "overcharge") {
@@ -750,12 +593,12 @@ function castAbility(state, tower, id, ability, def, now, dist3) {
     if (!inRange) return false;
     tower.overchargeUntilMs = now + ability.durationMs;
     tower.overchargeMultiplier = ability.multiplier;
-    pushLog2(state, `${def.glyph || "[?]"} Overcharge — damage ×${ability.multiplier}.`);
+    pushLog(state, `${def.glyph || "[?]"} Overcharge — damage ×${ability.multiplier}.`);
     return true;
   }
   return false;
 }
-function pushLog2(state, line) {
+function pushLog(state, line) {
   state.log = [...state.log || [], line].slice(-12);
 }
 
@@ -1116,7 +959,7 @@ function startWave(state, waveNum, pathTiles) {
   }
   if (comp.subBoss) {
     const sb = subBossDef(comp.subBoss);
-    if (sb) pushLog3(state, `${sb.glyph} ${sb.name} approaches — it ${sb.telegraph}.`);
+    if (sb) pushLog2(state, `${sb.glyph} ${sb.name} approaches — it ${sb.telegraph}.`);
   }
   return state;
 }
@@ -1126,7 +969,7 @@ function queueWave(state, waveNum) {
   if (comp.subBoss) {
     state.spawnQueue.push(`subboss:${comp.subBoss}`);
     const sb = subBossDef(comp.subBoss);
-    if (sb) pushLog3(state, `${sb.glyph} ${sb.name} approaches — it ${sb.telegraph}.`);
+    if (sb) pushLog2(state, `${sb.glyph} ${sb.name} approaches — it ${sb.telegraph}.`);
   }
   return state;
 }
@@ -1155,7 +998,7 @@ function resolveDeath(state, enemy, pathTiles) {
       placeOnPath(child, pathTiles);
       state.enemies.push(child);
     }
-    pushLog3(state, `${def.glyph} fractures into ${def.spawnsOnDeath.count}.`);
+    pushLog2(state, `${def.glyph} fractures into ${def.spawnsOnDeath.count}.`);
   }
   return def.reward || 0;
 }
@@ -1211,7 +1054,7 @@ function moveEnemies(state, dt, pathTiles, exitIndex) {
       const def = enemyDef(e);
       state.integrity = Math.max(0, (state.integrity || 0) - (def.integrityDrain || 0));
       if (state.integrity <= 0) state.waveFailed = true;
-      pushLog3(state, `${def.glyph} reached the core.`);
+      pushLog2(state, `${def.glyph} reached the core.`);
       continue;
     }
     placeOnPath(e, pathTiles);
@@ -1270,13 +1113,13 @@ function maybeFireSubBossAbility(state, enemy, pathTiles) {
       placeOnPath(child, pathTiles);
       state.enemies.push(child);
     }
-    pushLog3(state, `${sb.glyph} ${sb.name} RECURSES — copies pour out.`);
+    pushLog2(state, `${sb.glyph} ${sb.name} RECURSES — copies pour out.`);
   } else if (sb.ability === "haste") {
     enemy.speed *= 1.6;
-    pushLog3(state, `${sb.glyph} ${sb.name} HASTES — it surges forward.`);
+    pushLog2(state, `${sb.glyph} ${sb.name} HASTES — it surges forward.`);
   } else if (sb.ability === "shield") {
     enemy.armor = Math.min(0.9, (enemy.armor || 0) + 0.3);
-    pushLog3(state, `${sb.glyph} ${sb.name} raises a SHIELD.`);
+    pushLog2(state, `${sb.glyph} ${sb.name} raises a SHIELD.`);
   }
 }
 function reap(state, pathTiles) {
@@ -1335,8 +1178,96 @@ function placeOnPath(enemy, pathTiles) {
 function dist2(a, b) {
   return Math.hypot((a.x || 0) - (b.x || 0), (a.y || 0) - (b.y || 0));
 }
-function pushLog3(state, line) {
+function pushLog2(state, line) {
   state.log = [...state.log || [], line].slice(-12);
+}
+
+// ../../docs/games/metagame/stages/stage4/messages.js
+var bellMessages = {
+  start: "the path repeats at every scale.",
+  needsCoverage: "place a tower so its range covers a marked recursion point, then fight.",
+  covered: "a tower anchors the repeating point.",
+  defeated: "the loop reached its own beginning and stopped."
+};
+
+// ../../docs/games/metagame/stages/stage4/boss.js
+function getBossLockState({ state }) {
+  const boss = state?.boss || {};
+  const coverage = getTowerCoverage(state);
+  return {
+    defeated: Boolean(boss.defeated),
+    coveredPoints: coverage.covered.length,
+    totalPoints: coverage.total,
+    vulnerability: "visible",
+    defeatPossible: coverage.covered.length > 0,
+    hint: coverage.covered.length > 0 ? bellMessages.covered : bellMessages.needsCoverage
+  };
+}
+function placeTower(state, { x, y, type = "pulse_node", targetMode }) {
+  const def = TOWER_TYPES[type];
+  if (!def) return { ok: false, reason: "type" };
+  const cost = def.cost || 0;
+  if (Number(state.cycles || 0) < cost) return { ok: false, reason: "cycles" };
+  const mode = toPreset(targetMode || def.defaultTarget || "first");
+  const tx = Math.trunc(Number(x));
+  const ty = Math.trunc(Number(y));
+  if (!Number.isFinite(tx) || !Number.isFinite(ty)) return { ok: false, reason: "position" };
+  const tower = {
+    // Position+type id, IDENTICAL to state.normalizeTower's scheme, so a tower's id survives a
+    // save/reload round-trip and upgrade/sell lookups never break (Round-3 Issue 5). One tower per cell.
+    id: `tower-${type}-${tx}-${ty}`,
+    type,
+    x: tx,
+    y: ty,
+    targetMode: mode
+  };
+  state.cycles -= cost;
+  state.towers.push(tower);
+  const coverage = getTowerCoverage(state);
+  pushLog3(state, `${type} placed at ${tower.x},${tower.y}. ${coverage.covered.length}/${coverage.total} recursion points covered.`);
+  return { ok: true, tower, coverage };
+}
+function cycleTowerTarget(state, id) {
+  const tower = (state?.towers || []).find((t) => t.id === id);
+  if (!tower) return null;
+  const i = TARGET_PRESETS.indexOf(toPreset(tower.targetMode || "first"));
+  tower.targetMode = TARGET_PRESETS[(i + 1) % TARGET_PRESETS.length];
+  pushLog3(state, `${tower.type} now targets ${tower.targetMode.toUpperCase()}.`);
+  return tower.targetMode;
+}
+function getTowerCoverage(state) {
+  const points = state?.recursion?.points || [];
+  const towers = state?.towers || [];
+  const covered = points.filter((point) => towers.some((tower) => distance(tower, point) <= Number(point.radius || 2)));
+  return {
+    total: points.length,
+    covered,
+    uncovered: points.filter((point) => !covered.includes(point))
+  };
+}
+function fightInfiniteLoop({ state }) {
+  const lock = getBossLockState({ state });
+  state.boss.reached = true;
+  state.boss.attempts = Number(state.boss.attempts || 0) + 1;
+  if (!lock.coveredPoints) {
+    pushLog3(state, "no strike lands — nothing placed touches a recursion point yet.");
+    return { defeated: false, locked: false, damage: 0 };
+  }
+  const damage = lock.coveredPoints * 100;
+  state.boss.hp = Math.max(0, Number(state.boss.hp || 300) - damage);
+  if (state.boss.hp === 0) {
+    state.boss.defeated = true;
+    pushLog3(state, bellMessages.defeated);
+  } else {
+    pushLog3(state, `recursion damage landed: ${damage}.`);
+  }
+  return { defeated: state.boss.defeated, locked: false, damage };
+}
+function pushLog3(state, line) {
+  state.log = [...state.log || [], line].slice(-8);
+}
+function distance(a, b) {
+  return Math.hypot(Number(a.x) - Number(b.x), Number(a.y) - Number(b.y));
 }
 
 // ../../docs/games/metagame/stages/stage4/armory.js
@@ -1559,7 +1490,6 @@ function defaultState(context = {}) {
       reached: false,
       hp: 300,
       attempts: 0,
-      lockHintStep: 0,
       defeated: false
     },
     log: ["fractal bastion mounted.", "the path repeats before it explains itself."]
@@ -2151,7 +2081,6 @@ function mountCombat({ host, state, controller, mode = "map" }) {
           <button type="button" data-action="call-early" hidden>call next (+${CALL_EARLY_BONUS})</button>
           <button type="button" data-action="speed">speed 1×</button>`}
         ${isBoss ? '<button type="button" data-action="confront">confront The Infinite Loop</button>' : ""}
-        <button type="button" data-action="blueprint">recursion_points.json</button>
         <button type="button" data-action="leave" class="s4-leave">${isBoss ? "retreat" : "← maps"}</button>
       </div>
       <button type="button" class="s4-ticker" data-field="ticker" title="show full log"></button>
@@ -2201,7 +2130,7 @@ function mountCombat({ host, state, controller, mode = "map" }) {
     pathDepth = want;
     path = buildPath(pathSeed, pathDepth);
     const { count } = refundTowersOnPath(state, path.tiles);
-    pushLog(state, `⟲ the recursion folds — the path reshapes to depth ${pathDepth}.` + (count ? ` ${count} tower(s) caught on the new route were refunded.` : ""));
+    pushLog3(state, `⟲ the recursion folds — the path reshapes to depth ${pathDepth}.` + (count ? ` ${count} tower(s) caught on the new route were refunded.` : ""));
     return true;
   }
   function checkpointWave(overrides) {
@@ -2230,7 +2159,7 @@ function mountCombat({ host, state, controller, mode = "map" }) {
   }
   function repaint() {
     if (!alive) return;
-    const lock = getBossLockState({ actions: controller.actions, state });
+    const lock = getBossLockState({ state });
     fields.cycles.textContent = String(state.cycles);
     fields.integrity.textContent = `${state.integrity}/${state.maxIntegrity || state.integrity}`;
     fields.progress.textContent = isBoss ? `${lock.coveredPoints}/${lock.totalPoints}` : `${Math.min(state.waveNumber || 1, map.waveCount)}/${map.waveCount}`;
@@ -2286,7 +2215,7 @@ function mountCombat({ host, state, controller, mode = "map" }) {
     state.wavePeak = (state.wavePeak || state.waveNumber) + 1;
     queueWave(state, state.wavePeak);
     state.cycles = (state.cycles || 0) + CALL_EARLY_BONUS;
-    pushLog(state, `wave ${state.wavePeak} called early (+${CALL_EARLY_BONUS} cycles).`);
+    pushLog3(state, `wave ${state.wavePeak} called early (+${CALL_EARLY_BONUS} cycles).`);
     checkpointWave();
     repaint();
   }
@@ -2340,7 +2269,7 @@ function mountCombat({ host, state, controller, mode = "map" }) {
   function settleWave() {
     if (state.waveFailed) {
       stopLoop();
-      pushLog(state, "integrity collapsed — the bastion folds.");
+      pushLog3(state, "integrity collapsed — the bastion folds.");
       endWaveSnapshot();
       controller.onWaveFailed?.();
       repaint();
@@ -2376,7 +2305,7 @@ function mountCombat({ host, state, controller, mode = "map" }) {
   }
   function confront() {
     if (!isBoss) return null;
-    const result = fightInfiniteLoop({ state, actions: controller.actions });
+    const result = fightInfiniteLoop({ state });
     if (result.defeated) {
       controller.onBossWin();
       return result;
@@ -2527,9 +2456,6 @@ function mountCombat({ host, state, controller, mode = "map" }) {
         closeTowerPopover();
         controller.leaveCombat?.();
         break;
-      case "blueprint":
-        controller.openBlueprint?.();
-        break;
       default:
         break;
     }
@@ -2620,7 +2546,6 @@ function renderMapSelect(host, controller) {
       <div class="s4-controls">
         <button type="button" data-action="boss" class="s4-boss-chip" ${bossReady ? "" : "disabled"}>${won ? "The Infinite Loop (cleared)" : bossReady ? "confront The Infinite Loop" : "The Infinite Loop — locked · clear all five maps"}</button>
         ${veteran && !won ? '<button type="button" data-action="armory">⚙ armory</button>' : ""}
-        ${won ? '<button type="button" data-action="bts">open fractal_bastion.bts</button>' : ""}
       </div>`;
   }
   function mapRow(m, i) {
@@ -2648,7 +2573,6 @@ function renderMapSelect(host, controller) {
     if (!action) return;
     if (action.dataset.action === "boss" && allMapsCleared(state)) controller.enterBoss();
     else if (action.dataset.action === "armory") controller.openArmory?.();
-    else if (action.dataset.action === "bts") controller.openBts();
   });
   repaint();
   host.replaceChildren(root);
@@ -2723,7 +2647,7 @@ function devGodCore(state) {
 
 // ../../docs/games/metagame/stages/stage4/renderer.js
 function renderStage4(ctx) {
-  const { host, state, actions, bts, viewer, save, onStageComplete, run } = ctx;
+  const { host, state, save, onStageComplete, run } = ctx;
   ensureCampaign(state);
   ensureStyles();
   const root = document.createElement("section");
@@ -2746,16 +2670,9 @@ function renderStage4(ctx) {
   }
   const controller = {
     state,
-    actions,
     persist: persistNow,
     checkpointWave,
     endWaveSnapshot,
-    openBlueprint() {
-      viewer?.openFile?.(RECURSION_BLUEPRINT_PATH, { mime: "application/json", source: "stage4" });
-    },
-    openBts() {
-      bts?.open?.(4);
-    },
     selectMap(i) {
       const r = selectMap(state, i);
       if (r.ok) {
@@ -2806,7 +2723,7 @@ function renderStage4(ctx) {
       run?.reset?.();
       persistNow();
       render();
-      completeOnce({ stage: 4, defeated: true, btsPath: BTS_PATH });
+      completeOnce({ stage: 4, defeated: true });
     },
     onWaveFailed() {
     },
@@ -2944,8 +2861,6 @@ var stageMeta = {
   id: 4,
   slug: "fractal-bastion",
   name: "Fractal Bastion",
-  btsPath: BTS_PATH,
-  requiredAction: REQUIRED_ACTION,
   // Dev-menu controls for this stage (wired in metagame.js → mounted.dev(id)).
   devControls: [
     { id: "give-glory", label: "+500 Glory" },
@@ -2960,7 +2875,6 @@ function defaultState2(context) {
 function mountStage(ctx) {
   const state = normalizeState(ctx.state, ctx);
   ensureStyles2();
-  if (hasRecursionBlueprint(ctx.actions)) state.log = [...state.log, "recursion blueprint already read."].slice(-8);
   const saveData = ctx.orchestrator?.save;
   const run = saveData ? createRun({ save: saveData, stageId: 4, slot: "runwave", debounceMs: 0 }) : null;
   const view = renderStage4({ ...ctx, state, run });
@@ -2992,15 +2906,11 @@ function injectSheet2(id, rel) {
   document.head.append(link);
 }
 export {
-  applyRecursionBlueprintOpen,
   defaultState2 as defaultState,
   fightInfiniteLoop,
   getBossLockState,
   getTowerCoverage,
-  hasRecursionBlueprint,
   mountStage,
   placeTower,
-  recursionBlueprintContent,
-  recursionBlueprintData,
   stageMeta
 };

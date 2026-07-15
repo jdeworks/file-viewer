@@ -6,9 +6,7 @@
 // container, the run-state wave snapshot, the save plumbing, and the __fvStage4 test hook; it
 // delegates the actual screens to ui-combat.js (board) and ui-campaign.js (map-select / Armory).
 //
-// The blueprint un-cheat is unchanged and load-bearing: the boss folds all damage away until the REAL
-// recursion_points.json file is opened in the viewer (action 4.recursion_blueprint_read), and only
-// then does recursion-point coverage land damage — see boss.js / messages.js.
+// The boss takes damage from each visible recursion point covered by a tower.
 
 import { mountCombat } from './ui-combat.js';
 import { renderMapSelect, renderArmory } from './ui-campaign.js';
@@ -18,11 +16,10 @@ import {
 } from './run4.js';
 import { buyArmory } from './armory.js';
 import { snapshotWave, restoreWave } from './state.js';
-import { BTS_PATH, RECURSION_BLUEPRINT_PATH } from './messages.js';
 import { devGiveGlory, devSkipWave, devSkipToBoss, devGodCore } from './s4dev.js';
 
 export function renderStage4(ctx) {
-  const { host, state, actions, bts, viewer, save, onStageComplete, run } = ctx;
+  const { host, state, save, onStageComplete, run } = ctx;
   ensureCampaign(state);
   ensureStyles();
 
@@ -39,16 +36,10 @@ export function renderStage4(ctx) {
   function endWaveSnapshot() { checkpointWave({ ...snapshotWave(state), waveActive: false }); run?.flush?.(); }
 
   const controller = {
-    state, actions,
+    state,
     persist: persistNow,
     checkpointWave,
     endWaveSnapshot,
-    openBlueprint() {
-      // NO in-game bypass: opening the REAL static file fires 4.recursion_blueprint_read via
-      // recordMetagameViewerOpen. This button is only a navigation hint to that file.
-      viewer?.openFile?.(RECURSION_BLUEPRINT_PATH, { mime: 'application/json', source: 'stage4' });
-    },
-    openBts() { bts?.open?.(4); },
     selectMap(i) { const r = selectMap(state, i); if (r.ok) { persistNow(); render(); } return r; },
     recordWaveCleared() { const r = recordWaveCleared(state); save?.(); return r; },
     leaveArmory() { leaveArmory(state); save?.(); render(); },
@@ -56,7 +47,7 @@ export function renderStage4(ctx) {
     leaveCombat() { ensureCampaign(state).status = 'map-select'; persistNow(); render(); },
     buyArmory(id) { const r = buyArmory(state.campaign, id); if (r.ok) { save?.(); active?.repaint?.(); } return r; },
     enterBoss() { const r = enterBoss(state); if (r.ok) { run?.reset?.(); persistNow(); render(); } return r; },
-    onBossWin() { winCampaign(state); run?.reset?.(); persistNow(); render(); completeOnce({ stage: 4, defeated: true, btsPath: BTS_PATH }); },
+    onBossWin() { winCampaign(state); run?.reset?.(); persistNow(); render(); completeOnce({ stage: 4, defeated: true }); },
     onWaveFailed() { /* the wave is lost; the player may retry it from the same map */ },
     rerender() { render(); },
     // debug-only (smoke); never a player affordance
@@ -85,7 +76,7 @@ export function renderStage4(ctx) {
 
   function refreshHook() {
     // TEST/DEBUG hook (not a player affordance): drives the smoke without brittle pixel clicks. It
-    // does NOT bypass the boss gate — the boss still needs all maps cleared + the blueprint + coverage.
+    // does NOT bypass the boss gate — the boss still needs all maps cleared + recursion coverage.
     window.__fvStage4 = {
       state: () => state,
       status: () => state.campaign.status,

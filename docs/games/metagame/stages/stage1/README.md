@@ -28,10 +28,6 @@ machine foundry, one tap at a time, until the production line runs itself.
 ## The boss — The Defragmenter
 
 Reach the boss only after you own at least one of every generator tier, then
-**Confront**. It's a tap-duel… that you **cannot win by tapping**. The Defragmenter
-cheats, and it keeps cheating no matter how fast you click.
-
-> **Un-cheat hint:** the boss isn't beating you — a *rule written in a file* is. The
-> Defragmenter keeps muttering about a config it would *never* want you to edit. This
-> game window won't help you. Find that file in the viewer, open it for real, and
-> change the line it's hiding. Then come back and fight.
+**Confront**. It is a demanding tap-duel: keep a fast, steady rhythm, use warm bursts
+to protect your meter, and make the production upgrades you earned count. The fair
+fight is always active and everything needed to win stays inside the game.

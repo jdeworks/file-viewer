@@ -25,9 +25,8 @@ export function devGiveCurrency(state) {
 }
 
 // SKIP TO BOSS GATE — advance the run's solve count to peak corruption (BODY_SOLVES = 20)
-// and flag that corruption-8 was reached through play. Satisfies bodyComplete() so the
-// diff restoration key can be entered. The diff un-cheat (reading the three-way log diff
-// to find the key) is still required to actually unlock the boss fight.
+// and flag that corruption-8 was reached through play. Satisfies bodyComplete() and exposes the
+// boss fight.
 // Caller must call loadBoard() to regenerate a peak-corruption snapshot.
 export function devSkipToBody(state) {
   state.run.solvedCount = BODY_SOLVES;

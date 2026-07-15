@@ -70,9 +70,8 @@ assert(runPressureLimit(8, valve.effect.decayPct) > runPressureLimit(8, 0), "val
   assert.equal(state.run.pressure, 0, "collapse ZEROES run-pressure");
   assert.equal(state.run.solvedCount, 0, "collapse draws a brand-new run (solvedCount reset)");
   assert.deepEqual(state.run.boons, [], "collapse clears the run-scoped boons");
-  assert.equal(state.boss.unlocked, false, "collapse draws a fresh (re-locked) boss for the new run");
-  // The new boss key is seed-derived for the new runCount — a genuinely fresh diff puzzle.
-  assert.equal(state.memoryPair.runId, `mem-${beforeRunCount + 1}`, "the new run's memory pair is keyed off the incremented runCount");
+  assert.equal(state.boss.corruption8Reached, false, "collapse draws a fresh body-locked boss for the new run");
+  assert.equal("memoryPair" in state, false, "collapse does not create an external diff payload");
 }
 
 console.log("stage3 run-pressure clock tests passed");

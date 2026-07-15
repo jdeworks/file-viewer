@@ -109,7 +109,7 @@ When corruption covers a column, that column's clue becomes hidden. This is **no
 - Memory decays → information degrades
 - The player who falls behind loses *clue information*, not just time
 - This creates pressure that accelerates exponentially (falling behind = less info = harder to catch up)
-- Recovery requires the diff viewer (file viewer feature) to restore clues
+- Recovery uses in-stage locks, boons, and careful deduction to preserve information
 
 This is our key design innovation for Stage 3.
 
@@ -251,4 +251,4 @@ function spreadCorruption(corruptionGrid, centerX, centerY, tickCount) {
 
 ## F. How this maps to Stage 3: Memory Grid (pointer)
 
-Stage 3 borrows the **core nonogram mechanics** from Picross S, the **narrative picture-as-memory** approach from Murder by Numbers, and the **clue-degradation-as-time-pressure** from our own design innovation (no genre precedent). It adds a **fragment retention meta-layer** (which puzzles to hold active, which to let decay) and a **diff-viewer integration** as the file viewer feature. Full spec in `stage3-02-our-game-design.md`.
+Stage 3 borrows the **core nonogram mechanics** from Picross S, the **narrative picture-as-memory** approach from Murder by Numbers, and the **clue-degradation-as-time-pressure** from our own design innovation (no genre precedent). It adds a **fragment retention meta-layer** (which puzzles to hold active, which to let decay) and an explicit corruption-8 body gate. Full spec in `stage3-02-our-game-design.md`.

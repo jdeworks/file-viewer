@@ -114,9 +114,8 @@ enemySpeed(waveN)   = baseSpeed * (1 + 0.03 * waveN)   // speed scales slowest
 **Branching upgrades (Kingdom Rush style):** Tower A, at level 3 choose path X or path Y.
 **Tree upgrades (Bloons style):** Multiple upgrade paths (top/middle/bottom), different tiers.
 
-Our Stage 4: **single upgrade path per tower** (3 levels), plus a **blueprint modifier** that
-adds a special effect discovered via sidebar file exploration. This keeps complexity manageable
-while adding a discovery layer.
+Our Stage 4: towers upgrade through three levels and choose an irrevocable tier-three fork. This
+keeps the early campaign readable while giving later maps meaningful specialization.
 
 ### 6. Lives system
 

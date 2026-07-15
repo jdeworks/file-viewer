@@ -2,24 +2,8 @@ import assert from 'node:assert/strict';
 import {
   defaultState,
   normalizeState,
-  parseCheatConfig,
-  shouldDisableCheat,
   stageMeta,
 } from '../../../docs/games/metagame/stages/stage1/index.js';
-
-const enabled = ['CHEAT=true', 'CHEAT=1', 'CHEAT=yes', 'CHEAT=on', "CHEAT='true'", ' cheat = "YES" '];
-for (const source of enabled) {
-  const parsed = parseCheatConfig(source);
-  assert.equal(parsed.cheatActive, true, `${source} keeps cheat active`);
-  assert.equal(shouldDisableCheat(source), false, `${source} does not disable`);
-}
-
-const disabled = ['', 'no cheat here', 'CHEAT=', 'CHEAT=false', 'CHEAT=0', 'CHEAT=no', 'CHEAT=off', "CHEAT='off'"];
-for (const source of disabled) {
-  const parsed = parseCheatConfig(source);
-  assert.equal(parsed.disabled, true, `${source || '<empty>'} disables cheat`);
-  assert.equal(shouldDisableCheat(source), true, `${source || '<empty>'} should disable`);
-}
 
 {
   const state = defaultState({ now: 123 });
@@ -53,7 +37,8 @@ for (const source of disabled) {
   assert.equal('achievements' in state, false);
 }
 
-assert.equal(stageMeta.requiredAction, '1.cheat_disabled');
+assert.equal('requiredAction' in stageMeta, false);
+assert.equal('requiredFile' in stageMeta, false);
 assert.equal(stageMeta.bossName, 'The Defragmenter');
 
 // ── Prestige / post-prestige mechanics (pure, deterministic) ─────────────────────────────────────
@@ -101,14 +86,10 @@ const { simulateFight } = await import('../../../docs/games/metagame/stages/stag
   assert.ok(Math.abs(resonanceMult(s) - 1.3) < 1e-9, 'box:booster 3:1 → ×1.3');
 }
 {
-  // 2026-07-11 playtest fix: the boss is winnable from the first attempt (hard, not a wall). A slow,
-  // casual pace still loses while the cheat is active but wins comfortably once it's disabled — the
-  // un-cheat is a genuine buff, not the only door. A fast, sustained pace wins either way.
+  // The canonical fair tuning is comfortably winnable at a casual or fast sustained pace.
   for (let seed = 1; seed <= 5; seed++) {
-    assert.equal(simulateFight({ cheatActive: true, tapsPerSec: 4, seed }).won, false, 'cheat active, casual pace → boss still wins');
-    assert.equal(simulateFight({ cheatActive: false, tapsPerSec: 4, seed }).won, true, 'cheat disabled, casual pace → comfortably winnable');
-    assert.equal(simulateFight({ cheatActive: true, tapsPerSec: 8, seed }).won, true, 'cheat active, sustained fast tapping → hard but winnable');
-    assert.equal(simulateFight({ cheatActive: false, tapsPerSec: 8, seed }).won, true, 'cheat disabled, sustained fast tapping → still winnable');
+    assert.equal(simulateFight({ tapsPerSec: 4, seed }).won, true, 'casual pace → comfortably winnable');
+    assert.equal(simulateFight({ tapsPerSec: 8, seed }).won, true, 'sustained fast tapping → winnable');
   }
 }
 

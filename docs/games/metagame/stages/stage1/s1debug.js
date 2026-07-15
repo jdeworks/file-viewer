@@ -1,28 +1,23 @@
 // s1debug.js — Stage 1 TEST/DEBUG hook (window.__fvStage1). Not a player affordance: it lets the
 // headless smoke grind to the boss, exercise the prestige mechanics, and resolve the click-contest
-// WITHOUT real-time waiting. It does NOT bypass the boss gate (all tiers owned + bits ≥ ticket) or
-// the load-bearing un-cheat (the cheat state is read from the real action set).
+// WITHOUT real-time waiting. It does not bypass the boss gate (all tiers owned + bits ≥ ticket).
 
 import { fromNumber } from './bignum.js';
 import { simulateFight } from './boss-sim.js';
 import { doPrestige, unlockedMechanics } from './s1prestige.js';
 import { clickEcho } from './s1echoes.js';
 
-// api = { state, cfg, save, renderAll, tick, addBits, canFightBoss, allSubStagesOwned, actions,
+// api = { state, cfg, save, renderAll, tick, addBits, canFightBoss, allSubStagesOwned,
 //         onStageComplete, updateEcho }
 export function installStage1Debug(api) {
   if (typeof window === 'undefined') return { destroy() {} };
   const { state, cfg, save } = api;
 
-  const cheatDisabled = () => Boolean(api.actions && typeof api.actions.hasAction === 'function'
-    && api.actions.hasAction(1, 'cheat_disabled'));
-
   function fightBoss(opts = {}) {
     if (!api.canFightBoss()) {
       return { gated: true, allTiers: api.allSubStagesOwned(), reason: 'boss locked — need all tiers owned and bits ≥ ticket' };
     }
-    const cheatActive = !cheatDisabled();
-    const result = simulateFight({ cheatActive, tapsPerSec: opts.tapsPerSec || 12, seed: (state.ticks || 0) + 1 });
+    const result = simulateFight({ tapsPerSec: opts.tapsPerSec || 12, seed: (state.ticks || 0) + 1 });
     if (result.won) {
       state.defeated = Array.isArray(state.defeated) ? state.defeated : [];
       if (!state.defeated.includes(1)) state.defeated.push(1);
@@ -51,20 +46,6 @@ export function installStage1Debug(api) {
     },
     canFightBoss: () => api.canFightBoss(),
     allTiersOwned: () => api.allSubStagesOwned(),
-    cheatDisabled,
-    // Test convenience: toggle the cheat action directly (the smoke prefers the REAL raw-edit path).
-    setCheat(disabled) {
-      if (!api.actions) return false;
-      if (disabled && typeof api.actions.setAction === 'function') {
-        api.actions.setAction(1, 'cheat_disabled', { source: 'debug-hook' });
-        return true;
-      }
-      if (!disabled && typeof api.actions.clearAction === 'function') {
-        api.actions.clearAction(1, 'cheat_disabled');
-        return true;
-      }
-      return false;
-    },
     prestige() {
       const r = doPrestige(state);
       state.runStartedAt = Date.now();
@@ -74,7 +55,7 @@ export function installStage1Debug(api) {
     },
     mechanics: () => unlockedMechanics(state).map((m) => m.id),
     clickEcho() { const ok = clickEcho(state, cfg); if (ok) { save(state); if (api.updateEcho) api.updateEcho(); } return ok; },
-    bossSolver: (opts) => simulateFight({ cheatActive: !cheatDisabled(), tapsPerSec: (opts && opts.tapsPerSec) || 12, seed: (state.ticks || 0) + 1 }),
+    bossSolver: (opts) => simulateFight({ tapsPerSec: (opts && opts.tapsPerSec) || 12, seed: (state.ticks || 0) + 1 }),
     fightBoss,
   };
 

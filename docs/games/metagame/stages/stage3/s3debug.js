@@ -1,21 +1,18 @@
 // Stage 3 TEST/DEBUG hook (window.__fvStage3) — drives the headless smoke deterministically (no
 // real-time play). NOT a player affordance and NOT a bypass: bodySolver fast-forwards the snapshot
-// loop only via the same solve path a player uses, and the boss still needs BOTH corruption-8
-// (reached through play) AND the diff-derived restoration key before it can fall.
+// loop only via the same solve path a player uses, and the boss still needs corruption-8 before it
+// can fall.
 //
 //   window.__fvStage3 = {
 //     state(),               // live save state
 //     solveCurrent(),        // solve the current snapshot (advances solvedCount/corruption)
 //     bodySolver(),          // play snapshots until corruption peaks at 8 → { reached, corruption, solved, aliasSeen }
-//     deriveKey(),           // the seed-derived restoration key (what the v1/v2/v3 3-way diff reveals)
-//     tryRestoreKey(key),    // attempt the boss un-cheat with a key
 //     bossSolver(),          // defeat The Memory Leak once unlocked → bool
 //     draftPending(),        // is a per-run boon draft available? → bool
 //     draftOffer(),          // the current 3-boon offer (ids)
 //     draft(id?),            // pick a boon (default = first offered) → bool
 //     demoReveal(name?),     // VISUAL-ONLY: play the solve-reveal linger caption (no state change)
 //   };
-import { diffKeyFromState } from './content.js';
 import { corruptionForRun } from './board.js';
 
 export function installStage3Hook(api) {
@@ -39,8 +36,6 @@ export function installStage3Hook(api) {
         aliasSeen,
       };
     },
-    deriveKey: () => diffKeyFromState(api.state),
-    tryRestoreKey: (key) => api.tryRestoreKey(key),
     bossSolver: () => api.bossSolver(),
     draftPending: () => (typeof api.draftPending === 'function' ? api.draftPending() : false),
     draftOffer: () => (typeof api.draftOffer === 'function' ? api.draftOffer() : []),

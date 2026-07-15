@@ -6,138 +6,29 @@
 
 
 // ../../docs/games/metagame/stages/stage3/messages.js
-var ACTION_NAME = "diff_key_restored";
-var REQUIRED_ACTION = "3.diff_key_restored";
-var ACHIEVEMENT_ID = "stage3.diff_key_restored";
-var ACHIEVEMENT_TEXT = "I found the difference.";
-var BTS_PATH = "/docs/bts/memory_grid.bts";
-var MEMORY_V1_PATH = "/docs/examples/metagame/stage3/memory_v1.log";
-var MEMORY_V2_PATH = "/docs/examples/metagame/stage3/memory_v2.log";
-var MEMORY_V3_PATH = "/docs/examples/metagame/stage3/memory_v3.log";
 var bellMessages = {
   start: "a memory is not a file until it survives being changed.",
-  unlock: "the difference restored the missing key.",
+  ready: "the leak's core is exposed.",
   defeated: "the leak stopped widening."
 };
 var bodyHint = "the leak is still spreading. keep restoring snapshots until corruption peaks (8).";
-var lockedHintLadder = [
-  "the grid remembers less every time you ask it.",
-  "THREE snapshots disagree. one chunk corrupts between each pair.",
-  "diff v1↔v2: the chunk lost there is the FIRST key piece. diff v2↔v3: the chunk lost there is the SECOND. the chunk still intact in v3 is the THIRD.",
-  "compare memory_v1.log, memory_v2.log and memory_v3.log — read the three chunks in corruption order, then enter the restoration key."
-];
-
-// ../../docs/games/metagame/stages/stage3/content.js
-var DISPLAY_SECTORS = ["02", "04", "06"];
-function pieces(state) {
-  return Array.isArray(state?.memoryPair?.pieces) ? state.memoryPair.pieces : ["", "", ""];
-}
-function slots(state) {
-  const s = state?.memoryPair?.slots;
-  return Array.isArray(s) && s.length === 3 ? s.map(Number) : [0, 1, 2];
-}
-function presentIn(chunkIndex, v) {
-  if (v === 1) return true;
-  if (v === 2) return chunkIndex !== 0;
-  return chunkIndex === 2;
-}
-function memoryText(state, v, label, leakLine) {
-  const id = state.memoryPair.runId;
-  const p = pieces(state);
-  const sl = slots(state);
-  const body = [
-    `MEMORY SNAPSHOT ${id} / v${v} (${label})`,
-    "sector 01: retained visual boundary"
-  ];
-  DISPLAY_SECTORS.forEach((sec, i) => {
-    const chunkIndex = sl[i];
-    const value = presentIn(chunkIndex, v) ? p[chunkIndex] : "[missing]";
-    body.push(`sector ${sec}: restoration chunk ${value}`);
-  });
-  body.push("sector 07: child process @ still moving");
-  body.push(leakLine);
-  return body.join("\n");
-}
-function memoryV1Text(state) {
-  return memoryText(state, 1, "backup", "sector 08: leak not yet visible");
-}
-function memoryV2Text(state) {
-  return memoryText(state, 2, "ageing", "sector 08: leak expanding");
-}
-function memoryV3Text(state) {
-  return memoryText(state, 3, "corrupted", "sector 08: leak critical");
-}
-function diffKeyFromState(state) {
-  return pieces(state).join("");
-}
 
 // ../../docs/games/metagame/stages/stage3/boss.js
-function hasDiffKeyRestored(actions) {
-  return Boolean(actions && typeof actions.hasAction === "function" && actions.hasAction(3, ACTION_NAME));
-}
 function bodyComplete(state) {
   return Boolean(state?.boss?.corruption8Reached);
 }
-var REVEAL_START_ATTEMPT = lockedHintLadder.length;
-var KEY_LENGTH = 9;
-function revealedKey(state, count) {
-  const key2 = diffKeyFromState(state);
-  const shown = key2.slice(0, Math.max(0, Math.min(KEY_LENGTH, count)));
-  return shown.padEnd(KEY_LENGTH, "?");
-}
-function getBossLockState({ actions, state }) {
-  const keyRestored = hasDiffKeyRestored(actions) || Boolean(state?.boss?.unlocked);
+function getBossLockState({ state }) {
   const bodyReady = bodyComplete(state);
-  const unlocked = keyRestored && bodyReady;
-  const attempts = Number(state?.boss?.attempts || 0);
-  const hintIndex = Math.min(Math.max(Number(state?.boss?.lockHintStep || 0), 0), lockedHintLadder.length - 1);
-  const revealCount = bodyReady && !keyRestored ? Math.max(0, attempts - REVEAL_START_ATTEMPT) : 0;
-  const revealHint = revealCount > 0 ? `key so far, from wrong attempts: ${revealedKey(state, revealCount)} — ${Math.max(0, KEY_LENGTH - revealCount)} character(s) still unknown (or diff the logs to read it outright).` : lockedHintLadder[hintIndex];
   return {
-    unlocked,
+    unlocked: bodyReady,
     bodyReady,
-    keyRestored,
     defeated: Boolean(state?.boss?.defeated),
-    corruptionRate: unlocked ? "normal" : "accelerated",
-    columnClues: unlocked ? "restored" : "missing",
-    // The fight is attemptable — and, with enough persistence, winnable — the moment the body is
-    // done; the diff buff is no longer required, just a much faster path.
     defeatPossible: bodyReady,
-    hint: !bodyReady ? bodyHint : keyRestored ? bellMessages.unlock : revealHint
+    hint: bodyReady ? bellMessages.ready : bodyHint
   };
 }
-function tryRestoreDiffKey({ state, actions, achievements, bell, input }) {
-  const expected = diffKeyFromState(state);
-  const normalized = String(input || "").trim();
-  state.boss.attempts = Number(state.boss.attempts || 0) + 1;
-  if (!bodyComplete(state)) {
-    pushLog(state, bodyHint);
-    return { ok: false, locked: true, expected };
-  }
-  if (normalized !== expected) {
-    state.boss.lockHintStep = Math.min(Number(state.boss.lockHintStep || 0) + 1, lockedHintLadder.length - 1);
-    pushLog(state, "wrong restoration key. but the attempt wasn't wasted — check the hint, another character just surfaced.");
-    return { ok: false, expected };
-  }
-  state.boss.unlocked = true;
-  actions?.setAction?.(3, ACTION_NAME, {
-    source: "stage-boss",
-    files: ["memory_v1.log", "memory_v2.log", "memory_v3.log"],
-    diffActionSeen: true,
-    threeWay: true,
-    keyId: state.memoryPair.runId
-  });
-  achievements?.unlockAchievement?.(ACHIEVEMENT_ID, {
-    stage: 3,
-    title: ACHIEVEMENT_TEXT,
-    detail: { keyId: state.memoryPair.runId }
-  });
-  bell?.showBell?.("stage3.diff_key_restored", bellMessages.unlock, { stage: 3 });
-  pushLog(state, bellMessages.unlock);
-  return { ok: true, expected };
-}
 function defeatMemoryLeak(state) {
-  if (!state.boss.unlocked || !bodyComplete(state) || state.boss.defeated) return false;
+  if (!bodyComplete(state) || state.boss.defeated) return false;
   state.boss.defeated = true;
   state.registers += 120;
   state.retained = Math.max(state.retained, 1);
@@ -1274,8 +1165,6 @@ function installStage3Hook(api) {
         aliasSeen
       };
     },
-    deriveKey: () => diffKeyFromState(api.state),
-    tryRestoreKey: (key2) => api.tryRestoreKey(key2),
     bossSolver: () => api.bossSolver(),
     draftPending: () => typeof api.draftPending === "function" ? api.draftPending() : false,
     draftOffer: () => typeof api.draftOffer === "function" ? api.draftOffer() : [],
@@ -1575,10 +1464,10 @@ function activeTiers(corruption, index) {
   if (all.length <= TIER_CAP) return new Set(all);
   const forced = all.filter((m) => m === "twocolor");
   const optional = all.filter((m) => m !== "twocolor");
-  const slots2 = Math.max(0, TIER_CAP - forced.length);
+  const slots = Math.max(0, TIER_CAP - forced.length);
   const active = new Set(forced);
   const i = Number(index || 0);
-  for (let k = 0; k < slots2 && optional.length; k += 1) active.add(optional[(i + k) % optional.length]);
+  for (let k = 0; k < slots && optional.length; k += 1) active.add(optional[(i + k) % optional.length]);
   return active;
 }
 
@@ -1659,33 +1548,11 @@ function announceTiers(state, corruption) {
 
 // ../../docs/games/metagame/stages/stage3/state.js
 var STATE_VERSION = 3;
-function makePieces(runCount) {
-  const rng = makeRng(`s3-pieces:${runCount}`);
-  const tok = () => Math.floor(rng.float() * 46655).toString(36).padStart(3, "0");
-  return [tok(), tok(), tok()];
-}
-function makeSlots(runCount) {
-  const rng = makeRng(`s3-slots:${runCount}`);
-  let slots2 = rng.shuffle([0, 1, 2]);
-  for (let i = 0; i < 8 && slots2[0] === 0 && slots2[1] === 1 && slots2[2] === 2; i += 1) {
-    slots2 = rng.shuffle([0, 1, 2]);
-  }
-  return slots2;
-}
-function normalizeSlots(slots2) {
-  if (!Array.isArray(slots2) || slots2.length !== 3) return null;
-  const nums = slots2.map((n) => Number(n));
-  const set = new Set(nums);
-  if (set.size !== 3 || [0, 1, 2].some((i) => !set.has(i))) return null;
-  return nums;
-}
 function defaultState() {
   return freshFrom({ registers: 0, retained: 0, shopUpgrades: {}, runCount: 0 });
 }
 function freshFrom(meta) {
   const runCount = Number(meta.runCount || 0);
-  const pieces2 = makePieces(runCount);
-  const slots2 = makeSlots(runCount);
   return {
     version: STATE_VERSION,
     registers: Number(meta.registers || 0),
@@ -1693,8 +1560,7 @@ function freshFrom(meta) {
     shopUpgrades: meta.shopUpgrades && typeof meta.shopUpgrades === "object" ? meta.shopUpgrades : {},
     runCount,
     run: { seed: `s3-run${runCount}`, index: 0, solvedCount: 0, marks: null, boons: [], draftsTaken: 0, tiers: [], pressure: 0 },
-    memoryPair: { runId: `mem-${runCount}`, pieces: pieces2, slots: slots2, key: pieces2.join("") },
-    boss: { reached: false, attempts: 0, lockHintStep: 0, unlocked: false, defeated: false, corruption8Reached: false },
+    boss: { reached: false, defeated: false, corruption8Reached: false },
     log: ["memory grid online.", "solve snapshots to retain fragments."]
   };
 }
@@ -1713,11 +1579,12 @@ function normalizeState(state) {
   state.shopUpgrades = state.shopUpgrades && typeof state.shopUpgrades === "object" ? state.shopUpgrades : {};
   state.runCount = Number.isFinite(state.runCount) ? state.runCount : 0;
   state.run = { ...fresh.run, ...state.run && typeof state.run === "object" ? state.run : {} };
-  state.memoryPair = { ...fresh.memoryPair, ...state.memoryPair || {} };
-  state.memoryPair.pieces = Array.isArray(state.memoryPair.pieces) && state.memoryPair.pieces.length ? state.memoryPair.pieces.map(String) : makePieces(state.runCount);
-  state.memoryPair.slots = normalizeSlots(state.memoryPair.slots) || makeSlots(state.runCount);
-  state.memoryPair.key = String(state.memoryPair.key || state.memoryPair.pieces.join(""));
-  state.boss = { ...fresh.boss, ...state.boss || {} };
+  delete state.memoryPair;
+  state.boss = {
+    reached: Boolean(state.boss?.reached),
+    defeated: Boolean(state.boss?.defeated),
+    corruption8Reached: Boolean(state.boss?.corruption8Reached)
+  };
   state.log = Array.isArray(state.log) ? state.log : [...fresh.log];
   return state;
 }
@@ -1779,14 +1646,8 @@ function buildStage3Shell() {
             <div class="s3-hint" data-field="hint"></div>
           </div>
           <div class="s3-boss-gate" data-field="bossGate" hidden>
-            <label class="s3-key-label">restoration key <input class="s3-key" spellcheck="false"></label>
             <div class="s3-controls">
-              <button type="button" data-action="v1">open memory_v1.log</button>
-              <button type="button" data-action="v2">open memory_v2.log</button>
-              <button type="button" data-action="v3">open memory_v3.log</button>
-              <button type="button" data-action="restore">restore key</button>
               <button type="button" data-action="boss">solve leak</button>
-              <button type="button" data-action="bts" hidden>open memory_grid.bts</button>
             </div>
           </div>
         </section>
@@ -1848,14 +1709,12 @@ var MOVE = {
 };
 var RETAIN_EVERY = 4;
 function renderStage3(ctx) {
-  const { host, state, actions, achievements, bell, bts, viewer, save, onStageComplete } = ctx;
+  const { host, state, achievements, bell, save, onStageComplete } = ctx;
   const root = buildStage3Shell();
   host.replaceChildren(root);
   const fields = Object.fromEntries([...root.querySelectorAll("[data-field]")].map((el) => [el.dataset.field, el]));
   const log = root.querySelector(".s3-log");
-  const keyInput = root.querySelector(".s3-key");
   const gridHost = root.querySelector(".s3-grid-host");
-  const btsBtn = root.querySelector('[data-action="bts"]');
   const verbBar = createVerbBar();
   root.querySelector(".s3-toolbar").before(verbBar.el);
   let overlay = null;
@@ -2018,7 +1877,7 @@ function renderStage3(ctx) {
     } else drawNext();
   }
   function paintHud() {
-    const lock = getBossLockState({ actions, state });
+    const lock = getBossLockState({ state });
     const corruption = corruptionForRun(state.run);
     setText(fields.registers, state.registers);
     setText(fields.snap, `#${state.run.index + 1}`);
@@ -2043,9 +1902,8 @@ function renderStage3(ctx) {
     const decayNote = board.decay?.active ? ` · instability ${Math.round(decayRatio(board.decay) * 100)}%` : "";
     const aliasNote = aliased ? ` · ${aliased} “?” clue${aliased === 1 ? "" : "s"} aliased — deduce from crossing lines` : "";
     setText(fields.objective, board.solved ? "snapshot restored — drawing the next…" : `restore the memory snapshot — ${pr.have}/${pr.need} cells lit${volNote}${decayNote}${aliasNote}.`);
-    setText(fields.bossStatus, `${lock.unlocked ? "UNLOCKED" : "LOCKED"} / columns ${lock.columnClues} / corruption ${lock.corruptionRate}`);
+    setText(fields.bossStatus, lock.bodyReady ? "READY / corruption 8" : "FORMING");
     setText(fields.hint, lock.hint);
-    setHidden(btsBtn, !state.boss.defeated);
     paintBoss(lock, corruption);
     const oracle = oracleCap();
     const parity = parityCap();
@@ -2096,8 +1954,8 @@ function renderStage3(ctx) {
     if (stage === 2 && !announcedGate) {
       announcedGate = true;
       banner(root, "GATE OPEN");
-      bell?.showBell?.("stage3.boss_gate", "the leak's columns are within reach — restore the key.", { stage: 3 });
-      pushLog(state, "the leak's columns are within reach — restore the key.");
+      bell?.showBell?.("stage3.boss_gate", "the leak's core is exposed.", { stage: 3 });
+      pushLog(state, "the leak's core is exposed.");
     }
   }
   function pulse(el) {
@@ -2193,12 +2051,7 @@ function renderStage3(ctx) {
       useCheck();
       return;
     }
-    if (action === "v1") viewer?.openFile?.(MEMORY_V1_PATH, { text: memoryV1Text(state), source: "stage3" });
-    if (action === "v2") viewer?.openFile?.(MEMORY_V2_PATH, { text: memoryV2Text(state), source: "stage3" });
-    if (action === "v3") viewer?.openFile?.(MEMORY_V3_PATH, { text: memoryV3Text(state), source: "stage3" });
-    if (action === "restore") tryRestoreDiffKey({ state, actions, achievements, bell, input: keyInput.value });
-    if (action === "boss" && defeatMemoryLeak(state)) completeOnce({ stage: 3, defeated: true, btsPath: BTS_PATH });
-    if (action === "bts") bts?.open?.(3);
+    if (action === "boss" && defeatMemoryLeak(state)) completeOnce({ stage: 3, defeated: true });
     save?.();
     paintHud();
   });
@@ -2216,15 +2069,9 @@ function renderStage3(ctx) {
     if (board.solved) onSolved(false);
     return true;
   }
-  function tryRestoreKey(key2) {
-    const result = tryRestoreDiffKey({ state, actions, achievements, bell, input: key2 });
-    save?.();
-    paintHud();
-    return result;
-  }
   function bossSolver() {
     const won = defeatMemoryLeak(state);
-    if (won) completeOnce({ stage: 3, defeated: true, btsPath: BTS_PATH });
+    if (won) completeOnce({ stage: 3, defeated: true });
     save?.();
     paintHud();
     return won;
@@ -2242,7 +2089,6 @@ function renderStage3(ctx) {
   const uninstallHook = installStage3Hook({
     state,
     solveCurrent,
-    tryRestoreKey,
     bossSolver,
     aliasedNow: () => aliasedTotal(board?.puzzle),
     draftPending: () => draftPending(state),
@@ -2326,8 +2172,6 @@ var stageMeta = {
   id: 3,
   slug: "memory-grid",
   name: "Memory Grid",
-  btsPath: BTS_PATH,
-  requiredAction: REQUIRED_ACTION,
   // Dev-menu controls for this stage (wired in metagame.js → mounted.dev(id)).
   devControls: [
     { id: "show-solution", label: "Show Solution" },
@@ -2342,7 +2186,6 @@ function defaultState2(context) {
 function mountStage(ctx) {
   const state = normalizeState(ctx.state, ctx);
   ensureStyles();
-  if (hasDiffKeyRestored(ctx.actions)) state.boss.unlocked = true;
   const view = renderStage3({ ...ctx, state });
   return {
     devControls: stageMeta.devControls,
@@ -2374,6 +2217,5 @@ export {
   defeatMemoryLeak,
   getBossLockState,
   mountStage,
-  stageMeta,
-  tryRestoreDiffKey
+  stageMeta
 };

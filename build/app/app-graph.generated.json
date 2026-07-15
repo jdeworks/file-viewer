@@ -5,13 +5,12 @@
   "format": "esm",
   "target": "es2022",
   "minified": true,
-  "bytes": 150450,
-  "gzipBytes": 49273,
-  "brotliBytes": 42702,
+  "bytes": 148812,
+  "gzipBytes": 48688,
+  "brotliBytes": 42215,
   "inlinedModules": 34,
   "dynamicImports": [
     "../games/launcher.js",
-    "../games/metagame/viewer-actions.js",
     "../known/registry.generated.js",
     "../types/markdown/wysiwyg.js",
     "../types/media/transcoder.js",
@@ -50,11 +49,11 @@
     },
     {
       "path": "../../docs/core/rawpane.js",
-      "bytesInOutput": 11978
+      "bytesInOutput": 11247
     },
     {
       "path": "../../docs/core/folder.js",
-      "bytesInOutput": 10771
+      "bytesInOutput": 10533
     },
     {
       "path": "../../docs/core/settings-schema.js",
@@ -117,10 +116,6 @@
       "bytesInOutput": 1935
     },
     {
-      "path": "../../docs/core/viewer-open.js",
-      "bytesInOutput": 1921
-    },
-    {
       "path": "../../docs/core/exports.js",
       "bytesInOutput": 1752
     },
@@ -135,6 +130,10 @@
     {
       "path": "../../docs/core/heavy-packages.js",
       "bytesInOutput": 1332
+    },
+    {
+      "path": "../../docs/core/viewer-open.js",
+      "bytesInOutput": 1252
     },
     {
       "path": "../../docs/core/persistence.js",

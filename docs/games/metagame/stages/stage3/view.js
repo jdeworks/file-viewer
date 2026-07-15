@@ -5,7 +5,7 @@
 // UX audit 2026-07 layout: HUD shows ONE currency (registers — retained fragments moved to the boss
 // chip as progress, M2); no standalone shop button (folded into the acquire draft, M1); the keybinding
 // wall lives behind the ❓ toggle (M3/#5); and THE MEMORY LEAK boss is STAGED (#2) — a one-line chip
-// early, its body at corruption ≥ 4, its restoration controls only at the corruption-8 gate. All the
+// early, its body at corruption ≥ 4, and its solve control only at the corruption-8 gate. All the
 // staged nodes are present in the DOM (the renderer toggles their visibility) so the boss-lock state is
 // always queryable.
 
@@ -41,14 +41,8 @@ export function buildStage3Shell() {
             <div class="s3-hint" data-field="hint"></div>
           </div>
           <div class="s3-boss-gate" data-field="bossGate" hidden>
-            <label class="s3-key-label">restoration key <input class="s3-key" spellcheck="false"></label>
             <div class="s3-controls">
-              <button type="button" data-action="v1">open memory_v1.log</button>
-              <button type="button" data-action="v2">open memory_v2.log</button>
-              <button type="button" data-action="v3">open memory_v3.log</button>
-              <button type="button" data-action="restore">restore key</button>
               <button type="button" data-action="boss">solve leak</button>
-              <button type="button" data-action="bts" hidden>open memory_grid.bts</button>
             </div>
           </div>
         </section>

@@ -1,28 +1,19 @@
 // boss-sim.js — Stage 1 Defragmenter: the PURE, deterministic scoring model shared by the live boss
 // (boss1.js) and the headless smoke (__fvStage1.fightBoss). No Date.now / no Math.random.
 //
-// 2026-07-11 playtest fix: the boss is winnable from the FIRST attempt now — no more literal
-// unbeatable-until-you-cheat-edit design. Before the un-cheat (CHEAT=true, `cheatActive`), the
-// shadow/floor/burst are tuned HARD (empirically: needs ~6+ sustained taps/sec for all 20s, see
-// scripted sweep referenced in the commit) but genuinely winnable. Editing Overwriter.frag to
-// CHEAT=false is now an optional BUFF — it drops the shadow well below 1.0 and softens the floor/
-// bursts, turning the fight from "hard, needs real effort" into "comfortably winnable at a casual
-// pace" (~1.5 taps/sec already wins reliably). Finding the flag still matters; it's no longer the
-// only door.
+// The single canonical tuning is comfortably winnable at a casual pace while still rewarding a
+// steady rhythm through the boss's floor pulses and bursts.
 
 export const FIGHT_MS = 20000;
 export const BURST_MS = 800;
 
-// Per-fight parameters, decided once by the cheat state (read at fight start, §10A.5).
-export function fightParams(cheatActive) {
-  return cheatActive
-    ? { shadow: 0.80, floorWeight: 0.35, floorMs: (r) => Math.max(420, r * 1.3), burstCount: 3, burstWeight: 0.8 }
-    : { shadow: 0.62, floorWeight: 0.3, floorMs: (r) => Math.max(320, r * 1.5), burstCount: 2, burstWeight: 1.0 };
+export function fightParams() {
+  return { shadow: 0.62, floorWeight: 0.3, floorMs: (r) => Math.max(320, r * 1.5), burstCount: 2, burstWeight: 1.0 };
 }
 
 // Deterministic-within-a-fight, varied-per-attempt burst schedule. `seed` is supplied by the caller
 // (the live boss seeds from a wall clock at fight start; the sim passes a fixed seed).
-export function makeBurstSchedule(seed, cheatActive) {
+export function makeBurstSchedule(seed) {
   let s = (seed % 1000) + 0x9e3779b9;
   function rand() {
     s |= 0; s = s + 0x9e3779b9 | 0;
@@ -30,7 +21,7 @@ export function makeBurstSchedule(seed, cheatActive) {
     t = Math.imul(t ^ t >>> 15, 0x735a2d97);
     return ((t ^ t >>> 15) >>> 0) / 4294967296;
   }
-  const N = cheatActive ? (rand() < 0.5 ? 3 : 4) : (rand() < 0.5 ? 2 : 3);
+  const N = rand() < 0.5 ? 2 : 3;
   const bursts = [];
   for (let i = 0; i < N; i++) {
     let start, tries = 0;
@@ -45,9 +36,9 @@ export function makeBurstSchedule(seed, cheatActive) {
 
 // Fast-forward a whole fight at 100 ms resolution with the player tapping at a steady rate. Mirrors
 // the live boss1.js loop (per-tap shadow, auto-floor, burst auto-fires). Returns the outcome.
-export function simulateFight({ cheatActive, tapsPerSec = 10, seed = 1 } = {}) {
-  const p = fightParams(cheatActive);
-  const bursts = makeBurstSchedule(seed, cheatActive);
+export function simulateFight({ tapsPerSec = 10, seed = 1 } = {}) {
+  const p = fightParams();
+  const bursts = makeBurstSchedule(seed);
   const tapInterval = 1000 / Math.max(0.001, tapsPerSec);
   let userScore = 0, bossAcc = 0, lastFloor = 0, nextTapAt = 0;
   let tapTimes = [];
@@ -69,5 +60,5 @@ export function simulateFight({ cheatActive, tapsPerSec = 10, seed = 1 } = {}) {
     }
   }
   const bossScore = Math.floor(bossAcc);
-  return { won: userScore > bossScore, userScore, bossScore, cheatActive };
+  return { won: userScore > bossScore, userScore, bossScore };
 }

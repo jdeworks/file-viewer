@@ -1181,33 +1181,6 @@
     "description": "Solidity escrow contract with timed release logic."
   },
   {
-    "label": "Overwriter.frag",
-    "file": "Overwriter.frag",
-    "mime": "text/plain",
-    "category": "Code",
-    "categories": [
-      "Code"
-    ]
-  },
-  {
-    "label": "Glyph Dungeon cipher.txt",
-    "file": "metagame/stage2/cipher.txt",
-    "mime": "text/plain",
-    "category": "Metagame",
-    "categories": [
-      "Metagame"
-    ]
-  },
-  {
-    "label": "Protocol Codex protocols_of_the_entity.epub",
-    "file": "metagame/stage5/protocols_of_the_entity.epub",
-    "mime": "application/epub+zip",
-    "category": "Metagame",
-    "categories": [
-      "Metagame"
-    ]
-  },
-  {
     "label": "Sample.html",
     "file": "sample.html",
     "mime": "text/html",

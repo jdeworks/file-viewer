@@ -22,7 +22,6 @@ let renderPreview = async () => {};
 export function initRawPane(deps) { renderPreview = deps.renderPreview; }
 
 let wysiwygMode = false;
-let viewerActionsPromise = null;
 const indentationNotices = new Set();
 let wysiwygApi = null;
 let editorSurfacesApi = null;
@@ -56,11 +55,6 @@ async function loadMarkdownTools() {
 }
 async function loadBinaryInspector() {
   return binaryInspectorApi || (binaryInspectorApi = await import('./binary-inspector.js'));
-}
-
-function viewerActions() {
-  if (!viewerActionsPromise) viewerActionsPromise = import('../games/metagame/viewer-actions.js');
-  return viewerActionsPromise;
 }
 
 function setMarkdownToolsVisible(visible) {
@@ -390,24 +384,7 @@ export async function buildRawView({ isCurrent = () => true, signal } = {}) {
   return true;
 }
 
-// §10A.3 — The Defragmenter cheat-disable toast. Prefer the app's toast; else a 3s DIY overlay.
-function showCheatToast(msg) {
-  if (typeof toast === 'function') { toast(msg); return; }
-  if (window.__fv && window.__fv.showToast) { window.__fv.showToast(msg); return; }
-  const div = document.createElement('div');
-  div.textContent = msg;
-  div.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1e2a1e;color:#3fb950;padding:10px 20px;border-radius:6px;z-index:9999;font-size:14px;box-shadow:0 2px 8px #0008;transition:opacity .4s';
-  document.body.appendChild(div);
-  setTimeout(() => { div.style.opacity = '0'; setTimeout(() => div.remove(), 400); }, 3000);
-}
-
 export async function onRawEdited(value) {
-  viewerActions().then(({ recordStage1RawEdit }) => {
-    if (recordStage1RawEdit({ file: state.intake?.filename || '', text: value })) {
-      showCheatToast('The Defragmenter cheat routine has been disabled.');
-    }
-  });
-
   // One-time toast (A): fire on the very first edit ever to explain the in-memory model.
   try {
     if (!localStorage.getItem(DISCLAIMER_KEY + ':toast')) {

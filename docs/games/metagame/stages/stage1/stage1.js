@@ -287,7 +287,7 @@ export function renderStage1(ctx) {
   renderStage1._debug = installStage1Debug({
     state, cfg, save, renderAll, tick, addBits,
     canFightBoss, allSubStagesOwned,
-    actions: ctx.actions, onStageComplete: ctx.onStageComplete, updateEcho,
+    onStageComplete: ctx.onStageComplete, updateEcho,
   });
 
   // Expose the help toggle and renderAll so the orchestrator can wire them up.

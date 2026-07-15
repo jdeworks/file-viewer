@@ -1,5 +1,5 @@
 import { damageBoss, getBossLockState, recordBossAttempt } from "./boss.js";
-import { bossArenaLocked, bossArenaUnlocked } from "./content.js";
+import { bossArena } from "./content.js";
 import { exitDistanceField, reconstructRoute, step, stepToExit, tickPlayerStatus } from "./engine.js";
 import { stairTrailEnabled } from "./data.js";
 import { monsterTurn, pressureSpawn } from "./monsters.js";
@@ -14,8 +14,8 @@ import { buildHelpPanel } from "./help.js";
 import { buildRunePickupPanel } from "./rune-pickup.js";
 import { createView, renderHpBar } from "./view.js";
 import { hiddenTab } from "../../shared/frame-loop.js";
-import { BTS_PATH, bellMessages, combatLines } from "./messages.js";
-import { MAX_FLOOR, ensureWorld, descend, resetRun, appendLog, damageNoise, openCipher, openBts, once, DIR_ARROW } from "./runloop.js";
+import { bellMessages, combatLines } from "./messages.js";
+import { MAX_FLOOR, ensureWorld, descend, resetRun, appendLog, damageNoise, once, DIR_ARROW } from "./runloop.js";
 
 const MOVE_KEYS = {
   ArrowUp: "up", ArrowDown: "down", ArrowLeft: "left", ArrowRight: "right",
@@ -25,9 +25,6 @@ const MOVE_KEYS = {
 export function renderStage2({
   host,
   state,
-  actions,
-  bts,
-  viewer,
   save,
   onStageComplete
 }) {
@@ -82,9 +79,7 @@ export function renderStage2({
         <button type="button" data-action="help">how to play</button>
         <button type="button" data-action="shop">glyph shop</button>
         <button type="button" data-action="retreat">retreat (new run)</button>
-        <button type="button" data-action="search" hidden>open cipher.txt</button>
         <button type="button" data-action="boss" hidden>challenge boss</button>
-        <button type="button" data-action="bts" hidden>open trace.bts</button>
         <div class="s2-dpad" aria-label="move (touch)">
           <button type="button" data-move="up" aria-label="move up">&#9650;</button>
           <button type="button" data-move="left" aria-label="move left">&#9664;</button>
@@ -109,9 +104,7 @@ export function renderStage2({
   // DOM for values that actually changed (the rest is a no-op). Same lesson as Bit Foundry.
   const setText = (el, v) => { const s = String(v); if (el.textContent !== s) el.textContent = s; };
   const setHidden = (el, h) => { if (el.hidden !== h) el.hidden = h; };
-  const searchBtn = root.querySelector('[data-action="search"]');
   const bossBtn = root.querySelector('[data-action="boss"]');
-  const btsBtn = root.querySelector('[data-action="bts"]');
   let lastHp = -1;
   let lastMaxHp = -1;
   let lastLogSig = "";
@@ -140,7 +133,7 @@ export function renderStage2({
   // HUD + log — everything outside the dungeon screen. Every write is guarded (see setText).
   function paintHud() {
     const e = state.run.entity;
-    const lock = getBossLockState({ actions, state });
+    const lock = getBossLockState({ state });
     setText(fields.floor, state.run.floor);
     setText(fields.hp, e.hp);
     setText(fields.maxHp, e.maxHp);
@@ -158,8 +151,8 @@ export function renderStage2({
     setText(fields.status, status);
     paintItems(e);
     setText(fields.bossStatus, state.run.boss.defeated
-      ? "defeated. BTS trace available."
-      : `${lock.unlocked ? "UNLOCKED" : "LOCKED"} / north pillar ${lock.northPillar} / gap ${lock.projectileGapTiles}`);
+      ? "defeated."
+      : `phase ${lock.phase} / HP ${state.run.boss.hp}`);
     setText(fields.hint, lock.hint);
     const biome = biomeForFloor(state.run.floor);
     if (root.dataset.biome !== biome.id) root.dataset.biome = biome.id;
@@ -168,7 +161,7 @@ export function renderStage2({
       ? (w && w.torch > 0 ? ` — torch lit (${w.torch} steps)` : " — DARK: foes hide beyond your light; ghosts mark where you last saw them")
       : "";
     setText(fields.objective, state.run.boss.reached
-      ? (lock.unlocked ? "the passage is mapped. challenge the boss." : "unmapped: challenge at real risk, or find PASSAGE in cipher.txt for a clean clear.")
+      ? "challenge the boss. every strike draws a counterattack."
       : `${biome.name} — reach the stairs > (floor ${state.run.floor}/${MAX_FLOOR}). fight foes, grab weapons & glyphs.${darkNote}`);
     updateCompass();
     const sig = state.run.combatLog.slice(-4).join("\n");
@@ -180,11 +173,8 @@ export function renderStage2({
         return item;
       }));
     }
-    // The cipher.txt + challenge-boss actions only appear at the final floor; trace.bts after defeat.
     const atBoss = state.run.boss.reached && !state.run.boss.defeated;
-    setHidden(searchBtn, !atBoss);
     setHidden(bossBtn, !atBoss);
-    setHidden(btsBtn, !state.run.boss.defeated);
   }
 
   // Stairs compass — the actual shortest-route next step + path length to the exit, unlocked once by
@@ -237,8 +227,7 @@ export function renderStage2({
   // The dungeon screen — boss arena art, or the camera-following exploration view.
   function paintWorld() {
     if (state.run.boss.reached) {
-      const lock = getBossLockState({ actions, state });
-      view.paintArena(lock.unlocked ? bossArenaUnlocked : bossArenaLocked);
+      view.paintArena(bossArena);
     } else {
       view.paintExplore(state.run.world);
     }
@@ -349,9 +338,7 @@ export function renderStage2({
     if (action === "shop") { toggleOverlay("shop"); return; }
     if (action === "help") { toggleOverlay("help"); return; }
     if (action === "boss") challengeBoss();
-    if (action === "search") openCipher(viewer);
     if (action === "retreat") { appendLog(state, "retreat accepted. glyphs banked, fresh run drawn."); resetRun(state, { banked: true }); }
-    if (action === "bts") openBts({ bts, viewer });
     persistAndPaint();
   });
 
@@ -359,9 +346,7 @@ export function renderStage2({
   startMonsterClocks();
 
   // TEST/DEBUG hook (window.__fvStage2) — drives the headless smoke deterministically (no real-time
-  // play): descend the three acts to the boss, then clear it AFTER the real cipher.txt search un-cheat.
-  // Not a player affordance and NOT a bypass — bossSolver still needs the search action to have
-  // unlocked the gate (challengeBoss records a locked attempt otherwise).
+  // play): descend the three acts to the boss, then exercise the real multi-hit exchange.
   window.__fvStage2 = {
     state: () => state,
     dev,
@@ -369,7 +354,7 @@ export function renderStage2({
     step: move,
     bodySolver,
     descendToBoss: bodySolver,
-    lockState: () => getBossLockState({ actions, state }),
+    lockState: () => getBossLockState({ state }),
     bossSolver: challengeBoss,
     elementProbe
   };
@@ -476,31 +461,12 @@ export function renderStage2({
 
   function challengeBoss() {
     state.run.boss.reached = true;
-    const lock = getBossLockState({ actions, state });
     recordBossAttempt(state);
-    if (lock.unlocked) {
-      state.run.boss.unlocked = true;
-      // The buff: PASSAGE found → a decisive blow clears every remaining phase in one challenge.
-      // Each 999-hit only zeroes the current phase (advancing 1→2→3), so loop until defeated,
-      // bounded well above the 3 phases as a safety guard.
-      let result = damageBoss({ state, amount: 999 });
-      for (let i = 0; i < 5 && !result.defeated; i++) {
-        result = damageBoss({ state, amount: 999 });
-      }
-      if (result.defeated) {
-        appendLog(state, bellMessages.defeated);
-        completeOnce({ stage: 2, defeated: true, reward: { glyphs: 25 }, btsPath: BTS_PATH });
-      }
-      return;
-    }
-    // 2026-07-11 playtest fix: without PASSAGE the fight still happens, just costs a real risk —
-    // one exchange per challenge click (modest boss damage, real counter-hit to @). Grinding it out
-    // is genuinely possible, just slower and riskier than the buffed one-hit clear above.
     const result = damageBoss({ state, amount: 45 });
     const entity = state.run.entity;
     const counter = Math.max(3, Math.round((entity.maxHp || 30) * 0.2));
     entity.hp = Math.max(0, Number(entity.hp || 0) - counter);
-    appendLog(state, combatLines.lockedExchange);
+    appendLog(state, combatLines.bossExchange);
     if (entity.hp <= 0) {
       appendLog(state, "@ was unparsed. run reset — banked glyphs survive.");
       resetRun(state, { banked: true, death: true });
@@ -509,7 +475,7 @@ export function renderStage2({
     }
     if (result.defeated) {
       appendLog(state, bellMessages.defeated);
-      completeOnce({ stage: 2, defeated: true, reward: { glyphs: 25 }, btsPath: BTS_PATH });
+      completeOnce({ stage: 2, defeated: true, reward: { glyphs: 25 } });
       return;
     }
     persistAndPaint();

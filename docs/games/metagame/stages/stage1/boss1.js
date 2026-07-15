@@ -1,11 +1,7 @@
 // boss1.js — Stage 1 boss: THE DEFRAGMENTER (WP-S1-11).
 //
 // A 20-second click-contest. The player taps a giant button; the boss "shadows" each tap with a
-// constant edge, an auto-tick floor, and pre-scheduled BURSTS. The bursts only have real teeth when
-// the shared metagame action `1.cheat_disabled` is missing — see boss1-fight.js / boss-sim.js.
-//
-// The boss reads the cheat ONCE at fight start (§10A.5). Disabling it mid-fight does not change an
-// in-progress fight — the player must disable it in the lobby, then start a fresh fight.
+// constant edge, an auto-tick floor, and pre-scheduled BURSTS.
 //
 // This module owns the LOBBY, win/lose resolution, retry, achievements, and lifecycle. The taunt
 // corpus + helpers live in boss1-data.js, the arena stylesheet in boss1-style.js, and the live fight
@@ -14,7 +10,7 @@
 // state/save/bell helpers are optional; the boss degrades gracefully (no-op) when they are absent.
 
 import { toDisplay, gte, sub, mulScalar } from './bignum.js';
-import { TAUNTS, pick, esc, readCheat } from './boss1-data.js';
+import { TAUNTS, pick, esc } from './boss1-data.js';
 import { injectStyle } from './boss1-style.js';
 import { makeFight } from './boss1-fight.js';
 
@@ -28,7 +24,6 @@ export function mountDefragmenter(arena, opts = {}) {
   const checkMessages = typeof opts.checkMessages === 'function' ? opts.checkMessages : () => {};
   const bellLoad = typeof opts.bellLoad === 'function' ? opts.bellLoad : () => ({});
   const bellAdd = typeof opts.bellAdd === 'function' ? opts.bellAdd : () => {};
-  const actions = opts.actions || null;
 
   // Fight costs the ticket; a retry costs half. Use the real stage ticket (now 1an).
   const ticket = (opts.stage && opts.stage.bossTicket) || DEFAULT_TICKET;
@@ -47,15 +42,10 @@ export function mountDefragmenter(arena, opts = {}) {
   const clearTimer = (id) => { clearInterval(id); timers.delete(id); };
   const on = (target, ev, fn) => { target.addEventListener(ev, fn); listeners.push([target, ev, fn]); };
 
-  // Live cheat flag for the LOBBY display only (fight reads its own locked copy at start, §10A.5).
-  let lobbyCheat = readCheat(actions);
-  void lobbyCheat;
-
   // ── §10A.4 — "boss seen" seeding (first mount only) ────────────────────────────────────────
   if (!state.bossSeen) {
     state.bossSeen = true;
     save(state);
-    lobbyCheat = readCheat(actions);
     fireAchievement('ach-boss-seen');
   }
 
@@ -68,9 +58,8 @@ export function mountDefragmenter(arena, opts = {}) {
     save(state);
     const bellText = {
       'ach-boss-seen': '🥊 you stared the Defragmenter down.',
-      'ach-boss-cheat-found': '🕵️ something was off. you fixed it.',
       'ach-boss-victory': '🏆 defragmented — your bits, your win.',
-      'ach-boss-lose': '😤 it cheated. of course it did.',
+      'ach-boss-lose': '😤 close one. steady the rhythm and try again.',
     }[id];
     if (bellText) bellAdd(id, bellText, bellLoad());
   }
@@ -132,10 +121,10 @@ export function mountDefragmenter(arena, opts = {}) {
   function retreat() { cleanup(); if (typeof opts.onRetreat === 'function') opts.onRetreat(); }
 
   // ── FIGHT (live loop lives in boss1-fight.js; finishFight handles the outcome) ──────────────
-  const startFight = makeFight({ arena, actions, setT, setI, clearTimer, on, onFinish: finishFight });
+  const startFight = makeFight({ arena, setT, setI, clearTimer, on, onFinish: finishFight });
 
   // ── WIN / LOSE (§10.7) ───────────────────────────────────────────────────────────────────
-  function finishFight(userScore, bossScore, cheatActive) {
+  function finishFight(userScore, bossScore) {
     const won = userScore > bossScore;
     const statusEl = arena.querySelector('.mg-defrag-status');
     const bubble = arena.querySelector('.boss-taunt-bubble');
@@ -155,7 +144,7 @@ export function mountDefragmenter(arena, opts = {}) {
     state.bossLossCount = (state.bossLossCount || 0) + 1;
     save(state);
     checkMessages('boss-loss', state, bellLoad());   // fires bell-boss-hint-* at 5/10/15 (§7.3)
-    if (cheatActive) fireAchievement('ach-boss-lose');
+    fireAchievement('ach-boss-lose');
     if (bubble) bubble.textContent = pick(TAUNTS.loss);
     if (statusEl) statusEl.textContent = 'The Defragmenter wins — your bits scatter, but stay yours. Try again.';
 
@@ -203,20 +192,6 @@ export function mountDefragmenter(arena, opts = {}) {
     save(state);
     startFight();
   }
-
-  // ── cheat-disable event listener (lobby UI only; never mid-fight) ──────────────────────────
-  function onCheatDisable() {
-    lobbyCheat = readCheat(actions);
-    // Only refresh the lobby status if we're currently showing the lobby (not an active fight).
-    if (arena.querySelector('.mg-defrag-lobby-btns') && !arena.querySelector('.mg-defrag-fight-on')) {
-      const status = arena.querySelector('.mg-defrag-status');
-      if (status) status.textContent = '⚙️ the cheat is gone. the next fight is fair.';
-    }
-  }
-  on(window, 'fv:games:action', (event) => {
-    const detail = event && event.detail || {};
-    if (detail.stage === 1 && detail.action === 'cheat_disabled') onCheatDisable();
-  });
 
   // ── lifecycle ──────────────────────────────────────────────────────────────────────────────
   function cleanup() {

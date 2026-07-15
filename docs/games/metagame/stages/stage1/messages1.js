@@ -78,7 +78,7 @@ export const MESSAGES1 = [
   { id: 'bell-reset-prestige', text: '🌀 collapsed. denser now.', trigger: 'prestige', condition: () => true, maxCount: undefined, removeAfterFire: false },
 
   // §7.3 Boss-hint bells (fire on 'boss-loss' trigger at 5/10/15 losses)
-  { id: 'bell-boss-hint-1', text: '💬 "have you tried… looking around?" — The Defragmenter',             trigger: 'boss-loss', condition: (state) => (state.bossLossCount || 0) >= 5,  maxCount: 1, removeAfterFire: true },
-  { id: 'bell-boss-hint-2', text: '💬 "there is nothing in the examples. nothing." — The Defragmenter',   trigger: 'boss-loss', condition: (state) => (state.bossLossCount || 0) >= 10, maxCount: 1, removeAfterFire: true },
-  { id: 'bell-boss-hint-3', text: '💬 "CHEAT= ? I have no idea what that is." — The Defragmenter',        trigger: 'boss-loss', condition: (state) => (state.bossLossCount || 0) >= 15, maxCount: 1, removeAfterFire: true },
+  { id: 'bell-boss-hint-1', text: '💬 "try a steady rhythm." — The Defragmenter',                  trigger: 'boss-loss', condition: (state) => (state.bossLossCount || 0) >= 5,  maxCount: 1, removeAfterFire: true },
+  { id: 'bell-boss-hint-2', text: '💬 "my surges end quickly." — The Defragmenter',               trigger: 'boss-loss', condition: (state) => (state.bossLossCount || 0) >= 10, maxCount: 1, removeAfterFire: true },
+  { id: 'bell-boss-hint-3', text: '💬 "one point ahead is enough." — The Defragmenter',            trigger: 'boss-loss', condition: (state) => (state.bossLossCount || 0) >= 15, maxCount: 1, removeAfterFire: true },
 ];

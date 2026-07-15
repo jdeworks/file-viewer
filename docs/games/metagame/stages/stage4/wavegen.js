@@ -1,8 +1,8 @@
 // wavegen.js — Stage 4 Fractal Bastion: deterministic procedural wave generation for the campaign.
 //
 // The five maps total 90 waves — too many to hand-author. wavegen scales enemy mix, counts AND HP
-// from (mapIndex, waveNum) with NO randomness (pure formula → identical every run, so the file-tree
-// un-cheat and replays stay honest). Authored landmark sub-boss waves (maps.js) are layered on top:
+// from (mapIndex, waveNum) with NO randomness (pure formula → identical every run, so replays stay
+// honest). Authored landmark sub-boss waves (maps.js) are layered on top:
 // on a sub-boss wave the composition carries a `subBoss` id plus a reduced escort.
 //
 // LENGTH REBALANCE (round 4): the campaign was cut 150→90 waves. To stop the shorter campaign going

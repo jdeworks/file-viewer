@@ -2,14 +2,6 @@ const subscribers = new Set();
 let saveProvider = null;
 let persistProvider = null;
 
-export const ACTION_ACHIEVEMENTS = Object.freeze({
-  '1.cheat_disabled': { id: 'stage1.cheat_disabled', stage: 1, title: 'protection disabled.' },
-  '2.search_passage': { id: 'stage2.search_passage', stage: 2, title: 'the passage was marked.' },
-  '3.diff_key_restored': { id: 'stage3.diff_key_restored', stage: 3, title: 'I found the difference.' },
-  '4.recursion_blueprint_read': { id: 'stage4.recursion_blueprint_read', stage: 4, title: 'I looked deeper.' },
-  '5.protocol_ch9_read': { id: 'stage5.protocol_ch9_read', stage: 5, title: 'I read the fine print.' },
-});
-
 function nowMs() {
   return Date.now();
 }
@@ -52,12 +44,6 @@ export function unlockAchievement(id, { stage = null, title = id, detail = {} } 
 
 export function unlock(id, detail = {}) {
   return unlockAchievement(id, detail);
-}
-
-export function unlockAchievementForAction(stage, action, detail = {}) {
-  const achievement = ACTION_ACHIEVEMENTS[`${Number(stage)}.${String(action)}`];
-  if (!achievement) return null;
-  return unlockAchievement(achievement.id, { ...achievement, detail });
 }
 
 export function hasAchievement(id) {

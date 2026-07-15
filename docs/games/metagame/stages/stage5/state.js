@@ -1,8 +1,6 @@
-import { bellMessages } from "./messages.js";
-
 // Stage 5 save shape (v2 — full Protocol Codex roguelite):
-//   meta  — persists across runs (prestige economy + the codex/boss gate flags).
-//   boss  — The Refused Connection negotiation state (boss.js owns the mechanics).
+//   meta  — persists across runs (prestige economy + progression flags).
+//   boss  — The Refused Connection completion state.
 //   run   — the active run.js state machine, or null between runs. Live combat is checkpointed
 //           separately in the shared run-state slot so a reload resumes the same shuffle/turn.
 //   ui    — top-level screen: "hub" | "run". (The boss is an in-run terminal node, never a
@@ -33,7 +31,7 @@ export function defaultState() {
       lastSeedKey: null,
       dailyBest: {},
       // Hub progressive disclosure (UX audit M1): which meta clusters have been REVEALED. A fresh
-      // save opens on just title + flavor + begin/codex; each cluster appears at the event that makes
+      // save opens on just title + flavor + begin; each cluster appears at the event that makes
       // it meaningful and stays. Additive + backfilled from existing counters (normalizeState) so an
       // existing save NEVER regresses to the minimal hub.
       //   stats       — the stat tiles: first finished run (death or win).
@@ -44,18 +42,13 @@ export function defaultState() {
     handshakes: 0,          // legacy mirror the boss reward writes to
     boss: {
       reached: false,
-      unlocked: false,
       defeated: false,
       phase: 1,
-      hp: 60,
-      attempts: 0,
-      lockHintStep: 0,
-      turn: { firstCard: null, playedAck: false, signalDamageThisTurn: 0 }
     },
     run: null,
     ui: { screen: "hub" },
     log: [
-      bellMessages.start,
+      "something answered. not clearly. but something.",
       "The Refused Connection waits behind a formal silence."
     ]
   };
@@ -69,8 +62,11 @@ export function normalizeState(state) {
   target.meta.disclosed = mergePlain(fresh.meta.disclosed, target.meta.disclosed);
   backfillDisclosure(target.meta);
   target.handshakes = num(target.handshakes, fresh.handshakes);
-  target.boss = mergePlain(fresh.boss, target.boss);
-  target.boss.turn = mergePlain(fresh.boss.turn, target.boss.turn);
+  target.boss = {
+    reached: Boolean(target.boss?.reached),
+    defeated: Boolean(target.boss?.defeated),
+    phase: num(target.boss?.phase, 1),
+  };
   target.run = target.run && typeof target.run === "object" ? target.run : null;
   target.ui = mergePlain(fresh.ui, target.ui);
   // The boss is now an in-run node, never a top-level screen: legacy "boss" → "hub".

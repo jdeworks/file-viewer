@@ -4,20 +4,14 @@ import { mountStage1Boss } from './boss.js';
 import { defaultState as createDefaultState, normalizeState } from './state.js';
 import { cheatUnlockTabs, cheatBossReady, cheatGrantCores, cheatHireAllManagers } from './s1dev.js';
 
-export { parseCheatConfig, parseCheatLine, shouldDisableCheat, maybeSetCheatDisabledAction } from './cheat.js';
-export { stageMessages, actionMessages, announceCheatDisabled } from './messages.js';
-export { stageAchievements, viewerToolAchievement, grantCheatDisabledAchievement } from './achievements.js';
 export { normalizeState } from './state.js';
-export { mountStage1Boss, hasCheatDisabledAction } from './boss.js';
+export { mountStage1Boss } from './boss.js';
 
 export const stageMeta = {
   id: 1,
   slug: 'bit-foundry',
   name: 'Bit Foundry',
   bossName: 'The Defragmenter',
-  btsPath: '/docs/bts/bit_foundry.bts',
-  requiredAction: '1.cheat_disabled',
-  requiredFile: 'docs/examples/Overwriter.frag',
   // Dev-menu controls (wired in metagame.js → mounted.dev(id)).
   // "Stage 1 bits" seeds are already hardcoded in metagame.js — these are additional live cheats.
   devControls: [
@@ -71,7 +65,6 @@ export function mountStage(ctx = {}) {
       sfxEnabled: ctx.sfxEnabled,
       stage: () => stageConfig,
       onExit: ctx.onExit,
-      actions: ctx.actions,
       onStageComplete: ctx.onStageComplete,
       onBoss: openBoss,
       attachChrome: () => {},

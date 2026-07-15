@@ -27,10 +27,10 @@ const REMOVAL_BASE = 25;
 const REMOVAL_STEP = 25;
 export const FINAL_BOSS_ACT = 6;
 // First-run pacing (UX audit approved option): a player's FIRST-EVER run terminates victoriously at
-// the act-4 story boss, The Refused Connection (which IS the epub un-cheat carrier). Acts 5–6 unlock
+// the act-4 story boss, The Refused Connection. Acts 5–6 unlock
 // on the first win. Six acts before any boss kill is a ~60–90m first exposure; StS ships 3.
 export const FIRST_RUN_FINAL_ACT = 4;
-// Per-act combat mini-bosses (acts 1–5); the final act is the codex-gated negotiation, The Refused
+// Per-act combat mini-bosses (acts 1–5); the final act is the handshake negotiation, The Refused
 // Connection. On a 4-act first run its boss node IS that negotiation (enemyForCurrentNode keys off
 // run.act === finalActOf(run)); on a 6-act veteran run acts 4/5 are the mini-bosses below.
 const ACT_BOSSES = { 1: "kernel-panic", 2: "buffer-overflow", 3: "deadlock", 4: "session-hijack", 5: "stack-overflow" };
@@ -358,7 +358,7 @@ const BOSS_RELIC_CHOICES = 3;
 function clearBoss(run) {
   if (run.act >= finalActOf(run)) {
     // True ending: the negotiation is won. With all 3 keys, a hidden superboss opens AFTER it (pure
-    // extra combat — NO second un-cheat). It's reached via a synthetic node id; enemyForCurrentNode
+    // extra combat). It's reached via a synthetic node id; enemyForCurrentNode
     // returns the superboss while run.atSuperboss is set.
     if (hasAllKeys(run) && !run.superbossCleared && !run.atSuperboss) {
       run.atSuperboss = true;

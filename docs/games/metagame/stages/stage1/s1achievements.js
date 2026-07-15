@@ -34,7 +34,7 @@ export function checkAchievements(state, cfg, bs) {
   const achieved = state.achievements || [];
   let changed = false;
   for (const ach of ACHIEVEMENTS1) {
-    if (achieved.includes(ach.id) || ach.id === 'ach-boss-cheat-found') continue;
+    if (achieved.includes(ach.id)) continue;
     try {
       if (!ach.condition(state, cfg)) continue;
     } catch { continue; }

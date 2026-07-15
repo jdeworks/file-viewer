@@ -1,6 +1,6 @@
 // ui-map.js — Stage 5 navigation screens: the hub, the act map, and run end-states.
 // Pure views (detached elements); the renderer handles clicks via delegation:
-//   [data-action="begin-run"|"continue-run"|"epub"|"bts"|"new-run"|"abandon"]
+//   [data-action="begin-run"|"continue-run"|"new-run"|"abandon"]
 //   [data-node="<id>"]  move to an available map node.
 // NOTE: there is deliberately NO "confront" button — The Refused Connection is reachable ONLY
 // as the act-4 boss node of a full run (see renderer route). The run is mandatory.
@@ -21,7 +21,7 @@ const KEY_INFO = {
   sacrifice:   { name: "Sacrifice",   hint: "spend a rest thinning a card" }
 };
 
-// Progressive disclosure (M1): a 0-runs player sees only title + flavor + begin/codex. Most meta
+// Progressive disclosure (M1): a 0-runs player sees only title + flavor + begin. Most meta
 // clusters stay gated on state.meta.disclosed (set at the event that makes them meaningful;
 // backfilled for existing saves in normalizeState so nothing regresses). The prestige cluster
 // (banked total, Protocol Version, the "reinforce protocol" button) is the ONE exception, gated
@@ -31,7 +31,7 @@ const KEY_INFO = {
 // silent bug: the button was ALSO gated by a separate 75%-of-cost banked threshold on top of the
 // disclosure gate, so un-gating disclosure alone (an earlier fix attempt) would not have surfaced
 // the button any sooner.
-export function hubView(state, lock, asc = null) {
+export function hubView(state, asc = null) {
   const el = document.createElement("div");
   el.className = "s5db-hub";
   const m = state.meta;
@@ -47,8 +47,6 @@ export function hubView(state, lock, asc = null) {
         ? `<button type="button" data-action="continue-run">continue run ▸ act ${state.run.act}</button>
            <button type="button" data-action="abandon" class="s5db-ghost">abandon run</button>`
         : `<button type="button" data-action="begin-run">begin a run ▸</button>`}
-      <button type="button" data-action="epub">open the codex</button>
-      ${lock.defeated ? `<button type="button" data-action="bts">open trace.bts</button>` : ""}
     </div>
     ${canReinforce ? `<dl class="s5db-meta-grid">
       <div><dt>Banked handshakes</dt><dd>${m.banked}</dd></div>
@@ -57,7 +55,7 @@ export function hubView(state, lock, asc = null) {
     ${d.stats ? `<dl class="s5db-meta-grid">
       <div><dt>Runs cleared</dt><dd>${m.runsCleared}</dd></div>
       <div><dt>Best score</dt><dd>${m.bestScore || 0}</dd></div>
-      <div><dt>The Refused Connection</dt><dd>${lock.defeated ? "answered" : lock.unlocked ? "negotiable" : "refusing"}</dd></div>
+      <div><dt>The Refused Connection</dt><dd>${state.boss.defeated ? "answered" : "awaiting handshake"}</dd></div>
     </dl>` : ""}
     ${d.meta ? seedModes(hasRun) : ""}
     ${canReinforce ? `<div class="s5db-prestige">
@@ -67,9 +65,7 @@ export function hubView(state, lock, asc = null) {
         permanently upgrade one starting card &amp; one harder rule</span>
     </div>` : ""}
     ${d.meta ? ascensionPicker(asc, hasRun) : ""}
-    ${d.stats ? `<p class="s5db-hint">${esc(lock.unlocked
-      ? "Chapter 9 is read. The connection can be negotiated."
-      : "The connection refuses everything you send. The codex explains why.")}</p>` : ""}
+    ${d.stats ? `<p class="s5db-hint">Sequence SYN and ACK correctly so your Signals are accepted.</p>` : ""}
   `;
   return el;
 }
@@ -284,7 +280,6 @@ export function wonView(state, run) {
     </dl>
     ${scoreLine(state, run)}
     <div class="s5db-hub-actions">
-      <button type="button" data-action="bts">open trace.bts</button>
       <button type="button" data-action="new-run">run again ▸</button>
     </div>`;
   return el;

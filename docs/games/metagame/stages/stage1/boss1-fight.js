@@ -1,21 +1,15 @@
 // boss1-fight.js — Stage 1 Defragmenter live 20s click-contest loop. Pulled out of boss1.js to keep
-// the boss mount under the LOC cap. Pure behaviour move: builds the fight DOM, reads the cheat ONCE
-// at start (§10A.5), runs the per-tap shadow + auto-floor + burst auto-fires, and calls onFinish.
-//
-// 2026-07-11 playtest fix: while the cheat is active the shadow/floor/bursts are tuned hard-but-
-// winnable (needs sustained fast tapping); disabling it (CHEAT=false) is an optional buff that
-// makes the fight comfortably winnable at a casual pace. See boss-sim.js for the tuned numbers.
+// the boss mount under the LOC cap. Builds the fight DOM, runs the per-tap shadow + auto-floor +
+// burst auto-fires, and calls onFinish. See boss-sim.js for the tuned numbers.
 
 import { FIGHT_MS, BURST_MS, makeBurstSchedule, fightParams } from './boss-sim.js';
-import { TAUNTS, pick, readCheat } from './boss1-data.js';
+import { TAUNTS, pick } from './boss1-data.js';
 
-// makeFight({ arena, actions, setT, setI, clearTimer, on, onFinish }) → startFight()
-//   onFinish(userScore, bossScore, cheatActive) is called ~1s after time expires (the freeze + reveal).
-export function makeFight({ arena, actions, setT, setI, clearTimer, on, onFinish }) {
+// onFinish(userScore, bossScore) is called ~1s after time expires (the freeze + reveal).
+export function makeFight({ arena, setT, setI, clearTimer, on, onFinish }) {
   return function startFight() {
-    const cheatActive = readCheat(actions);              // §10A.5 — locked once, here.
-    const p = fightParams(cheatActive);                  // shadow/floor/burst params (un-cheat-aware).
-    const bursts = makeBurstSchedule(Date.now(), cheatActive);
+    const p = fightParams();
+    const bursts = makeBurstSchedule(Date.now());
     let userScore = 0, bossScore = 0, bossAcc = 0;
     let tapTimes = [];
     let lastFloorTick = 0;
@@ -97,9 +91,9 @@ export function makeFight({ arena, actions, setT, setI, clearTimer, on, onFinish
         // Burst boundary changed.
         arenaEl.classList.remove('mg-defrag-burst-hot', 'mg-defrag-burst-warm');
         if (burst) {
-          arenaEl.classList.add(cheatActive ? 'mg-defrag-burst-hot' : 'mg-defrag-burst-warm');
-          statusEl.textContent = cheatActive ? '🔥 the Defragmenter surges…' : 'the Defragmenter surges…';
-          showTaunt(pick(cheatActive ? TAUNTS.burstCheat : TAUNTS.burstNormal));
+          arenaEl.classList.add('mg-defrag-burst-warm');
+          statusEl.textContent = 'the Defragmenter surges…';
+          showTaunt(pick(TAUNTS.burst));
         } else {
           statusEl.textContent = '';
         }
@@ -125,7 +119,7 @@ export function makeFight({ arena, actions, setT, setI, clearTimer, on, onFinish
         tapBtn.disabled = true;
         arenaEl.classList.remove('mg-defrag-burst-hot', 'mg-defrag-burst-warm');
         // Freeze, 1 s pause, then reveal (§10B.6).
-        setT(() => onFinish(userScore, bossScore, cheatActive), 1000);
+        setT(() => onFinish(userScore, bossScore), 1000);
       }
     }, 100);
   };

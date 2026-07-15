@@ -259,11 +259,11 @@ export const ACHIEVEMENTS1 = [
   // --- Boss: lose (24) ---
   {
     id: 'ach-boss-lose',
-    name: 'Out-Cheated 😤',
+    name: 'Close Call 😤',
     icon: '😤',
     category: 'boss',
     condition: (state) => (state.bossLossCount || 0) >= 1,
-    bell: '😤 it cheated. of course it did.',
+    bell: '😤 close one. steady the rhythm and try again.',
   },
 
   // --- Secret: fast tap (25) ---
@@ -300,17 +300,6 @@ export const ACHIEVEMENTS1 = [
     category: 'boss',
     condition: (state) => state.bossSeen === true,
     bell: '🥊 you stared the Defragmenter down.',
-  },
-
-  // --- Boss: cheat found (28) ---
-  // Legacy Stage 1 achievement entry; canonical v3 unlocks use stage1.cheat_disabled.
-  {
-    id: 'ach-boss-cheat-found',
-    name: 'Suspicious Activity 🕵️',
-    icon: '🕵️',
-    category: 'boss',
-    condition: () => false,
-    bell: '🕵️ something was off. you fixed it.',
   },
 
   // --- Boss: victory (29) ---

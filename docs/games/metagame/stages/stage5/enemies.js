@@ -255,7 +255,7 @@ export const ENEMIES = {
     name: "The Refused Connection",
     tier: "boss",
     // A connection, not a process — it cannot be CORRUPTED, so a corruption build can't sidestep the
-    // handshake; damage must come through accepted Signals. Reinforces the negotiation un-cheat.
+    // handshake; damage must come through accepted Signals. Reinforces the negotiation sequence.
     immuneCorruption: true,
     hp: 60, hpPerAct: 0, armor: 0, armorPerAct: 0,
     script: [

@@ -3,7 +3,7 @@
 // Reached ONLY after the act-6 negotiation (The Refused Connection) is already won AND the player
 // collected all 3 hidden keys during the run (run.keys: untouchable elite / skipped reward /
 // sacrificial rest — see run.js awardKey). It is PURE EXTRA COMBAT: it adds NO second host-app
-// un-cheat (the ch9 epub remains the only stage gate, already satisfied by beating the negotiation).
+// progression gate beyond winning the negotiation.
 // It is fought with the player's REAL deck through the normal engine, so it is never locked.
 //
 // Three phases, each a fresh HP pool whose looping script leans on a different pair of the stage's
@@ -53,7 +53,7 @@ export const SUPERBOSS_PHASE_SCRIPTS = [
 ];
 
 // Wire the multi-phase superboss onto a fresh combat whose enemy is the-kernel-of-refusal. Sets the
-// phase-0 pool/script and attaches the phase-advance closure. NOT locked (no handshake / un-cheat).
+// phase-0 pool/script and attaches the phase-advance closure. It has no handshake gate.
 export function wireSuperboss(combat) {
   combat.superPhase = 0;
   // The superboss is a synthetic bonus node (not a normal act-6 fight) with bespoke phase scripts that

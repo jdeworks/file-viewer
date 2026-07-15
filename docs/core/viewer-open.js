@@ -2,11 +2,6 @@ import { intakeFromFile, intakeFromText, sourceTextOf } from './intake.js';
 import { state } from './state.js';
 
 let loadIntakeCallback = null;
-let viewerActionsPromise = null;
-function viewerActions() {
-  if (!viewerActionsPromise) viewerActionsPromise = import('../games/metagame/viewer-actions.js');
-  return viewerActionsPromise;
-}
 
 export function initViewerOpen({ loadIntake }) {
   loadIntakeCallback = loadIntake;
@@ -30,22 +25,9 @@ export async function openViewerFile(path, opts = {}) {
   if (opts.text != null) {
     state._skipDiscardGuard = true;
     await loadIntakeCallback(intakeFromText(String(opts.text), target.split('/').pop() || opts.filename || 'generated.txt'));
-    viewerActions().then(({ recordMetagameViewerOpen }) => recordMetagameViewerOpen({ path: target, opts }));
     return true;
   }
-  if (target.includes('/docs/bts/') || target.includes('/bts/')) {
-    const clean = target.replace(/^\/?docs\/bts\//, '').replace(/^\/?bts\//, '');
-    const res = await fetch('bts/' + clean);
-    if (!res.ok) return false;
-    const text = await res.text();
-    state._skipDiscardGuard = true;
-    await loadIntakeCallback(intakeFromText(text, clean));
-    viewerActions().then(({ recordMetagameViewerOpen }) => recordMetagameViewerOpen({ path: target, opts }));
-    return true;
-  }
-  const opened = await openExampleFile(target, opts);
-  if (opened) viewerActions().then(({ recordMetagameViewerOpen }) => recordMetagameViewerOpen({ path: target, opts }));
-  return opened;
+  return openExampleFile(target, opts);
 }
 
 // Open an in-memory Blob (e.g. a webcam recording) directly in the viewer — no
@@ -59,7 +41,6 @@ export async function openBlobFile(blob, name, opts = {}) {
   const type = opts.mime || blob.type || '';
   state._skipDiscardGuard = true;
   await loadIntakeCallback(await intakeFromFile(new File([blob], filename, { type })));
-  viewerActions().then(({ recordMetagameViewerOpen }) => recordMetagameViewerOpen({ path: filename, opts }));
   return true;
 }
 
@@ -72,8 +53,5 @@ export async function searchViewerFile(path, query, opts = {}) {
   const sourceText = text == null ? await fetch('examples/' + clean).then((r) => r.ok ? r.text() : '').catch(() => '') : text;
   const line = sourceText.split(/\r?\n/).find((entry) => entry.includes(query));
   const result = line && line.trim();
-  viewerActions().then(({ recordStage2SearchResult }) => {
-    recordStage2SearchResult({ file: target || clean, query, result });
-  });
   return { found: Boolean(result), result };
 }

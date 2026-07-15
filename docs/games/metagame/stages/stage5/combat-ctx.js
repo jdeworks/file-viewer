@@ -24,8 +24,7 @@ export function makeCtx(combat, card) {
     combat,
     card,
     // Boss negotiation (optional): the acceptance hook gates ALL damage to the boss (any archetype).
-    // While ch9 is unread it deals 0 ("PROTOCOL MISMATCH" — the airtight un-cheat); while unlocked it
-    // lands only when this turn's handshake demand is met. Non-damage effects always resolve.
+    // Damage lands only when this turn's handshake demand is met. Non-damage effects always resolve.
     deal: (n) => {
       if (combat.acceptance && !combat.acceptance(combat, card)) {
         log(combat, "PROTOCOL MISMATCH — refused.");
@@ -143,8 +142,7 @@ export function makeCtx(combat, card) {
 export function relicCtx(combat, card) {
   return {
     combat, card,
-    // Relic damage is gated by the same boss acceptance hook (e.g. Checksum Offload can't chip a
-    // ch9-locked boss — closes a latent un-cheat hole).
+    // Relic damage is gated by the same boss acceptance hook as card damage.
     deal: (n) => { if (combat.acceptance && !combat.acceptance(combat, card)) return; dealToEnemy(combat, n); },
     block: (n) => { combat.player.block += Math.max(0, Math.round(n)); },
     draw: (n) => drawCards(combat, n),

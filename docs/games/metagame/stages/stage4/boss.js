@@ -1,60 +1,17 @@
-import {
-  ACHIEVEMENT_ID,
-  ACHIEVEMENT_TEXT,
-  ACTION_NAME,
-  bellMessages,
-  lockedHintLadder,
-} from './messages.js';
-import { isRecursionBlueprintPath } from './content.js';
+import { bellMessages } from './messages.js';
 import { TARGET_PRESETS, toPreset, TOWER_TYPES } from './towers.js';
 
-export function hasRecursionBlueprint(actions) {
-  return Boolean(actions && typeof actions.hasAction === 'function' && actions.hasAction(4, ACTION_NAME));
-}
-
-export function getBossLockState({ actions, state }) {
-  const unlocked = hasRecursionBlueprint(actions);
+export function getBossLockState({ state }) {
   const boss = state?.boss || {};
   const coverage = getTowerCoverage(state);
-  const hintIndex = Math.min(Math.max(Number(boss.lockHintStep || 0), 0), lockedHintLadder.length - 1);
-  // 2026-07-11 playtest fix: the blueprint is an optional buff now, not a gate. Recursion points sit
-  // at fixed, invisible coordinates whether or not the blueprint's been read — a player who blankets
-  // enough of the map with towers can land a real hit on one blind (the same tower-placement skill
-  // the rest of the stage already uses), it's just slow and wasteful without the map. Reading the
-  // blueprint reveals exact coordinates (so placement is deliberate, not statistical) AND raises the
-  // per-point damage (see fightInfiniteLoop) — a genuine reward, not the only door.
   return {
-    unlocked,
     defeated: Boolean(boss.defeated),
     coveredPoints: coverage.covered.length,
     totalPoints: coverage.total,
-    vulnerability: unlocked ? 'mapped' : 'unread',
+    vulnerability: 'visible',
     defeatPossible: coverage.covered.length > 0,
-    hint: !unlocked
-      ? (coverage.covered.length > 0
-        ? 'a strike is landing — keep covering ground blind, or read the blueprint for exact coordinates and a damage bonus.'
-        : lockedHintLadder[hintIndex])
-      : (coverage.covered.length > 0 ? bellMessages.unlock : bellMessages.needsCoverage),
+    hint: coverage.covered.length > 0 ? bellMessages.covered : bellMessages.needsCoverage,
   };
-}
-
-export function applyRecursionBlueprintOpen({ state, actions, achievements, bell, path }) {
-  if (!isRecursionBlueprintPath(path)) return false;
-  actions?.setAction?.(4, ACTION_NAME, {
-    source: 'file-tree',
-    file: 'recursion_points.json',
-    path: '/stage4/towers/upgrades/tier3_blueprints/recursion_points.json',
-    pointSetId: state.recursion.pointSetId,
-  });
-  achievements?.unlockAchievement?.(ACHIEVEMENT_ID, {
-    stage: 4,
-    title: ACHIEVEMENT_TEXT,
-    action: '4.recursion_blueprint_read',
-    pointSetId: state.recursion.pointSetId,
-  });
-  notifyBell(bell, 'stage4.recursion_blueprint_read', bellMessages.unlock);
-  pushLog(state, bellMessages.unlock);
-  return true;
 }
 
 export function placeTower(state, { x, y, type = 'pulse_node', targetMode }) {
@@ -107,19 +64,15 @@ export function getTowerCoverage(state) {
   };
 }
 
-export function fightInfiniteLoop({ state, actions }) {
-  const lock = getBossLockState({ actions, state });
+export function fightInfiniteLoop({ state }) {
+  const lock = getBossLockState({ state });
   state.boss.reached = true;
   state.boss.attempts = Number(state.boss.attempts || 0) + 1;
   if (!lock.coveredPoints) {
-    state.boss.lockHintStep = Math.min(Number(state.boss.lockHintStep || 0) + 1, lockedHintLadder.length - 1);
-    pushLog(state, lock.unlocked
-      ? 'the blueprint is read, but no tower touches a recursion point.'
-      : 'no strike lands — nothing placed touches a weak point yet.');
+    pushLog(state, 'no strike lands — nothing placed touches a recursion point yet.');
     return { defeated: false, locked: false, damage: 0 };
   }
-  // The blueprint buff: exact coordinates make every covered point a cleaner, harder hit.
-  const damage = lock.coveredPoints * (lock.unlocked ? 150 : 100);
+  const damage = lock.coveredPoints * 100;
   state.boss.hp = Math.max(0, Number(state.boss.hp || 300) - damage);
   if (state.boss.hp === 0) {
     state.boss.defeated = true;
@@ -130,20 +83,10 @@ export function fightInfiniteLoop({ state, actions }) {
   return { defeated: state.boss.defeated, locked: false, damage };
 }
 
-// NOTE (Round-3 Issue 4): a direct `openRecursionBlueprintInViewer(...)` helper was removed. The ONLY
-// entry point to applyRecursionBlueprintOpen is the host app's real file-open dispatch (recordMetagame-
-// ViewerOpen → renderer), so the un-cheat cannot be bypassed by a programmatic caller reaching into the
-// stage's exports. Opening recursion_points.json in the host viewer is load-bearing and not skippable.
-
 export function pushLog(state, line) {
   state.log = [...(state.log || []), line].slice(-8);
 }
 
 function distance(a, b) {
   return Math.hypot(Number(a.x) - Number(b.x), Number(a.y) - Number(b.y));
-}
-
-function notifyBell(bell, id, text) {
-  if (bell && typeof bell.showBell === 'function') bell.showBell(id, text, { stage: 4 });
-  else if (bell && typeof bell.push === 'function') bell.push({ id, stage: 4, text });
 }

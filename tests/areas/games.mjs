@@ -14,10 +14,6 @@ export async function run(ctx) {
     if (m) stageIndexReqs.add(m[1]);
   });
 
-  // Opening a generated file (e.g. Stage 3's memory logs) while a prior stage left an unsaved editor
-  // triggers the viewer's discard-confirm. A real player clicks "Discard and continue"; accept it so
-  // the file actually opens (Playwright otherwise auto-DISMISSES, cancelling the open).
-  page.on('dialog', (d) => { d.accept().catch(() => {}); });
   await page.goto(origin, { waitUntil: 'load' });
   await page.evaluate(() => {
     try {
@@ -576,12 +572,14 @@ export async function run(ctx) {
   });
   if (bellInHeader) pass('Defragmenter bell control sits in header before Back to arcade'); else fail('Defragmenter bell control is not in header next to Back to arcade');
   const freshSave = await page.evaluate(() => JSON.parse(localStorage.getItem('fv:games:metagame:v3')));
-  if (freshSave?.version === 8
+  if (freshSave?.version === 9
       && freshSave.unlockedStages?.join(',') === '1,2,3,4,5'
-      && Object.keys(freshSave.stageState || {}).join(',') === '1,2,3,4,5') {
-    pass('Defragmenter initializes the fresh five-game v8 save');
+      && Object.keys(freshSave.stageState || {}).join(',') === '1,2,3,4,5'
+      && !Object.prototype.hasOwnProperty.call(freshSave, 'actions')
+      && !Object.prototype.hasOwnProperty.call(freshSave, 'bts')) {
+    pass('Defragmenter initializes the fresh self-contained v9 save');
   } else {
-    fail('Defragmenter v8 save invalid: ' + JSON.stringify(freshSave));
+    fail('Defragmenter v9 save invalid: ' + JSON.stringify(freshSave));
   }
   const devButtonAlwaysVisible = await page.$eval('.mg-dev-btn', (button) => !button.hidden && getComputedStyle(button).display !== 'none');
   if (devButtonAlwaysVisible) pass('Dev menu is available immediately without an unlock gesture'); else fail('Dev menu button is not always available');
@@ -794,51 +792,19 @@ export async function run(ctx) {
   });
   if (reso) pass('Stage 1 Resonance discovered at the box:booster sweet spot'); else fail('Stage 1 Resonance not discovered');
 
-  // Boss gate is real (reachability), and the boss is HARD but NOT a wall while the cheat is active —
-  // 2026-07-11 playtest fix: casual tapping still loses (the fight is genuinely hard), but it's not
-  // structurally unwinnable — boss-sim.js's own unit test proves sustained fast tapping wins even
-  // before the un-cheat. Disabling the cheat is an optional buff (exercised below via the real
-  // raw-edit path), not the only door.
+  // The boss is gated only by Stage 1 progression. Its canonical fair tuning is always active, and
+  // sustained fast tapping wins without consulting or editing any viewer file.
   const gate = await page.evaluate(() => {
     const s = window.__fvStage1.state();
     s.owned = {}; s.bits = { m: 0, e: 0 };
     const before = window.__fvStage1.fightBoss();
     window.__fvStage1.grind();
-    const after = window.__fvStage1.fightBoss({ tapsPerSec: 4 });
+    const after = window.__fvStage1.fightBoss({ tapsPerSec: 12 });
     return { before, after };
   });
   if (gate.before.gated) pass('Stage 1 boss gated until all tiers owned + bits ≥ ticket'); else fail('Stage 1 boss not gated from start: ' + JSON.stringify(gate.before));
-  if (!gate.after.gated && gate.after.cheatActive && !gate.after.won)
-    pass('Stage 1 boss is hard (casual tapping loses) while the cheat is active');
-  else fail('Stage 1 boss should still be hard at a casual pace while cheating: ' + JSON.stringify(gate.after));
-
-  await page.click('.games-close');
-
-  await page.evaluate(async () => {
-    await window.__fv.openViewerFile('/docs/examples/Overwriter.frag');
-  });
-  await page.waitForSelector('.monaco-editor', { timeout: 20000 });
-  await page.evaluate(() => {
-    window.__fv.state.rawview.setValue((window.__fv.state.rawview.getValue() || '').replace(/CHEAT=['"]?true['"]?/i, 'CHEAT=false'));
-  });
-  await page.waitForFunction(() => {
-    try {
-      const save = JSON.parse(localStorage.getItem('fv:games:metagame:v3'));
-      return Boolean(save.actions?.['1.cheat_disabled']);
-    } catch { return false; }
-  }, null, { timeout: 5000 });
-  pass('Stage 1 raw edit sets canonical 1.cheat_disabled action');
-
-  // Re-open Stage 1 (cheat now disabled via the REAL raw-edit) and win the boss through the same
-  // deterministic scoring model — a fair fight is winnable, recorded through the orchestrator.
-  await page.evaluate(() => { window.__fv.games.open(); });
-  await page.waitForSelector('.games-overlay:not([hidden])', { timeout: 8000 });
-  await page.click('.games-card[data-game="metagame"]');
-  await page.waitForSelector('.mg-s1', { timeout: 8000 });
-  await page.waitForFunction(() => !!window.__fvStage1, null, { timeout: 8000 });
-  const bossWin = await page.evaluate(() => { window.__fvStage1.grind(); return window.__fvStage1.fightBoss({ tapsPerSec: 12 }); });
-  if (bossWin.won && bossWin.cheatActive === false) pass('Stage 1 boss won after the raw-edit un-cheat (fair fight)');
-  else fail('Stage 1 boss not won after un-cheat: ' + JSON.stringify(bossWin));
+  if (!gate.after.gated && gate.after.won) pass('Stage 1 fair boss is winnable entirely in-screen');
+  else fail('Stage 1 fair boss was not won: ' + JSON.stringify(gate.after));
   const s1Defeated = await page.evaluate(() => { try { return (JSON.parse(localStorage.getItem('fv:games:metagame:v3')).defeated || []).includes(1); } catch { return false; } });
   if (s1Defeated) pass('Stage 1 victory recorded through the orchestrator (defeated includes 1)'); else fail('Stage 1 defeat not recorded by orchestrator');
   await page.click('.games-close');
@@ -898,35 +864,31 @@ export async function run(ctx) {
   const body = await page.evaluate(() => window.__fvStage2.bodySolver());
   if (body.reached && body.floor >= 9) pass('Stage 2 body: descended all 3 acts to the floor-9 boss'); else fail('Stage 2 body solver: ' + JSON.stringify(body));
 
-  // 2026-07-11 playtest fix: the cipher.txt search is an optional buff now, not a gate — the boss
-  // is genuinely fightable (and damageable) before it's found, just at a real risk/cost (a counter-
-  // hit lands on @ each exchange), rather than the old dead-end 0-damage "locked" wall.
-  const lockedFight = await page.evaluate(() => {
+  // The boss is a normal persistent multi-hit fight. Every strike lands 45 damage and draws a
+  // counter-hit; healing between attempts lets the deterministic harness finish the same fight.
+  const firstExchange = await page.evaluate(() => {
     const before = window.__fvStage2.state().run.boss.hp;
     const beforeHp = window.__fvStage2.state().run.entity.hp;
     window.__fvStage2.bossSolver();
     const s = window.__fvStage2.state();
-    return { unlocked: window.__fvStage2.lockState().unlocked, bossHpBefore: before, bossHpAfter: s.run.boss.hp, entityHpBefore: beforeHp, entityHpAfter: s.run.entity.hp };
+    return { bossHpBefore: before, bossHpAfter: s.run.boss.hp, entityHpBefore: beforeHp, entityHpAfter: s.run.entity.hp };
   });
-  if (lockedFight.unlocked === false) pass('Stage 2 boss starts locked (no buff) before search action'); else fail('Stage 2 boss buff active pre-search');
-  if (lockedFight.bossHpAfter < lockedFight.bossHpBefore) pass('Stage 2 boss takes real damage even before the search buff');
-  else fail('Stage 2 locked boss should still take damage: ' + JSON.stringify(lockedFight));
-  if (lockedFight.entityHpAfter < lockedFight.entityHpBefore) pass('Stage 2 fighting the boss without the buff costs a real counter-hit');
-  else fail('Stage 2 locked boss exchange should cost @ HP: ' + JSON.stringify(lockedFight));
+  if (firstExchange.bossHpBefore - firstExchange.bossHpAfter === 45) pass('Stage 2 boss takes the canonical 45 damage per strike');
+  else fail('Stage 2 boss strike damage wrong: ' + JSON.stringify(firstExchange));
+  if (firstExchange.entityHpAfter < firstExchange.entityHpBefore) pass('Stage 2 boss exchange draws a real counter-hit');
+  else fail('Stage 2 boss exchange should cost @ HP: ' + JSON.stringify(firstExchange));
 
-  await page.evaluate(async () => {
-    await window.__fv.searchViewerFile('/docs/examples/metagame/stage2/cipher.txt', 'PASSAGE');
+  const s2Won = await page.evaluate(() => {
+    const h = window.__fvStage2;
+    const state = h.state();
+    for (let i = 0; i < 12 && !state.run.boss.defeated; i += 1) {
+      h.dev('heal');
+      h.bossSolver();
+    }
+    return state.run.boss.defeated;
   });
-  await page.waitForFunction(() => {
-    try {
-      const save = JSON.parse(localStorage.getItem('fv:games:metagame:v3'));
-      return Boolean(save.actions?.['2.search_passage'] && save.achievements?.['stage2.search_passage']);
-    } catch { return false; }
-  }, null, { timeout: 5000 });
-  await page.waitForFunction(() => window.__fvStage2 && window.__fvStage2.lockState().unlocked, null, { timeout: 5000 });
-  pass('Stage 2 search action unlocks boss and achievement');
-
-  await page.evaluate(() => window.__fvStage2.bossSolver());
+  if (s2Won) pass('Stage 2 multi-hit boss clears through normal in-screen combat');
+  else fail('Stage 2 boss did not fall after repeated exchanges');
   await page.waitForFunction(() => {
     try {
       const save = JSON.parse(localStorage.getItem('fv:games:metagame:v3'));
@@ -939,17 +901,14 @@ export async function run(ctx) {
   await page.waitForSelector('.stage3-memory-grid', { timeout: 8000 });
   await page.waitForFunction(() => !!window.__fvStage3, null, { timeout: 8000 });
   const s3Locked = await page.$eval('[data-field="bossStatus"]', (el) => el.textContent);
-  if (/LOCKED/.test(s3Locked) && /missing/.test(s3Locked)) pass('Stage 3 boss starts locked with missing column clues'); else fail('Stage 3 initial status: ' + s3Locked);
+  if (/FORMING/.test(s3Locked)) pass('Stage 3 boss starts unavailable while corruption is below 8'); else fail('Stage 3 initial status: ' + s3Locked);
 
-  // Boss-never-from-start: a fresh run has NOT reached corruption 8, so the boss is unreachable even
-  // if the player already knows the key. Restoring it now must be REFUSED (no unlock, no defeat).
+  // Boss-never-from-start: a fresh run has not reached corruption 8, so a direct boss attempt fails.
   const s3Bypass = await page.evaluate(() => {
-    const key = window.__fvStage3.deriveKey();
-    const restore = window.__fvStage3.tryRestoreKey(key);
-    return { reached: window.__fvStage3.state().boss.corruption8Reached, restoreOk: restore.ok, restoreLocked: restore.locked, defeated: window.__fvStage3.bossSolver() };
+    return { reached: window.__fvStage3.state().boss.corruption8Reached, defeated: window.__fvStage3.bossSolver() };
   });
-  if (!s3Bypass.reached && !s3Bypass.restoreOk && s3Bypass.restoreLocked && !s3Bypass.defeated)
-    pass('Stage 3 boss is unreachable from start (key refused before corruption 8)');
+  if (!s3Bypass.reached && !s3Bypass.defeated)
+    pass('Stage 3 boss is unreachable from start before corruption 8');
   else fail('Stage 3 boss bypassable from start: ' + JSON.stringify(s3Bypass));
 
   // Acquire fold (UX audit M1): the ONE acquisition surface offers a 3-card MIX of free run boons and
@@ -982,48 +941,14 @@ export async function run(ctx) {
   }));
   if (s3Tiers.bClues > 0 && /2-colour/.test(s3Tiers.mode)) pass('Stage 3 two-colour snapshot renders colour-B clues at peak corruption');
   else fail('Stage 3 two-colour tier not rendered: ' + JSON.stringify(s3Tiers));
-  // Body done but key not yet restored → still LOCKED.
-  const s3MidLock = await page.evaluate(() => window.__fvStage3.state().boss.unlocked);
-  if (!s3MidLock) pass('Stage 3 boss stays locked after the body until the diff un-cheat'); else fail('Stage 3 boss unlocked without the diff');
-
-  // Boss un-cheat: the SEED-DERIVED restoration key lives only in a THREE-WAY diff of the memory logs.
-  // Each chunk corrupts on a fixed schedule — pieces[0] lost v1→v2, pieces[1] lost v2→v3, pieces[2]
-  // survives in v3 — and display order is seed-shuffled, so reading one log top-to-bottom is the wrong
-  // order. We must compare all three. (Opening a generated file prompts the discard guard, auto-accepted.)
-  const sectorsOf = (text) => {
-    const out = {};
-    for (const m of text.matchAll(/sector (\d+): restoration chunk (\S+)/g)) out[m[1]] = m[2];
-    return out;
-  };
-  const readLog = async (action, filename) => {
-    await page.click(`[data-action="${action}"]`);
-    await page.waitForFunction((f) => window.__fv.state.intake?.filename === f, filename, { timeout: 5000 });
-    return page.evaluate(() => window.__fv.state.intake.text);
-  };
-  const s1 = sectorsOf(await readLog('v1', 'memory_v1.log'));
-  const s2 = sectorsOf(await readLog('v2', 'memory_v2.log'));
-  const s3 = sectorsOf(await readLog('v3', 'memory_v3.log'));
-  const intact = (m) => Object.values(m).filter((v) => v !== '[missing]');
-  if (intact(s1).length === 3 && intact(s2).length === 2 && intact(s3).length === 1)
-    pass('Stage 3 three-way diff: v1 has 3 chunks, v2 lost one, v3 lost two'); else fail('Stage 3 3-log corruption schedule: ' + JSON.stringify({ s1, s2, s3 }));
-  // Reconstruct the key by the corruption-order rule (the 3-way diff skill) and confirm it matches the
-  // seed-derived key — proving the diff is load-bearing, not bypassed.
-  const lostV1V2 = Object.keys(s1).find((sec) => s1[sec] !== '[missing]' && s2[sec] === '[missing]');
-  const lostV2V3 = Object.keys(s2).find((sec) => s2[sec] !== '[missing]' && s3[sec] === '[missing]');
-  const survivor = Object.keys(s3).find((sec) => s3[sec] !== '[missing]');
-  const recovered = (s1[lostV1V2] || '') + (s2[lostV2V3] || '') + (s3[survivor] || '');
-  const derived = await page.evaluate(() => window.__fvStage3.deriveKey());
-  if (recovered.length === 9 && recovered === derived) pass('Stage 3 3-way diff (corruption order) reconstructs the restoration key'); else fail('Stage 3 3-way reconstruction: ' + JSON.stringify({ recovered, derived }));
-  await page.waitForSelector('.stage3-memory-grid', { timeout: 8000 });
-  await page.fill('.s3-key', recovered);
-  await page.click('[data-action="restore"]');
-  await page.waitForFunction(() => {
-    try {
-      const save = JSON.parse(localStorage.getItem('fv:games:metagame:v3'));
-      return Boolean(save.actions?.['3.diff_key_restored'] && save.achievements?.['stage3.diff_key_restored']);
-    } catch { return false; }
-  }, null, { timeout: 5000 });
-  pass('Stage 3 restoration key sets 3.diff_key_restored and achievement');
+  const s3Ready = await page.evaluate(() => ({
+    status: document.querySelector('[data-field="bossStatus"]')?.textContent,
+    gateVisible: document.querySelector('.s3-boss-gate')?.hidden === false,
+    externalControls: document.querySelectorAll('[data-action="v1"], [data-action="v2"], [data-action="v3"], [data-action="restore"]').length,
+  }));
+  if (/READY/.test(s3Ready.status) && s3Ready.gateVisible && s3Ready.externalControls === 0)
+    pass('Stage 3 corruption 8 exposes the in-screen boss directly');
+  else fail('Stage 3 corruption-8 boss gate wrong: ' + JSON.stringify(s3Ready));
   await page.click('[data-action="boss"]');
   await page.waitForFunction(() => {
     try {
@@ -1071,44 +996,45 @@ export async function run(ctx) {
   if (s4Depth.level === 3 && s4Depth.fork === 'emp_lance' && s4Depth.forkOk && s4Depth.builtThermal) pass('Stage 4 depth: new tower builds + upgrades to L3 + picks an irrevocable tier-3 fork'); else fail('Stage 4 tier-3 fork path broken: ' + JSON.stringify(s4Depth));
   // Reset the campaign back to a clean map-select so the boss-gate assertions below are unaffected.
   await page.evaluate(() => { const h = window.__fvStage4; const st = h.state(); st.towers = []; st.enemies = []; st.waveActive = false; h.leaveArmory?.(); });
-  // Debug-seat the boss (smoke shortcut for clearing 150 waves; NOT a player affordance).
-  // 2026-07-11 playtest fix: the blueprint is an optional buff now, not a gate — covering recursion
-  // points BLIND (before the file is ever opened) still lands real damage, at a lower per-point rate
-  // than the buffed hit. Cover 2 of the 3 points and confirm real, partial damage lands pre-blueprint.
-  const s4Locked = await page.evaluate(() => {
-    window.__fvStage4.seatAtBoss();
-    const points = window.__fvStage4.state().recursion.points;
-    for (const p of points.slice(0, 2)) window.__fvStage4.place(p.x, p.y, 'pulse_node');
-    const hpBefore = window.__fvStage4.state().boss.hp;
-    window.__fvStage4.confront();
-    const s = window.__fvStage4.state();
-    return { status: s.campaign.status, defeated: s.boss.defeated, hpBefore, hpAfter: s.boss.hp };
+  // Debug-seat the boss (smoke shortcut for clearing the campaign; not a player affordance). The
+  // recursion points are visible on the board and every covered point deals the same 100 damage.
+  const s4Fight = await page.evaluate(() => {
+    const h = window.__fvStage4;
+    h.seatAtBoss();
+    const s = h.state();
+    const points = s.recursion.points;
+    for (const p of points.slice(0, 2)) h.place(p.x, p.y, 'pulse_node');
+    const hpBefore = s.boss.hp;
+    const first = h.confront();
+    const hpAfterTwo = s.boss.hp;
+    h.place(points[2].x, points[2].y, 'pulse_node');
+    const pointsVisible = document.querySelector('[data-field="progress"]')?.textContent?.includes('/3');
+    const hasBlueprintControl = Boolean(document.querySelector('[data-action="blueprint"]'));
+    const second = h.confront();
+    return {
+      status: s.campaign.status,
+      defeated: s.boss.defeated,
+      hpBefore,
+      hpAfterTwo,
+      firstDamage: first?.damage,
+      secondDamage: second?.damage,
+      pointsVisible,
+      hasBlueprintControl,
+    };
   });
-  if (s4Locked.status === 'boss' && !s4Locked.defeated && s4Locked.hpAfter < s4Locked.hpBefore)
-    pass('Stage 4 boss takes real (if weaker) damage even before the blueprint is opened');
-  else fail('Stage 4 boss should still be damageable pre-blueprint: ' + JSON.stringify(s4Locked));
-  // Un-cheat = a REAL file-open: click the navigation hint, which opens the static blueprint file in the
-  // viewer. The action 4.recursion_blueprint_read is fired by openViewerFile → recordMetagameViewerOpen
-  // (NOT by an in-game button), and the achievement auto-unlocks from the action.
-  await page.click('.stage4-combat [data-action="blueprint"]');
-  await page.waitForFunction(() => window.__fv.state.intake?.filename === 'recursion_points.json', null, { timeout: 5000 });
-  await page.waitForFunction(() => {
-    try {
-      const save = JSON.parse(localStorage.getItem('fv:games:metagame:v3'));
-      return Boolean(save.actions?.['4.recursion_blueprint_read']
-        && save.actions['4.recursion_blueprint_read'].source === 'viewer-open'
-        && save.achievements?.['stage4.recursion_blueprint_read']);
-    } catch { return false; }
-  }, null, { timeout: 5000 });
-  // Now in the boss arena with coverage placed + the blueprint read, the confront lands and wins.
-  await page.evaluate(() => window.__fvStage4.confront());
+  if (s4Fight.hpBefore === 300 && s4Fight.hpAfterTwo === 100 && s4Fight.firstDamage === 200)
+    pass('Stage 4 covered recursion points deal a uniform 100 damage each');
+  else fail('Stage 4 recursion damage wrong: ' + JSON.stringify(s4Fight));
+  if (s4Fight.defeated && s4Fight.pointsVisible && !s4Fight.hasBlueprintControl)
+    pass('Stage 4 visible recursion points clear the boss entirely in-screen');
+  else fail('Stage 4 self-contained boss flow wrong: ' + JSON.stringify(s4Fight));
   await page.waitForFunction(() => {
     try {
       const save = JSON.parse(localStorage.getItem('fv:games:metagame:v3'));
       return save.defeated?.includes(4) && save.unlockedStages?.includes(5);
     } catch { return false; }
   }, null, { timeout: 5000 });
-  pass('Stage 4 clears via the blueprint buff finishing off the damage started blind, after all maps cleared');
+  pass('Stage 4 completion is recorded after all maps and visible-point coverage');
 
   await page.waitForSelector('.stage5-protocol-codex', { timeout: 8000 });
   // The deck-builder hub is the entry point: the ONLY way to the boss is a full run (no bypass).
@@ -1203,36 +1129,27 @@ export async function run(ctx) {
   await page.evaluate(() => window.__fvStage5.jumpToBoss(
     ['SYN', 'SYN', 'SYN', 'SYN', 'SYN', 'ACK', 'ACK', 'ACK', 'ACK', 'SEGMENT']
   ));
-  // Phase I — grant the 3 true-ending keys on this run so the negotiation opens the hidden superboss
+  // Grant the 3 true-ending keys on this run so the negotiation opens the hidden superboss
   // (a real run earns them by playing the untouchable/ascetic/sacrifice challenges; this is the
-  // deterministic test path). The superboss is PURE bonus combat — it adds no second un-cheat.
+  // deterministic test path). The superboss is pure bonus combat.
   const s5keys = await page.evaluate(() => window.__fvStage5.grantKeys(3));
   if (s5keys === 3) pass('Stage 5 true-ending keys granted (untouchable / ascetic / sacrifice)'); else fail(`Stage 5 keys not granted: ${s5keys}`);
-  // It is a real combat (data-play hand), not the retired 3-button puzzle.
-  await page.waitForSelector('.s5db-combat .s5db-boss-banner.is-locked', { timeout: 4000 });
+  // It is a real combat (data-play hand), starts at the base 60 HP, and has no viewer affordance.
+  await page.waitForSelector('.s5db-combat .s5db-boss-banner', { timeout: 4000 });
   pass('Stage 5 boss is a real-deck fight reached only through a run');
-  // 2026-07-11 playtest fix: ch9 unread is a difficulty cost now (boss starts at 84 HP = 60 ×
-  // UNCH9_HP_MULT 1.4, instead of 60), not a win/loss gate — a correct handshake still lands real
-  // damage, it just has more HP to clear.
-  const lockedAttack = await page.evaluate(() => window.__fvStage5.autoNegotiate(3));
-  if (lockedAttack.enemyHp >= 84 || lockedAttack.bossDefeated) {
-    throw new Error(`Stage 5 boss should take real damage while ch9 unread: ${JSON.stringify(lockedAttack)}`);
-  }
-  pass('Stage 5 boss takes real damage before Chapter 9 is read (tougher HP pool, not a 0-damage wall)');
-  // Stage-clear gate (un-cheat): read the codex from the boss banner to unlock the negotiation.
-  await page.click('.s5db-combat .s5db-boss-banner [data-action="epub"]');
-  await page.waitForFunction(() => window.__fv.state.intake?.filename === 'protocols_of_the_entity.epub' && window.__fv.state.type.id === 'epub', null, { timeout: 5000 });
-  await page.waitForFunction(() => {
-    try {
-      const save = JSON.parse(localStorage.getItem('fv:games:metagame:v3'));
-      return Boolean(save.actions?.['5.protocol_ch9_read'] && save.achievements?.['stage5.protocol_ch9_read']);
-    } catch { return false; }
-  }, null, { timeout: 5000 });
-  // With ch9 read the negotiation is unlocked: win it with the real deck. With 3 keys, this does NOT
-  // immediately clear the stage — it diverts to the hidden superboss (stage completion is deferred).
+  const s5BossStart = await page.evaluate(() => ({
+    hp: document.querySelector('.s5db-enemy .s5db-hp')?.textContent,
+    hasCodexControl: Boolean(document.querySelector('.s5db-boss-banner [data-action="epub"]')),
+    lockedClass: document.querySelector('.s5db-boss-banner')?.classList.contains('is-locked'),
+  }));
+  if (/HP 60 \/ 60/.test(s5BossStart.hp) && !s5BossStart.hasCodexControl && !s5BossStart.lockedClass)
+    pass('Stage 5 handshake starts at base HP with no external-file gate');
+  else fail('Stage 5 boss start wrong: ' + JSON.stringify(s5BossStart));
+  // Win the negotiation with the real deck. With 3 keys, this does not immediately clear the stage;
+  // it diverts to the hidden superboss and defers completion.
   const s5neg = await page.evaluate(() => window.__fvStage5.autoNegotiate());
   if (s5neg.bossDefeated && !s5neg.won) pass('Stage 5 negotiation won; the 3 keys divert to the hidden superboss (not yet cleared)'); else fail(`Stage 5 negotiation/diversion wrong: ${JSON.stringify(s5neg)}`);
-  // The superboss is a real-deck multi-phase fight (The Kernel of Refusal), no lock / no un-cheat.
+  // The superboss is a real-deck multi-phase fight (The Kernel of Refusal).
   await page.waitForSelector('.s5db-combat', { timeout: 4000 });
   // Equip a REPRESENTATIVE end-game loadout (developed 16-card deck at 50 HP, pinned seed) — standing
   // in for the acts 1–5 deck-building the test path skips, NOT a bypass — so the climactic bonus pool
@@ -1328,7 +1245,7 @@ export async function run(ctx) {
   await page.waitForSelector('.s5db-hub [data-action="begin-run"]', { timeout: 4000 });
 
   // The global dev menu is a boss navigator, not a stage navigator. Every button resets stale or
-  // completed state, pre-fires that boss's real-file action, and lands on the actual encounter.
+  // completed state and lands on the actual self-contained encounter.
   const bossJumpCases = [
     { stage: 1, selector: '.mg-defrag-arena', cheats: ['Unlock tabs', 'Boss ready', '+10 cores', 'Hire managers'] },
     { stage: 2, selector: '.stage2-glyph-dungeon [data-action="boss"]:not([hidden])', cheats: ['Full HP', '+5 ATK', '+1 LVL', '+1k glyphs', '+3 of each rune', 'Zoom out (full map)'] },
@@ -1336,18 +1253,11 @@ export async function run(ctx) {
     { stage: 4, selector: '.stage4-combat [data-action="confront"]', cheats: ['+500 Glory', 'Skip Wave', 'Skip to Boss', 'God Core (∞ integrity)'] },
     { stage: 5, selector: '.s5db-combat .s5db-boss-banner', cheats: ['Full HP', 'Grant 3 Keys', '+3 Cards', 'Skip to Boss', '+3 Energy'] },
   ];
-  const requiredActions = {
-    1: '1.cheat_disabled',
-    2: '2.search_passage',
-    3: '3.diff_key_restored',
-    4: '4.recursion_blueprint_read',
-    5: '5.protocol_ch9_read',
-  };
   for (const probe of bossJumpCases) {
     await page.click('.mg-dev-btn');
     await page.click(`[data-dev="boss"][data-n="${probe.stage}"]`);
     await page.waitForSelector(probe.selector, { timeout: 8000 });
-    const landed = await page.evaluate(({ stage, required }) => {
+    const landed = await page.evaluate((stage) => {
       const save = JSON.parse(localStorage.getItem('fv:games:metagame:v3'));
       const stageChecks = {
         1: Boolean(document.querySelector('.mg-defrag-arena')),
@@ -1360,10 +1270,12 @@ export async function run(ctx) {
         actualBoss: stageChecks[stage],
         currentStage: save.currentStage,
         defeated: save.defeated.includes(stage),
-        actionSource: save.actions?.[required]?.source,
+        hasActions: Object.prototype.hasOwnProperty.call(save, 'actions'),
+        hasBts: Object.prototype.hasOwnProperty.call(save, 'bts'),
+        legacyActionKeys: Object.keys(localStorage).filter((key) => key.startsWith('fv:games:action:')).length,
         stageSlots: Object.keys(save.stageState || {}).join(','),
       };
-    }, { stage: probe.stage, required: requiredActions[probe.stage] });
+    }, probe.stage);
     await page.click('.mg-dev-btn');
     const menu = await page.evaluate(() => ({
       bosses: [...document.querySelectorAll('[data-dev="boss"]')].map((b) => b.textContent.trim()),
@@ -1375,7 +1287,9 @@ export async function run(ctx) {
     if (landed.actualBoss
         && landed.currentStage === probe.stage
         && !landed.defeated
-        && landed.actionSource === 'dev-boss-jump'
+        && !landed.hasActions
+        && !landed.hasBts
+        && landed.legacyActionKeys === 0
         && landed.stageSlots === '1,2,3,4,5'
         && menu.bosses.join(',') === '1b,2b,3b,4b,5b'
         && menu.cheats.join(',') === probe.cheats.join(',')
@@ -1395,14 +1309,27 @@ export async function run(ctx) {
 
   await page.click('.games-close');
 
-  const btsOk = await page.evaluate(async () => {
-    for (const name of ['glyph_dungeon.bts', 'protocol_codex.bts']) {
-      await window.__fv.openViewerFile(`/docs/bts/${name}`);
-      if (window.__fv.state.intake.filename !== name || window.__fv.state.type.id !== 'markdown') return false;
-    }
-    return true;
+  // Bidirectional decoupling: ordinary viewer work leaves metagame progression byte-for-byte intact,
+  // and retired companion trees are absent from both the catalog and the offline asset list.
+  const viewerIsolation = await page.evaluate(async () => {
+    const before = localStorage.getItem('fv:games:metagame:v3');
+    await window.__fv.openViewerFile('/docs/examples/sample.txt');
+    const after = localStorage.getItem('fv:games:metagame:v3');
+    const [manifest, catalog] = await Promise.all([
+      fetch('/asset-manifest.json').then((r) => r.json()),
+      fetch('/examples/index.json').then((r) => r.json()),
+    ]);
+    const assets = manifest.assets || [];
+    return {
+      saveUnchanged: before === after,
+      viewerOpened: window.__fv.state.intake?.filename === 'sample.txt',
+      retiredAssetsMissing: !assets.some((asset) => asset.startsWith('bts/') || asset.startsWith('examples/metagame/')),
+      catalogClean: !catalog.some((entry) => entry.category === 'Metagame' || entry.file?.startsWith('metagame/')),
+    };
   });
-  if (btsOk) pass('.bts files open through markdown viewer'); else fail('.bts markdown open failed');
+  if (viewerIsolation.saveUnchanged && viewerIsolation.viewerOpened && viewerIsolation.retiredAssetsMissing && viewerIsolation.catalogClean)
+    pass('Normal viewer activity is isolated from metagame state and retired companion assets are absent');
+  else fail('Viewer/metagame isolation failed: ' + JSON.stringify(viewerIsolation));
 
   if (consoleErrors.length === 0) pass('no console/page errors'); else fail('console errors:\n  ' + consoleErrors.join('\n  '));
   if (offOrigin.length === 0) pass('ZERO off-origin requests (trust guarantee)'); else fail('off-origin requests:\n  ' + offOrigin.join('\n  '));

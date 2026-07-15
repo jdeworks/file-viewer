@@ -1,9 +1,5 @@
 const REQUIRED_STAGE_EXPORTS = Object.freeze(['stageMeta', 'defaultState', 'mountStage']);
 
-function validActionForStage(stage, requiredAction) {
-  return typeof requiredAction === 'string' && requiredAction.startsWith(`${stage}.`) && requiredAction.length > `${stage}.`.length;
-}
-
 export function validateStageModule(module, expectedStage = null) {
   const errors = [];
   if (!module || typeof module !== 'object') {
@@ -21,8 +17,6 @@ export function validateStageModule(module, expectedStage = null) {
     if (expectedStage !== null && id !== Number(expectedStage)) errors.push(`stageMeta.id must match expected stage ${expectedStage}`);
     if (typeof meta.slug !== 'string' || !meta.slug) errors.push('stageMeta.slug must be a non-empty string');
     if (typeof meta.name !== 'string' || !meta.name) errors.push('stageMeta.name must be a non-empty string');
-    if (typeof meta.btsPath !== 'string' || !meta.btsPath) errors.push('stageMeta.btsPath must be a non-empty string');
-    if (!validActionForStage(id, meta.requiredAction)) errors.push('stageMeta.requiredAction must use the N.action_name shape for this stage');
   }
   if (typeof module.defaultState !== 'function') errors.push('defaultState must be a function');
   if (typeof module.mountStage !== 'function') errors.push('mountStage must be a function');

@@ -26,10 +26,5 @@ fortress folded inside itself, and you must hold the line as the recursion deepe
 
 After the 90 campaign waves, the boss is a separate coverage confrontation rather
 than one more path-following trash wave. Hits land only when a tower covers one of
-its fixed recursion points.
-
-> **Viewer-path hint:** follow the tower-upgrade folders *all the way down* in the
-> viewer — the answer is nested deep, in a `recursion_points.json` blueprint. Open
-> that real file, then place a tower so its range **covers a marked recursion point**.
-> Blind blanket coverage can chip it eventually; reading the blueprint reveals the
-> exact coordinates and raises each covered-point hit from 100 to 150 damage.
+its three recursion points. Those points are visibly marked on the boss board. Each
+covered point deals exactly **100 damage**, so cover all three to break the loop.

@@ -77,10 +77,9 @@ const UNKNOWN = -1; // nonogram.js UNKNOWN constant value
 }
 
 {
-  // Does not unlock the boss itself — that still requires the diff key
   const state = defaultState();
   devSkipToBody(state);
-  assert.equal(state.boss.unlocked, false, 'devSkipToBody does not unlock the boss (diff un-cheat still required)');
+  assert.equal(state.boss.corruption8Reached, true, 'devSkipToBody exposes the body-driven boss gate');
   assert.equal(state.boss.defeated, false, 'devSkipToBody does not defeat the boss');
 }
 

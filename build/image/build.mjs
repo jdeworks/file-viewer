@@ -11,8 +11,7 @@
 // identically. index.js's loadRenderer points at THIS file.
 //
 // WHAT STAYS EXTERNAL (NOT inlined):
-//   • Anything outside docs/types/image/ — shared core (../../core/*) and the metagame viewer
-//     bridge (../../games/metagame/viewer-actions.js). Shared singletons, not duplicated per type.
+//   • Anything outside docs/types/image/ — shared core modules. Shared singletons, not duplicated.
 //   • Every DYNAMIC import() — the deliberately-lazy heavy chunks (jxl-decode, ascii/studio,
 //     ascii-screensaver, compare-view, the vendored gifuct/jxl wasm). They must load only when
 //     their feature is used, so they MUST stay separate on-demand chunks, not inlined here.
@@ -41,7 +40,6 @@ const ALLOWED_EXTERNAL = new Set([
   '../../core/script-loader.js',
   '../../core/template.js',
   '../../core/intake.js',                 // gif-anim → blob→intake for the split-frames sidebar folder
-  '../../games/metagame/viewer-actions.js',
 ]);
 
 const kept = new Set();        // out-of-dir STATIC specifiers kept external (gated)

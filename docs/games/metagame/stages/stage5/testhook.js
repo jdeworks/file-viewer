@@ -1,8 +1,8 @@
 // testhook.js — Stage 5 window.__fvStage5 TEST/DEBUG surface (NOT a player affordance, no hub
 // button). It fast-forwards a run to the boss / superboss and drives the REAL engine so the smoke
-// harness can verify the negotiation, the un-cheat, the keys, and the true-ending superboss in a few
-// hops instead of dozens of fights. It NEVER bypasses the ch9 un-cheat or the real-deck fight — it
-// only seats position and replays correct play through the normal engine.
+// harness can verify the negotiation, the keys, and the true-ending superboss in a few hops instead
+// of dozens of fights. It never bypasses the real-deck fight; it only seats position and replays
+// correct play through the normal engine.
 //
 // It closes over the renderer's live combat instance, so the renderer passes accessors rather than
 // the value: getCombat/setCombat (the mutable engine) and setDailyKeyOverride (the daily-seed clock).
@@ -83,7 +83,7 @@ export function installStage5TestHook(api) {
       return state.run.keys.length;
     },
     // Equip the REPRESENTATIVE end-game loadout for the bonus fight (deck + HP + a pinned seed). This
-    // stands in for the deck-building of acts 1–5 the test path skips — it is NOT a second un-cheat:
+    // stands in for the deck-building of acts 1–5 the test path skips:
     // the superboss is still reached only via the real run + 3 keys; this only fills the deck/HP a
     // real act-6 player would hold so the fight is tuned against real power, not the bare starter.
     // It also drops any superboss combat the renderer already built from the starter deck (and its
@@ -135,8 +135,7 @@ export function installStage5TestHook(api) {
       return state.run.currentNodeId;
     },
     // Drive the in-run boss fight with a correct handshake strategy using the REAL engine +
-    // acceptance. NOT a bypass — if ch9 is unread the boss just has more HP (UNCH9_HP_MULT);
-    // the handshake demand-gate is identical either way.
+    // acceptance. It is not a bypass: the handshake demand remains load-bearing.
     autoNegotiate(maxTurns = 80) {
       const run = state.run;
       if (!run || run.status !== "boss") return { ok: false, reason: "not-at-boss" };

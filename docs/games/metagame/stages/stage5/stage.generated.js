@@ -5,93 +5,6 @@
 // external (NOT inlined). The hub's stage-manifest.js LOADERS import THIS file.
 
 
-// ../../docs/games/metagame/stages/stage5/messages.js
-var ACTION_NAME = "protocol_ch9_read";
-var REQUIRED_ACTION = "5.protocol_ch9_read";
-var ACHIEVEMENT_ID = "stage5.protocol_ch9_read";
-var ACHIEVEMENT_TEXT = "I read the fine print.";
-var BTS_PATH = "/docs/bts/protocol_codex.bts";
-var EPUB_PATH = "/docs/examples/metagame/stage5/protocols_of_the_entity.epub";
-var bellMessages = {
-  start: "something answered. not clearly. but something.",
-  unlock: "Chapter 9 made the refusal legible.",
-  phase2: "ACK before signal. the rule holds.",
-  phase3: "the unknown protocol still needs acknowledgement.",
-  defeated: "the connection accepted a shared rule."
-};
-var lockedHintLadder = [
-  "the protocol goes unrecognized — the handshake still works, but it's a longer fight this way.",
-  "you are sending data I cannot parse cleanly. the protocol should be established first.",
-  "Chapter 9 describes what The Refused Connection accepts.",
-  "open protocols_of_the_entity.epub and read Chapter 9 to shorten the fight."
-];
-var combatLines = {
-  lockedDeath: "PROTOCOL MISMATCH costs HP, not the fight — Chapter 9 would make this shorter.",
-  mismatch: "protocol mismatch. no damage accepted.",
-  synFirst: "SYN opened the turn. the first phase accepts damage.",
-  ackSignal: "ACK acknowledged. Signal damage accepted.",
-  ackOngoing: "ACK keeps the unknown protocol from bleeding through.",
-  defeated: "The Refused Connection closes without refusal."
-};
-
-// ../../docs/games/metagame/stages/stage5/boss.js
-function hasProtocolChapter9(actions) {
-  return Boolean(actions && typeof actions.hasAction === "function" && actions.hasAction(5, ACTION_NAME));
-}
-function getBossLockState({ actions, state }) {
-  const unlocked = hasProtocolChapter9(actions) || Boolean(state?.boss?.unlocked);
-  const hintIndex = Math.min(Math.max(Number(state?.boss?.lockHintStep || 0), 0), lockedHintLadder.length - 1);
-  return {
-    unlocked,
-    defeated: Boolean(state?.boss?.defeated),
-    status: unlocked ? "PROTOCOL MATCH NEGOTIABLE" : "PROTOCOL MISMATCH (tougher — unread)",
-    mismatchPermanent: false,
-    defeatPossible: true,
-    phase: Number(state?.boss?.phase || 1),
-    hint: unlocked ? bellMessages.unlock : lockedHintLadder[hintIndex]
-  };
-}
-function recordLockedBossAttempt(state) {
-  const boss = state.boss;
-  boss.reached = true;
-  boss.attempts = Number(boss.attempts || 0) + 1;
-  boss.lockHintStep = Math.min(Number(boss.lockHintStep || 0) + 1, lockedHintLadder.length - 1);
-  pushLog(state, combatLines.lockedDeath);
-  return getBossLockState({ actions: null, state });
-}
-function applyProtocolChapter9Unlock({ state, achievements, bell }) {
-  const boss = state.boss;
-  const firstUnlock = !boss.unlocked;
-  boss.unlocked = true;
-  if (firstUnlock) {
-    pushLog(state, bellMessages.unlock);
-    notifyBell(bell, bellMessages.unlock, "stage5.protocol_ch9_read");
-    unlockAchievement(achievements, ACHIEVEMENT_ID, {
-      id: ACHIEVEMENT_ID,
-      stage: 5,
-      text: ACHIEVEMENT_TEXT,
-      action: "5.protocol_ch9_read"
-    });
-  }
-  return firstUnlock;
-}
-function pushLog(state, line) {
-  state.log = [...state.log || [], line].slice(-8);
-}
-function notifyBell(bell, text, id) {
-  if (bell && typeof bell.push === "function") bell.push({ id, stage: 5, text });
-  else if (bell && typeof bell.say === "function") bell.say(text, { id, stage: 5 });
-  else if (bell && typeof bell.add === "function") bell.add(text, { id, stage: 5 });
-  else if (bell && typeof bell.showBell === "function") bell.showBell(id, text, { stage: 5 });
-}
-function unlockAchievement(achievements, id, detail) {
-  if (achievements && typeof achievements.unlockAchievement === "function") {
-    achievements.unlockAchievement(id, detail);
-  } else if (achievements && typeof achievements.unlock === "function") {
-    achievements.unlock(id, detail);
-  }
-}
-
 // ../../docs/games/metagame/stages/stage5/cards-signal.js
 var SIGNAL_CARDS = [
   {
@@ -1025,8 +938,7 @@ function makeCtx(combat, card) {
     combat,
     card,
     // Boss negotiation (optional): the acceptance hook gates ALL damage to the boss (any archetype).
-    // While ch9 is unread it deals 0 ("PROTOCOL MISMATCH" — the airtight un-cheat); while unlocked it
-    // lands only when this turn's handshake demand is met. Non-damage effects always resolve.
+    // Damage lands only when this turn's handshake demand is met. Non-damage effects always resolve.
     deal: (n) => {
       if (combat.acceptance && !combat.acceptance(combat, card)) {
         log(combat, "PROTOCOL MISMATCH — refused.");
@@ -1199,8 +1111,7 @@ function relicCtx(combat, card) {
   return {
     combat,
     card,
-    // Relic damage is gated by the same boss acceptance hook (e.g. Checksum Offload can't chip a
-    // ch9-locked boss — closes a latent un-cheat hole).
+    // Relic damage is gated by the same boss acceptance hook as card damage.
     deal: (n) => {
       if (combat.acceptance && !combat.acceptance(combat, card)) return;
       dealToEnemy(combat, n);
@@ -1805,7 +1716,7 @@ var ENEMIES = {
     name: "The Refused Connection",
     tier: "boss",
     // A connection, not a process — it cannot be CORRUPTED, so a corruption build can't sidestep the
-    // handshake; damage must come through accepted Signals. Reinforces the negotiation un-cheat.
+    // handshake; damage must come through accepted Signals. Reinforces the negotiation sequence.
     immuneCorruption: true,
     hp: 60,
     hpPerAct: 0,
@@ -3381,17 +3292,15 @@ function ackPlayed(combat) {
 function demandMet(combat) {
   return currentDemand(combat) === DEMAND_LEAD_SYN ? baseId2(combat.playedIdsThisTurn[0]) === "SYN" : ackPlayed(combat);
 }
-var UNCH9_HP_MULT = 1.4;
 function accepts(combat, card) {
   return demandMet(combat);
 }
 function phaseHp(phase, hpMult) {
   return Math.round(BOSS_PHASE_HP[phase] * (hpMult || 1));
 }
-function wireBossCombat(combat, { locked = false, hpMult = 1, extraPhase = false } = {}) {
+function wireBossCombat(combat, { hpMult = 1, extraPhase = false } = {}) {
   combat.bossPhase = 1;
-  combat.bossLocked = Boolean(locked);
-  combat.bossHpMult = (hpMult || 1) * (combat.bossLocked ? UNCH9_HP_MULT : 1);
+  combat.bossHpMult = hpMult || 1;
   combat.bossMaxPhase = extraPhase ? 4 : 3;
   combat.enemy.hp = phaseHp(1, combat.bossHpMult);
   combat.enemy.maxHp = phaseHp(1, combat.bossHpMult);
@@ -3533,7 +3442,7 @@ function installStage5TestHook(api) {
       return state.run.keys.length;
     },
     // Equip the REPRESENTATIVE end-game loadout for the bonus fight (deck + HP + a pinned seed). This
-    // stands in for the deck-building of acts 1–5 the test path skips — it is NOT a second un-cheat:
+    // stands in for the deck-building of acts 1–5 the test path skips:
     // the superboss is still reached only via the real run + 3 keys; this only fills the deck/HP a
     // real act-6 player would hold so the fight is tuned against real power, not the bare starter.
     // It also drops any superboss combat the renderer already built from the starter deck (and its
@@ -3591,8 +3500,7 @@ function installStage5TestHook(api) {
       return state.run.currentNodeId;
     },
     // Drive the in-run boss fight with a correct handshake strategy using the REAL engine +
-    // acceptance. NOT a bypass — if ch9 is unread the boss just has more HP (UNCH9_HP_MULT);
-    // the handshake demand-gate is identical either way.
+    // acceptance. It is not a bypass: the handshake demand remains load-bearing.
     autoNegotiate(maxTurns = 80) {
       const run = state.run;
       if (!run || run.status !== "boss") return { ok: false, reason: "not-at-boss" };
@@ -3651,7 +3559,7 @@ function snapshotCombat(combat) {
     exhaust: [...combat.exhaust || []],
     jammed: [...combat.jammed || []],
     pending: clone(combat.pending || []),
-    boss: combat.bossPhase ? { phase: combat.bossPhase, locked: Boolean(combat.bossLocked), hpMult: combat.bossHpMult || 1, maxPhase: combat.bossMaxPhase || 3 } : null,
+    boss: combat.bossPhase ? { phase: combat.bossPhase, hpMult: combat.bossHpMult || 1, maxPhase: combat.bossMaxPhase || 3 } : null,
     // The key-gated superboss only needs its phase index persisted; its per-phase HP/script are
     // already in the cloned enemy. The advancePhase closure is rebuilt on restore via rewireSuperboss.
     superboss: combat.superPhase != null ? { phase: combat.superPhase } : null
@@ -3695,7 +3603,6 @@ function restoreCombat(snapshot, { relics = [] } = {}) {
   combat.nodeId = s.nodeId ?? null;
   if (s.boss) {
     combat.bossPhase = s.boss.phase;
-    combat.bossLocked = Boolean(s.boss.locked);
     combat.bossHpMult = s.boss.hpMult || 1;
     combat.bossMaxPhase = s.boss.maxPhase || 3;
     rewireBossCombat(combat);
@@ -3784,16 +3691,13 @@ function combatView(combat, run, opts = {}) {
 }
 function bossBanner(combat) {
   if (!combat.bossPhase) return "";
-  const locked = Boolean(combat.bossLocked);
   return `
-    <div class="s5db-boss-banner${locked ? " is-locked" : ""}">
+    <div class="s5db-boss-banner">
       <div class="s5db-boss-banner-head">
         <strong>THE REFUSED CONNECTION</strong>
         <span class="s5db-boss-phase">phase ${combat.bossPhase} / 3</span>
       </div>
       <p class="s5db-boss-rule">${esc2(phaseRuleText(combat))}</p>
-      ${locked ? `<p class="s5db-boss-mismatch">PROTOCOL MISMATCH — the handshake still lands, but Chapter 9 unread means a tougher fight (more HP).</p>
-           <button type="button" data-action="epub">open the codex</button>` : ""}
     </div>`;
 }
 function arenaStrip(combat) {
@@ -4438,7 +4342,7 @@ var KEY_INFO = {
   ascetic: { name: "Ascetic", hint: "skip a card reward" },
   sacrifice: { name: "Sacrifice", hint: "spend a rest thinning a card" }
 };
-function hubView(state, lock, asc = null) {
+function hubView(state, asc = null) {
   const el = document.createElement("div");
   el.className = "s5db-hub";
   const m = state.meta;
@@ -4452,8 +4356,6 @@ function hubView(state, lock, asc = null) {
     <div class="s5db-hub-actions">
       ${hasRun ? `<button type="button" data-action="continue-run">continue run ▸ act ${state.run.act}</button>
            <button type="button" data-action="abandon" class="s5db-ghost">abandon run</button>` : `<button type="button" data-action="begin-run">begin a run ▸</button>`}
-      <button type="button" data-action="epub">open the codex</button>
-      ${lock.defeated ? `<button type="button" data-action="bts">open trace.bts</button>` : ""}
     </div>
     ${canReinforce ? `<dl class="s5db-meta-grid">
       <div><dt>Banked handshakes</dt><dd>${m.banked}</dd></div>
@@ -4462,7 +4364,7 @@ function hubView(state, lock, asc = null) {
     ${d.stats ? `<dl class="s5db-meta-grid">
       <div><dt>Runs cleared</dt><dd>${m.runsCleared}</dd></div>
       <div><dt>Best score</dt><dd>${m.bestScore || 0}</dd></div>
-      <div><dt>The Refused Connection</dt><dd>${lock.defeated ? "answered" : lock.unlocked ? "negotiable" : "refusing"}</dd></div>
+      <div><dt>The Refused Connection</dt><dd>${state.boss.defeated ? "answered" : "awaiting handshake"}</dd></div>
     </dl>` : ""}
     ${d.meta ? seedModes(hasRun) : ""}
     ${canReinforce ? `<div class="s5db-prestige">
@@ -4472,7 +4374,7 @@ function hubView(state, lock, asc = null) {
         permanently upgrade one starting card &amp; one harder rule</span>
     </div>` : ""}
     ${d.meta ? ascensionPicker(asc, hasRun) : ""}
-    ${d.stats ? `<p class="s5db-hint">${esc5(lock.unlocked ? "Chapter 9 is read. The connection can be negotiated." : "The connection refuses everything you send. The codex explains why.")}</p>` : ""}
+    ${d.stats ? `<p class="s5db-hint">Sequence SYN and ACK correctly so your Signals are accepted.</p>` : ""}
   `;
   return el;
 }
@@ -4647,7 +4549,6 @@ function wonView(state, run) {
     </dl>
     ${scoreLine(state, run)}
     <div class="s5db-hub-actions">
-      <button type="button" data-action="bts">open trace.bts</button>
       <button type="button" data-action="new-run">run again ▸</button>
     </div>`;
   return el;
@@ -4664,28 +4565,6 @@ function scoreLine(state, run) {
 }
 function esc5(value) {
   return String(value).replace(/[&<>"]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[ch]);
-}
-
-// ../../docs/games/metagame/stages/stage5/renderer-open.js
-function openEpub({ viewer, actions, achievements, bell, state }) {
-  actions?.setAction?.(5, ACTION_NAME, { source: "stage5-codex", file: EPUB_PATH, chapter: 9 });
-  applyProtocolChapter9Unlock({ state, achievements, bell });
-  if (viewer && typeof viewer.openFile === "function") viewer.openFile(EPUB_PATH, { source: "stage5" });
-  else if (viewer && typeof viewer.openViewerFile === "function") viewer.openViewerFile(EPUB_PATH, { source: "stage5" });
-}
-function openBts({ bts, viewer }) {
-  if (bts && typeof bts.open === "function") bts.open(5);
-  else if (bts && typeof bts.openBts === "function") bts.openBts(5);
-  else if (viewer && typeof viewer.openFile === "function") viewer.openFile(BTS_PATH);
-  else if (viewer && typeof viewer.openViewerFile === "function") viewer.openViewerFile(BTS_PATH);
-}
-function once(fn) {
-  let called = false;
-  return (value) => {
-    if (called) return;
-    called = true;
-    fn(value);
-  };
 }
 
 // ../../docs/games/metagame/stages/stage5/s5dev.js
@@ -4796,7 +4675,7 @@ function recordProtocolScore(meta, run) {
 
 // ../../docs/games/metagame/stages/stage5/renderer.js
 var REFUSED_CONNECTION = "the-refused-connection";
-function renderStage5({ host, state, actions, achievements, bell, bts, viewer, save, orchestrator, onStageComplete }) {
+function renderStage5({ host, state, save, orchestrator, onStageComplete }) {
   const root = document.createElement("section");
   root.className = "stage5-protocol-codex";
   root.innerHTML = `
@@ -4815,7 +4694,6 @@ function renderStage5({ host, state, actions, achievements, bell, bts, viewer, s
   const completeOnce = once((result) => {
     if (typeof onStageComplete === "function") onStageComplete(result);
   });
-  const lockState = () => getBossLockState({ actions, state });
   const mount = (node) => {
     screen.replaceChildren(node);
     if (pendingBanner) {
@@ -4896,7 +4774,7 @@ function renderStage5({ host, state, actions, achievements, bell, bts, viewer, s
     const run = state.run;
     if (state.ui.screen !== "run" || !run) {
       combat = null;
-      return mount(hubView(state, lockState(), ascInfo()));
+      return mount(hubView(state, ascInfo()));
     }
     switch (run.status) {
       // Every boss — including the act-6 finale and the key-gated superboss — is a real-deck fight.
@@ -5025,7 +4903,7 @@ function renderStage5({ host, state, actions, achievements, bell, bts, viewer, s
       // prestige tight-window modifier
     });
     c.nodeId = run.currentNodeId;
-    if (enemyId === REFUSED_CONNECTION) wireBossCombat(c, { locked: !lockState().unlocked, hpMult: run.bossHpMult || 1, extraPhase: Boolean(run.bossExtraPhase) });
+    if (enemyId === REFUSED_CONNECTION) wireBossCombat(c, { hpMult: run.bossHpMult || 1, extraPhase: Boolean(run.bossExtraPhase) });
     else if (enemyId === SUPERBOSS_ID) wireSuperboss(c);
     return c;
   }
@@ -5058,7 +4936,7 @@ function renderStage5({ host, state, actions, achievements, bell, bts, viewer, s
     if (ascension) ascension.recordClear(run.ascension || 0);
     state.meta.banked = (state.meta.banked || 0) + (run.handshakes || 0);
     if (run.status === "superboss") return;
-    completeOnce({ stage: 5, defeated: true, reward: { handshakes: 80 }, btsPath: BTS_PATH });
+    completeOnce({ stage: 5, defeated: true, reward: { handshakes: 80 } });
   }
   function finishSuperboss(run) {
     const win = combat.result === "win";
@@ -5072,7 +4950,7 @@ function renderStage5({ host, state, actions, achievements, bell, bts, viewer, s
       run.trueEnding = true;
     } else run.status = "dead";
     recordProtocolScore(state.meta, run);
-    completeOnce({ stage: 5, defeated: true, reward: { handshakes: 80 }, btsPath: BTS_PATH });
+    completeOnce({ stage: 5, defeated: true, reward: { handshakes: 80 } });
   }
   function maybeRevealActs(run) {
     if (!run || run.act < 5 || !isVeteranRun(run) || state.meta.disclosed.actsRevealed) return;
@@ -5270,25 +5148,18 @@ function renderStage5({ host, state, actions, achievements, bell, bts, viewer, s
           else checkpointCombat(combat, run);
         }
         return true;
-      case "epub":
-        openEpub({ viewer, actions, achievements, bell, state });
-        if (combat && combat.bossPhase && combat.bossLocked) {
-          const newMult = (combat.bossHpMult || UNCH9_HP_MULT) / UNCH9_HP_MULT;
-          const frac = combat.enemy.maxHp > 0 ? combat.enemy.hp / combat.enemy.maxHp : 1;
-          combat.bossLocked = false;
-          combat.bossHpMult = newMult;
-          combat.enemy.maxHp = Math.round((BOSS_PHASE_HP[combat.bossPhase] || BOSS_PHASE_HP[1]) * newMult);
-          combat.enemy.hp = Math.min(combat.enemy.maxHp, Math.max(1, Math.round(combat.enemy.maxHp * frac)));
-          checkpointCombat(combat, run);
-        }
-        return true;
-      case "bts":
-        openBts({ bts, viewer });
-        return true;
       default:
         return false;
     }
   }
+}
+function once(fn) {
+  let called = false;
+  return (value) => {
+    if (called) return;
+    called = true;
+    fn(value);
+  };
 }
 
 // ../../docs/games/metagame/stages/stage5/state.js
@@ -5319,7 +5190,7 @@ function defaultState() {
       lastSeedKey: null,
       dailyBest: {},
       // Hub progressive disclosure (UX audit M1): which meta clusters have been REVEALED. A fresh
-      // save opens on just title + flavor + begin/codex; each cluster appears at the event that makes
+      // save opens on just title + flavor + begin; each cluster appears at the event that makes
       // it meaningful and stays. Additive + backfilled from existing counters (normalizeState) so an
       // existing save NEVER regresses to the minimal hub.
       //   stats       — the stat tiles: first finished run (death or win).
@@ -5331,18 +5202,13 @@ function defaultState() {
     // legacy mirror the boss reward writes to
     boss: {
       reached: false,
-      unlocked: false,
       defeated: false,
-      phase: 1,
-      hp: 60,
-      attempts: 0,
-      lockHintStep: 0,
-      turn: { firstCard: null, playedAck: false, signalDamageThisTurn: 0 }
+      phase: 1
     },
     run: null,
     ui: { screen: "hub" },
     log: [
-      bellMessages.start,
+      "something answered. not clearly. but something.",
       "The Refused Connection waits behind a formal silence."
     ]
   };
@@ -5355,8 +5221,11 @@ function normalizeState(state) {
   target.meta.disclosed = mergePlain(fresh.meta.disclosed, target.meta.disclosed);
   backfillDisclosure(target.meta);
   target.handshakes = num(target.handshakes, fresh.handshakes);
-  target.boss = mergePlain(fresh.boss, target.boss);
-  target.boss.turn = mergePlain(fresh.boss.turn, target.boss.turn);
+  target.boss = {
+    reached: Boolean(target.boss?.reached),
+    defeated: Boolean(target.boss?.defeated),
+    phase: num(target.boss?.phase, 1)
+  };
   target.run = target.run && typeof target.run === "object" ? target.run : null;
   target.ui = mergePlain(fresh.ui, target.ui);
   if (!["hub", "run"].includes(target.ui.screen)) target.ui.screen = "hub";
@@ -5387,8 +5256,6 @@ var stageMeta = {
   id: 5,
   slug: "protocol-codex",
   name: "Protocol Codex",
-  btsPath: BTS_PATH,
-  requiredAction: REQUIRED_ACTION,
   // Dev-menu controls for this stage (wired in metagame.js → mounted.dev(id)).
   devControls: [
     { id: "heal", label: "Full HP" },
@@ -5405,14 +5272,6 @@ function mountStage(ctx) {
   const state = normalizeState(ctx.state);
   let view = null;
   const pendingStylesheets = ensureStyles();
-  if (hasProtocolChapter9(ctx.actions)) {
-    applyProtocolChapter9Unlock({ state, achievements: ctx.achievements, bell: ctx.bell });
-  }
-  const unsubscribe = subscribeToProtocolChapter9(ctx.actions, () => {
-    applyProtocolChapter9Unlock({ state, achievements: ctx.achievements, bell: ctx.bell });
-    if (typeof ctx.save === "function") ctx.save();
-    if (view && typeof view.repaint === "function") view.repaint();
-  });
   view = renderStage5({ ...ctx, state });
   pendingStylesheets.forEach((link) => {
     link.addEventListener("load", () => {
@@ -5428,26 +5287,9 @@ function mountStage(ctx) {
       return view?.jumpToBoss?.() || false;
     },
     destroy() {
-      unsubscribe();
       if (view && typeof view.destroy === "function") view.destroy();
     }
   };
-}
-function subscribeToProtocolChapter9(actions, onUnlock) {
-  if (actions && typeof actions.subscribeToActions === "function") {
-    return actions.subscribeToActions((detail) => {
-      if (isProtocolChapter9Detail(detail)) onUnlock(detail);
-    }) || (() => {
-    });
-  }
-  const handler = (event) => {
-    if (isProtocolChapter9Detail(event.detail)) onUnlock(event.detail);
-  };
-  window.addEventListener("fv:games:action", handler);
-  return () => window.removeEventListener("fv:games:action", handler);
-}
-function isProtocolChapter9Detail(detail) {
-  return Boolean(detail && Number(detail.stage) === 5 && detail.action === ACTION_NAME);
 }
 function ensureStyles() {
   return [
@@ -5465,10 +5307,7 @@ function ensureStylesheet(id, href) {
   return link;
 }
 export {
-  applyProtocolChapter9Unlock,
   defaultState2 as defaultState,
-  getBossLockState,
   mountStage,
-  recordLockedBossAttempt,
   stageMeta
 };

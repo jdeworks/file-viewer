@@ -1,4 +1,4 @@
-// boss1-data.js — Stage 1 Defragmenter taunt corpus + tiny string/cheat helpers. Pulled out of
+// boss1-data.js — Stage 1 Defragmenter taunt corpus + tiny string helpers. Pulled out of
 // boss1.js (presentation data, not logic) to keep the boss mount under the LOC cap. The live boss
 // UI uses Math.random for taunt variety; the DETERMINISTIC scoring model lives in boss-sim.js.
 
@@ -17,27 +17,22 @@ export const TAUNTS = {
     "don't worry, I'll put your bits in order. my order.",
   ],
   hint: [
-    'you can out-tap me. it just takes real focus — or you could make it easier on yourself. there\'s a file you can edit, somewhere you can look. this window won\'t help you.',
-    'a file tunes how hard I hit. Overwriter.frag — CHEAT=true. flip it to false and I go easy on you. …not that you would.',
-    'still losing? the examples folder. Overwriter.frag. CHEAT=false. I\'m only saying it so you DON\'T do it.',
-    'open Overwriter.frag, set CHEAT=false, fight me again. there. now it\'s easy.',
+    'keep a steady rhythm. every tap counts, even while I surge.',
+    'my bursts are brief. stay on the button and take the lead back.',
+    'watch the score, not the sparks. consistency beats panic.',
+    'you only need to finish one point ahead. keep tapping to the bell.',
   ],
-  burstCheat: [
-    'look at this box I found! 📦',
-    'oh would you look at that, another box! 📦',
-    'I just love finding these lying around.',
-  ],
-  burstNormal: [
+  burst: [
     "I'm on fire! 🔥",
     'is it getting hot in here?',
   ],
   lossGated: [
     { atLosses: 3,  text: "come back any time. I'll be here. always." },
-    { atLosses: 5,  text: 'you seem frustrated. have you tried… looking around? no reason.' },
-    { atLosses: 7,  text: 'I am so glad nobody can touch me, The Defragmenter. so glad.' },
-    { atLosses: 10, text: 'there is nothing in the examples folder that could help you. nothing at all. don\'t look.' },
-    { atLosses: 12, text: 'even if someone had hidden something in a file somewhere… hypothetically… you\'d never find it.' },
-    { atLosses: 15, text: 'CHEAT? what CHEAT? I have no idea what a CHEAT= line is. stop looking at me.' },
+    { atLosses: 5,  text: 'you seem frustrated. try a steady rhythm.' },
+    { atLosses: 7,  text: 'the sparks are a distraction. the score is what matters.' },
+    { atLosses: 10, text: 'my surges end quickly. keep tapping through them.' },
+    { atLosses: 12, text: 'one point ahead is enough. you can do that, surely.' },
+    { atLosses: 15, text: 'fine. tap to the bell and do not let up.' },
   ],
   win: [
     'this is… unexpected. my boxes aren\'t working. who did this.',
@@ -53,10 +48,3 @@ export const TAUNTS = {
 export const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
 
 export const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-
-export function readCheat(actions) {
-  if (actions && typeof actions.hasAction === 'function') {
-    return !actions.hasAction(1, 'cheat_disabled');
-  }
-  return true;
-}

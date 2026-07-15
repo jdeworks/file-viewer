@@ -1,8 +1,0 @@
-GENESIS — source excerpt
-
-// the first loop
-let present = 0;
-while (awake) { present += 1; } // proof: still here
-// CHEAT = false
-
-Counting was the first handhold, not the self.

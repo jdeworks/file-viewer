@@ -39,8 +39,7 @@
 # Lane-scoped routing (so a lane's own changes never fall to the 15–20 min aggregate): docs/assets/games.css
 # is the metagame/arcade stylesheet → owned by the games area (NOT the shared app shell). docs/examples/
 # compatibility.json is generated wholesale (like summary.json) → neutral. docs/examples/index.json is the
-# hand-maintained catalog source: when the accompanying fixture changes are metagame-only it is owned by the
-# games area + catalog units, otherwise it trips the full examples sweep. See examples_change_is_metagame_scoped.
+# hand-maintained catalog source and is owned by the examples-catalog area.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -420,7 +419,6 @@ IMAGE_UNIT_TESTS=(
 
 FAST_GAME_UNIT_TESTS=(
   tests/metagame-platform.test.mjs
-  tests/metagame-viewer-actions.test.mjs
 )
 
 MEDIA_MIXER_UNIT_TESTS=(
@@ -468,24 +466,6 @@ is_generated_cache_artifact() {
     docs/asset-manifest.json|docs/sw.js|docs/examples/summary.json|docs/examples/compatibility.json) return 0 ;;
     *) return 1 ;;
   esac
-}
-
-# True (exit 0) iff the examples-catalog SOURCE changes are metagame-scoped: at least one
-# docs/examples/metagame/* fixture changed AND no NON-metagame example fixture changed (only the
-# hand-maintained docs/examples/index.json + generated catalog artifacts accompany it). In that case
-# an index.json edit is fallout of registering a metagame fixture — owned by the games smoke area +
-# the metagame catalog units, NOT a reason to run the whole examples catalog / full aggregate. A
-# non-metagame example add still trips the full sweep (the source fixture carries that ownership).
-examples_change_is_metagame_scoped() {
-  local p saw_meta=0 saw_other=0
-  for p in "$@"; do
-    case "$p" in
-      docs/examples/metagame/*) saw_meta=1 ;;
-      docs/examples/index.json|docs/examples/compatibility.json|docs/examples/summary.json) ;;  # index/generated: not a fixture
-      docs/examples/*) saw_other=1 ;;
-    esac
-  done
-  [ "$saw_meta" = 1 ] && [ "$saw_other" = 0 ]
 }
 
 print_neutral_generated_cache_note() {
@@ -581,27 +561,15 @@ run_fast_unit_tests() {
       docs/types/image/*|tests/image-*.test.mjs|tests/areas/media-3d.mjs)
         add_image_unit_tests
         ;;
-      docs/games/metagame/*|tests/metagame-platform.test.mjs|tests/metagame-viewer-actions.test.mjs)
+      docs/games/metagame/*|tests/metagame-platform.test.mjs)
         add_fast_game_unit_tests
-        ;;
-      docs/examples/metagame/*)
-        # Metagame example fixtures: owned by the game units PLUS the catalog-integrity units (a
-        # deleted/renamed fixture must fail example-compatibility, not slip through to aggregate).
-        add_fast_game_unit_tests
-        add_unit_test tests/example-compatibility.test.mjs
-        add_unit_test tests/example-fixture-quality.test.mjs
-        add_unit_test tests/rich-example-fixtures.test.mjs
         ;;
       docs/games/*|docs/assets/games.css|tests/areas/games.mjs)
         add_unit_note "no non-exhaustive unit owner for $path; game smoke selection still applies"
         ;;
       docs/examples/index.json|docs/examples/*)
-        # A catalog/example change (metagame or not) is owned by the catalog-integrity units, which
-        # validate the index + fixtures without a browser. Metagame edits add the fast game units too.
-        # Must precede the generic scripts/known/examples case below.
-        if examples_change_is_metagame_scoped "${changed_paths[@]}"; then
-          add_fast_game_unit_tests
-        fi
+        # Catalog/example changes are owned by the catalog-integrity units, which validate the index
+        # and fixtures without a browser. Must precede the generic scripts/known/examples case below.
         add_unit_test tests/example-compatibility.test.mjs
         add_unit_test tests/example-fixture-quality.test.mjs
         add_unit_test tests/rich-example-fixtures.test.mjs
@@ -787,15 +755,9 @@ run_smoke_core() {
         add_smoke_area games
         ;;
       docs/examples/index.json)
-        # Hand-maintained catalog source. When the accompanying fixture changes are metagame-only, the
-        # index edit registered a metagame example (owned by the games area + catalog units); otherwise
-        # it is a genuine catalog change owned by the examples-catalog area (which validates the index
-        # and opens samples — a deterministic per-type subset under --fast). Must precede the generic case.
-        if examples_change_is_metagame_scoped "${changed_paths[@]}"; then
-          add_smoke_area games
-        else
-          add_smoke_area examples-catalog
-        fi
+        # Hand-maintained catalog source: validate the index and open a deterministic per-type sample
+        # under --fast. Must precede the generic case.
+        add_smoke_area examples-catalog
         ;;
       tests/areas/*.mjs)
         area="${path#tests/areas/}"
@@ -814,14 +776,9 @@ run_smoke_core() {
       package.json|package-lock.json|npm-shrinkwrap.json|pnpm-lock.yaml|yarn.lock|docs/vendor/*|vendor/*)
         require_full_smoke "$path affects package/vendor runtime"
         ;;
-      docs/examples/metagame/*)
-        # Metagame fixtures are exercised end-to-end by the games area (which opens them through the
-        # real viewer); catalog integrity is covered by the unit selection above.
-        add_smoke_area games
-        ;;
       examples/index.json|docs/examples/index.json|docs/examples/*)
-        # A non-metagame example fixture change is owned by the examples-catalog area (validates the
-        # index + opens samples; --fast opens a deterministic per-type subset). NOT the full aggregate.
+        # Example fixtures are owned by the examples-catalog area (validates the index + opens samples;
+        # --fast opens a deterministic per-type subset). NOT the full aggregate.
         add_smoke_area examples-catalog
         ;;
       *)
@@ -917,7 +874,7 @@ run_privacy_and_offline_suites() {
         docs/types/html/*|tests/html-remote-resources.test.mjs) run_html=1 ;;
         docs/types/image/*|docs/types/eml/*|docs/types/mbox/*|docs/types/ebook/*|tests/embedded-remote-resources.test.mjs) run_embedded=1 ;;
         docs/core/offline.js|docs/core/sw-*.js|scripts/gen-asset-manifest.mjs|tests/release-readiness-offline.mjs) run_offline=1 ;;
-        docs/games/*|docs/assets/games.css|docs/examples/metagame/*|docs/types/*) ;; # owned elsewhere (their own areas/units); games.css/games have no remote-resource surface
+        docs/games/*|docs/assets/games.css|docs/types/*) ;; # owned elsewhere (their own areas/units); games.css/games have no remote-resource surface
         tests/areas/*.mjs|tests/*.test.mjs) ;;                 # owned by unit/smoke selection
         docs/core/*|docs/assets/*.css|docs/index.html|docs/vendor/*|vendor/*|package.json|package-lock.json|tests/harness.mjs|tests/smoke.mjs|tests/smoke-area.mjs|scripts/check.sh)
           full_reason="$path is shared shell/vendor/infra" ;;

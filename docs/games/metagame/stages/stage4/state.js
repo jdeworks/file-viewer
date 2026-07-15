@@ -28,7 +28,6 @@ export function defaultState(context = {}) {
       reached: false,
       hp: 300,
       attempts: 0,
-      lockHintStep: 0,
       defeated: false,
     },
     log: ['fractal bastion mounted.', 'the path repeats before it explains itself.'],
@@ -148,7 +147,7 @@ function normalizeTower(tower) {
 }
 
 // Deterministic stage seed: an explicit context.seed (tests/replays) or a FIXED default. Never the
-// wall clock — the recursion puzzle must be the same every session so the file-tree un-cheat is real.
+// wall clock — the recursion puzzle must be the same every session.
 function stageSeed(context) {
   return String(context.seed || 'fractal-bastion').replace(/\W/g, '').slice(-8) || 'stage4';
 }

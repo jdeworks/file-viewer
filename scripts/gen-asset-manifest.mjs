@@ -57,7 +57,7 @@ function bundleOf(path) {
     const parts = path.split('/');
     return 'vendor:' + (parts.length > 2 ? parts[1] : parts[1].replace(/(\.min)?\.[^.]+$/, ''));
   }
-  if (path.startsWith('bts/') || path.startsWith('games/metagame/') || path.startsWith('examples/metagame/') || path === 'examples/easteregg') return 'easteregg';
+  if (path.startsWith('games/metagame/') || path === 'examples/easteregg') return 'easteregg';
   if (path.startsWith('examples/')) return exampleBundleOf(path);
   if (path.startsWith('games/')) return 'games';
   if (path.startsWith('types/')) return 'types';

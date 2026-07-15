@@ -24,11 +24,6 @@ corrupting memory grid, cell by cell, before the leak erases it.
 
 ## The boss — The Memory Leak
 
-The boss demands a **restoration key** that is never stored anywhere — it lives only
-in the *difference* between three saved snapshots.
-
-> **Viewer-path hint:** three memory logs (`memory_v1`, `memory_v2`, `memory_v3`) exist
-> as real files. One chunk corrupts between each pair. Open them in the viewer and do
-> a genuine **three-way diff** — read the chunks in corruption order — to recover the
-> key directly. Repeated blind attempts eventually leak it one character at a time,
-> but no single log read top-to-bottom gives the answer.
+The leak remains unreachable until you have played the corruption ladder to its
+maximum. At **corruption 8**, the core is exposed directly in the grid screen; solve
+the leak there to finish the stage.

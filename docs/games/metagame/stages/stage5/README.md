@@ -22,9 +22,6 @@ the far end is answering — not clearly, but answering. Build a deck to negotia
 ## The boss — The Refused Connection (Act 4)
 
 The boss accepts damage only when you negotiate in the right order. Its demands mutate
-across phases; an unread codex also gives every phase a 40% HP surcharge.
-
-> **Viewer-path hint:** the rules it accepts are literally written down. A real e-book,
-> `protocols_of_the_entity.epub`, sits in the viewer — open it and **read Chapter 9**.
-> That reveals the phase rules and removes the unread HP surcharge without replacing
-> the real-deck fight.
+across phases: lead with SYN when asked, establish ACK first when asked, and adapt as
+the demand changes. The fight starts at its base phase HP; its banner explains the
+active handshake, and the deck you built supplies every tool needed to win.

@@ -10,8 +10,7 @@ const PER_ACH_MULT = 1.02;   // mirrors achievMult() in s1economy.js (1.02 ^ ach
 
 export function renderAchievementsPanel({ panelsEl, state }) {
   const unlocked = new Set(state.achievements || []);
-  // ach-boss-cheat-found is a legacy no-op entry (condition: () => false) — keep it out of the list.
-  const list = ACHIEVEMENTS1.filter((a) => a.id !== 'ach-boss-cheat-found');
+  const list = ACHIEVEMENTS1;
   const n = list.filter((a) => unlocked.has(a.id)).length;
   const total = Math.pow(PER_ACH_MULT, n);
   const pct = Math.round((total - 1) * 100);

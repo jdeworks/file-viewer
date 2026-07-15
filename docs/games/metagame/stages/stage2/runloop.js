@@ -1,10 +1,9 @@
 // Glyph Dungeon — run/floor lifecycle + small presentation helpers, split out of renderer.js so the
-// controller stays focused. Pure functions over `state` (and the viewer/bts handles); no DOM here
-// beyond the damage-noise string the renderer paints.
+// controller stays focused. Pure functions over `state`; no DOM here beyond the damage-noise
+// string the renderer paints.
 
 import { buildFloor, attachGrid } from "./engine.js";
 import { rollEntity, runHeat } from "./data.js";
-import { CIPHER_PATH, BTS_PATH } from "./messages.js";
 import { FINAL_FLOOR } from "./acts.js";
 
 // Floors per run before the boss (the descent length) — the deepest act cap (3 acts × 3 floors).
@@ -82,18 +81,6 @@ export function damageNoise(fatal) {
 
 export function appendLog(state, line) {
   state.run.combatLog = [...state.run.combatLog, line].slice(-6);
-}
-
-export function openCipher(viewer) {
-  if (viewer && typeof viewer.openFile === "function") viewer.openFile(CIPHER_PATH);
-  else if (viewer && typeof viewer.openViewerFile === "function") viewer.openViewerFile(CIPHER_PATH);
-}
-
-export function openBts({ bts, viewer }) {
-  if (bts && typeof bts.open === "function") bts.open(2);
-  else if (bts && typeof bts.openBts === "function") bts.openBts(2);
-  else if (viewer && typeof viewer.openFile === "function") viewer.openFile(BTS_PATH);
-  else if (viewer && typeof viewer.openViewerFile === "function") viewer.openViewerFile(BTS_PATH);
 }
 
 export function once(fn) {

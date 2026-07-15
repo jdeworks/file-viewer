@@ -1,8 +1,9 @@
 // Keep the historical storage key so existing installations are found and deliberately reset.
 export const SAVE_KEY = 'fv:games:metagame:v3';
-export const SAVE_VERSION = 8;
+export const SAVE_VERSION = 9;
 export const STAGE_IDS = Object.freeze([1, 2, 3, 4, 5]);
 export const DEFAULT_UNLOCKED_STAGES = Object.freeze([1, 2, 3, 4, 5]);
+const LEGACY_ACTION_PREFIX = 'fv:games:action:';
 
 function nowMs() {
   return Date.now();
@@ -10,6 +11,16 @@ function nowMs() {
 
 function storageAvailable(storage) {
   return storage && typeof storage.getItem === 'function' && typeof storage.setItem === 'function';
+}
+
+function clearLegacyActionStorage(storage) {
+  if (!storage || typeof storage.removeItem !== 'function' || typeof storage.key !== 'function') return;
+  const keys = [];
+  for (let index = 0; index < Number(storage.length || 0); index++) {
+    const key = storage.key(index);
+    if (typeof key === 'string' && key.startsWith(LEGACY_ACTION_PREFIX)) keys.push(key);
+  }
+  for (const key of keys) storage.removeItem(key);
 }
 
 function defaultStorage() {
@@ -60,9 +71,7 @@ export function createFreshSave(timestamp = nowMs()) {
     defeated: [],
     unlockedStages: [...DEFAULT_UNLOCKED_STAGES],
     achievements: {},
-    actions: {},
     bell: { seen: [], log: [] },
-    bts: { opened: {} },
     runs: {},
     stageState: freshStageState(),
     global: {
@@ -77,9 +86,8 @@ export function createFreshSave(timestamp = nowMs()) {
 
 export function isValidSave(value) {
   if (!plainObject(value) || value.version !== SAVE_VERSION) return false;
-  if (!plainObject(value.achievements) || !plainObject(value.actions)) return false;
+  if (!plainObject(value.achievements)) return false;
   if (!plainObject(value.bell) || !Array.isArray(value.bell.seen) || !Array.isArray(value.bell.log)) return false;
-  if (!plainObject(value.bts) || !plainObject(value.bts.opened)) return false;
   if (!plainObject(value.runs) || !plainObject(value.stageState) || !plainObject(value.global)) return false;
   return STAGE_IDS.every((stage) => plainObject(value.stageState[stage]));
 }
@@ -87,6 +95,8 @@ export function isValidSave(value) {
 export function ensureSaveShape(value, timestamp = nowMs()) {
   if (!isValidSave(value)) return createFreshSave(timestamp);
 
+  delete value.actions;
+  delete value.bts;
   value.currentStage = STAGE_IDS.includes(Number(value.currentStage)) ? Number(value.currentStage) : 1;
   value.defeated = uniqueStageList(value.defeated, []);
   value.unlockedStages = [...DEFAULT_UNLOCKED_STAGES];
@@ -110,7 +120,8 @@ export function ensureSaveShape(value, timestamp = nowMs()) {
 }
 
 // The five-game cut intentionally starts a new progression history. Every supported save from the
-// old lineup (v1–v7) becomes the same pristine v8 save; current v8 saves keep their progress.
+// old lineup and viewer-coupled mechanics (v1–v8) become the same pristine v9 save; current v9
+// saves keep their progress.
 export function migrateSave(value, timestamp = nowMs()) {
   if (!plainObject(value)) return null;
   const version = Number(value.version);
@@ -122,6 +133,7 @@ export function migrateSave(value, timestamp = nowMs()) {
 export function loadSave({ storage = defaultStorage(), key = SAVE_KEY, timestamp = nowMs() } = {}) {
   if (!storageAvailable(storage)) return createFreshSave(timestamp);
   try {
+    clearLegacyActionStorage(storage);
     const raw = storage.getItem(key);
     if (!raw) {
       const fresh = createFreshSave(timestamp);
@@ -150,6 +162,9 @@ export function persistSave(save, { storage = defaultStorage(), key = SAVE_KEY, 
 
 export function resetSave({ storage = defaultStorage(), key = SAVE_KEY, timestamp = nowMs() } = {}) {
   const fresh = createFreshSave(timestamp);
-  if (storageAvailable(storage)) storage.setItem(key, JSON.stringify(fresh));
+  if (storageAvailable(storage)) {
+    clearLegacyActionStorage(storage);
+    storage.setItem(key, JSON.stringify(fresh));
+  }
   return fresh;
 }

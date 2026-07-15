@@ -1,6 +1,6 @@
 // stage-manifest.js — the lightweight, always-loaded index of all five metagame stages.
 //
-// The hub (nav, title, dev menu, bts path resolution) reads stage metadata from here WITHOUT pulling
+// The hub (nav, title, dev menu) reads stage metadata from here WITHOUT pulling
 // any stage's renderer graph. Each stage's full module (defaultState + mountStage + its ~6–16 modules)
 // is fetched on demand via loadStage(id), so opening the Defragmenter loads only the ACTIVE stage's
 // code instead of all five stages up front.
@@ -17,14 +17,14 @@
 // The lineup was deliberately reduced to the five stages that met the playtest bar. Protocol Codex
 // moved from stage 6 to stage 5; the other retained stages kept their original numbers.
 
-export const MANIFEST_FIELDS = ["id", "slug", "name", "btsPath", "requiredAction"];
+export const MANIFEST_FIELDS = ["id", "slug", "name"];
 
 export const STAGE_MANIFEST = [
-  { id: 1, slug: "bit-foundry", name: "Bit Foundry", btsPath: "/docs/bts/bit_foundry.bts", requiredAction: "1.cheat_disabled" },
-  { id: 2, slug: "glyph-dungeon", name: "Glyph Dungeon", btsPath: "/docs/bts/glyph_dungeon.bts", requiredAction: "2.search_passage" },
-  { id: 3, slug: "memory-grid", name: "Memory Grid", btsPath: "/docs/bts/memory_grid.bts", requiredAction: "3.diff_key_restored" },
-  { id: 4, slug: "fractal-bastion", name: "Fractal Bastion", btsPath: "/docs/bts/fractal_bastion.bts", requiredAction: "4.recursion_blueprint_read" },
-  { id: 5, slug: "protocol-codex", name: "Protocol Codex", btsPath: "/docs/bts/protocol_codex.bts", requiredAction: "5.protocol_ch9_read" }
+  { id: 1, slug: "bit-foundry", name: "Bit Foundry" },
+  { id: 2, slug: "glyph-dungeon", name: "Glyph Dungeon" },
+  { id: 3, slug: "memory-grid", name: "Memory Grid" },
+  { id: 4, slug: "fractal-bastion", name: "Fractal Bastion" },
+  { id: 5, slug: "protocol-codex", name: "Protocol Codex" }
 ];
 
 // Per-stage lazy loaders. The dynamic import() is what defers each stage's module graph.

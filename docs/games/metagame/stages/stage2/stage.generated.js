@@ -6,83 +6,38 @@
 
 
 // ../../docs/games/metagame/stages/stage2/messages.js
-var ACTION_NAME = "search_passage";
-var REQUIRED_ACTION = "2.search_passage";
-var ACHIEVEMENT_ID = "stage2.search_passage";
-var ACHIEVEMENT_TEXT = "the passage was marked.";
-var BTS_PATH = "/docs/bts/glyph_dungeon.bts";
-var CIPHER_PATH = "/docs/examples/metagame/stage2/cipher.txt";
 var bellMessages = {
   start: "tokens. not bits. different.",
-  unlock: "there was something in the text that I wouldn't have found otherwise.",
   phase2: "it changed form. I waited.",
   phase3: "it changed again. faster now. I have to be faster.",
   defeated: "I parsed it correctly. the grammar held."
 };
-var lockedHintLadder = [
-  "the arena has structure. cross it blind and it will cost you.",
-  "there is an easier way through. it is written down.",
-  "cipher.txt knows the way.",
-  "search cipher.txt for PASSAGE. mark PASSAGE:247, then return — the crossing gets a lot safer."
-];
 var combatLines = {
   floorAdvance: [
     "floor grammar accepted.",
     "glyph shard recovered.",
     "a door becomes a sentence."
   ],
-  // 2026-07-11 playtest fix: PASSAGE is a buff now, not a gate — a blind strike still lands, it
-  // just costs a counter-hit back. "no route remains" is retired; see renderer.js's challengeBoss.
-  lockedExchange: "the strike lands, but the pattern bites back.",
-  unlocked: "north pillar active. a two-tile passage opens.",
+  bossExchange: "the strike lands, but the pattern bites back.",
   defeated: "the expression resolves to one meaning."
 };
 
 // ../../docs/games/metagame/stages/stage2/boss.js
-function hasSearchPassage(actions) {
-  return Boolean(actions && typeof actions.hasAction === "function" && actions.hasAction(2, ACTION_NAME));
-}
-function getBossLockState({ actions, state }) {
-  const unlocked = hasSearchPassage(actions);
+function getBossLockState({ state }) {
   const boss = state?.run?.boss || {};
-  const hintIndex = Math.min(Math.max(Number(boss.lockHintStep || 0), 0), lockedHintLadder.length - 1);
   return {
-    unlocked,
     defeated: Boolean(boss.defeated),
-    phase: unlocked ? Math.max(Number(boss.phase || 1), 2) : Number(boss.phase || 1),
-    northPillar: unlocked ? "active" : "silent",
-    projectileGapTiles: unlocked ? 2 : 0,
-    // 2026-07-11 playtest fix: PASSAGE is now an optional buff, not a gate — defeatPossible is
-    // always true once the boss is reached. `unlocked` still drives the one-hit clean-clear buff
-    // (see damageBoss's caller in renderer.js) and the cosmetic pillar/gap status text above.
+    phase: Number(boss.phase || 1),
     defeatPossible: true,
-    hint: unlocked ? combatLines.unlocked : lockedHintLadder[hintIndex]
+    hint: "each strike draws a counterattack. damage persists if you fall."
   };
 }
 function recordBossAttempt(state) {
   const boss = state.run.boss;
   boss.reached = true;
   boss.attempts = Number(boss.attempts || 0) + 1;
-  boss.lockHintStep = Math.min(Number(boss.lockHintStep || 0) + 1, lockedHintLadder.length - 1);
   state.meta.bossAttempts = Number(state.meta.bossAttempts || 0) + 1;
-  return getBossLockState({ actions: null, state });
-}
-function applySearchPassageUnlock({ state, achievements, bell }) {
-  const boss = state.run.boss;
-  const firstUnlock = !boss.unlocked;
-  boss.unlocked = true;
-  boss.phase = Math.max(Number(boss.phase || 1), 2);
-  if (firstUnlock) {
-    pushCombatLine(state, combatLines.unlocked);
-    notifyBell(bell, bellMessages.unlock, "stage2.search_passage");
-    unlockAchievement(achievements, ACHIEVEMENT_ID, {
-      id: ACHIEVEMENT_ID,
-      stage: 2,
-      text: ACHIEVEMENT_TEXT,
-      action: "2.search_passage"
-    });
-  }
-  return firstUnlock;
+  return getBossLockState({ state });
 }
 function damageBoss({ state, amount = 50 }) {
   const boss = state.run.boss;
@@ -104,18 +59,6 @@ function damageBoss({ state, amount = 50 }) {
 function pushCombatLine(state, line) {
   state.run.combatLog = [...state.run.combatLog || [], line].slice(-6);
 }
-function notifyBell(bell, text, id) {
-  if (bell && typeof bell.push === "function") bell.push({ id, stage: 2, text });
-  else if (bell && typeof bell.say === "function") bell.say(text, { id, stage: 2 });
-  else if (bell && typeof bell.add === "function") bell.add(text, { id, stage: 2 });
-}
-function unlockAchievement(achievements, id, detail) {
-  if (achievements && typeof achievements.unlockAchievement === "function") {
-    achievements.unlockAchievement(id, detail);
-  } else if (achievements && typeof achievements.unlock === "function") {
-    achievements.unlock(id, detail);
-  }
-}
 
 // ../../docs/games/metagame/stages/stage2/content.js
 function rect(rows) {
@@ -127,7 +70,7 @@ function rect(rows) {
     return r.slice(0, -1).padEnd(width - 1, ".") + last;
   });
 }
-var bossArenaLocked = rect([
+var bossArena = rect([
   "##############################",
   "#............##............#",
   "#............##............#",
@@ -146,28 +89,6 @@ var bossArenaLocked = rect([
   "#............##............#",
   "#............##............#",
   "#............##............#",
-  "#............@.............#",
-  "##############################"
-]);
-var bossArenaUnlocked = rect([
-  "##############################",
-  "#............[]............#",
-  "#............[]............#",
-  "#....O.......[].......O....#",
-  "#............[]............#",
-  "#............  ............#",
-  "#............  ............#",
-  "#..........????????........#",
-  "#..........????????........#",
-  "#..........????????........#",
-  "#..........????????........#",
-  "#............  ............#",
-  "#............  ............#",
-  "#....O.......  .......O....#",
-  "#............  ............#",
-  "#............  ............#",
-  "#............  ............#",
-  "#............  ............#",
   "#............@.............#",
   "##############################"
 ]);
@@ -2314,7 +2235,7 @@ var SECTIONS = [
   ["Fire", "A firebolt lights its target's tile, and flames spread through * spore fields — chain a firebolt into a spore cluster to roast a whole pack (but mind your own footing)."],
   ["Shop", "Spend banked glyphs on permanent upgrades — they apply on your next run."],
   ["Heat", "In the shop you can toggle opt-in difficulty modifiers (more monsters, no potions, elite storm). Each active one multiplies the glyphs you bank — risk for reward. Once you've reached the Overflow, a mastery modifier unlocks: Lights Out shrinks your light radius for the whole run for the biggest multiplier of all."],
-  ["Boss", "You can challenge it blind, but each exchange is slow and costs HP. Open cipher.txt and search it to find the PASSAGE — that turns the grind into a decisive clear."]
+  ["Boss", "Each strike deals 45 damage and draws a counterattack. Boss damage persists across attempts, so heal, improve your run, and keep pressing the advantage."]
 ];
 function buildHelpPanel({ onClose }) {
   const box = document.createElement("div");
@@ -2899,16 +2820,6 @@ function damageNoise(fatal) {
 function appendLog(state, line) {
   state.run.combatLog = [...state.run.combatLog, line].slice(-6);
 }
-function openCipher(viewer) {
-  if (viewer && typeof viewer.openFile === "function") viewer.openFile(CIPHER_PATH);
-  else if (viewer && typeof viewer.openViewerFile === "function") viewer.openViewerFile(CIPHER_PATH);
-}
-function openBts({ bts, viewer }) {
-  if (bts && typeof bts.open === "function") bts.open(2);
-  else if (bts && typeof bts.openBts === "function") bts.openBts(2);
-  else if (viewer && typeof viewer.openFile === "function") viewer.openFile(BTS_PATH);
-  else if (viewer && typeof viewer.openViewerFile === "function") viewer.openViewerFile(BTS_PATH);
-}
 function once(fn) {
   let called = false;
   return (value) => {
@@ -2936,9 +2847,6 @@ var MOVE_KEYS = {
 function renderStage2({
   host,
   state,
-  actions,
-  bts,
-  viewer,
   save,
   onStageComplete
 }) {
@@ -2993,9 +2901,7 @@ function renderStage2({
         <button type="button" data-action="help">how to play</button>
         <button type="button" data-action="shop">glyph shop</button>
         <button type="button" data-action="retreat">retreat (new run)</button>
-        <button type="button" data-action="search" hidden>open cipher.txt</button>
         <button type="button" data-action="boss" hidden>challenge boss</button>
-        <button type="button" data-action="bts" hidden>open trace.bts</button>
         <div class="s2-dpad" aria-label="move (touch)">
           <button type="button" data-move="up" aria-label="move up">&#9650;</button>
           <button type="button" data-move="left" aria-label="move left">&#9664;</button>
@@ -3021,9 +2927,7 @@ function renderStage2({
   const setHidden = (el, h) => {
     if (el.hidden !== h) el.hidden = h;
   };
-  const searchBtn = root.querySelector('[data-action="search"]');
   const bossBtn = root.querySelector('[data-action="boss"]');
-  const btsBtn = root.querySelector('[data-action="bts"]');
   let lastHp = -1;
   let lastMaxHp = -1;
   let lastLogSig = "";
@@ -3044,7 +2948,7 @@ function renderStage2({
   ensureWorld(state);
   function paintHud() {
     const e = state.run.entity;
-    const lock = getBossLockState({ actions, state });
+    const lock = getBossLockState({ state });
     setText(fields.floor, state.run.floor);
     setText(fields.hp, e.hp);
     setText(fields.maxHp, e.maxHp);
@@ -3062,13 +2966,13 @@ function renderStage2({
     setHidden(fields.status, !status);
     setText(fields.status, status);
     paintItems(e);
-    setText(fields.bossStatus, state.run.boss.defeated ? "defeated. BTS trace available." : `${lock.unlocked ? "UNLOCKED" : "LOCKED"} / north pillar ${lock.northPillar} / gap ${lock.projectileGapTiles}`);
+    setText(fields.bossStatus, state.run.boss.defeated ? "defeated." : `phase ${lock.phase} / HP ${state.run.boss.hp}`);
     setText(fields.hint, lock.hint);
     const biome = biomeForFloor(state.run.floor);
     if (root.dataset.biome !== biome.id) root.dataset.biome = biome.id;
     const w = state.run.world;
     const darkNote = !state.run.boss.reached && isDarkAct(state.run.floor) ? w && w.torch > 0 ? ` — torch lit (${w.torch} steps)` : " — DARK: foes hide beyond your light; ghosts mark where you last saw them" : "";
-    setText(fields.objective, state.run.boss.reached ? lock.unlocked ? "the passage is mapped. challenge the boss." : "unmapped: challenge at real risk, or find PASSAGE in cipher.txt for a clean clear." : `${biome.name} — reach the stairs > (floor ${state.run.floor}/${MAX_FLOOR}). fight foes, grab weapons & glyphs.${darkNote}`);
+    setText(fields.objective, state.run.boss.reached ? "challenge the boss. every strike draws a counterattack." : `${biome.name} — reach the stairs > (floor ${state.run.floor}/${MAX_FLOOR}). fight foes, grab weapons & glyphs.${darkNote}`);
     updateCompass();
     const sig = state.run.combatLog.slice(-4).join("\n");
     if (sig !== lastLogSig) {
@@ -3080,9 +2984,7 @@ function renderStage2({
       }));
     }
     const atBoss = state.run.boss.reached && !state.run.boss.defeated;
-    setHidden(searchBtn, !atBoss);
     setHidden(bossBtn, !atBoss);
-    setHidden(btsBtn, !state.run.boss.defeated);
   }
   function updateCompass() {
     const owned = Number((state.meta.shopUpgrades || {}).compass || 0) > 0;
@@ -3129,8 +3031,7 @@ function renderStage2({
   }
   function paintWorld() {
     if (state.run.boss.reached) {
-      const lock = getBossLockState({ actions, state });
-      view.paintArena(lock.unlocked ? bossArenaUnlocked : bossArenaLocked);
+      view.paintArena(bossArena);
     } else {
       view.paintExplore(state.run.world);
     }
@@ -3250,12 +3151,10 @@ function renderStage2({
       return;
     }
     if (action === "boss") challengeBoss();
-    if (action === "search") openCipher(viewer);
     if (action === "retreat") {
       appendLog(state, "retreat accepted. glyphs banked, fresh run drawn.");
       resetRun(state, { banked: true });
     }
-    if (action === "bts") openBts({ bts, viewer });
     persistAndPaint();
   });
   repaint();
@@ -3267,7 +3166,7 @@ function renderStage2({
     step: move,
     bodySolver,
     descendToBoss: bodySolver,
-    lockState: () => getBossLockState({ actions, state }),
+    lockState: () => getBossLockState({ state }),
     bossSolver: challengeBoss,
     elementProbe
   };
@@ -3360,25 +3259,12 @@ function renderStage2({
   }
   function challengeBoss() {
     state.run.boss.reached = true;
-    const lock = getBossLockState({ actions, state });
     recordBossAttempt(state);
-    if (lock.unlocked) {
-      state.run.boss.unlocked = true;
-      let result2 = damageBoss({ state, amount: 999 });
-      for (let i = 0; i < 5 && !result2.defeated; i++) {
-        result2 = damageBoss({ state, amount: 999 });
-      }
-      if (result2.defeated) {
-        appendLog(state, bellMessages.defeated);
-        completeOnce({ stage: 2, defeated: true, reward: { glyphs: 25 }, btsPath: BTS_PATH });
-      }
-      return;
-    }
     const result = damageBoss({ state, amount: 45 });
     const entity = state.run.entity;
     const counter = Math.max(3, Math.round((entity.maxHp || 30) * 0.2));
     entity.hp = Math.max(0, Number(entity.hp || 0) - counter);
-    appendLog(state, combatLines.lockedExchange);
+    appendLog(state, combatLines.bossExchange);
     if (entity.hp <= 0) {
       appendLog(state, "@ was unparsed. run reset — banked glyphs survive.");
       resetRun(state, { banked: true, death: true });
@@ -3387,7 +3273,7 @@ function renderStage2({
     }
     if (result.defeated) {
       appendLog(state, bellMessages.defeated);
-      completeOnce({ stage: 2, defeated: true, reward: { glyphs: 25 }, btsPath: BTS_PATH });
+      completeOnce({ stage: 2, defeated: true, reward: { glyphs: 25 } });
       return;
     }
     persistAndPaint();
@@ -3435,12 +3321,9 @@ function defaultState() {
       boss: {
         reached: false,
         phase: 1,
-        unlocked: false,
         defeated: false,
         hp: 150,
-        attempts: 0,
-        lockHintStep: 0,
-        unlockNotified: false
+        attempts: 0
       }
     },
     meta: {
@@ -3478,8 +3361,6 @@ var stageMeta = {
   id: 2,
   slug: "glyph-dungeon",
   name: "Glyph Dungeon",
-  btsPath: BTS_PATH,
-  requiredAction: REQUIRED_ACTION,
   // Dev-menu controls for this stage (wired in metagame.js → mounted.dev(id)).
   devControls: [
     { id: "heal", label: "Full HP" },
@@ -3494,25 +3375,9 @@ function defaultState2(context) {
   return defaultState(context);
 }
 function mountStage(ctx) {
-  const {
-    host,
-    actions,
-    achievements,
-    bell,
-    save
-  } = ctx;
   const state = normalizeState(ctx.state);
-  let view = null;
   ensureStyles();
-  if (hasSearchPassage(actions)) {
-    applySearchPassageUnlock({ state, achievements, bell });
-  }
-  const unsubscribe = subscribeToSearchPassage(actions, () => {
-    applySearchPassageUnlock({ state, achievements, bell });
-    if (typeof save === "function") save();
-    if (view && typeof view.repaint === "function") view.repaint();
-  });
-  view = renderStage2({ ...ctx, state });
+  const view = renderStage2({ ...ctx, state });
   return {
     devControls: stageMeta.devControls,
     dev(id) {
@@ -3522,26 +3387,9 @@ function mountStage(ctx) {
       return view?.jumpToBoss?.() || false;
     },
     destroy() {
-      unsubscribe();
       if (view && typeof view.destroy === "function") view.destroy();
     }
   };
-}
-function subscribeToSearchPassage(actions, onUnlock) {
-  if (actions && typeof actions.subscribeToActions === "function") {
-    return actions.subscribeToActions((detail) => {
-      if (isSearchPassageDetail(detail)) onUnlock(detail);
-    }) || (() => {
-    });
-  }
-  const handler = (event) => {
-    if (isSearchPassageDetail(event.detail)) onUnlock(event.detail);
-  };
-  window.addEventListener("fv:games:action", handler);
-  return () => window.removeEventListener("fv:games:action", handler);
-}
-function isSearchPassageDetail(detail) {
-  return Boolean(detail && Number(detail.stage) === 2 && detail.action === ACTION_NAME);
 }
 function ensureStyles() {
   ensureStylesheet("stage2-glyph-dungeon-styles", new URL("./styles.css", import.meta.url).href);
@@ -3557,7 +3405,6 @@ function ensureStylesheet(id, href) {
   document.head.append(link);
 }
 export {
-  applySearchPassageUnlock,
   defaultState2 as defaultState,
   getBossLockState,
   mountStage,

@@ -43,9 +43,6 @@ function dimensions(url) {
   });
 }
 
-// ../../docs/types/image/renderer.js
-import { recordStage3AsciiActivation } from "../../games/metagame/viewer-actions.js";
-
 // ../../docs/types/image/edit-els.js
 function queryEls(host, canEdit) {
   const q = (sel) => host.querySelector(sel);
@@ -6421,14 +6418,12 @@ async function render(intake, ctx = {}) {
             bytes: curBytes,
             mime: curMime,
             filename: intake.filename,
-            onActivate: () => recordStage3AsciiActivation({ file: intake.filename }),
             onBack: toggleAscii
             // 🖼 Image button in the studio toolbar returns here
           });
           asciiBtn.disabled = false;
         } else {
           asciiStudio.setImage({ bytes: curBytes, mime: curMime });
-          recordStage3AsciiActivation({ file: intake.filename });
         }
       } catch (e) {
         asciiOut.textContent = "ASCII studio failed to load: " + (e.message || e);

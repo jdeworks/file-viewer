@@ -239,6 +239,7 @@ function enrichTypeRow(typeId, existing, examplesByFile) {
   };
 
   const enriched = { ...existing, ...catalogAudit(existing, examplesByFile) };
+  enriched.sampleFiles = (existing.sampleFiles || []).filter((file) => examplesByFile.has(file));
   delete enriched.needsRealWorldSample;
   if (/^Initial matrix row generated/.test(enriched.notes || '')) {
     enriched.notes = 'Validated repository fixture set with real detector selection and catalog open coverage.';
@@ -274,6 +275,7 @@ function enrichKnownRow(existing, examplesByFile) {
   };
 
   const enriched = { ...existing, ...catalogAudit(existing, examplesByFile) };
+  enriched.sampleFiles = (existing.sampleFiles || []).filter((file) => examplesByFile.has(file));
   delete enriched.needsRealWorldSample;
   if (/^Initial matrix row generated/.test(enriched.notes || '')) {
     enriched.notes = 'Validated repository fixture set with real enhanced-view selection and catalog open coverage.';

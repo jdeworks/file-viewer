@@ -139,7 +139,7 @@ function autoRun(seed, finalAct = FINAL_BOSS_ACT) {
   const fresh = createRun({ seed: 7, finalAct: finalActForWins(0) });
   assert.equal(fresh.finalAct, 4, "the fresh run carries finalAct 4");
   assert.equal(fresh.map.acts.length, 4, "the fresh run map has four acts");
-  // The act-4 boss of a fresh run IS The Refused Connection (story boss / epub un-cheat carrier).
+  // The act-4 boss of a fresh run is The Refused Connection (the story boss).
   fresh.act = 4; fresh.currentNodeId = fresh.map.acts[3].layers.at(-1)[0].id;
   assert.equal(enemyForCurrentNode(fresh, makeRng(1)), "the-refused-connection", "fresh act-4 boss is the story boss");
 

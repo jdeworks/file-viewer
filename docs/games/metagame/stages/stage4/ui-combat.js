@@ -57,7 +57,6 @@ export function mountCombat({ host, state, controller, mode = 'map' }) {
           <button type="button" data-action="call-early" hidden>call next (+${CALL_EARLY_BONUS})</button>
           <button type="button" data-action="speed">speed 1×</button>`}
         ${isBoss ? '<button type="button" data-action="confront">confront The Infinite Loop</button>' : ''}
-        <button type="button" data-action="blueprint">recursion_points.json</button>
         <button type="button" data-action="leave" class="s4-leave">${isBoss ? 'retreat' : '← maps'}</button>
       </div>
       <button type="button" class="s4-ticker" data-field="ticker" title="show full log"></button>
@@ -142,7 +141,7 @@ export function mountCombat({ host, state, controller, mode = 'map' }) {
 
   function repaint() {
     if (!alive) return;
-    const lock = getBossLockState({ actions: controller.actions, state });
+    const lock = getBossLockState({ state });
     fields.cycles.textContent = String(state.cycles);
     fields.integrity.textContent = `${state.integrity}/${state.maxIntegrity || state.integrity}`;
     fields.progress.textContent = isBoss
@@ -271,7 +270,7 @@ export function mountCombat({ host, state, controller, mode = 'map' }) {
   // ── boss ─────────────────────────────────────────────────────────────────
   function confront() {
     if (!isBoss) return null;
-    const result = fightInfiniteLoop({ state, actions: controller.actions });
+    const result = fightInfiniteLoop({ state });
     if (result.defeated) { controller.onBossWin(); return result; }
     repaint(); controller.persist?.();
     return result;
@@ -338,7 +337,6 @@ export function mountCombat({ host, state, controller, mode = 'map' }) {
       case 'speed': setSpeed(); break;
       case 'confront': confront(); break;
       case 'leave': stopLoop(); closeTowerPopover(); controller.leaveCombat?.(); break;
-      case 'blueprint': controller.openBlueprint?.(); break;
       default: break;
     }
   });

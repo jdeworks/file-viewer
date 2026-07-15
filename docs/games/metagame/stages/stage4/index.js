@@ -1,15 +1,11 @@
-import { hasRecursionBlueprint } from './boss.js';
 import { renderStage4 } from './renderer.js';
 import { defaultState as createDefaultState, normalizeState } from './state.js';
-import { BTS_PATH, REQUIRED_ACTION } from './messages.js';
 import { createRun } from '../../shared/run-state.js';
 
 export const stageMeta = {
   id: 4,
   slug: 'fractal-bastion',
   name: 'Fractal Bastion',
-  btsPath: BTS_PATH,
-  requiredAction: REQUIRED_ACTION,
   // Dev-menu controls for this stage (wired in metagame.js → mounted.dev(id)).
   devControls: [
     { id: 'give-glory',   label: '+500 Glory' },
@@ -26,7 +22,6 @@ export function defaultState(context) {
 export function mountStage(ctx) {
   const state = normalizeState(ctx.state, ctx);
   ensureStyles();
-  if (hasRecursionBlueprint(ctx.actions)) state.log = [...state.log, 'recursion blueprint already read.'].slice(-8);
 
   // Run-state retrofit (slot "runwave", distinct from stage4's own state keys): the engine drops the
   // in-flight wave on reload (normalizeState resets enemies/spawn queue). The renderer snapshots it
@@ -63,11 +58,8 @@ function injectSheet(id, rel) {
 }
 
 export {
-  applyRecursionBlueprintOpen,
   fightInfiniteLoop,
   getBossLockState,
   getTowerCoverage,
-  hasRecursionBlueprint,
   placeTower,
 } from './boss.js';
-export { recursionBlueprintContent, recursionBlueprintData } from './content.js';

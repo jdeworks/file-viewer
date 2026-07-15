@@ -88,12 +88,10 @@
 
 /* ── boss negotiation banner (kept, compact, above the battlefield) ───────────── */
 .s5db-boss-banner { border: 2px solid #b8962e; border-radius: 8px; background: #f6efdf; padding: 8px 12px; flex: 0 0 auto; }
-.s5db-boss-banner.is-locked { border-color: #8b2020; background: #f7e7e2; }
 .s5db-boss-banner-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
 .s5db-boss-banner-head strong { letter-spacing: 0.04em; }
 .s5db-boss-phase { font-size: 0.82rem; color: #6b513a; }
 .s5db-boss-rule { margin: 4px 0 0; font-style: italic; color: #3b2a1c; }
-.s5db-boss-mismatch { margin: 4px 0; color: #8b2020; font-weight: 700; }
 
 /* ── bottom band: the hand dock ───────────────────────────────────────────────── */
 .s5db-dock { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex: 0 0 auto; }

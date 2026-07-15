@@ -1,8 +1,7 @@
 // renderer.js — Stage 5 Protocol Codex controller: routes between the hub and the act-map run
 // (combat / reward / rest / shop / event). Owns the transient combat instance (never persisted —
 // a reload re-instantiates from the run's node). The terminal boss, The Refused Connection, is fought
-// with the player's REAL deck (act 4 on a first run, act 6 thereafter). Reading the codex is an
-// optional buff: unread, the boss carries more HP (UNCH9_HP_MULT), but the negotiation remains fair.
+// with the player's REAL deck (act 4 on a first run, act 6 thereafter).
 
 import { createCombat, playCard, endTurn, makeRng, applyPotionEffect, strHash, congestionForAct, currentIntent } from "./combat.js";
 import { cardById } from "./cards.js";
@@ -19,9 +18,7 @@ import {
   finalActOf, isVeteranRun
 } from "./run.js";
 import { banner } from "../../shared/feedback.js";
-import { getBossLockState } from "./boss.js";
-import { BTS_PATH } from "./messages.js";
-import { wireBossCombat, autoNegotiate as runAutoNegotiate, BOSS_PHASE_HP, UNCH9_HP_MULT } from "./boss-combat.js";
+import { wireBossCombat, autoNegotiate as runAutoNegotiate } from "./boss-combat.js";
 import { SUPERBOSS_ID, wireSuperboss } from "./superboss.js";
 import { installStage5TestHook, removeStage5TestHook } from "./testhook.js";
 import { snapshotCombat, restoreCombat } from "./combat-persist.js";
@@ -34,13 +31,12 @@ import { openPileModal, openLogModal, openDeckModal, openPrestigeModal } from ".
 import { installCombatHover } from "./combat-hover.js";
 import { hubView, mapView, paintMapEdges, deathView, wonView } from "./ui-map.js";
 import { rewardView, restView, shopView, eventView, bossRewardView } from "./ui-rewards.js";
-import { openEpub, openBts, once } from "./renderer-open.js";
 import { applyDev, devSkipToBoss } from "./s5dev.js";
 import { beginProtocolRun, recordProtocolScore } from "./run-lifecycle.js";
 
 const REFUSED_CONNECTION = "the-refused-connection";
 
-export function renderStage5({ host, state, actions, achievements, bell, bts, viewer, save, orchestrator, onStageComplete }) {
+export function renderStage5({ host, state, save, orchestrator, onStageComplete }) {
   const root = document.createElement("section");
   root.className = "stage5-protocol-codex";
   root.innerHTML = `
@@ -77,7 +73,6 @@ export function renderStage5({ host, state, actions, achievements, bell, bts, vi
   // so it honors the no-live-entropy rule). Overridable for deterministic tests via the test hook.
   let dailyKeyOverride = null;
   const completeOnce = once((result) => { if (typeof onStageComplete === "function") onStageComplete(result); });
-  const lockState = () => getBossLockState({ actions, state });
   const mount = (node) => {
     screen.replaceChildren(node);
     if (pendingBanner) { banner(screen, pendingBanner); pendingBanner = null; }
@@ -91,8 +86,8 @@ export function renderStage5({ host, state, actions, achievements, bell, bts, vi
   route();
 
   // TEST/DEBUG hook (not a player affordance, not a hub button). It only fast-forwards position +
-  // replays correct play through the REAL engine — it never bypasses the ch9 un-cheat. Extracted to
-  // testhook.js; it closes over the mutable `combat` via accessors.
+  // replays correct play through the REAL engine. Extracted to testhook.js; it closes over the
+  // mutable `combat` via accessors.
   installStage5TestHook({
     state, combatRun, runScore, seatAtFinalBoss, runAutoNegotiate,
     playCard, endTurn, cardById, beginRun, commit, makeCombat, finishCombat,
@@ -143,7 +138,7 @@ export function renderStage5({ host, state, actions, achievements, bell, bts, vi
     const run = state.run;
     // The Refused Connection is reachable ONLY as the act-4 boss node of a run (see the
     // run.status === "boss" case below) — there is no standalone hub-reachable boss screen.
-    if (state.ui.screen !== "run" || !run) { combat = null; return mount(hubView(state, lockState(), ascInfo())); }
+    if (state.ui.screen !== "run" || !run) { combat = null; return mount(hubView(state, ascInfo())); }
     switch (run.status) {
       // Every boss — including the act-6 finale and the key-gated superboss — is a real-deck fight.
       case "combat": case "boss": case "superboss": return mountCombat(run);
@@ -254,10 +249,9 @@ export function renderStage5({ host, state, actions, achievements, bell, bts, vi
       windowCap: 5 + (run.windowCapMod || 0) // prestige tight-window modifier
     });
     c.nodeId = run.currentNodeId;
-    // Terminal finale: layer the negotiation onto the real fight. Chapter 9 reveals the accepted
-    // sequence and removes the unread HP surcharge without replacing the player's real deck.
-    if (enemyId === REFUSED_CONNECTION) wireBossCombat(c, { locked: !lockState().unlocked, hpMult: run.bossHpMult || 1, extraPhase: Boolean(run.bossExtraPhase) });
-    // The key-gated superboss: a multi-phase real-deck fight (no lock, no un-cheat — pure bonus).
+    // Terminal finale: layer the handshake sequence onto the player's real-deck fight.
+    if (enemyId === REFUSED_CONNECTION) wireBossCombat(c, { hpMult: run.bossHpMult || 1, extraPhase: Boolean(run.bossExtraPhase) });
+    // The key-gated superboss: a multi-phase real-deck bonus fight.
     else if (enemyId === SUPERBOSS_ID) wireSuperboss(c);
     return c;
   }
@@ -283,7 +277,7 @@ export function renderStage5({ host, state, actions, achievements, bell, bts, vi
     if (run.status === "dead" || run.status === "won") recordProtocolScore(state.meta, run);
   }
 
-  // The act-6 boss fell to the real deck: mark the codex gate answered. With all 3 keys the run
+  // The act-6 boss fell to the real deck. With all 3 keys the run
   // diverts to the hidden superboss FIRST — stage completion is deferred to finishSuperboss (which
   // completes the stage on win OR loss, so the superboss is never a progression trap — the gate was
   // the negotiation, already passed here).
@@ -299,7 +293,7 @@ export function renderStage5({ host, state, actions, achievements, bell, bts, vi
     if (ascension) ascension.recordClear(run.ascension || 0);
     state.meta.banked = (state.meta.banked || 0) + (run.handshakes || 0);
     if (run.status === "superboss") return; // defer completion until the true-ending fight resolves
-    completeOnce({ stage: 5, defeated: true, reward: { handshakes: 80 }, btsPath: BTS_PATH });
+    completeOnce({ stage: 5, defeated: true, reward: { handshakes: 80 } });
   }
 
   // Resolve the key-gated superboss (true ending). The negotiation gate was already satisfied, so
@@ -314,7 +308,7 @@ export function renderStage5({ host, state, actions, achievements, bell, bts, vi
     if (win && run.hp > 0) { run.status = "won"; run.trueEnding = true; }
     else run.status = "dead"; // fell to the kernel — but the connection had already accepted you
     recordProtocolScore(state.meta, run);
-    completeOnce({ stage: 5, defeated: true, reward: { handshakes: 80 }, btsPath: BTS_PATH });
+    completeOnce({ stage: 5, defeated: true, reward: { handshakes: 80 } });
   }
 
   // First time a veteran run advances into act 5 (unlocked by the first win): announce the extended
@@ -475,25 +469,12 @@ export function renderStage5({ host, state, actions, achievements, bell, bts, vi
           if (combat.over) finishCombat(run); else checkpointCombat(combat, run);
         }
         return true;
-      case "epub":
-        openEpub({ viewer, actions, achievements, bell, state });
-        // 2026-07-11 playtest fix: ch9 is a buff now, not a gate — reading it mid-fight should not
-        // wipe progress you already fought for. Rescale the CURRENT fight's HP pool down in place
-        // (removing the unread-cost multiplier) instead of discarding the combat and restarting.
-        if (combat && combat.bossPhase && combat.bossLocked) {
-          const newMult = (combat.bossHpMult || UNCH9_HP_MULT) / UNCH9_HP_MULT;
-          const frac = combat.enemy.maxHp > 0 ? combat.enemy.hp / combat.enemy.maxHp : 1;
-          combat.bossLocked = false;
-          combat.bossHpMult = newMult;
-          combat.enemy.maxHp = Math.round((BOSS_PHASE_HP[combat.bossPhase] || BOSS_PHASE_HP[1]) * newMult);
-          combat.enemy.hp = Math.min(combat.enemy.maxHp, Math.max(1, Math.round(combat.enemy.maxHp * frac)));
-          checkpointCombat(combat, run);
-        }
-        return true;
-      case "bts": openBts({ bts, viewer }); return true;
       default: return false;
     }
   }
 }
 
-export { openEpub } from "./renderer-open.js";
+function once(fn) {
+  let called = false;
+  return (value) => { if (called) return; called = true; fn(value); };
+}

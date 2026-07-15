@@ -3,9 +3,6 @@
 // Each function takes `state` (the normalised stage state) and mutates it in place. They are
 // intentionally pure-ish (no save, no DOM, no clock) so they can be unit-tested without a browser.
 // The renderer wires save() + repaint() on top in its dev(id) dispatcher.
-//
-// IMPORTANT: none of these bypass the boss un-cheat. The blueprint action
-// (4.recursion_blueprint_read) must still be fired by the host app's real file-open dispatch.
 
 import { ensureCampaign, recordWaveCleared, seatAtBoss } from './run4.js';
 
@@ -26,8 +23,7 @@ export function devSkipWave(state) {
   return recordWaveCleared(state);   // awards glory + advances waveNumber or routes to armory
 }
 
-// Skip directly to the boss arena by clearing all 5 maps in one step. Does NOT auto-win the boss —
-// the blueprint un-cheat (recursion_points.json must be opened in the viewer) still applies.
+// Skip directly to the boss arena by clearing all 5 maps in one step. Does not auto-win the boss.
 export function devSkipToBoss(state) {
   return seatAtBoss(state);          // run4 exports this debug helper already
 }

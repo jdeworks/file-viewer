@@ -17,11 +17,6 @@ let onFolderFileOpened = null; // optional callback(node) called after a tree fi
 let recoverFolderFile = null;  // optional stale-picker snapshot recovery (Companion-linked roots)
 let onTreeDelete = null;       // optional callback({path,isFolder,name}) for per-row delete-on-disk
 let onTreeReveal = null;       // optional callback({path,isFolder,name}) for per-row reveal-in-folder
-let viewerActionsPromise = null;
-function viewerActions() {
-  if (!viewerActionsPromise) viewerActionsPromise = import('../games/metagame/viewer-actions.js');
-  return viewerActionsPromise;
-}
 export function initFolder(deps) {
   loadIntake = deps.loadIntake;
   confirmDiscard = deps.confirmDiscard;
@@ -380,8 +375,6 @@ export async function searchTreeContents() {
       if (text.includes('\0')) continue;                  // looks binary
       if (text.toLowerCase().includes(ql)) {
         addMatchedPath(e.path);
-        const line = text.split(/\r?\n/).find((entry) => entry.toLowerCase().includes(ql));
-        viewerActions().then(({ recordStage2SearchResult }) => recordStage2SearchResult({ file: e.path, query: q, result: line && line.trim() }));
       }
     } catch { /* unreadable — skip */ }
     if (i && i % 40 === 0) {

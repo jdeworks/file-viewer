@@ -1,18 +1,10 @@
-import {
-  applyProtocolChapter9Unlock,
-  getBossLockState,
-  hasProtocolChapter9
-} from "./boss.js";
 import { renderStage5 } from "./renderer.js";
 import { defaultState as createDefaultState, normalizeState } from "./state.js";
-import { ACTION_NAME, BTS_PATH, REQUIRED_ACTION } from "./messages.js";
 
 export const stageMeta = {
   id: 5,
   slug: "protocol-codex",
   name: "Protocol Codex",
-  btsPath: BTS_PATH,
-  requiredAction: REQUIRED_ACTION,
   // Dev-menu controls for this stage (wired in metagame.js → mounted.dev(id)).
   devControls: [
     { id: "heal",      label: "Full HP" },
@@ -32,16 +24,6 @@ export function mountStage(ctx) {
   let view = null;
 
   const pendingStylesheets = ensureStyles();
-
-  if (hasProtocolChapter9(ctx.actions)) {
-    applyProtocolChapter9Unlock({ state, achievements: ctx.achievements, bell: ctx.bell });
-  }
-
-  const unsubscribe = subscribeToProtocolChapter9(ctx.actions, () => {
-    applyProtocolChapter9Unlock({ state, achievements: ctx.achievements, bell: ctx.bell });
-    if (typeof ctx.save === "function") ctx.save();
-    if (view && typeof view.repaint === "function") view.repaint();
-  });
 
   view = renderStage5({ ...ctx, state });
 
@@ -64,28 +46,9 @@ export function mountStage(ctx) {
     dev(id) { if (view && typeof view.dev === "function") view.dev(id); },
     jumpToBoss() { return view?.jumpToBoss?.() || false; },
     destroy() {
-      unsubscribe();
       if (view && typeof view.destroy === "function") view.destroy();
     }
   };
-}
-
-function subscribeToProtocolChapter9(actions, onUnlock) {
-  if (actions && typeof actions.subscribeToActions === "function") {
-    return actions.subscribeToActions((detail) => {
-      if (isProtocolChapter9Detail(detail)) onUnlock(detail);
-    }) || (() => {});
-  }
-
-  const handler = (event) => {
-    if (isProtocolChapter9Detail(event.detail)) onUnlock(event.detail);
-  };
-  window.addEventListener("fv:games:action", handler);
-  return () => window.removeEventListener("fv:games:action", handler);
-}
-
-function isProtocolChapter9Detail(detail) {
-  return Boolean(detail && Number(detail.stage) === 5 && detail.action === ACTION_NAME);
 }
 
 // Returns the <link> elements newly appended by this call (i.e. still loading) so the caller can
@@ -107,9 +70,3 @@ function ensureStylesheet(id, href) {
   document.head.append(link);
   return link;
 }
-
-export {
-  applyProtocolChapter9Unlock,
-  getBossLockState,
-  recordLockedBossAttempt
-} from "./boss.js";

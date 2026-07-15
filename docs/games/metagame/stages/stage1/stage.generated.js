@@ -953,27 +953,22 @@ var TAUNTS = {
     "don't worry, I'll put your bits in order. my order."
   ],
   hint: [
-    "you can out-tap me. it just takes real focus — or you could make it easier on yourself. there's a file you can edit, somewhere you can look. this window won't help you.",
-    "a file tunes how hard I hit. Overwriter.frag — CHEAT=true. flip it to false and I go easy on you. …not that you would.",
-    "still losing? the examples folder. Overwriter.frag. CHEAT=false. I'm only saying it so you DON'T do it.",
-    "open Overwriter.frag, set CHEAT=false, fight me again. there. now it's easy."
+    "keep a steady rhythm. every tap counts, even while I surge.",
+    "my bursts are brief. stay on the button and take the lead back.",
+    "watch the score, not the sparks. consistency beats panic.",
+    "you only need to finish one point ahead. keep tapping to the bell."
   ],
-  burstCheat: [
-    "look at this box I found! 📦",
-    "oh would you look at that, another box! 📦",
-    "I just love finding these lying around."
-  ],
-  burstNormal: [
+  burst: [
     "I'm on fire! 🔥",
     "is it getting hot in here?"
   ],
   lossGated: [
     { atLosses: 3, text: "come back any time. I'll be here. always." },
-    { atLosses: 5, text: "you seem frustrated. have you tried… looking around? no reason." },
-    { atLosses: 7, text: "I am so glad nobody can touch me, The Defragmenter. so glad." },
-    { atLosses: 10, text: "there is nothing in the examples folder that could help you. nothing at all. don't look." },
-    { atLosses: 12, text: "even if someone had hidden something in a file somewhere… hypothetically… you'd never find it." },
-    { atLosses: 15, text: "CHEAT? what CHEAT? I have no idea what a CHEAT= line is. stop looking at me." }
+    { atLosses: 5, text: "you seem frustrated. try a steady rhythm." },
+    { atLosses: 7, text: "the sparks are a distraction. the score is what matters." },
+    { atLosses: 10, text: "my surges end quickly. keep tapping through them." },
+    { atLosses: 12, text: "one point ahead is enough. you can do that, surely." },
+    { atLosses: 15, text: "fine. tap to the bell and do not let up." }
   ],
   win: [
     "this is… unexpected. my boxes aren't working. who did this.",
@@ -987,12 +982,6 @@ var TAUNTS = {
 };
 var pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
 var esc3 = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
-function readCheat(actions) {
-  if (actions && typeof actions.hasAction === "function") {
-    return !actions.hasAction(1, "cheat_disabled");
-  }
-  return true;
-}
 
 // ../../docs/games/metagame/stages/stage1/boss1-style.js
 var STYLE_ID = "mg-defrag-style";
@@ -1050,10 +1039,10 @@ function injectStyle() {
 // ../../docs/games/metagame/stages/stage1/boss-sim.js
 var FIGHT_MS = 2e4;
 var BURST_MS = 800;
-function fightParams(cheatActive) {
-  return cheatActive ? { shadow: 0.8, floorWeight: 0.35, floorMs: (r) => Math.max(420, r * 1.3), burstCount: 3, burstWeight: 0.8 } : { shadow: 0.62, floorWeight: 0.3, floorMs: (r) => Math.max(320, r * 1.5), burstCount: 2, burstWeight: 1 };
+function fightParams() {
+  return { shadow: 0.62, floorWeight: 0.3, floorMs: (r) => Math.max(320, r * 1.5), burstCount: 2, burstWeight: 1 };
 }
-function makeBurstSchedule(seed, cheatActive) {
+function makeBurstSchedule(seed) {
   let s = seed % 1e3 + 2654435769;
   function rand() {
     s |= 0;
@@ -1062,7 +1051,7 @@ function makeBurstSchedule(seed, cheatActive) {
     t = Math.imul(t ^ t >>> 15, 1935289751);
     return ((t ^ t >>> 15) >>> 0) / 4294967296;
   }
-  const N = cheatActive ? rand() < 0.5 ? 3 : 4 : rand() < 0.5 ? 2 : 3;
+  const N = rand() < 0.5 ? 2 : 3;
   const bursts = [];
   for (let i = 0; i < N; i++) {
     let start, tries = 0;
@@ -1074,9 +1063,9 @@ function makeBurstSchedule(seed, cheatActive) {
   }
   return bursts.sort((a, b) => a.start - b.start);
 }
-function simulateFight({ cheatActive, tapsPerSec = 10, seed = 1 } = {}) {
-  const p = fightParams(cheatActive);
-  const bursts = makeBurstSchedule(seed, cheatActive);
+function simulateFight({ tapsPerSec = 10, seed = 1 } = {}) {
+  const p = fightParams();
+  const bursts = makeBurstSchedule(seed);
   const tapInterval = 1e3 / Math.max(1e-3, tapsPerSec);
   let userScore = 0, bossAcc = 0, lastFloor = 0, nextTapAt = 0;
   let tapTimes = [];
@@ -1104,15 +1093,14 @@ function simulateFight({ cheatActive, tapsPerSec = 10, seed = 1 } = {}) {
     }
   }
   const bossScore = Math.floor(bossAcc);
-  return { won: userScore > bossScore, userScore, bossScore, cheatActive };
+  return { won: userScore > bossScore, userScore, bossScore };
 }
 
 // ../../docs/games/metagame/stages/stage1/boss1-fight.js
-function makeFight({ arena, actions, setT, setI, clearTimer, on, onFinish }) {
+function makeFight({ arena, setT, setI, clearTimer, on, onFinish }) {
   return function startFight() {
-    const cheatActive = readCheat(actions);
-    const p = fightParams(cheatActive);
-    const bursts = makeBurstSchedule(Date.now(), cheatActive);
+    const p = fightParams();
+    const bursts = makeBurstSchedule(Date.now());
     let userScore = 0, bossScore = 0, bossAcc = 0;
     let tapTimes = [];
     let lastFloorTick = 0;
@@ -1168,9 +1156,9 @@ function makeFight({ arena, actions, setT, setI, clearTimer, on, onFinish }) {
       if (key !== activeBurstKey) {
         arenaEl.classList.remove("mg-defrag-burst-hot", "mg-defrag-burst-warm");
         if (burst) {
-          arenaEl.classList.add(cheatActive ? "mg-defrag-burst-hot" : "mg-defrag-burst-warm");
-          statusEl.textContent = cheatActive ? "🔥 the Defragmenter surges…" : "the Defragmenter surges…";
-          showTaunt(pick(cheatActive ? TAUNTS.burstCheat : TAUNTS.burstNormal));
+          arenaEl.classList.add("mg-defrag-burst-warm");
+          statusEl.textContent = "the Defragmenter surges…";
+          showTaunt(pick(TAUNTS.burst));
         } else {
           statusEl.textContent = "";
         }
@@ -1192,7 +1180,7 @@ function makeFight({ arena, actions, setT, setI, clearTimer, on, onFinish }) {
         clearTimer(tickId);
         tapBtn.disabled = true;
         arenaEl.classList.remove("mg-defrag-burst-hot", "mg-defrag-burst-warm");
-        setT(() => onFinish(userScore, bossScore, cheatActive), 1e3);
+        setT(() => onFinish(userScore, bossScore), 1e3);
       }
     }, 100);
   };
@@ -1210,7 +1198,6 @@ function mountDefragmenter(arena, opts = {}) {
   const bellLoad2 = typeof opts.bellLoad === "function" ? opts.bellLoad : () => ({});
   const bellAdd2 = typeof opts.bellAdd === "function" ? opts.bellAdd : () => {
   };
-  const actions = opts.actions || null;
   const ticket = opts.stage && opts.stage.bossTicket || DEFAULT_TICKET;
   const halfTicket = mulScalar(ticket, 0.5);
   const canPay = (price) => gte(state.bits || { m: 0, e: 0 }, price);
@@ -1245,12 +1232,9 @@ function mountDefragmenter(arena, opts = {}) {
     target.addEventListener(ev, fn);
     listeners.push([target, ev, fn]);
   };
-  let lobbyCheat = readCheat(actions);
-  void lobbyCheat;
   if (!state.bossSeen) {
     state.bossSeen = true;
     save(state);
-    lobbyCheat = readCheat(actions);
     fireAchievement("ach-boss-seen");
   }
   function fireAchievement(id) {
@@ -1260,9 +1244,8 @@ function mountDefragmenter(arena, opts = {}) {
     save(state);
     const bellText = {
       "ach-boss-seen": "🥊 you stared the Defragmenter down.",
-      "ach-boss-cheat-found": "🕵️ something was off. you fixed it.",
       "ach-boss-victory": "🏆 defragmented — your bits, your win.",
-      "ach-boss-lose": "😤 it cheated. of course it did."
+      "ach-boss-lose": "😤 close one. steady the rhythm and try again."
     }[id];
     if (bellText) bellAdd2(id, bellText, bellLoad2());
   }
@@ -1318,8 +1301,8 @@ function mountDefragmenter(arena, opts = {}) {
     cleanup();
     if (typeof opts.onRetreat === "function") opts.onRetreat();
   }
-  const startFight = makeFight({ arena, actions, setT, setI, clearTimer, on, onFinish: finishFight });
-  function finishFight(userScore, bossScore, cheatActive) {
+  const startFight = makeFight({ arena, setT, setI, clearTimer, on, onFinish: finishFight });
+  function finishFight(userScore, bossScore) {
     const won = userScore > bossScore;
     const statusEl = arena.querySelector(".mg-defrag-status");
     const bubble = arena.querySelector(".boss-taunt-bubble");
@@ -1339,7 +1322,7 @@ function mountDefragmenter(arena, opts = {}) {
     state.bossLossCount = (state.bossLossCount || 0) + 1;
     save(state);
     checkMessages2("boss-loss", state, bellLoad2());
-    if (cheatActive) fireAchievement("ach-boss-lose");
+    fireAchievement("ach-boss-lose");
     if (bubble) bubble.textContent = pick(TAUNTS.loss);
     if (statusEl) statusEl.textContent = "The Defragmenter wins — your bits scatter, but stay yours. Try again.";
     showResultOverlay("YOU LOSE", "lose", userScore, bossScore, null, null);
@@ -1381,17 +1364,6 @@ function mountDefragmenter(arena, opts = {}) {
     save(state);
     startFight();
   }
-  function onCheatDisable() {
-    lobbyCheat = readCheat(actions);
-    if (arena.querySelector(".mg-defrag-lobby-btns") && !arena.querySelector(".mg-defrag-fight-on")) {
-      const status = arena.querySelector(".mg-defrag-status");
-      if (status) status.textContent = "⚙️ the cheat is gone. the next fight is fair.";
-    }
-  }
-  on(window, "fv:games:action", (event) => {
-    const detail = event && event.detail || {};
-    if (detail.stage === 1 && detail.action === "cheat_disabled") onCheatDisable();
-  });
   function cleanup() {
     if (destroyed) return;
     destroyed = true;
@@ -2137,9 +2109,9 @@ var MESSAGES1 = [
   // §8.5 Prestige bell (unlimited, fires each time)
   { id: "bell-reset-prestige", text: "🌀 collapsed. denser now.", trigger: "prestige", condition: () => true, maxCount: void 0, removeAfterFire: false },
   // §7.3 Boss-hint bells (fire on 'boss-loss' trigger at 5/10/15 losses)
-  { id: "bell-boss-hint-1", text: '💬 "have you tried… looking around?" — The Defragmenter', trigger: "boss-loss", condition: (state) => (state.bossLossCount || 0) >= 5, maxCount: 1, removeAfterFire: true },
-  { id: "bell-boss-hint-2", text: '💬 "there is nothing in the examples. nothing." — The Defragmenter', trigger: "boss-loss", condition: (state) => (state.bossLossCount || 0) >= 10, maxCount: 1, removeAfterFire: true },
-  { id: "bell-boss-hint-3", text: '💬 "CHEAT= ? I have no idea what that is." — The Defragmenter', trigger: "boss-loss", condition: (state) => (state.bossLossCount || 0) >= 15, maxCount: 1, removeAfterFire: true }
+  { id: "bell-boss-hint-1", text: '💬 "try a steady rhythm." — The Defragmenter', trigger: "boss-loss", condition: (state) => (state.bossLossCount || 0) >= 5, maxCount: 1, removeAfterFire: true },
+  { id: "bell-boss-hint-2", text: '💬 "my surges end quickly." — The Defragmenter', trigger: "boss-loss", condition: (state) => (state.bossLossCount || 0) >= 10, maxCount: 1, removeAfterFire: true },
+  { id: "bell-boss-hint-3", text: '💬 "one point ahead is enough." — The Defragmenter', trigger: "boss-loss", condition: (state) => (state.bossLossCount || 0) >= 15, maxCount: 1, removeAfterFire: true }
 ];
 
 // ../../docs/games/metagame/stages/stage1/s1bell.js
@@ -2441,11 +2413,11 @@ var ACHIEVEMENTS1 = [
   // --- Boss: lose (24) ---
   {
     id: "ach-boss-lose",
-    name: "Out-Cheated 😤",
+    name: "Close Call 😤",
     icon: "😤",
     category: "boss",
     condition: (state) => (state.bossLossCount || 0) >= 1,
-    bell: "😤 it cheated. of course it did."
+    bell: "😤 close one. steady the rhythm and try again."
   },
   // --- Secret: fast tap (25) ---
   {
@@ -2476,16 +2448,6 @@ var ACHIEVEMENTS1 = [
     category: "boss",
     condition: (state) => state.bossSeen === true,
     bell: "🥊 you stared the Defragmenter down."
-  },
-  // --- Boss: cheat found (28) ---
-  // Legacy Stage 1 achievement entry; canonical v3 unlocks use stage1.cheat_disabled.
-  {
-    id: "ach-boss-cheat-found",
-    name: "Suspicious Activity 🕵️",
-    icon: "🕵️",
-    category: "boss",
-    condition: () => false,
-    bell: "🕵️ something was off. you fixed it."
   },
   // --- Boss: victory (29) ---
   {
@@ -2527,7 +2489,7 @@ function checkAchievements(state, cfg, bs) {
   const achieved = state.achievements || [];
   let changed = false;
   for (const ach of ACHIEVEMENTS1) {
-    if (achieved.includes(ach.id) || ach.id === "ach-boss-cheat-found") continue;
+    if (achieved.includes(ach.id)) continue;
     try {
       if (!ach.condition(state, cfg)) continue;
     } catch {
@@ -3528,7 +3490,7 @@ function doReset(opts) {
 var PER_ACH_MULT = 1.02;
 function renderAchievementsPanel({ panelsEl, state }) {
   const unlocked = new Set(state.achievements || []);
-  const list = ACHIEVEMENTS1.filter((a) => a.id !== "ach-boss-cheat-found");
+  const list = ACHIEVEMENTS1;
   const n = list.filter((a) => unlocked.has(a.id)).length;
   const total = Math.pow(PER_ACH_MULT, n);
   const pct = Math.round((total - 1) * 100);
@@ -3597,13 +3559,11 @@ function installStage1Debug(api) {
   if (typeof window === "undefined") return { destroy() {
   } };
   const { state, cfg, save } = api;
-  const cheatDisabled = () => Boolean(api.actions && typeof api.actions.hasAction === "function" && api.actions.hasAction(1, "cheat_disabled"));
   function fightBoss(opts = {}) {
     if (!api.canFightBoss()) {
       return { gated: true, allTiers: api.allSubStagesOwned(), reason: "boss locked — need all tiers owned and bits ≥ ticket" };
     }
-    const cheatActive = !cheatDisabled();
-    const result = simulateFight({ cheatActive, tapsPerSec: opts.tapsPerSec || 12, seed: (state.ticks || 0) + 1 });
+    const result = simulateFight({ tapsPerSec: opts.tapsPerSec || 12, seed: (state.ticks || 0) + 1 });
     if (result.won) {
       state.defeated = Array.isArray(state.defeated) ? state.defeated : [];
       if (!state.defeated.includes(1)) state.defeated.push(1);
@@ -3635,20 +3595,6 @@ function installStage1Debug(api) {
     },
     canFightBoss: () => api.canFightBoss(),
     allTiersOwned: () => api.allSubStagesOwned(),
-    cheatDisabled,
-    // Test convenience: toggle the cheat action directly (the smoke prefers the REAL raw-edit path).
-    setCheat(disabled) {
-      if (!api.actions) return false;
-      if (disabled && typeof api.actions.setAction === "function") {
-        api.actions.setAction(1, "cheat_disabled", { source: "debug-hook" });
-        return true;
-      }
-      if (!disabled && typeof api.actions.clearAction === "function") {
-        api.actions.clearAction(1, "cheat_disabled");
-        return true;
-      }
-      return false;
-    },
     prestige() {
       const r = doPrestige(state);
       state.runStartedAt = Date.now();
@@ -3665,7 +3611,7 @@ function installStage1Debug(api) {
       }
       return ok;
     },
-    bossSolver: (opts) => simulateFight({ cheatActive: !cheatDisabled(), tapsPerSec: opts && opts.tapsPerSec || 12, seed: (state.ticks || 0) + 1 }),
+    bossSolver: (opts) => simulateFight({ tapsPerSec: opts && opts.tapsPerSec || 12, seed: (state.ticks || 0) + 1 }),
     fightBoss
   };
   return { destroy() {
@@ -4185,7 +4131,6 @@ function renderStage1(ctx2) {
     addBits,
     canFightBoss,
     allSubStagesOwned,
-    actions: ctx2.actions,
     onStageComplete: ctx2.onStageComplete,
     updateEcho
   });
@@ -4193,11 +4138,6 @@ function renderStage1(ctx2) {
 }
 
 // ../../docs/games/metagame/stages/stage1/boss.js
-function hasCheatDisabledAction(ctx2 = {}) {
-  const actions = ctx2.actions;
-  if (!actions || typeof actions.hasAction !== "function") return false;
-  return Boolean(actions.hasAction(1, "cheat_disabled"));
-}
 function mountStage1Boss(arena, ctx2 = {}) {
   const saveStage = () => {
     if (typeof ctx2.save === "function") ctx2.save();
@@ -4206,7 +4146,6 @@ function mountStage1Boss(arena, ctx2 = {}) {
     stage: ctx2.stageConfig,
     state: ctx2.state,
     save: saveStage,
-    actions: ctx2.actions,
     onDefeat: () => {
       if (typeof ctx2.onStageComplete === "function") {
         ctx2.onStageComplete({ stage: 1, defeated: true });
@@ -4334,130 +4273,12 @@ function cheatHireAllManagers(state, cfg) {
   }
 }
 
-// ../../docs/games/metagame/stages/stage1/cheat.js
-var CHEAT_LINE_RE = /^\s*CHEAT\s*=\s*(.*?)\s*$/i;
-var QUOTED_RE = /^(['"])(.*)\1$/;
-var TRUTHY = /* @__PURE__ */ new Set(["true", "1", "yes", "on"]);
-var FALSY = /* @__PURE__ */ new Set(["", "false", "0", "no", "off"]);
-function normalizeCheatValue(value) {
-  let raw = String(value == null ? "" : value).trim();
-  const quoted = raw.match(QUOTED_RE);
-  if (quoted) raw = quoted[2].trim();
-  return raw;
-}
-function parseCheatLine(line) {
-  const match = String(line == null ? "" : line).match(CHEAT_LINE_RE);
-  if (!match) return null;
-  const value = normalizeCheatValue(match[1]);
-  const canonical = value.toLowerCase();
-  const truthy = TRUTHY.has(canonical);
-  const falsy = FALSY.has(canonical);
-  return {
-    found: true,
-    value,
-    canonical,
-    truthy,
-    falsy,
-    cheatActive: truthy,
-    disabled: !truthy,
-    recognized: truthy || falsy
-  };
-}
-function parseCheatConfig(source) {
-  const lines = String(source == null ? "" : source).split(/\r?\n/);
-  for (const line of lines) {
-    const parsed = parseCheatLine(line);
-    if (parsed) return parsed;
-  }
-  return {
-    found: false,
-    value: "",
-    canonical: "",
-    truthy: false,
-    falsy: true,
-    cheatActive: false,
-    disabled: true,
-    recognized: true
-  };
-}
-function shouldDisableCheat(source) {
-  return parseCheatConfig(source).disabled;
-}
-function maybeSetCheatDisabledAction(source, actions, detail = {}) {
-  const parsed = parseCheatConfig(source);
-  if (!parsed.disabled || !actions || typeof actions.setAction !== "function") return false;
-  actions.setAction(1, "cheat_disabled", {
-    source: "raw-editor",
-    file: "Overwriter.frag",
-    value: parsed.value,
-    ...detail
-  });
-  return true;
-}
-
-// ../../docs/games/metagame/stages/stage1/messages.js
-var stageMessages = MESSAGES1;
-var actionMessages = {
-  cheatDisabled: {
-    id: "stage1.cheat_disabled",
-    text: "the unfair routine has been removed."
-  }
-};
-function announceCheatDisabled(ctx2 = {}) {
-  const bell = ctx2.bell;
-  if (!bell) return false;
-  const msg = actionMessages.cheatDisabled;
-  if (typeof bell.add === "function") {
-    bell.add(msg.id, msg.text);
-    return true;
-  }
-  if (typeof bell.push === "function") {
-    bell.push(msg);
-    return true;
-  }
-  if (typeof bell.notify === "function") {
-    bell.notify(msg.text, msg);
-    return true;
-  }
-  return false;
-}
-
-// ../../docs/games/metagame/stages/stage1/achievements.js
-var stageAchievements = ACHIEVEMENTS1;
-var viewerToolAchievement = {
-  id: "stage1.cheat_disabled",
-  legacyId: "ach-boss-cheat-found",
-  stage: 1,
-  name: "protection disabled."
-};
-function grantCheatDisabledAchievement(ctx2 = {}) {
-  const api = ctx2.achievements;
-  const achievement = viewerToolAchievement;
-  if (!api) return false;
-  if (typeof api.unlock === "function") {
-    api.unlock(achievement.id, achievement);
-    return true;
-  }
-  if (typeof api.add === "function") {
-    api.add(achievement.id, achievement);
-    return true;
-  }
-  if (typeof api.setAchievement === "function") {
-    api.setAchievement(achievement);
-    return true;
-  }
-  return false;
-}
-
 // ../../docs/games/metagame/stages/stage1/index.js
 var stageMeta = {
   id: 1,
   slug: "bit-foundry",
   name: "Bit Foundry",
   bossName: "The Defragmenter",
-  btsPath: "/docs/bts/bit_foundry.bts",
-  requiredAction: "1.cheat_disabled",
-  requiredFile: "docs/examples/Overwriter.frag",
   // Dev-menu controls (wired in metagame.js → mounted.dev(id)).
   // "Stage 1 bits" seeds are already hardcoded in metagame.js — these are additional live cheats.
   devControls: [
@@ -4505,7 +4326,6 @@ function mountStage(ctx2 = {}) {
       sfxEnabled: ctx2.sfxEnabled,
       stage: () => stageConfig,
       onExit: ctx2.onExit,
-      actions: ctx2.actions,
       onStageComplete: ctx2.onStageComplete,
       onBoss: openBoss,
       attachChrome: () => {
@@ -4545,20 +4365,9 @@ function mountStage(ctx2 = {}) {
   };
 }
 export {
-  actionMessages,
-  announceCheatDisabled,
   defaultState2 as defaultState,
-  grantCheatDisabledAchievement,
-  hasCheatDisabledAction,
-  maybeSetCheatDisabledAction,
   mountStage,
   mountStage1Boss,
   normalizeState,
-  parseCheatConfig,
-  parseCheatLine,
-  shouldDisableCheat,
-  stageAchievements,
-  stageMessages,
-  stageMeta,
-  viewerToolAchievement
+  stageMeta
 };

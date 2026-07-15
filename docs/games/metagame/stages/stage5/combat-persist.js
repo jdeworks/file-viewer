@@ -58,7 +58,7 @@ export function snapshotCombat(combat) {
     jammed: [...(combat.jammed || [])],
     pending: clone(combat.pending || []),
     boss: combat.bossPhase
-      ? { phase: combat.bossPhase, locked: Boolean(combat.bossLocked), hpMult: combat.bossHpMult || 1, maxPhase: combat.bossMaxPhase || 3 }
+      ? { phase: combat.bossPhase, hpMult: combat.bossHpMult || 1, maxPhase: combat.bossMaxPhase || 3 }
       : null,
     // The key-gated superboss only needs its phase index persisted; its per-phase HP/script are
     // already in the cloned enemy. The advancePhase closure is rebuilt on restore via rewireSuperboss.
@@ -107,7 +107,6 @@ export function restoreCombat(snapshot, { relics = [] } = {}) {
   combat.nodeId = s.nodeId ?? null;
   if (s.boss) {
     combat.bossPhase = s.boss.phase;
-    combat.bossLocked = Boolean(s.boss.locked);
     combat.bossHpMult = s.boss.hpMult || 1;
     combat.bossMaxPhase = s.boss.maxPhase || 3;
     rewireBossCombat(combat);

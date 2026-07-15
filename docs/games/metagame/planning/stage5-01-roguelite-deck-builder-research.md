@@ -241,6 +241,6 @@ one card to upgrade — never all.
 
 Stage 5 takes **Slay the Spire's** run structure and energy system, **Inscryption's** narrative
 integration (the cards ARE the entity's protocol language), and **Balatro's** multiplier cascade
-philosophy (protocol card combos cascade into large effects). Our unique addition: protocol-named
-card mechanics that reflect the stage's communication theme, and the epub reader integration
-as a discoverable guide to the full combo table. Full spec in `stage5-02-our-game-design.md`.
+philosophy (protocol card combos cascade into large effects). Our unique addition is protocol-named
+card mechanics that reflect the stage's communication theme, with the changing finale handshake
+explained directly in combat. Full spec in `stage5-02-our-game-design.md`.

@@ -36,7 +36,6 @@ export function renderMapSelect(host, controller) {
       <div class="s4-controls">
         <button type="button" data-action="boss" class="s4-boss-chip" ${bossReady ? '' : 'disabled'}>${won ? 'The Infinite Loop (cleared)' : bossReady ? 'confront The Infinite Loop' : 'The Infinite Loop — locked · clear all five maps'}</button>
         ${veteran && !won ? '<button type="button" data-action="armory">⚙ armory</button>' : ''}
-        ${won ? '<button type="button" data-action="bts">open fractal_bastion.bts</button>' : ''}
       </div>`;
   }
 
@@ -64,7 +63,6 @@ export function renderMapSelect(host, controller) {
     if (!action) return;
     if (action.dataset.action === 'boss' && allMapsCleared(state)) controller.enterBoss();
     else if (action.dataset.action === 'armory') controller.openArmory?.();
-    else if (action.dataset.action === 'bts') controller.openBts();
   });
 
   repaint();

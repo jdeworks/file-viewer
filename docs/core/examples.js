@@ -2,13 +2,12 @@
 //   Level 1 (default): folder-card grid — one card per category, with icon + label + file count.
 //   Level 2: click a card → expand that category's files inline; ← back returns to grid.
 // "Show all" expands everything. Last-opened category persists in sessionStorage.
-// The "Metagame" category is gated behind fv:games:unlocked.
 import { $ } from './state.js';
 import { intakeFromFile } from './intake.js';
 import { getTypeInfo, sampleDescription } from './type-info.js';
 import { KNOWN_GROUP_ORDER, knownFileGroup, isKnownExample as isKnownExampleFor } from './examples-known.js';
 
-const EXAMPLE_CATEGORY_ORDER = ['Documents', 'Ebook', 'Data', 'Office', 'Config', 'Code', 'Image', 'Media', '3D', 'Archive & Binary', 'Secrets', 'Binary', 'Emulator', 'Text', 'Other', 'Metagame'];
+const EXAMPLE_CATEGORY_ORDER = ['Documents', 'Ebook', 'Data', 'Office', 'Config', 'Code', 'Image', 'Media', '3D', 'Archive & Binary', 'Secrets', 'Binary', 'Emulator', 'Text', 'Other'];
 
 const SUPER_CATEGORIES = {
   'Documents':        'Files',
@@ -25,7 +24,6 @@ const SUPER_CATEGORIES = {
   'Binary':           'System',
   'Emulator':         'System',
   'Secrets':          'System',
-  'Metagame':         'Other',
   'Other':            'Other',
 };
 const SUPER_ORDER = ['Files', 'Code & Config', 'Media & 3D', 'System', 'Other'];
@@ -34,14 +32,10 @@ const CATEGORY_ICONS = {
   Documents: '📄', Data: '📊', Office: '📁', Config: '⚙️',
   Code: '💻', Image: '🖼️', Media: '🎞️', '3D': '◩', Ebook: '▤',
   'Archive & Binary': '📦', Secrets: '🔑', Binary: '⬡', Emulator: '▣',
-  Text: '¶', Other: '📂', Metagame: '🎮',
+  Text: '¶', Other: '📂',
 };
 const SS_KEY = 'fv:examples:lastCat';
-const GAMES_KEY = 'fv:games:unlocked';
 const FILTER_KEY = 'fv:examples:filters';
-function isGamesUnlocked() {
-  try { return localStorage.getItem(GAMES_KEY) === '1'; } catch { return false; }
-}
 
 function readLastCat() {
   try { return sessionStorage.getItem(SS_KEY) || null; } catch { return null; }
@@ -207,13 +201,10 @@ export async function loadExamples(onPick) {
 }
 
 function renderGallery(host, list, onPick) {
-  const unlocked = isGamesUnlocked();
-  const visible = unlocked ? list : list.filter((ex) => !categoriesFor(ex).includes('Metagame'));
-
   // Known/enhanced files are excluded from the type-category groups; they live
   // only in the dedicated known-files section at the bottom.
   const groups = new Map();
-  for (const ex of visible) {
+  for (const ex of list) {
     if (isKnownExample(ex)) continue;
     for (const cat of categoriesFor(ex)) {
       if (!groups.has(cat)) groups.set(cat, []);
@@ -304,7 +295,7 @@ function renderGallery(host, list, onPick) {
   }
 
   function renderKnownFiles() {
-    const knownExamples = visible.filter(isKnownExample);
+    const knownExamples = list.filter(isKnownExample);
     if (knownExamples.length === 0) return null;
 
     const groupMap = new Map();

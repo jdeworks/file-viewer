@@ -87,7 +87,7 @@ test('devSkipToBoss: clears all maps and enters the boss arena', () => {
 test('devSkipToBoss: does not mark the boss as defeated', () => {
   const s = defaultState();
   devSkipToBoss(s);
-  assert.equal(s.boss?.defeated, false, 'boss is not defeated — un-cheat still applies');
+  assert.equal(s.boss?.defeated, false, 'boss is seated but not defeated');
 });
 
 test('devSkipToBoss: grants placement cycles for the boss arena', () => {

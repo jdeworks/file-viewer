@@ -1,6 +1,4 @@
-import { defeatMemoryLeak, getBossLockState, pushLog, tryRestoreDiffKey } from "./boss.js";
-import { memoryV1Text, memoryV2Text, memoryV3Text } from "./content.js";
-import { BTS_PATH, MEMORY_V1_PATH, MEMORY_V2_PATH, MEMORY_V3_PATH } from "./messages.js";
+import { defeatMemoryLeak, getBossLockState, pushLog } from "./boss.js";
 import { buildGrid } from "./grid.js";
 import { applyPrefetch, corruptionForRun, createBoard, encodeMarks, firstHintCell, isSolved, moveCursor, progress, puzzleForRun, setCell, sizeForRun, wrongCells } from "./board.js";
 import { FILLED, COLOR_B, UNKNOWN } from "./nonogram.js";
@@ -27,15 +25,13 @@ const MOVE = {
 const RETAIN_EVERY = 4; // snapshots cleared per retained fragment
 
 export function renderStage3(ctx) {
-  const { host, state, actions, achievements, bell, bts, viewer, save, onStageComplete } = ctx;
+  const { host, state, achievements, bell, save, onStageComplete } = ctx;
   const root = buildStage3Shell();
   host.replaceChildren(root);
 
   const fields = Object.fromEntries([...root.querySelectorAll("[data-field]")].map((el) => [el.dataset.field, el]));
   const log = root.querySelector(".s3-log");
-  const keyInput = root.querySelector(".s3-key");
   const gridHost = root.querySelector(".s3-grid-host");
-  const btsBtn = root.querySelector('[data-action="bts"]');
   // Touch verb toggle (Fill A / Fill B / Mark / Lock): a single-select bar so a plain TAP on a cell
   // applies the selected verb. Shown only on touch/small screens (CSS); desktop keeps mouse/keyboard.
   const verbBar = createVerbBar();
@@ -206,7 +202,7 @@ export function renderStage3(ctx) {
   }
 
   function paintHud() {
-    const lock = getBossLockState({ actions, state });
+    const lock = getBossLockState({ state });
     const corruption = corruptionForRun(state.run);
     setText(fields.registers, state.registers);
     setText(fields.snap, `#${state.run.index + 1}`);
@@ -235,9 +231,8 @@ export function renderStage3(ctx) {
     setText(fields.objective, board.solved
       ? "snapshot restored — drawing the next…"
       : `restore the memory snapshot — ${pr.have}/${pr.need} cells lit${volNote}${decayNote}${aliasNote}.`);
-    setText(fields.bossStatus, `${lock.unlocked ? "UNLOCKED" : "LOCKED"} / columns ${lock.columnClues} / corruption ${lock.corruptionRate}`);
+    setText(fields.bossStatus, lock.bodyReady ? "READY / corruption 8" : "FORMING");
     setText(fields.hint, lock.hint);
-    setHidden(btsBtn, !state.boss.defeated);
     paintBoss(lock, corruption); // #2 stage the boss (chip → body → gate) + M2 fragment progress
     // Oracle / Parity assist buttons (shown once owned; count = shop level + boons, remaining this snapshot).
     const oracle = oracleCap();
@@ -271,8 +266,8 @@ export function renderStage3(ctx) {
     }
   }
 
-  // #2 stage the boss: a one-line chip until corruption 4, the panel body at 4–7, and the restoration
-  // controls only at the corruption-8 gate (bodyReady). M2: retained fragments read here as boss
+  // #2 stage the boss: a one-line chip until corruption 4, the panel body at 4–7, and the solve
+  // control only at the corruption-8 gate (bodyReady). M2: retained fragments read here as boss
   // progress, not as a spendable HUD currency. The DOM nodes always exist (we only toggle visibility)
   // so the boss-lock state stays queryable. Opening the gate fires a one-time banner + bell beat.
   function paintBoss(lock, corruption) {
@@ -291,8 +286,8 @@ export function renderStage3(ctx) {
     if (stage === 2 && !announcedGate) {
       announcedGate = true;
       banner(root, "GATE OPEN");
-      bell?.showBell?.("stage3.boss_gate", "the leak's columns are within reach — restore the key.", { stage: 3 });
-      pushLog(state, "the leak's columns are within reach — restore the key.");
+      bell?.showBell?.("stage3.boss_gate", "the leak's core is exposed.", { stage: 3 });
+      pushLog(state, "the leak's core is exposed.");
     }
   }
 
@@ -346,7 +341,7 @@ export function renderStage3(ctx) {
   const onKey = (event) => {
     if (!root.isConnected || overlay) return;
     const tag = (event.target && event.target.tagName) || "";
-    if (/^(INPUT|TEXTAREA|SELECT)$/.test(tag) || event.target?.isContentEditable) return; // leave the key field alone
+    if (/^(INPUT|TEXTAREA|SELECT)$/.test(tag) || event.target?.isContentEditable) return;
     if (Object.prototype.hasOwnProperty.call(MOVE, event.key)) {
       event.preventDefault();
       const [dx, dy] = MOVE[event.key];
@@ -369,12 +364,7 @@ export function renderStage3(ctx) {
     if (action === "draft") { toggleDraft(); return; }
     if (action === "hint") { useHint(); return; }
     if (action === "check") { useCheck(); return; }
-    if (action === "v1") viewer?.openFile?.(MEMORY_V1_PATH, { text: memoryV1Text(state), source: "stage3" });
-    if (action === "v2") viewer?.openFile?.(MEMORY_V2_PATH, { text: memoryV2Text(state), source: "stage3" });
-    if (action === "v3") viewer?.openFile?.(MEMORY_V3_PATH, { text: memoryV3Text(state), source: "stage3" });
-    if (action === "restore") tryRestoreDiffKey({ state, actions, achievements, bell, input: keyInput.value });
-    if (action === "boss" && defeatMemoryLeak(state)) completeOnce({ stage: 3, defeated: true, btsPath: BTS_PATH });
-    if (action === "bts") bts?.open?.(3);
+    if (action === "boss" && defeatMemoryLeak(state)) completeOnce({ stage: 3, defeated: true });
     save?.();
     paintHud();
   });
@@ -397,15 +387,9 @@ export function renderStage3(ctx) {
     if (board.solved) onSolved(false); // deterministic path — advance synchronously, no reveal
     return true;
   }
-  function tryRestoreKey(key) {
-    const result = tryRestoreDiffKey({ state, actions, achievements, bell, input: key });
-    save?.();
-    paintHud();
-    return result;
-  }
   function bossSolver() {
     const won = defeatMemoryLeak(state);
-    if (won) completeOnce({ stage: 3, defeated: true, btsPath: BTS_PATH });
+    if (won) completeOnce({ stage: 3, defeated: true });
     save?.();
     paintHud();
     return won;
@@ -420,7 +404,7 @@ export function renderStage3(ctx) {
     return ok;
   }
   const uninstallHook = installStage3Hook({
-    state, solveCurrent, tryRestoreKey, bossSolver,
+    state, solveCurrent, bossSolver,
     aliasedNow: () => aliasedTotal(board?.puzzle),
     draftPending: () => draftPending(state),
     draftOffer: () => acquisitionOffer(state).map((c) => c.id),

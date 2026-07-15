@@ -38,12 +38,9 @@ export function defaultState() {
       boss: {
         reached: false,
         phase: 1,
-        unlocked: false,
         defeated: false,
         hp: 150,
-        attempts: 0,
-        lockHintStep: 0,
-        unlockNotified: false
+        attempts: 0
       }
     },
     meta: {

@@ -624,7 +624,6 @@
       "label": "E-book",
       "support": "supported",
       "sampleFiles": [
-        "metagame/stage5/protocols_of_the_entity.epub",
         "sample.epub"
       ],
       "extensions": [
@@ -639,7 +638,7 @@
       },
       "provenance": {
         "sourced": 1,
-        "total": 2
+        "total": 1
       },
       "partialSamples": [],
       "realWorldQuality": "sourced-or-derived",
@@ -652,7 +651,7 @@
       "securityLimitations": [],
       "knownParserGaps": [],
       "testCoverage": "smoke",
-      "sampleSource": "derived",
+      "sampleSource": "real-world",
       "auditStatus": "validated"
     },
     "fb2": {
@@ -1347,7 +1346,6 @@
       "support": "supported",
       "sampleFiles": [
         "composer.json",
-        "Overwriter.frag",
         "package.json",
         "sample.json",
         "tsconfig.json"
@@ -1365,7 +1363,7 @@
       },
       "provenance": {
         "sourced": 0,
-        "total": 5
+        "total": 4
       },
       "partialSamples": [],
       "realWorldQuality": "catalog-fixture-set",
@@ -2174,7 +2172,6 @@
       "sampleFiles": [
         "build.gradle",
         "go.mod",
-        "metagame/stage2/cipher.txt",
         "requirements.txt",
         "sample.bin",
         "sample.txt",
@@ -2195,7 +2192,7 @@
       },
       "provenance": {
         "sourced": 0,
-        "total": 7
+        "total": 6
       },
       "partialSamples": [],
       "realWorldQuality": "catalog-fixture-set",

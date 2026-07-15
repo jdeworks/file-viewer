@@ -5,7 +5,6 @@
 import { loadGlobal, vendor } from '../../core/script-loader.js';
 import { loadTemplate, fill } from '../../core/template.js';
 import { isSvg, mimeFor, dimensions } from './imglib.js';
-import { recordStage3AsciiActivation } from '../../games/metagame/viewer-actions.js';
 import { queryEls } from './edit-els.js';
 import { createView } from './view-controller.js';
 import { createDrawTools } from './draw-overlay.js';
@@ -348,13 +347,11 @@ export async function render(intake, ctx = {}) {
           const { mountAsciiStudio } = await import('./ascii/studio.js');
           asciiStudio = mountAsciiStudio(asciiOut, {
             bytes: curBytes, mime: curMime, filename: intake.filename,
-            onActivate: () => recordStage3AsciiActivation({ file: intake.filename }),
             onBack: toggleAscii,   // 🖼 Image button in the studio toolbar returns here
           });
           asciiBtn.disabled = false;
         } else {
           asciiStudio.setImage({ bytes: curBytes, mime: curMime });
-          recordStage3AsciiActivation({ file: intake.filename });
         }
       } catch (e) {
         asciiOut.textContent = 'ASCII studio failed to load: ' + (e.message || e);
