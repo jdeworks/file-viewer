@@ -53,6 +53,8 @@ Curated categories include:
 
 Use the built-in examples to see the current presentation for a specific format. Some advanced formats and codecs depend on the browser and may offer inspection or download rather than a complete preview.
 
+Search-friendly details for common formats are published in the [format guide](https://jdeworks.github.io/file-viewer/formats/). The main URL still opens the full-screen tool directly; the guides are optional reference pages, not an introductory flow.
+
 ## Offline use
 
 No installation is required. File Viewer uses a browser-mode web app manifest and a service worker, not an install-first application flow.
@@ -88,6 +90,17 @@ python3 -m http.server 8000
 ```
 
 Core orchestration lives in `docs/core/`; file-type modules live in `docs/types/<id>/`; runtime libraries are vendored in `docs/vendor/`. To add a type, create its module folder and register it in `docs/core/registry.js`. Keep runtime dependencies local to the repository rather than adding a CDN.
+
+### Search metadata
+
+Indexable pages and their canonical metadata are declared in `seo.config.json`. Visible guide copy remains hand-authored; the generator owns only each marker-delimited head block and `docs/sitemap.xml`.
+
+```sh
+node scripts/seo.mjs --write  # regenerate metadata and sitemap after editing the config
+node scripts/seo.mjs --check  # validate metadata, H1s, static links, and sitemap freshness
+```
+
+The deployed sitemap is submitted through a Google Search Console URL-prefix property for `https://jdeworks.github.io/file-viewer/`. Search Console verification uses a static token supplied by the site owner and does not add analytics or visitor-side code.
 
 ## Test
 

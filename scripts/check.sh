@@ -275,6 +275,9 @@ run_phase_asset_manifest() {
 run_phase "regenerating asset-manifest.json (must be committed fresh)…" \
   run_phase_asset_manifest
 
+run_phase "verifying generated SEO metadata and sitemap…" \
+  node scripts/seo.mjs --check
+
 run_loc_check() {
   ./scripts/loc-check.sh || true
 }
@@ -331,6 +334,7 @@ FULL_UNIT_TESTS=(
   tests/format-semantic-correctness.test.mjs
   tests/package-trust-labels.test.mjs
   tests/asset-manifest.test.mjs
+  tests/seo.test.mjs
   tests/settings-defaults.test.mjs
   tests/registry-runtime.test.mjs
   tests/production-bundle.test.mjs

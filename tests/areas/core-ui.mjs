@@ -70,6 +70,32 @@ export async function run(ctx) {
   await page.goto(origin, { waitUntil: 'load' });
   pass('page loaded');
 
+  const toolFirst = await page.evaluate(() => ({
+    intakeVisible: !document.getElementById('intake')?.hidden,
+    workspaceHidden: !!document.getElementById('workspace')?.hidden,
+    heading: document.querySelector('#intake h1')?.textContent?.trim(),
+    formatsHref: document.querySelector('#intake a[href="formats/"]')?.getAttribute('href'),
+  }));
+  if (toolFirst.intakeVisible && toolFirst.workspaceHidden && toolFirst.heading === 'Drop a file, pick one, or paste' && toolFirst.formatsHref === 'formats/') {
+    pass('tool-first entry remains the full-screen intake; format guides are an optional text link');
+  } else fail('tool-first entry changed: ' + JSON.stringify(toolFirst));
+
+  // The search-facing pages are useful without JavaScript and return to the tool in one click.
+  const staticCtx = await ctx.browser.newContext({ javaScriptEnabled: false });
+  const staticPage = await staticCtx.newPage();
+  await staticPage.goto(origin + '/formats/csv/index.html', { waitUntil: 'load' });
+  const staticGuide = await staticPage.evaluate(() => ({
+    heading: document.querySelector('h1')?.textContent?.trim(),
+    canonical: document.querySelector('link[rel="canonical"]')?.href,
+    toolHref: document.querySelector('a.cta')?.href,
+  }));
+  if (/View and edit CSV files locally/.test(staticGuide.heading || '') &&
+      staticGuide.canonical === 'https://jdeworks.github.io/file-viewer/formats/csv/' &&
+      staticGuide.toolHref === origin + '/') {
+    pass('format guide is crawlable without JavaScript and links directly to the tool');
+  } else fail('static format guide contract: ' + JSON.stringify(staticGuide));
+  await staticCtx.close();
+
   const statusBadge = await page.$eval('.construction-badge', (el) => el.textContent.trim()).catch(() => null);
   if (statusBadge === 'Public beta') pass('status badge identifies the release as Public beta');
   else fail('status badge text: ' + JSON.stringify(statusBadge));

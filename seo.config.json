@@ -1,0 +1,128 @@
+{
+  "siteName": "File Viewer",
+  "baseUrl": "https://jdeworks.github.io/file-viewer/",
+  "publishDir": "docs",
+  "sitemap": "sitemap.xml",
+  "pages": [
+    {
+      "file": "index.html",
+      "route": "",
+      "title": "Private Online File Viewer – Open 140+ Formats Locally",
+      "description": "Open, inspect, compare, and edit 140+ file formats locally in your browser. Private by default, with no signup, analytics, or tracking.",
+      "schema": {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "File Viewer",
+        "url": "https://jdeworks.github.io/file-viewer/",
+        "description": "Open, inspect, compare, and edit 140+ file formats locally in your browser. Private by default, with no signup, analytics, or tracking.",
+        "applicationCategory": "UtilitiesApplication",
+        "operatingSystem": "Any operating system with a modern web browser",
+        "isAccessibleForFree": true,
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        }
+      }
+    },
+    {
+      "file": "formats/index.html",
+      "route": "formats/",
+      "title": "Supported File Formats | Private Browser File Viewer",
+      "description": "Browse guides to common formats supported by File Viewer, including PDF, CSV, JSON, Office documents, ebooks, databases, and archives."
+    },
+    {
+      "file": "formats/pdf/index.html",
+      "route": "formats/pdf/",
+      "title": "Private PDF Viewer – Open PDFs Locally in Your Browser",
+      "description": "Preview PDF pages and inspect document metadata locally in your browser, with text and page-image export options and no routine file upload."
+    },
+    {
+      "file": "formats/csv/index.html",
+      "route": "formats/csv/",
+      "title": "Private CSV Viewer and Editor – View Tables Locally",
+      "description": "View and edit CSV or TSV files as tables, compare changes, choose delimiters, and export JSON or XLSX locally in your browser."
+    },
+    {
+      "file": "formats/json/index.html",
+      "route": "formats/json/",
+      "title": "Private JSON Viewer, Formatter, Editor, and Diff Tool",
+      "description": "Open, format, edit, preview, and compare JSON locally in your browser with structured views and format-conversion tools."
+    },
+    {
+      "file": "formats/yaml/index.html",
+      "route": "formats/yaml/",
+      "title": "Private YAML Viewer and Editor – Inspect YAML Locally",
+      "description": "View, edit, format, and compare YAML locally with a structured preview and browser-based table and form tools."
+    },
+    {
+      "file": "formats/xml/index.html",
+      "route": "formats/xml/",
+      "title": "Private XML Viewer, Editor, and Structural Diff Tool",
+      "description": "View, edit, format, and compare XML locally with a structured document preview and DOM-aware diff in your browser."
+    },
+    {
+      "file": "formats/markdown/index.html",
+      "route": "formats/markdown/",
+      "title": "Private Markdown Viewer and Editor with Live Preview",
+      "description": "Read, edit, preview, and compare Markdown locally with source and visual editing modes in one private browser workspace."
+    },
+    {
+      "file": "formats/docx/index.html",
+      "route": "formats/docx/",
+      "title": "Private DOCX Viewer – Open Word Documents Locally",
+      "description": "Open and review Microsoft Word DOCX document content locally in your browser without first uploading it to a conversion website."
+    },
+    {
+      "file": "formats/xlsx/index.html",
+      "route": "formats/xlsx/",
+      "title": "Private XLSX Viewer – Open Excel Workbooks Locally",
+      "description": "Browse Microsoft Excel XLSX sheets in an interactive grid and export table data as CSV or JSON locally in your browser."
+    },
+    {
+      "file": "formats/pptx/index.html",
+      "route": "formats/pptx/",
+      "title": "Private PPTX Viewer – Preview PowerPoint Slides Locally",
+      "description": "Preview Microsoft PowerPoint PPTX presentations as navigable slides locally in your browser without a routine file upload."
+    },
+    {
+      "file": "formats/epub/index.html",
+      "route": "formats/epub/",
+      "title": "Private EPUB Reader – Open Ebooks Locally in Your Browser",
+      "description": "Read EPUB ebooks locally with chapter navigation, book metadata, embedded images, and a focused browser-based reading view."
+    },
+    {
+      "file": "formats/sqlite/index.html",
+      "route": "formats/sqlite/",
+      "title": "Private SQLite Viewer – Browse Database Tables Locally",
+      "description": "Inspect SQLite schemas, tables, columns, and rows locally in your browser without uploading the database to a remote query service."
+    },
+    {
+      "file": "formats/zip/index.html",
+      "route": "formats/zip/",
+      "title": "Private ZIP Viewer – Inspect Archive Contents Locally",
+      "description": "Browse files and folders inside ZIP archives, inspect entry metadata, and open supported contents locally in your browser."
+    },
+    {
+      "file": "tools/ascii-studio/index.html",
+      "route": "tools/ascii-studio/",
+      "title": "ASCII Art Generator – Image and Webcam ASCII Studio",
+      "description": "Convert an image or live webcam view into configurable ASCII art locally in your browser with text and image export tools.",
+      "schema": {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "ASCII Studio",
+        "url": "https://jdeworks.github.io/file-viewer/tools/ascii-studio/",
+        "description": "Convert an image or live webcam view into configurable ASCII art locally in your browser with text and image export tools.",
+        "applicationCategory": "MultimediaApplication",
+        "operatingSystem": "Any operating system with a modern web browser",
+        "isAccessibleForFree": true,
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        }
+      }
+    }
+  ]
+}
