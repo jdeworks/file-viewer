@@ -19,6 +19,57 @@ export class ArchiveEntryError extends Error {
   }
 }
 
+export function createArchiveExtractionSession() {
+  let extractedBytes = 0;
+  let generation = 0;
+  let active = null;
+
+  function begin(owner) {
+    if (active) {
+      active.controller.abort(new ArchiveEntryError('stale', 'A newer archive entry request replaced this extraction.'));
+    }
+    const controller = new AbortController();
+    const token = ++generation;
+    active = { owner, token, controller };
+    return { token, signal: controller.signal };
+  }
+
+  function isCurrent(owner, token) {
+    return active?.owner === owner && active.token === token && !active.controller.signal.aborted;
+  }
+
+  function finish(owner, token, bytes) {
+    if (!isCurrent(owner, token)) {
+      throw new ArchiveEntryError('stale', 'A newer archive entry request replaced this extraction.');
+    }
+    extractedBytes += bytes;
+    active = null;
+  }
+
+  function abortOwner(owner, reason = new ArchiveEntryError('disposed', 'Archive viewer is no longer active.')) {
+    if (active?.owner !== owner) return;
+    const { controller } = active;
+    active = null;
+    generation++;
+    controller.abort(reason);
+  }
+
+  return {
+    begin,
+    isCurrent,
+    finish,
+    abortOwner,
+    get extractedBytes() { return extractedBytes; },
+    get active() { return !!active; },
+  };
+}
+
+let pageExtractionSession = null;
+export function getPageArchiveExtractionSession() {
+  if (!pageExtractionSession) pageExtractionSession = createArchiveExtractionSession();
+  return pageExtractionSession;
+}
+
 export function archivePathIssue(name) {
   const value = String(name || '').replace(/\\/g, '/');
   if (!value || value.includes('\0')) return 'invalid path';
@@ -28,9 +79,14 @@ export function archivePathIssue(name) {
 }
 
 function entrySize(entry, key) {
-  const direct = Number(entry?.[key]);
-  if (Number.isFinite(direct) && direct >= 0) return direct;
-  const nested = Number(entry?._data?.[key]);
+  const directValue = entry?.[key];
+  if (directValue != null) {
+    const direct = Number(directValue);
+    if (Number.isFinite(direct) && direct >= 0) return direct;
+  }
+  const nestedValue = entry?._data?.[key];
+  if (nestedValue == null) return null;
+  const nested = Number(nestedValue);
   return Number.isFinite(nested) && nested >= 0 ? nested : null;
 }
 
@@ -68,6 +124,7 @@ export function assertEntryMayOpen(record, {
   if (!record) throw new ArchiveEntryError('missing-entry', 'Archive entry was not found.');
   if (record.dir) throw new ArchiveEntryError('directory', 'Directories cannot be opened as files.');
   if (record.symlink) throw new ArchiveEntryError('symlink', 'Symbolic-link entries are shown as metadata only.');
+  if (record.regular === false) throw new ArchiveEntryError('non-regular', 'This archive entry is metadata only.');
   if (record.pathIssue) throw new ArchiveEntryError('unsafe-path', `Entry has an unsafe ${record.pathIssue}.`);
   if (record.duplicateCount > 1) {
     throw new ArchiveEntryError('duplicate-name',
@@ -79,14 +136,14 @@ export function assertEntryMayOpen(record, {
   }
   const uncompressed = record.uncompressedSize;
   const compressed = record.compressedSize;
-  if (!Number.isFinite(uncompressed)) {
+  if (!Number.isFinite(uncompressed) && record.allowUnknownSize !== true) {
     throw new ArchiveEntryError('unknown-size', 'Entry has no trustworthy uncompressed size.');
   }
-  if (uncompressed > limits.maxEntryBytes) {
+  if (Number.isFinite(uncompressed) && uncompressed > limits.maxEntryBytes) {
     throw new ArchiveEntryError('entry-too-large',
       `Entry expands to ${uncompressed} bytes; the per-entry limit is ${limits.maxEntryBytes}.`);
   }
-  if (extractedBytes + uncompressed > limits.maxSessionBytes) {
+  if (Number.isFinite(uncompressed) && extractedBytes + uncompressed > limits.maxSessionBytes) {
     throw new ArchiveEntryError('session-too-large',
       `Opening this entry would exceed the ${limits.maxSessionBytes}-byte session limit.`);
   }
@@ -105,15 +162,16 @@ export function createBoundedEntryOpener({
   extract,
   makeIntake,
   limits = ARCHIVE_ENTRY_LIMITS,
+  session = null,
 }) {
+  session = session || intake?.archiveExtractionSession || createArchiveExtractionSession();
   const described = describeArchiveEntries(records, limits);
   const byKey = new Map(described.map((record) => [record.key, record]));
   const byName = new Map();
   for (const record of described) if (!byName.has(record.name)) byName.set(record.name, record);
   const depth = Number(intake?.archiveDepth) || 0;
-  let extractedBytes = 0;
-  let generation = 0;
   let disposed = false;
+  const owner = Symbol('archive-entry-opener');
 
   function find(selector) {
     return byKey.get(selector) || byName.get(selector) || null;
@@ -122,42 +180,72 @@ export function createBoundedEntryOpener({
   async function open(selector) {
     if (disposed) throw new ArchiveEntryError('disposed', 'Archive viewer is no longer active.');
     const record = find(selector);
-    assertEntryMayOpen(record, { depth, extractedBytes, limits });
-    const token = ++generation;
+    assertEntryMayOpen(record, { depth, extractedBytes: session.extractedBytes, limits });
+    const maxOutputBytes = Math.min(limits.maxEntryBytes, limits.maxSessionBytes - session.extractedBytes);
+    if (maxOutputBytes <= 0) {
+      throw new ArchiveEntryError('session-too-large',
+        `Opening this entry would exceed the ${limits.maxSessionBytes}-byte session limit.`);
+    }
+    const operation = session.begin(owner);
     let timer;
     const timeout = new Promise((_, reject) => {
-      timer = setTimeout(() => reject(new ArchiveEntryError('timeout',
-        `Entry extraction exceeded ${Math.round(limits.timeoutMs / 1000)} seconds.`)), limits.timeoutMs);
+      timer = setTimeout(() => {
+        const error = new ArchiveEntryError('timeout',
+          `Entry extraction exceeded ${Math.round(limits.timeoutMs / 1000)} seconds.`);
+        reject(error);
+        session.abortOwner(owner, error);
+      }, limits.timeoutMs);
     });
     let bytes;
     try {
-      bytes = await Promise.race([Promise.resolve().then(() => extract(record)), timeout]);
+      bytes = await Promise.race([
+        Promise.resolve().then(() => extract(record, { signal: operation.signal, maxOutputBytes })),
+        timeout,
+      ]);
+    } catch (error) {
+      if (!session.isCurrent(owner, operation.token)) {
+        const reason = operation.signal.reason;
+        if (reason instanceof ArchiveEntryError) throw reason;
+        throw new ArchiveEntryError('stale', 'A newer archive entry request replaced this extraction.');
+      }
+      session.abortOwner(owner, error);
+      throw error;
     } finally {
       clearTimeout(timer);
     }
-    if (disposed || token !== generation) {
+    if (disposed || !session.isCurrent(owner, operation.token)) {
       throw new ArchiveEntryError('stale', 'A newer archive entry request replaced this extraction.');
     }
-    if (!(bytes instanceof Uint8Array)) bytes = new Uint8Array(bytes || 0);
-    if (bytes.length > limits.maxEntryBytes || extractedBytes + bytes.length > limits.maxSessionBytes) {
-      throw new ArchiveEntryError('actual-size-limit', 'Extracted bytes exceed the configured archive limit.');
+    try {
+      if (!(bytes instanceof Uint8Array)) bytes = new Uint8Array(bytes || 0);
+      if (bytes.length > limits.maxEntryBytes || session.extractedBytes + bytes.length > limits.maxSessionBytes) {
+        throw new ArchiveEntryError('actual-size-limit', 'Extracted bytes exceed the configured archive limit.');
+      }
+      if (record.uncompressedSize != null && bytes.length !== record.uncompressedSize) {
+        throw new ArchiveEntryError('size-mismatch',
+          `Extracted ${bytes.length} bytes but the archive declared ${record.uncompressedSize}.`);
+      }
+    } catch (error) {
+      session.abortOwner(owner, error);
+      throw error;
     }
-    if (record.uncompressedSize != null && bytes.length !== record.uncompressedSize) {
-      throw new ArchiveEntryError('size-mismatch',
-        `Extracted ${bytes.length} bytes but the archive declared ${record.uncompressedSize}.`);
-    }
-    extractedBytes += bytes.length;
+    session.finish(owner, operation.token, bytes.length);
     const filename = String(record.name || '').replace(/\\/g, '/').split('/').pop() || 'archive-entry';
     const inner = makeIntake(bytes, filename);
     inner.archiveDepth = depth + 1;
     inner.archiveEntryPath = record.name;
+    inner.archiveExtractionSession = session;
     return inner;
   }
 
   return {
     records: described,
     open,
-    revoke() { disposed = true; generation++; },
-    get extractedBytes() { return extractedBytes; },
+    revoke() {
+      disposed = true;
+      session.abortOwner(owner);
+    },
+    get extractedBytes() { return session.extractedBytes; },
+    session,
   };
 }

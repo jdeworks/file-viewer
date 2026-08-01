@@ -3,7 +3,7 @@
 // ZipCrypto entries can be unlocked locally through libarchive; AES-encrypted ZIP entries
 // are shown as unsupported instead of advertising a password field that cannot help.
 import { readZip, fmtSize, encryptedNames, listCentralDirectory, extractEntry, extractEncryptedEntry, verifyZipCryptoPassword, verifyZipCryptoPasswordFull } from './ziplib.js';
-import { createBoundedEntryOpener } from './safe-entry.js';
+import { createBoundedEntryOpener, getPageArchiveExtractionSession } from './safe-entry.js';
 import { intakeFromBytes } from '../../core/intake.js';
 import { loadTemplate, fill, esc, fillEach } from '../../core/template.js';
 
@@ -169,6 +169,7 @@ export async function render(intake, ctx = {}) {
     boundedOpener = createBoundedEntryOpener({
       intake,
       records: fileMeta,
+      session: intake.archiveExtractionSession || getPageArchiveExtractionSession(),
       makeIntake: intakeFromBytes,
       extract: async (record) => {
         if (canOpen) return extractEntry(z.zip, record.name);
@@ -600,7 +601,15 @@ export async function render(intake, ctx = {}) {
         ctx.toast?.('Could not open ' + name);
       }
     });
-    return { parentNode: host, hadUnsafe: false, openEntry: (name) => openEntry(name, host), archiveTree };
+    return {
+      parentNode: host,
+      hadUnsafe: false,
+      openEntry: (name) => openEntry(name, host),
+      archiveTree,
+      archiveCleanup: () => boundedOpener.revoke(),
+      archiveExportMode: 'repack-zip',
+      archiveSourceFormat: 'zip',
+    };
   }
 
   const rows = renderRows();
@@ -608,5 +617,13 @@ export async function render(intake, ctx = {}) {
   const meta = files.length + ' files · ' + (z.folders?.length || 0) + ' folders · ' + fmtSize(z.totalU) + ' uncompressed'
     + (z.totalU > 0 ? ' · ' + z.ratio + '% smaller packed' : '');
 
-  return { bodyHtml: fill(docTpl, { banner: '', meta, hint, rows }), hadUnsafe: false, openEntry, archiveTree: canOpen ? archiveTree : null };
+  return {
+    bodyHtml: fill(docTpl, { banner: '', meta, hint, rows }),
+    hadUnsafe: false,
+    openEntry,
+    archiveTree: canOpen ? archiveTree : null,
+    archiveCleanup: canOpen ? () => boundedOpener.revoke() : null,
+    archiveExportMode: 'repack-zip',
+    archiveSourceFormat: 'zip',
+  };
 }

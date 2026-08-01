@@ -402,6 +402,7 @@ export async function exportFolder(changedOnly) {
     const base = ($('ftRoot').textContent || 'folder').replace(/[^\w.-]+/g, '_');
     downloadBlob(blob, base + (changedOnly ? '-changed' : '') + '.zip');
     state.folderExported = true;       // edits are now saved out; clears the unsaved-work warning
+    state.downloadedSinceEdit = true;
     toast(`Exported ${count} file${count === 1 ? '' : 's'} as .zip.`);
   } catch (e) {
     toast('Could not export folder: ' + e.message);
@@ -415,6 +416,32 @@ async function repackArchive() {
   const binaryEdits = state.binaryEdits || new Map();
   const deletions = state.archiveDeletes || new Set();
   if (textEdits.size === 0 && binaryEdits.size === 0 && deletions.size === 0) { toast('No edits or deletions to export yet.'); return; }
+  if (state.archiveExportMode === 'update-zip') {
+    try {
+      toast('Building archive update ZIP…', 1500);
+      const { buildArchiveUpdateZip } = await import('./archive-update.js');
+      const result = await buildArchiveUpdateZip(state.archiveIntake, {
+        textEdits,
+        binaryEdits,
+        deletions,
+        entries: state.treeEntries,
+        sourceFormat: state.archiveSourceFormat,
+      });
+      const base = ($('ftRoot').textContent || 'archive').replace(/[^\w.-]+/g, '_');
+      downloadBlob(result.blob, base + '-updates.zip');
+      state.folderExported = true;
+      state.downloadedSinceEdit = true;
+      const n = result.changedCount + result.deletedCount;
+      const manifestNote = result.manifestName === '_file-viewer-update.json'
+        ? ''
+        : ' The deletion manifest is ' + result.manifestName + '.';
+      toast('Exported ' + n + ' archive update' + (n === 1 ? '' : 's') + ' in '
+        + base + '-updates.zip.' + manifestNote);
+    } catch (error) {
+      toast('Could not export archive update: ' + error.message);
+    }
+    return;
+  }
   try {
     toast('Repacking archive…', 1500);
     const { repackZipWithDeletions } = await import('./repack.js');
@@ -422,6 +449,7 @@ async function repackArchive() {
     const base = ($('ftRoot').textContent || 'archive').replace(/[^\w.-]+/g, '_');
     downloadBlob(blob, 'edited-' + base);
     state.folderExported = true;
+    state.downloadedSinceEdit = true;
     const n = textEdits.size + binaryEdits.size + deletions.size;
     toast('Archive saved with ' + n + ' change' + (n === 1 ? '' : 's') + '.');
   } catch (e) {

@@ -83,6 +83,8 @@ assert.equal(tar.total, 5);
 
 assert.equal(detectArchive({ filename: 'source.tbz2' }), 0.92);
 assert.equal(detectArchive({ filename: 'source.txz' }), 0.92);
+assert.equal(detectArchive({ filename: 'notes.txt.gz' }), 0.92);
+assert.equal(detectArchive({ filename: 'payload.xz' }), 0.92);
 assert.equal(inspectArchive(Uint8Array.from([0x42, 0x5a, 0x68]), 'source.tbz2').format, 'Bzip2-compressed TAR');
 assert.equal(inspectArchive(Uint8Array.from([0xfd, 0x37, 0x7a, 0x58, 0x5a, 0x00]), 'source.txz').format, 'XZ-compressed TAR');
 

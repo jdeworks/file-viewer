@@ -38,6 +38,7 @@ export function quickType(filename) {
 const dotColor = (id) => TYPE_DOT[id] || TYPE_DOT.text;
 
 function fmtSize(n) {
+  if (!Number.isFinite(n)) return '';
   if (n < 1024) return n + ' B';
   if (n < 1048576) return (n / 1024).toFixed(0) + ' KB';
   return (n / 1048576).toFixed(1) + ' MB';
@@ -312,6 +313,12 @@ export function renderTree(host, root, {
       if (editedPaths.has(item.node.path)) row.classList.add('ft-edited');
       if (movedPaths.has(item.node.path)) row.classList.add('ft-moved');
       if (state.sessionTree) row.classList.add('ft-session');
+      if (item.node.disabledReason) {
+        row.classList.add('ft-disabled');
+        row.title = item.node.disabledReason;
+        row.setAttribute('aria-disabled', 'true');
+        row.draggable = false;
+      }
       if (item.expandable) {
         row.querySelector('.ft-arrow').addEventListener('click', (e) => {
           e.stopPropagation();
@@ -320,7 +327,14 @@ export function renderTree(host, root, {
           buildFlat();
         });
       }
-      row.addEventListener('click', () => { setActive(item.node.path); onOpen(item.node); });
+      row.addEventListener('click', () => {
+        if (item.node.disabledReason) {
+          onOpen(item.node);
+          return;
+        }
+        setActive(item.node.path);
+        onOpen(item.node);
+      });
       appendRowActions(row, { path: item.node.path, isFolder: false, name: item.node.name, root: item.node.sidebarRoot || item.depth === 0 });
       row.addEventListener('dragstart', (e) => {
         _dragNode = item.node.sidebarInnerPath ? { ...item.node, path: item.node.sidebarInnerPath } : item.node;

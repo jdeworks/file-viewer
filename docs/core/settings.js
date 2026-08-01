@@ -2,7 +2,7 @@
 // and descriptor-driven UI. Hidden fields never render. Presets are explicit per-type
 // (declared in index.js settings.presets) — no directory listing needed.
 import { descriptorsFor, applyMonacoOptions, GLOBAL_KEYS, CATEGORY_ORDER, CATEGORY_LABEL, CATEGORY_OPEN } from './settings-schema.js';
-import { HEAVY_PACKAGES, mountHeavyReload, unmountHeavyReload } from './heavy-packages.js';
+import { HEAVY_PACKAGES, clearHeavyReloads, mountHeavyReload, unmountHeavyReload } from './heavy-packages.js';
 
 const SETTINGS_VERSION = 1;
 const typeKey = (id) => 'fv:settings:type:' + id;
@@ -166,6 +166,7 @@ const groupOpenState = new Map();
 
 // onChange(model) fires after any value/preset change so the app re-applies to editor+preview.
 export function renderSettings(container, model, { onChange, toast }) {
+  clearHeavyReloads(container);
   container.innerHTML = '';
 
   // Preset row
@@ -225,6 +226,7 @@ export function renderSettings(container, model, { onChange, toast }) {
   function set(key, val) { model.values[key] = val; syncPreset(); onChange(model, key); }
 
   function rebuild() {
+    clearHeavyReloads(container);
     groupsHost.innerHTML = '';
     for (const cat of CATEGORY_ORDER) {
       const items = model.descriptors.filter((d) => d.category === cat);

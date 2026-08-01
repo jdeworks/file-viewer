@@ -4,6 +4,7 @@ import {
   ArchiveEntryError,
   archivePathIssue,
   assertEntryMayOpen,
+  createArchiveExtractionSession,
   createBoundedEntryOpener,
   describeArchiveEntries,
 } from '../docs/types/zip/safe-entry.js';
@@ -27,9 +28,15 @@ assert.throws(() => assertEntryMayOpen(describeArchiveEntries([record('link', 1,
   (error) => error.code === 'symlink');
 assert.throws(() => assertEntryMayOpen(describeArchiveEntries([record('locked', 1, 1, { encrypted: true })])[0]),
   (error) => error.code === 'encrypted');
+assert.throws(() => assertEntryMayOpen(describeArchiveEntries([record('socket', 1, 1, { regular: false })])[0]),
+  (error) => error.code === 'non-regular');
+assert.doesNotThrow(() => assertEntryMayOpen(describeArchiveEntries([
+  record('stream.txt', null, 12, { allowUnknownSize: true }),
+])[0]));
 assert.throws(() => assertEntryMayOpen(describeArchiveEntries([
   record('bomb', ARCHIVE_ENTRY_LIMITS.maxEntryBytes, 1),
 ])[0]), (error) => error.code === 'expansion-ratio');
+assert.equal(describeArchiveEntries([record('unknown-packed', 4, null)])[0].compressedSize, null);
 assert.throws(() => describeArchiveEntries(new Array(3).fill(null).map((_, i) => record(String(i))), {
   ...ARCHIVE_ENTRY_LIMITS, maxEntries: 2,
 }), (error) => error.code === 'too-many-entries');
@@ -71,12 +78,18 @@ resolveFirst(new Uint8Array([1]));
 await assert.rejects(first, (error) => error.code === 'stale');
 assert.equal((await second).filename, 'two');
 
+let timeoutSignal;
 const timeout = createBoundedEntryOpener({
   intake: {}, records: [record('slow', 1, 1)], makeIntake,
-  extract: () => new Promise(() => {}),
+  extract: (_, { signal }) => {
+    timeoutSignal = signal;
+    return new Promise(() => {});
+  },
   limits: { ...ARCHIVE_ENTRY_LIMITS, timeoutMs: 5 },
 });
 await assert.rejects(timeout.open('slow'), (error) => error instanceof ArchiveEntryError && error.code === 'timeout');
+assert.equal(timeoutSignal.aborted, true);
+assert.equal(timeoutSignal.reason.code, 'timeout');
 
 const cumulative = createBoundedEntryOpener({
   intake: {}, records: [record('a', 2, 2), record('b', 2, 2)], makeIntake,
@@ -85,6 +98,41 @@ const cumulative = createBoundedEntryOpener({
 });
 await cumulative.open('a');
 await assert.rejects(cumulative.open('b'), (error) => error.code === 'session-too-large');
+
+const sharedSession = createArchiveExtractionSession();
+let resolveSharedFirst;
+let sharedFirstSignal;
+const sharedFirst = createBoundedEntryOpener({
+  intake: {}, records: [record('first', 1, 1)], makeIntake, session: sharedSession,
+  extract: (_, { signal }) => {
+    sharedFirstSignal = signal;
+    return new Promise((resolve) => { resolveSharedFirst = resolve; });
+  },
+});
+const sharedSecond = createBoundedEntryOpener({
+  intake: {}, records: [record('second', 1, 1)], makeIntake, session: sharedSession,
+  extract: async () => new Uint8Array([2]),
+});
+const sharedPending = sharedFirst.open('first');
+await Promise.resolve();
+const sharedWinner = sharedSecond.open('second');
+assert.equal(sharedFirstSignal.aborted, true);
+resolveSharedFirst(new Uint8Array([1]));
+await assert.rejects(sharedPending, (error) => error.code === 'stale');
+assert.equal((await sharedWinner).filename, 'second');
+
+const sharedBudget = createArchiveExtractionSession();
+const sharedLimits = { ...ARCHIVE_ENTRY_LIMITS, maxSessionBytes: 3 };
+const budgetOne = createBoundedEntryOpener({
+  intake: {}, records: [record('one.bin', 2, 2)], makeIntake, session: sharedBudget,
+  limits: sharedLimits, extract: async () => new Uint8Array(2),
+});
+const budgetTwo = createBoundedEntryOpener({
+  intake: {}, records: [record('two.bin', 2, 2)], makeIntake, session: sharedBudget,
+  limits: sharedLimits, extract: async () => new Uint8Array(2),
+});
+await budgetOne.open('one.bin');
+await assert.rejects(budgetTwo.open('two.bin'), (error) => error.code === 'session-too-large');
 
 const disposed = createBoundedEntryOpener({
   intake: {}, records: [record('done')], extract: async () => new Uint8Array(4), makeIntake,

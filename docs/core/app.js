@@ -24,6 +24,7 @@ import { initSidebarRoots, captureActiveSidebarRoot, removeActiveSidebarRoot, ex
 import { installGlobalScreensaver } from './global-screensaver.js';
 import { rankLiteCandidates } from './detect-lite.js';
 import { createLatestRequestController } from './request-lifecycle.js';
+import { approveArchiveSource, archiveSourceStatus, likelyArchive } from './archivelib.js';
 
 /* ─────────────────────────── Intake → render ─────────────────────────── */
 
@@ -114,11 +115,25 @@ async function loadIntake(intake, { sidebarNavigationToken = null } = {}) {
     state.folderEdits = new Map(); state.folderMoves = new Map(); state.folderExported = false;
     clearArchiveTree({ keepRoot: true });
   }
-  if (intake.truncated) {
+  const advancedArchive = likelyArchive(intake);
+  const advancedArchiveEnabled = advancedArchive
+    && readGlobalKey('enableArchiveWasm', false) === true;
+  const archiveSource = advancedArchiveEnabled ? archiveSourceStatus(intake) : null;
+  if (archiveSource?.status === 'too-large') {
+    toast('This archive is larger than the 256 MB in-browser source limit.', 6000);
+    return false;
+  } else if (archiveSource?.status === 'incomplete' || archiveSource?.status === 'invalid') {
+    toast('The complete archive source is unavailable.', 6000);
+    return false;
+  } else if (archiveSource?.status === 'confirm') {
+    const mb = (archiveSource.size / 1048576).toFixed(0);
+    if (!confirm(`This archive is ${mb} MB. Reading it copies the complete source into a worker and WebAssembly memory. Continue?`)) return false;
+    approveArchiveSource(intake);
+  } else if (intake.truncated && !advancedArchive) {
     const mb = (intake.size / 1048576).toFixed(0);
     const shown = (intake.loadedBytes / 1048576).toFixed(0);
     if (!confirm(`This file is ${mb} MB — too large to load fully. Only the first ${shown} MB will be shown. Open anyway?`)) return false;
-  } else if (!intake.streamed && intake.size > LARGE_FILE_BYTES) {
+  } else if (!advancedArchive && !intake.streamed && intake.size > LARGE_FILE_BYTES) {
     const mb = (intake.size / 1048576).toFixed(1);
     if (!confirm(`This file is ${mb} MB. Large files may be slow in the editor. Open anyway?`)) return false;
   }
@@ -153,7 +168,7 @@ async function loadIntake(intake, { sidebarNavigationToken = null } = {}) {
   if (!await activateType(type, null, activation)) return false;
   if (!activationIsCurrent(activation)) return false;
   showFileLoading(null);
-  if (intake.truncated) {
+  if (intake.truncated && !advancedArchive) {
     const shown = (intake.loadedBytes / 1048576).toFixed(0);
     const total = (intake.size / 1048576).toFixed(0);
     toast(`Large file: showing the first ${shown} MB of ${total} MB.`, 6000);
@@ -352,6 +367,7 @@ async function renderPreview() {
     return false;
   }
   let rendered;
+  let releaseArchiveCleanup = null;
   try {
     await previewCheckpoint('request-started', request);
     if (!request.isCurrent()) return false;
@@ -387,6 +403,7 @@ async function renderPreview() {
       ctx.remotePresetAllowed = snapshot.htmlRemotePresetAllowed;
     }
     rendered = await mod.render(intake, ctx);
+    if (rendered?.archiveCleanup) releaseArchiveCleanup = request.registerCleanup(rendered.archiveCleanup);
     if (rendered?.revoke) request.registerCleanup(rendered.revoke);
     if (rendered?.destroy && rendered.destroy !== rendered.revoke) request.registerCleanup(rendered.destroy);
     if (!request.isCurrent()) return false;
@@ -434,7 +451,12 @@ async function renderPreview() {
       // The mounted archive root deliberately outlives this preview: opening one entry replaces
       // the preview while the root remains available for sibling navigation. Transfer its
       // extractor at commit time instead of tying it to the disposed preview request.
-      mountArchiveTree(rendered.archiveTree, rendered.openEntry, loadIntake, intake);
+      const root = mountArchiveTree(rendered.archiveTree, rendered.openEntry, loadIntake, intake, {
+        exportMode: rendered.archiveExportMode,
+        cleanup: rendered.archiveCleanup,
+        sourceFormat: rendered.archiveSourceFormat,
+      });
+      if (root) releaseArchiveCleanup?.();
     }
     // Live-node previews aren't screenshot-able via the sanitized-body path UNLESS the renderer
     // also supplies a static bodyHtml (e.g. structured trees that add a live query panel but keep
@@ -447,7 +469,12 @@ async function renderPreview() {
   }
   if (rendered.archiveTree && request.isCurrent()) {
     // See the live-node path above: archive-tree ownership persists independently after commit.
-    mountArchiveTree(rendered.archiveTree, rendered.openEntry, loadIntake, intake);
+    const root = mountArchiveTree(rendered.archiveTree, rendered.openEntry, loadIntake, intake, {
+      exportMode: rendered.archiveExportMode,
+      cleanup: rendered.archiveCleanup,
+      sourceFormat: rendered.archiveSourceFormat,
+    });
+    if (root) releaseArchiveCleanup?.();
   }
   // Remember the sanitized body for screenshots + Print/Save-as-PDF (null for script full docs).
   state.lastBodyHtml = rendered.fullDoc ? null : rendered.bodyHtml;

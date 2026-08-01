@@ -31,6 +31,8 @@ export const state = {
   sessionTree: false,        // true when the sidebar is showing the session history tree
   archiveTree: false,        // true when the sidebar is showing entries from an opened archive
   archiveOpenNode: null,     // path -> open a lazily extracted archive entry through the tree
+  archiveExportMode: null,   // repack-zip | update-zip for the active archive root
+  archiveSourceFormat: null, // source format recorded in advanced-archive update manifests
   sidebarRoots: null,        // combined removable sidebar roots for opened files/folders/archives
   activeSidebarRootId: null, // currently active root in the combined sidebar
 };

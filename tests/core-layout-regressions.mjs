@@ -57,7 +57,15 @@ async function openFile(page, relativePath, expectedType) {
     const editor = document.querySelector('#editor .monaco-editor');
     return workspace && !workspace.hidden && ((preview?.children.length || 0) > 0 || !!editor);
   });
-  await page.waitForTimeout(100); // allow the post-intake layout frame to settle before geometry assertions
+  // Sidebar-root registration happens after type activation and its final responsive layout.
+  // Waiting for that durable state avoids observing preview DOM in the brief gap before
+  // layoutTopbar() has moved mobile controls into the overflow menu.
+  await page.waitForFunction(() => {
+    const current = window.__fv?.state?.intake;
+    return !!current && window.__fv.state.sidebarRoots?.some((root) => (
+      root.treeEntries?.some((entry) => entry.intake === current)
+    ));
+  });
 }
 
 async function mobileStandaloneRootRegression() {

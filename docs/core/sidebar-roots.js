@@ -66,12 +66,13 @@ export function captureActiveSidebarRoot() {
   // Folder files use the same editor as standalone files, but their edit is keyed by the
   // root-relative tree path. Capture it before a different sidebar root becomes active; otherwise
   // an async open of the new root can accidentally stash the old editor bytes under the new root.
-  if (root.kind === 'folder' && state.currentFolderPath && state.rawview?.isDirty?.()) {
+  if ((root.kind === 'folder' || root.kind === 'archive')
+    && state.currentFolderPath && state.rawview?.isDirty?.()) {
     const edits = state.folderEdits || root.folderEdits || new Map();
     edits.set(state.currentFolderPath, state.rawview.getValue());
     state.folderEdits = edits;
     root.folderEdits = edits;
-    root.folderExported = false;
+    root.folderExported = !!state.folderExported && !!state.downloadedSinceEdit;
   }
   if ((root.kind === 'folder' || root.kind === 'archive')
     && state.currentFolderPath && state.binaryEdit?.dirty) {
@@ -79,7 +80,7 @@ export function captureActiveSidebarRoot() {
     edits.set(state.currentFolderPath, state.binaryEdit);
     state.binaryEdits = edits;
     root.binaryEdits = edits;
-    root.folderExported = false;
+    root.folderExported = !!state.folderExported && !!state.downloadedSinceEdit;
   }
   if (!capturedDirtyFileRoot) {
     root.treeEntries = state.treeEntries || root.treeEntries || [];
@@ -88,6 +89,8 @@ export function captureActiveSidebarRoot() {
   root.folderMoves = state.folderMoves || new Map();
   root.binaryEdits = state.binaryEdits || null;
   root.archiveDeletes = state.archiveDeletes || null;
+  root.archiveExportMode = state.archiveExportMode || root.archiveExportMode || null;
+  root.archiveSourceFormat = state.archiveSourceFormat || root.archiveSourceFormat || null;
   root.currentFolderPath = state.currentFolderPath || null;
   root.folderExported = capturedDirtyFileRoot ? false : !!state.folderExported;
   return capturedDirtyFileRoot;
@@ -104,6 +107,8 @@ export function activateSidebarRoot(root, { skipCapture = false } = {}) {
   state.archiveDeletes = root.archiveDeletes || null;
   state.archiveIntake = root.archiveIntake || null;
   state.archiveOpenNode = root.archiveOpenNode || null;
+  state.archiveExportMode = root.archiveExportMode || null;
+  state.archiveSourceFormat = root.archiveSourceFormat || null;
   state.currentFolderPath = root.currentFolderPath || null;
   state.sessionTree = root.kind === 'file';
   state.archiveTree = root.kind === 'archive';
@@ -113,7 +118,9 @@ export function activateSidebarRoot(root, { skipCapture = false } = {}) {
   $('repoBtn').hidden = !root.git;
   $('ftExportBtn').hidden = root.kind === 'file' || !!root.git || !!root.readOnly || (root.kind === 'archive' && !root.archiveIntake);
   $('ftExportBtn').title = root.kind === 'archive'
-    ? 'Download archive with your edits applied'
+    ? (root.archiveExportMode === 'update-zip'
+        ? 'Download changed entries and deletion instructions as an update ZIP'
+        : 'Download archive with your edits applied')
     : 'Download folder with your edits applied';
   $('ftSearch').hidden = !!root.git || root.kind === 'file';
   $('ftSearchInput').value = '';
@@ -160,6 +167,7 @@ export function removeActiveSidebarRoot() {
   if (state.sidebarNavigationPending || state.companionOperationToken) return;
   const root = roots().find((item) => item.id === state.activeSidebarRootId);
   if (!root) return;
+  try { root.archiveCleanup?.(); } catch (error) { console.warn('Archive cleanup failed:', error); }
   const next = roots().filter((item) => item.id !== root.id);
   state.sidebarRoots = next;
   state.activeSidebarRootId = null;
@@ -178,6 +186,8 @@ export function renderSidebarRoots(activeRoot = null, activeInnerPath = null, { 
     state.activeSidebarRootId = null;
     state.sidebarNavigationPending = false;
     state.sidebarNavigationToken = null;
+    state.archiveExportMode = null;
+    state.archiveSourceFormat = null;
     $('ftRemoveRootBtn').hidden = true;
     setSidebar(false);
     // Clearing the last root must also tear down the active Companion folder association/watch.
@@ -384,7 +394,10 @@ export function addFolderRoot({ label, entries, git = false, openNode = null, al
   return root;
 }
 
-export function addArchiveRoot({ label, entries, openNode, archiveIntake, alreadyCaptured = false }) {
+export function addArchiveRoot({
+  label, entries, openNode, archiveIntake, exportMode = 'repack-zip', sourceFormat = '',
+  cleanup = null, alreadyCaptured = false,
+}) {
   if (!alreadyCaptured) captureActiveSidebarRoot();
   const root = {
     id: 'r' + nextId++,
@@ -397,6 +410,9 @@ export function addArchiveRoot({ label, entries, openNode, archiveIntake, alread
     binaryEdits: new Map(),
     archiveDeletes: new Set(),
     archiveIntake,
+    archiveExportMode: exportMode,
+    archiveSourceFormat: sourceFormat,
+    archiveCleanup: cleanup,
     openNode,
   };
   roots().push(root);

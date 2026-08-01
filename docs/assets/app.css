@@ -133,6 +133,7 @@ body {
 .ft-size { margin-left: auto; padding-left: 10px; color: var(--fg-2); font-size: 11px; flex: 0 0 auto; }
 .ft-file.active { background: color-mix(in srgb, var(--accent) 18%, transparent); box-shadow: inset 2px 0 0 var(--accent); }
 .ft-file:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.ft-file.ft-disabled { opacity: .58; cursor: not-allowed; }
 .ft-name.ft-ticker { text-overflow: clip; }   /* no ellipsis while the marquee scrolls */
 .collapsed > .ft-children { display: none; }
 /* Draggable sidebar resizer (desktop). Hidden via [hidden] when the tree is closed. */
@@ -563,7 +564,7 @@ body.fv-dragging .intake::after {
 .drawer-head h2 { font-size: 15px; margin: 0; }
 .drawer-head-actions { display: flex; align-items: center; gap: 4px; }
 .settings-dock-btn[aria-pressed="true"] { color: var(--accent); background: var(--bg-3); }
-.drawer-body { padding: 12px 14px; overflow: auto; }
+.drawer-body { flex: 1 1 auto; min-height: 0; padding: 12px 14px; overflow: auto; }
 .scrim { position: fixed; inset: 0; background: rgba(0,0,0,.35); z-index: 20; }
 
 @media (min-width: 761px) {
@@ -592,8 +593,10 @@ body.fv-dragging .intake::after {
 }
 .set-row--block { flex-direction: column; align-items: stretch; }
 .set-row--block textarea { width: 100%; box-sizing: border-box; }
-/* Heavy opt-in package: eager-download status + reload-to-apply button under the toggle row. */
-.heavy-dl { flex-basis: 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; margin: 2px 0 6px; padding: 7px 10px; background: var(--bg-2, rgba(127,127,127,.08)); border: 1px solid var(--border); border-radius: 6px; min-width: 0; }
+/* Heavy opt-in packages: status cards float above the drawer bottom and stay outside row flow. */
+.drawer.has-heavy-dl .drawer-body { padding-bottom: calc(24px + var(--heavy-dl-stack-height, 0px)); }
+.heavy-dl-stack { position: absolute; left: 14px; right: 14px; bottom: max(12px, env(safe-area-inset-bottom)); z-index: 4; display: grid; gap: 8px; pointer-events: none; }
+.heavy-dl { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; margin: 0; padding: 9px 10px; background: var(--bg-2, rgba(127,127,127,.08)); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 5px 18px rgba(0,0,0,.2); min-width: 0; pointer-events: auto; }
 .heavy-dl-status { flex: 1 1 170px; min-width: 0; overflow-wrap: anywhere; font-size: 12px; color: var(--fg-2); }
 .heavy-dl-status.done { color: #15803d; font-weight: 600; }
 .heavy-dl-status.error { color: #b91c1c; }

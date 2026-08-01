@@ -840,6 +840,28 @@ fi
 run_phase "smoke test: core areas (headless Chromium, zero off-origin)…" \
   run_smoke_core
 
+run_advanced_archive_suite() {
+  if [ "$MODE" != fast ]; then
+    if [ "$DRY" = 1 ]; then echo "  (dry-run) advanced archive browsing: selected"; return 0; fi
+    node tests/advanced-archive-browsing.mjs
+    return
+  fi
+  local changed_path
+  while IFS= read -r changed_path; do
+    case "$changed_path" in
+      docs/core/app.js|docs/core/archive-*|docs/core/filetree.js|docs/core/folder.js|docs/core/heavy-packages.js|docs/core/settings*.js|docs/core/sidebar-roots.js|docs/core/state.js|docs/types/archive/*|docs/types/zip/*|tests/advanced-archive-browsing.mjs)
+        if [ "$DRY" = 1 ]; then echo "  (dry-run) advanced archive browsing: selected"; return 0; fi
+        node tests/advanced-archive-browsing.mjs
+        return
+        ;;
+    esac
+  done < <(collect_changed_paths)
+  echo "  advanced archive browsing: skipped (no matching changes)"
+}
+
+run_phase "advanced archive browsing and update export (headless Chromium)…" \
+  run_advanced_archive_suite
+
 # The four standalone Chromium suites below each boot their own browser+server (~1-2 min apiece).
 # In --fast mode they are path-gated like units/smoke: each runs only when a changed path touches
 # what it actually asserts; shared shell/vendor/infra changes conservatively run all four. Full mode

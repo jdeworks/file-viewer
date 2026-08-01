@@ -5,16 +5,17 @@
   "format": "esm",
   "target": "es2022",
   "minified": true,
-  "bytes": 148812,
-  "gzipBytes": 48688,
-  "brotliBytes": 42215,
-  "inlinedModules": 34,
+  "bytes": 154523,
+  "gzipBytes": 50527,
+  "brotliBytes": 43675,
+  "inlinedModules": 36,
   "dynamicImports": [
     "../games/launcher.js",
     "../known/registry.generated.js",
     "../types/markdown/wysiwyg.js",
     "../types/media/transcoder.js",
     "../types/text/code/codelens.js",
+    "./archive-update.js",
     "./archivelib.js",
     "./binary-inspector.js",
     "./companion-settings.js",
@@ -41,35 +42,35 @@
   "inputs": [
     {
       "path": "../../docs/core/app.js",
-      "bytesInOutput": 20559
+      "bytesInOutput": 21319
     },
     {
       "path": "../../docs/core/offline.js",
-      "bytesInOutput": 13415
+      "bytesInOutput": 13419
     },
     {
       "path": "../../docs/core/rawpane.js",
-      "bytesInOutput": 11247
+      "bytesInOutput": 11259
     },
     {
       "path": "../../docs/core/folder.js",
-      "bytesInOutput": 10533
-    },
-    {
-      "path": "../../docs/core/settings-schema.js",
-      "bytesInOutput": 9398
+      "bytesInOutput": 11253
     },
     {
       "path": "../../docs/core/filetree.js",
-      "bytesInOutput": 9251
+      "bytesInOutput": 9458
+    },
+    {
+      "path": "../../docs/core/settings-schema.js",
+      "bytesInOutput": 9405
+    },
+    {
+      "path": "../../docs/core/sidebar-roots.js",
+      "bytesInOutput": 8271
     },
     {
       "path": "../../docs/core/iframe.js",
       "bytesInOutput": 8245
-    },
-    {
-      "path": "../../docs/core/sidebar-roots.js",
-      "bytesInOutput": 7580
     },
     {
       "path": "../../docs/core/intake.js",
@@ -77,11 +78,11 @@
     },
     {
       "path": "../../docs/core/rawview.js",
-      "bytesInOutput": 5866
+      "bytesInOutput": 5869
     },
     {
       "path": "../../docs/core/settings.js",
-      "bytesInOutput": 5734
+      "bytesInOutput": 5746
     },
     {
       "path": "../../docs/core/autosave.js",
@@ -89,7 +90,7 @@
     },
     {
       "path": "../../docs/core/layout.js",
-      "bytesInOutput": 4293
+      "bytesInOutput": 4294
     },
     {
       "path": "../../docs/core/global-screensaver.js",
@@ -97,7 +98,7 @@
     },
     {
       "path": "../../docs/core/archive-tree.js",
-      "bytesInOutput": 3492
+      "bytesInOutput": 4092
     },
     {
       "path": "../../docs/core/session-tree.js",
@@ -108,12 +109,16 @@
       "bytesInOutput": 2577
     },
     {
+      "path": "../../docs/core/heavy-packages.js",
+      "bytesInOutput": 2510
+    },
+    {
       "path": "../../docs/core/editor-language.js",
       "bytesInOutput": 2266
     },
     {
       "path": "../../docs/core/compare.js",
-      "bytesInOutput": 1935
+      "bytesInOutput": 1936
     },
     {
       "path": "../../docs/core/exports.js",
@@ -128,8 +133,8 @@
       "bytesInOutput": 1630
     },
     {
-      "path": "../../docs/core/heavy-packages.js",
-      "bytesInOutput": 1332
+      "path": "../../docs/core/archivelib.js",
+      "bytesInOutput": 1373
     },
     {
       "path": "../../docs/core/viewer-open.js",
@@ -174,6 +179,10 @@
     {
       "path": "../../docs/core/editor-mode.js",
       "bytesInOutput": 240
+    },
+    {
+      "path": "../../docs/types/zip/safe-entry.js",
+      "bytesInOutput": 142
     }
   ]
 }

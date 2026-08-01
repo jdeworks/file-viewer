@@ -68,11 +68,20 @@ cp node_modules/sql.js/dist/sql-wasm.wasm "$VENDOR/sql.js/sql-wasm.wasm"
 mkdir -p "$VENDOR/pdf-lib"
 cp node_modules/pdf-lib/dist/pdf-lib.min.js "$VENDOR/pdf-lib/pdf-lib.min.js"
 
-# --- libarchive.js (7z/RAR/tar WASM, ~1 MB). ESM loader + WASM binary + worker bundle.
+# --- libarchive.js and standalone-stream codecs. Loaded together for advanced archive browsing.
 # Loaded ONLY when Advanced > Archive support is ON and a non-zip archive is opened.
 cp node_modules/libarchive.js/dist/libarchive.js      "$VENDOR/libarchive/libarchive.js"
 cp node_modules/libarchive.js/dist/libarchive.wasm    "$VENDOR/libarchive/libarchive.wasm"
 cp node_modules/libarchive.js/dist/worker-bundle.js   "$VENDOR/libarchive/worker-bundle.js"
+sed 's/}(this,/}(globalThis,/' node_modules/xz-decompress/dist/package/xz-decompress.min.js \
+  > "$VENDOR/libarchive/xz-decompress.js"
+tr -d '\r' < node_modules/zstddec/dist/zstddec-stream.modern.js \
+  > "$VENDOR/libarchive/zstddec-stream.js"
+cp node_modules/zstddec/LICENSE                       "$VENDOR/libarchive/zstddec.LICENSE"
+cp node_modules/seek-bzip/LICENSE                      "$VENDOR/libarchive/seek-bzip.LICENSE"
+node_modules/.bin/esbuild scripts/vendor-entry/seek-bzip-browser.js \
+  --bundle --format=esm --platform=browser --target=es2022 --minify \
+  --legal-comments=eof --outfile="$VENDOR/libarchive/seek-bzip.js"
 
 # --- ffmpeg.wasm (media transcoding, ~23 MB WASM). UMD wrapper + core-st (single-threaded,
 # no SharedArrayBuffer required). Loaded ONLY when Advanced > Enable media transcoding is ON

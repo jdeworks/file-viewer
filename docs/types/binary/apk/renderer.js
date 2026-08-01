@@ -1,7 +1,12 @@
 import { loadGlobal, vendor } from '../../../core/script-loader.js';
 import { intakeFromBytes } from '../../../core/intake.js';
 import { compressionMethodName, fmtSize, listCentralDirectory } from '../../zip/ziplib.js';
-import { ARCHIVE_ENTRY_LIMITS, ArchiveEntryError, createBoundedEntryOpener } from '../../zip/safe-entry.js';
+import {
+  ARCHIVE_ENTRY_LIMITS,
+  ArchiveEntryError,
+  createBoundedEntryOpener,
+  getPageArchiveExtractionSession,
+} from '../../zip/safe-entry.js';
 import { analyzeAndroidPackage } from './layout.js';
 
 function esc(s) {
@@ -80,11 +85,14 @@ export async function render(intake, ctx = {}) {
     opener = createBoundedEntryOpener({
       intake,
       records: centralEntries,
+      session: intake.archiveExtractionSession || getPageArchiveExtractionSession(),
       makeIntake: intakeFromBytes,
-      extract: async (record) => {
+      extract: async (record, { signal }) => {
         const entry = zip.file(record.name);
         if (!entry) throw new ArchiveEntryError('missing-entry', `Could not locate ${record.name}.`);
-        return entry.async('uint8array');
+        const output = await entry.async('uint8array');
+        if (signal.aborted) throw signal.reason || new ArchiveEntryError('stale', 'A newer archive entry request replaced this extraction.');
+        return output;
       },
     });
   } catch (error) {
@@ -141,5 +149,8 @@ export async function render(intake, ctx = {}) {
       rootName: intake.filename || 'Android Package',
       entries: archiveTreeEntries,
     } : null,
+    archiveCleanup: () => opener.revoke(),
+    archiveExportMode: 'repack-zip',
+    archiveSourceFormat: 'zip',
   };
 }

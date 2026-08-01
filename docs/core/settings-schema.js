@@ -33,8 +33,8 @@ export const GENERAL_DESCRIPTORS = [
     hint: 'Disable UI and game animations (transitions, pulses, arcade effects). Helps on low-power devices or if motion is distracting.' },
   { key: 'enableFfmpeg', label: 'Media transcoding (ffmpeg.wasm — ~23 MB download on first use)', category: 'advanced', type: 'bool', default: false,
     hint: 'Convert audio/video formats your browser cannot play natively (AVI, WMV, FLV, TS, ...) using ffmpeg.wasm. Downloads ~23 MB the first time; cached for subsequent uses. Transcoding runs entirely in-browser — no upload, no server.' },
-  { key: 'enableArchiveWasm', label: 'Archive support (libarchive.wasm — ~1 MB download on first use)', category: 'advanced', type: 'bool', default: false,
-    hint: 'List and extract 7z, RAR, tar, tar.gz archives using libarchive.wasm. Downloads ~1 MB the first time; cached for subsequent uses. Runs entirely in-browser.' },
+  { key: 'enableArchiveWasm', label: 'Archive support (libarchive.wasm, about 1 MB on first use)', category: 'advanced', type: 'bool', default: false,
+    hint: 'Browse 7z and RAR archives, tar-family archives, plus gzip, bzip2, xz or zstd streams. The first use downloads about 1 MB and caches it. Everything runs in your browser.' },
   { key: 'enableEmulators', label: 'Prefer emulators for supported game files', category: 'advanced', type: 'bool', default: false,
     hint: 'Apply immediately. Uses same-origin emulator engines that are cached on first use; the complete optional EmulatorJS bundle is about 14 MB. Only open files from sources you trust — emulated software runs with reduced but non-zero access.' },
 ];
