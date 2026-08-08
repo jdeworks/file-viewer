@@ -288,6 +288,40 @@ export async function run(ctx) {
   if (/Format\s*Nintendo 64/.test(romMeta) && /CRC2\s*9ABCDEF0/.test(romMeta)) pass('ROM metadata drawer includes parsed fields'); else fail('rom meta: ' + romMeta.replace(/\s+/g, ' ').slice(0, 180));
   await page.click('#metaDrawer [data-close]');
 
+  // HEIC uses a scoped Emscripten factory. Decode the real fixture and prove that neither the
+  // generic Module name nor the factory leaks into the parent page.
+  await page.goto(origin, { waitUntil: 'load' });
+  await page.evaluate(() => {
+    window.__fvHeifGlobals = {
+      Module: { own: Object.hasOwn(window, 'Module'), value: window.Module },
+      libheif: { own: Object.hasOwn(window, 'libheif'), value: window.libheif },
+    };
+  });
+  await openExample('sample.heic');
+  await page.waitForSelector('#previewHost canvas', { timeout: 20000 });
+  const heifResult = await page.evaluate(() => {
+    const canvas = document.querySelector('#previewHost canvas');
+    const before = window.__fvHeifGlobals;
+    const globalsPreserved = ['Module', 'libheif'].every((key) => (
+      Object.hasOwn(window, key) === before[key].own && Object.is(window[key], before[key].value)
+    ));
+    delete window.__fvHeifGlobals;
+    return {
+      type: window.__fv?.state?.type?.id,
+      width: canvas?.width || 0,
+      height: canvas?.height || 0,
+      globalsPreserved,
+      error: /Could not decode/i.test(document.querySelector('#previewHost')?.textContent || ''),
+    };
+  });
+  if (heifResult.type === 'heif' && heifResult.width === 1280 && heifResult.height === 854 && !heifResult.error) {
+    pass('HEIC fixture decodes to its 1280 x 854 canvas');
+  } else {
+    fail('HEIC decode: ' + JSON.stringify(heifResult));
+  }
+  if (heifResult.globalsPreserved) pass('HEIC decoding preserves parent Module and libheif globals');
+  else fail('HEIC decoder leaked Module or libheif into the parent page');
+
   // ── Raster image ── parent-pane viewer with fit-to-screen default + size-based zoom. ──
   await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.png');

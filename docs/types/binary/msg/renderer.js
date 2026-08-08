@@ -2,37 +2,16 @@
 // Uses the parentNode contract because we embed an srcdoc iframe for HTML email bodies.
 // Returns { parentNode: HTMLElement, revoke() {} }
 
-function vendor(filename) {
-  return new URL(`../../../vendor/${filename}`, import.meta.url).href;
-}
-
-let cfbLoadPromise = null;
-async function loadCFB() {
-  if (cfbLoadPromise) return cfbLoadPromise;
-  cfbLoadPromise = new Promise((resolve, reject) => {
-    const url = vendor('cfb.min.js');
-    if (document.querySelector(`script[src="${url}"]`)) {
-      // Already injected — wait briefly for it to execute
-      setTimeout(resolve, 50);
-      return;
-    }
-    const s = document.createElement('script');
-    s.src = url;
-    s.onload = resolve;
-    s.onerror = () => reject(new Error('Failed to load cfb.min.js'));
-    document.head.appendChild(s);
-  });
-  return cfbLoadPromise;
-}
+import { loadCFB } from './cfblib.js';
 
 function esc(s) {
   return String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 }
 
-function findProp(cfb, tag) {
+function findProp(cfbLib, cfb, tag) {
   const suffixes = ['001F', '001E', '0102', '0000'];
   for (const suf of suffixes) {
-    const entry = CFB.find(cfb, `/__substg1.0_${tag}${suf}`);
+    const entry = cfbLib.find(cfb, `/__substg1.0_${tag}${suf}`);
     if (entry?.content?.length) return { content: entry.content, suffix: suf };
   }
   return null;
@@ -53,8 +32,8 @@ function decodeString(content, suffix) {
   return Array.from(data).map(b => String.fromCharCode(b)).join('').replace(/\0+$/, '');
 }
 
-function getProp(cfb, tag) {
-  const found = findProp(cfb, tag);
+function getProp(cfbLib, cfb, tag) {
+  const found = findProp(cfbLib, cfb, tag);
   if (!found) return '';
   return decodeString(found.content, found.suffix);
 }
@@ -67,7 +46,7 @@ function sanitizeHtml(html) {
     .replace(/\s+on\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]*)/gi, '');
 }
 
-function findAttachments(cfb) {
+function findAttachments(cfbLib, cfb) {
   const attachments = [];
   const seen = new Set();
   for (const path of (cfb.FullPaths || [])) {
@@ -80,19 +59,19 @@ function findAttachments(cfb) {
 
     const prefix = `/__attach_#${key}`;
     // Try to get filename: PR_ATTACH_FILENAME (3704) or PR_ATTACH_LONG_FILENAME (3707)
-    let filename = getProp(cfb, '3707');  // long filename first
-    if (!filename) filename = getProp(cfb, '3704');
+    let filename = getProp(cfbLib, cfb, '3707');  // long filename first
+    if (!filename) filename = getProp(cfbLib, cfb, '3704');
     // Fallback: check within the subfolder
     if (!filename) {
       const suffixes = ['001F', '001E', '0000'];
       for (const suf of suffixes) {
-        const e = CFB.find(cfb, `${prefix}/__substg1.0_3707${suf}`);
+        const e = cfbLib.find(cfb, `${prefix}/__substg1.0_3707${suf}`);
         if (e?.content?.length) { filename = decodeString(e.content, suf); break; }
       }
     }
     if (!filename) {
       for (const suf of ['001F', '001E', '0000']) {
-        const e = CFB.find(cfb, `${prefix}/__substg1.0_3704${suf}`);
+        const e = cfbLib.find(cfb, `${prefix}/__substg1.0_3704${suf}`);
         if (e?.content?.length) { filename = decodeString(e.content, suf); break; }
       }
     }
@@ -122,7 +101,7 @@ const STYLE = `
 `;
 
 export async function render(intake) {
-  await loadCFB();
+  const cfbLib = await loadCFB();
 
   const wrap = document.createElement('div');
   wrap.style.cssText = 'padding:0;height:100%;overflow:auto';
@@ -143,7 +122,7 @@ export async function render(intake) {
 
   let cfb;
   try {
-    cfb = CFB.read(intake.bytes, { type: 'array' });
+    cfb = cfbLib.read(intake.bytes, { type: 'array' });
   } catch (e) {
     const errDiv = document.createElement('div');
     errDiv.className = 'msg-err';
@@ -153,13 +132,13 @@ export async function render(intake) {
   }
 
   // Extract fields
-  const subject    = getProp(cfb, '0037');
-  const senderName = getProp(cfb, '0042');
-  const senderMail = getProp(cfb, '0C1F');
-  const displayTo  = getProp(cfb, '0E04');
-  const displayCc  = getProp(cfb, '0E03');
-  const htmlBody   = getProp(cfb, '1013');
-  const plainBody  = getProp(cfb, '1000');
+  const subject    = getProp(cfbLib, cfb, '0037');
+  const senderName = getProp(cfbLib, cfb, '0042');
+  const senderMail = getProp(cfbLib, cfb, '0C1F');
+  const displayTo  = getProp(cfbLib, cfb, '0E04');
+  const displayCc  = getProp(cfbLib, cfb, '0E03');
+  const htmlBody   = getProp(cfbLib, cfb, '1013');
+  const plainBody  = getProp(cfbLib, cfb, '1000');
 
   // Header card
   const header = document.createElement('div');
@@ -196,7 +175,7 @@ export async function render(intake) {
   inner.appendChild(header);
 
   // Attachment-content banner
-  const attachments = findAttachments(cfb);
+  const attachments = findAttachments(cfbLib, cfb);
   if (attachments.length > 0) {
     const banner = document.createElement('div');
     banner.className = 'msg-banner';

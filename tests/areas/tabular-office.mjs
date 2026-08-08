@@ -359,8 +359,17 @@ export async function run(ctx) {
 
   // ── PowerPoint module (WP19) ── pptxviewjs renders slides to parent-pane images.
   await page.goto(origin, { waitUntil: 'load' });
+  await page.evaluate(() => { window.__fvPptxNativeFileReader = window.FileReader; });
   await openExample('Sample.pptx');
   await page.waitForSelector('#previewHost img.pptx-slide', { timeout: 25000 });
+  const nativeFileReaderPreserved = await page.evaluate(() => {
+    const preserved = window.FileReader === window.__fvPptxNativeFileReader
+      && typeof window.FileReader.prototype.readAsArrayBuffer === 'function';
+    delete window.__fvPptxNativeFileReader;
+    return preserved;
+  });
+  if (nativeFileReaderPreserved) pass('PPTX preserves the browser FileReader constructor');
+  else fail('PPTX replaced the browser FileReader constructor');
   const slideDims = await page.$$eval('#previewHost img.pptx-slide', (els) => els.map((e) => e.naturalWidth));
   if (slideDims.length === 2 && slideDims.every((w) => w > 100)) pass('PPTX: ' + slideDims.length + ' slides rendered to images'); else fail('pptx slides: ' + JSON.stringify(slideDims));
   const sampleNotesStatus = await page.$eval('#previewHost .pptx-notes-status', (element) => element.textContent);

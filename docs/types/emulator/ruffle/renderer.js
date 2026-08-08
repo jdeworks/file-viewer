@@ -13,6 +13,9 @@ function ensureRuffleLoaded() {
     window.RufflePlayer.config = {
       ...(window.RufflePlayer.config || {}),
       publicPath: new URL('../../../vendor/ruffle/', import.meta.url).href,
+      // The viewer creates its player explicitly. Ruffle's browser Flash-plugin polyfills are
+      // unnecessary here and permanently replace navigator.plugins and related native APIs.
+      polyfills: false,
     };
 
     // Check if already loaded via a previous tag insertion.

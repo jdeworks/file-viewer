@@ -2,25 +2,39 @@
 //   node tests/smoke-area.mjs ocr
 // NOT part of the smoke.mjs core gate (the wasm parse + recognize is slow). Proves the shared engine
 // works fully OFFLINE end-to-end (the harness separately asserts ZERO off-origin requests across the
-// run) by recognizing text rendered to an in-page canvas, the digits preset, and the video plumbing.
+// run) by recognizing an image after PPTX, the digits preset, and the video plumbing.
 export async function run(ctx) {
-  const { page, origin, pass, fail } = ctx;
+  const { page, origin, pass, fail, openExample } = ctx;
   await page.goto(origin, { waitUntil: 'load' });
 
-  // 1. Recognize rendered text on a canvas — exercises lib + worker + wasm core + traineddata offline.
-  const text = await page.evaluate(async () => {
+  // 1. PptxViewJS used to replace window.FileReader with an incompatible helper. Open a deck first,
+  //    then drive the image viewer's real OCR button to cover the reported cross-format sequence.
+  await openExample('Sample.pptx');
+  await page.waitForSelector('#previewHost img.pptx-slide', { timeout: 30000 });
+  await page.evaluate(async () => {
     const c = document.createElement('canvas');
     c.width = 520; c.height = 160;
     const g = c.getContext('2d');
     g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height);
     g.fillStyle = '#000'; g.font = 'bold 80px sans-serif'; g.textBaseline = 'top';
     g.fillText('HELLO', 24, 30);
-    const ocr = await import('/core/ocr/index.js');
-    return (await ocr.recognize(c)).text;
+    const blob = await new Promise((resolve) => c.toBlob(resolve, 'image/png'));
+    localStorage.setItem('imgv-ocr-consent', '1');
+    await window.__fv.openBlobFile(blob, 'ocr-after-pptx.png', { mime: 'image/png' });
   });
-  const norm = (text || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
-  if (norm.includes('HELLO')) pass('OCR: recognizes rendered canvas text offline (wasm + traineddata)');
-  else fail('OCR canvas text: ' + JSON.stringify(text));
+  await page.waitForSelector('#previewHost .imgv-ocr-btn:not([hidden])', { timeout: 15000 });
+  await page.click('#previewHost .imgv-ocr-btn');
+  await page.waitForFunction(() => {
+    const status = document.querySelector('#previewHost .imgv-ocr-status')?.textContent || '';
+    return status !== '' && status !== 'Recognizing…';
+  }, null, { timeout: 120000 });
+  const imageOcr = await page.evaluate(() => ({
+    text: document.querySelector('#previewHost .imgv-ocr-out')?.value || '',
+    error: document.querySelector('#previewHost .imgv-ocr-err')?.textContent || '',
+  }));
+  const norm = imageOcr.text.toUpperCase().replace(/[^A-Z0-9]/g, '');
+  if (!imageOcr.error && norm.includes('HELLO')) pass('OCR: image button recognizes text after PPTX in the same page');
+  else fail('OCR after PPTX: ' + JSON.stringify(imageOcr));
 
   // 2. Digits-optimized preset reads a number string.
   const digits = await page.evaluate(async () => {

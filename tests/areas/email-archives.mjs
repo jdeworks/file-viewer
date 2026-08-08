@@ -220,6 +220,15 @@ export async function run(ctx) {
 
   // ── Outlook .msg ── CFB-backed email preview; regression for Uint8Array/TextDecoder handling.
   await page.goto(origin, { waitUntil: 'load' });
+  const cfbGlobalNames = [
+    'CFB', 'CRC32', 'Base64_map', 'Base64_encode', 'Base64_decode', 'ReadShift', 'CheckField',
+  ];
+  await page.evaluate((names) => {
+    window.__fvCfbGlobals = Object.fromEntries(names.map((name) => [name, {
+      own: Object.hasOwn(window, name),
+      value: window[name],
+    }]));
+  }, cfbGlobalNames);
   await openExample('Sample.msg');
   await page.waitForSelector('#previewHost .msg-badge', { timeout: 15000 });
   const msgType = await page.$eval('#typeSelect', (s) => s.value);
@@ -227,6 +236,25 @@ export async function run(ctx) {
   const msgText = await page.$eval('#previewHost', (e) => e.textContent || '');
   const msgCrashed = /Preview failed|TextDecoder|parameter 1 is not of type|TypeError|ReferenceError/i.test(msgText);
   if (/Outlook Email/.test(msgText) && !msgCrashed) pass('MSG preview opens without TextDecoder crash'); else fail('msg preview: ' + msgText.replace(/\s+/g, ' ').slice(0, 180));
+  await page.click('#metaBtn');
+  await page.waitForSelector('#metaBody .meta-row', { timeout: 6000 });
+  const msgMeta = await page.$eval('#metaBody', (e) => e.textContent);
+  if (/Subject\s*Test Email Subject/.test(msgMeta) && /john@example\.com/.test(msgMeta)) {
+    pass('MSG metadata uses the shared scoped CFB parser');
+  } else {
+    fail('MSG metadata: ' + msgMeta.replace(/\s+/g, ' ').slice(0, 180));
+  }
+  await page.click('#metaDrawer [data-close]');
+  const changedCfbGlobals = await page.evaluate((names) => {
+    const changed = names.filter((name) => {
+      const before = window.__fvCfbGlobals[name];
+      return Object.hasOwn(window, name) !== before.own || !Object.is(window[name], before.value);
+    });
+    delete window.__fvCfbGlobals;
+    return changed;
+  }, cfbGlobalNames);
+  if (changedCfbGlobals.length === 0) pass('MSG parsing keeps CFB and its helpers out of the parent globals');
+  else fail('MSG changed parent globals: ' + changedCfbGlobals.join(', '));
 
   // ── Mailbox (.mbox) ── split into messages, inbox list (reuses the eml MIME parser). ──
   await page.goto(origin, { waitUntil: 'load' });

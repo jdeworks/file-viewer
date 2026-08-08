@@ -558,6 +558,96 @@ export async function run(ctx) {
   if (barH <= 60) pass('mobile: topbar stays single-row (' + barH + 'px)'); else fail('mobile topbar height: ' + barH);
   await mctx.close();
 
+  // Ruffle runs in the parent page, so its optional browser-plugin polyfills must stay disabled.
+  // Use a throwaway context to load a real SWF and verify the native browser objects survive both
+  // player startup and the transition to another file.
+  {
+    const rctx = await browser.newContext();
+    const rp = await rctx.newPage();
+    const rErrors = [];
+    const rOffOrigin = [];
+    rp.on('pageerror', (error) => {
+      if (!isBenignPageError(error.message)) rErrors.push(error.message);
+    });
+    rp.on('console', (message) => {
+      if (message.type() !== 'error') return;
+      const location = message.location()?.url || '';
+      if (!isBenignConsoleError(message.text(), location)) rErrors.push(message.text());
+    });
+    rp.on('request', (request) => {
+      if (!isAllowedHarnessUrl(request.url(), origin)) rOffOrigin.push(request.url());
+    });
+    try {
+      await rp.goto(origin, { waitUntil: 'load' });
+      await rp.waitForFunction(() => typeof window.__fv !== 'undefined');
+      await rp.evaluate(() => {
+        localStorage.setItem('fv:settings:global', JSON.stringify({
+          version: 1,
+          values: { enableEmulators: true },
+        }));
+      });
+      await rp.reload({ waitUntil: 'load' });
+      await rp.waitForFunction(() => typeof window.__fv !== 'undefined');
+      await rp.evaluate(() => {
+        window.__fvRuffleNative = {
+          PluginArray: window.PluginArray,
+          MimeTypeArray: window.MimeTypeArray,
+          MimeType: window.MimeType,
+          plugins: navigator.plugins,
+          mimeTypes: navigator.mimeTypes,
+        };
+      });
+      await rp.evaluate(() => window.__fv.openExampleByLabel('sample.swf'));
+      await rp.waitForFunction(() => window.__fv?.state?.type?.id === 'ruffle');
+      await rp.getByRole('button', { name: /Load Flash content/ }).click();
+      await rp.waitForSelector('#previewHost ruffle-player', { timeout: 20000 });
+      const loaded = await rp.evaluate(() => {
+        const native = window.__fvRuffleNative;
+        return {
+          apiReady: typeof window.RufflePlayer?.newest === 'function',
+          polyfillsDisabled: window.RufflePlayer?.config?.polyfills === false,
+          nativeObjectsPreserved: window.PluginArray === native.PluginArray
+            && window.MimeTypeArray === native.MimeTypeArray
+            && window.MimeType === native.MimeType
+            && navigator.plugins === native.plugins
+            && navigator.mimeTypes === native.mimeTypes,
+        };
+      });
+      await rp.evaluate(() => window.__fv.openExampleByLabel('Welcome.md'));
+      await rp.waitForFunction(() => window.__fv?.state?.type?.id === 'markdown');
+      const cleaned = await rp.evaluate(() => {
+        const native = window.__fvRuffleNative;
+        const result = {
+          playerUnmounted: !document.querySelector('ruffle-player'),
+          nativeObjectsPreserved: window.PluginArray === native.PluginArray
+            && window.MimeTypeArray === native.MimeTypeArray
+            && window.MimeType === native.MimeType
+            && navigator.plugins === native.plugins
+            && navigator.mimeTypes === native.mimeTypes,
+        };
+        delete window.__fvRuffleNative;
+        return result;
+      });
+      if (loaded.apiReady && loaded.polyfillsDisabled && loaded.nativeObjectsPreserved) {
+        pass('Ruffle starts without replacing native browser plugin APIs');
+      } else {
+        fail('Ruffle global isolation while loaded: ' + JSON.stringify(loaded));
+      }
+      if (cleaned.playerUnmounted && cleaned.nativeObjectsPreserved) {
+        pass('Ruffle cleanup removes the player while preserving native browser APIs');
+      } else {
+        fail('Ruffle global isolation after cleanup: ' + JSON.stringify(cleaned));
+      }
+      if (rErrors.length === 0 && rOffOrigin.length === 0) {
+        pass('Ruffle transition has zero page errors and zero off-origin requests');
+      } else {
+        fail('Ruffle transition errors=' + JSON.stringify(rErrors) + ' offOrigin=' + JSON.stringify(rOffOrigin));
+      }
+    } finally {
+      await rctx.close();
+    }
+  }
+
   // ── Easter egg ── opening a file whose text contains `import easteregg` unlocks the arcade.
   // Run in a throwaway context so the persisted unlock (localStorage) doesn't bleed into other tests.
   {

@@ -2,40 +2,54 @@ function vendorUrl(filename) {
   return new URL(`../../../vendor/${filename}`, import.meta.url).href;
 }
 
-async function loadLibheif() {
-  if (window._libheifReady) return;
+const LIBHEIF_JS = vendorUrl('libheif.js');
+const LIBHEIF_WASM = vendorUrl('libheif.wasm');
+let libheifPromise = null;
 
-  const url = vendorUrl('libheif.js');
-  if (!document.querySelector(`script[src="${url}"]`)) {
-    await new Promise((resolve, reject) => {
-      const s = document.createElement('script');
-      s.src = url;
-      s.onload = resolve;
-      s.onerror = () => reject(new Error('Failed to load libheif.js'));
-      document.head.appendChild(s);
+async function initializeLibheif() {
+  const [scriptResponse, wasmResponse] = await Promise.all([
+    fetch(LIBHEIF_JS),
+    fetch(LIBHEIF_WASM),
+  ]);
+  if (!scriptResponse.ok) throw new Error(`Failed to load libheif.js (${scriptResponse.status})`);
+  if (!wasmResponse.ok) throw new Error(`Failed to load libheif.wasm (${wasmResponse.status})`);
+  const [source, wasmBinary] = await Promise.all([
+    scriptResponse.text(),
+    wasmResponse.arrayBuffer(),
+  ]);
+  const moduleConfig = {
+    locateFile: (filename) => new URL(filename, LIBHEIF_JS).href,
+    wasmBinary: new Uint8Array(wasmBinary),
+  };
+
+  // Pass Module as a local parameter so the Emscripten wrapper cannot create window.Module.
+  // The factory and its helpers also stay inside the evaluator instead of becoming window globals.
+  const evaluate = new Function(
+    'Module',
+    'define',
+    'module',
+    'exports',
+    source + `\nreturn libheif;\n//# sourceURL=${LIBHEIF_JS}`,
+  );
+  const factory = evaluate.call(window, moduleConfig, undefined, undefined, undefined);
+  if (typeof factory !== 'function') throw new Error('libheif factory missing after load');
+
+  const api = factory(moduleConfig);
+  await api.ready;
+  if (typeof api.HeifDecoder !== 'function') {
+    throw new Error('libheif did not initialize (HeifDecoder not found)');
+  }
+  return api;
+}
+
+function loadLibheif() {
+  if (!libheifPromise) {
+    libheifPromise = initializeLibheif().catch((error) => {
+      libheifPromise = null;
+      throw error;
     });
   }
-
-  // libheif uses instantiateSync so by script onload it should be ready,
-  // but poll briefly in case there's a small async gap
-  await new Promise((resolve, reject) => {
-    let attempts = 0;
-    const check = () => {
-      if (window.libheif && window.libheif.HeifDecoder) {
-        resolve();
-        return;
-      }
-      attempts++;
-      if (attempts > 100) {
-        reject(new Error('libheif did not initialize (HeifDecoder not found)'));
-        return;
-      }
-      setTimeout(check, 50);
-    };
-    check();
-  });
-
-  window._libheifReady = true;
+  return libheifPromise;
 }
 
 function decodeImageToCanvas(image) {
@@ -73,6 +87,9 @@ function makeNote(text) {
 
 export async function render(intake, _ctx) {
   const blobUrls = [];
+  let libheif = null;
+  let decoder = null;
+  let images = [];
 
   const wrap = document.createElement('div');
   wrap.style.cssText = 'padding:16px;max-width:100%;box-sizing:border-box;';
@@ -81,10 +98,10 @@ export async function render(intake, _ctx) {
   wrap.appendChild(spinner);
 
   try {
-    await loadLibheif();
+    libheif = await loadLibheif();
 
-    const decoder = new window.libheif.HeifDecoder();
-    const images = decoder.decode(intake.bytes);
+    decoder = new libheif.HeifDecoder();
+    images = decoder.decode(intake.bytes);
 
     if (!images || images.length === 0) {
       throw new Error('No images found in file');
@@ -168,7 +185,7 @@ export async function render(intake, _ctx) {
       wrap.appendChild(strip);
     }
 
-    wrap.appendChild(makeNote('HEIC/HEIF decoding via libheif (~800KB). EXIF/GPS metadata not extracted.'));
+    wrap.appendChild(makeNote('HEIC/HEIF decoding via libheif (~930 KB). EXIF/GPS metadata not extracted.'));
 
   } catch (err) {
     wrap.textContent = '';
@@ -181,6 +198,15 @@ export async function render(intake, _ctx) {
   return {
     parentNode: wrap,
     revoke() {
+      for (const image of images) {
+        try { image.free?.(); } catch {}
+      }
+      images = [];
+      try {
+        if (decoder?.decoder) libheif?.heif_context_free?.(decoder.decoder);
+      } catch {}
+      if (decoder) decoder.decoder = null;
+      decoder = null;
       for (const u of blobUrls) URL.revokeObjectURL(u);
       blobUrls.length = 0;
     },
